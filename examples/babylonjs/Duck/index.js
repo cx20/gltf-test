@@ -4,13 +4,18 @@ var createScene = function(engine) {
     var mesh;
     scene.clearColor = new BABYLON.Color3(1, 1, 1);
 
-    // Box.gltf
+    // Duck.gltf
     BABYLON.SceneLoader.Load("../../../sampleModels/Duck/glTF-Embedded/", "Duck.gltf", engine, function (newScene) {
 
         scene = newScene;
         mesh = scene.meshes[0];
+        mesh.position.y -= 1;
 
         camera = new BABYLON.ArcRotateCamera("camera", 0, 0, 5, BABYLON.Vector3.Zero(), scene);
+        camera.lowerBetaLimit = 1.0;
+        camera.upperBetaLimit = (Math.PI / 2) * 0.9;
+        camera.lowerRadiusLimit = 3;
+        camera.upperRadiusLimit = 15;
         camera.attachControl(canvas, false, false);
         camera.panningSensibility = 50.0;
         camera.angularSensibility = 500;
@@ -18,14 +23,10 @@ var createScene = function(engine) {
 
         var rad = 0.0;
         engine.runRenderLoop(function () {
-            scene.render();
-            rad += Math.PI * 1.0 / 180.0;
-            // quaternion
-            mesh.rotate(BABYLON.Axis.X, Math.PI * 1.0 / 180.0, BABYLON.Space.LOCAL);
-            mesh.rotate(BABYLON.Axis.Y, Math.PI * 1.0 / 180.0, BABYLON.Space.LOCAL);
-            mesh.rotate(BABYLON.Axis.Z, Math.PI * 1.0 / 180.0, BABYLON.Space.LOCAL);
+            scene.activeCamera.alpha += 0.02;
             scene.render();
         });
+       
     });
     return scene;
 }
