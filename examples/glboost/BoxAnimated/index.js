@@ -2,9 +2,9 @@ var canvas = document.getElementById("world");
 var glBoostContext = new GLBoost.GLBoostMiddleContext(canvas);
 var renderer = glBoostContext.createRenderer({
     clearColor: {
-        red: 1.0,
-        green: 0.5,
-        blue: 0.5,
+        red: 0.6,
+        green: 0.6,
+        blue: 0.6,
         alpha: 1
     }
 });
@@ -15,7 +15,7 @@ var pointLight = glBoostContext.createPointLight(new GLBoost.Vector3(1.0, 1.0, 1
 pointLight.translate = new GLBoost.Vector3(10, 10, 10);
 scene.addChild(pointLight);
 var camera = glBoostContext.createPerspectiveCamera({
-    eye: new GLBoost.Vector3(0.0, 1.0, 20),
+    eye: new GLBoost.Vector3(-5.0, 5.0, 5.0),
     center: new GLBoost.Vector3(0.0, 1.0, 0.0),
     up: new GLBoost.Vector3(0.0, 1.0, 0.0)
 }, {
