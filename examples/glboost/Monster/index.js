@@ -30,6 +30,7 @@ var gtime = 0;
 var glTFLoader = GLBoost.GLTFLoader.getInstance();
 var promise = glTFLoader.loadGLTF(glBoostContext, '../../../sampleModels/Monster/glTF-Embedded/Monster.gltf', 1, null);
 promise.then(function(group) {
+    group.scale = new GLBoost.Vector3(0.1, 0.1, 0.1);
     console.log(group);
     scene.addChild(group);
     
