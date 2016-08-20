@@ -1,9 +1,9 @@
 // Load glTF
-var gearbox = new XEO.Import({
+var box = new XEO.Model({
     src: "../../../sampleModels/Box/glTF-Embedded/Box.gltf"
 });
 
-var view = gearbox.scene.camera.view;
+var view = box.scene.camera.view;
 view.eye = [
     0.0,
     0.0,
@@ -21,7 +21,7 @@ view.up = [
 ];
 
 new XEO.CameraControl();
-gearbox.scene.on("tick",
+box.scene.on("tick",
     function () {
         view.rotateEyeY(1.0);
         view.rotateEyeX(1.0);
