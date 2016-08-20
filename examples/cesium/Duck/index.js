@@ -36,6 +36,6 @@ function flyToHeadingPitchRoll() {
     });
 }
 
-createModel('../../../sampleModels/Box/glTF-Embedded/Box.gltf', 10000);
+createModel('../../../sampleModels/Duck/glTF-Embedded/Duck.gltf', 10000);
 
 flyToHeadingPitchRoll();
