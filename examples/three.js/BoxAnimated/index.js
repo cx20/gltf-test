@@ -2,7 +2,7 @@ var gltf = null;
 
 init();
 animate();
-
+  
 function init() {
     width = window.innerWidth;
     height = window.innerHeight;
@@ -29,8 +29,20 @@ function init() {
 
     var url = "../../../sampleModels/BoxAnimated/glTF-Embedded/BoxAnimated.gltf";
     loader.load(url, function (data) {
-        var object = data.scene;
+        gltf = data;
+        var object = gltf.scene;
+        //object.position.y += 0.5;
         camera.position.copy(new THREE.Vector3(0, 2, 3));
+
+        if (gltf.animations && gltf.animations.length) {
+
+            for (i = 0; i < gltf.animations.length; i++) {
+                var animation = gltf.animations[i];
+                animation.loop = true;
+                animation.play();
+            }
+        }
+
         scene.add(object);
     });
 
@@ -38,6 +50,7 @@ function init() {
     scene.add(axis);
 
     renderer = new THREE.WebGLRenderer();
+    renderer.setClearColor( 0xaaaaaa );
 
     controls = new THREE.OrbitControls( camera, renderer.domElement );
     controls.userPan = false;
@@ -54,6 +67,7 @@ function init() {
   
 function animate() {
     requestAnimationFrame( animate );
+    THREE.glTFAnimator.update();
     THREE.glTFShaders.update(scene, camera);
     renderer.render( scene, camera );
     controls.update();
