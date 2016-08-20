@@ -5,7 +5,7 @@ var createScene = function(engine) {
     scene.clearColor = new BABYLON.Color3(1, 1, 1);
 
     // Box.gltf
-    BABYLON.SceneLoader.Load("../../../sampleModels/Box/", "glTF-Embedded/Box.gltf", engine, function (newScene) {
+    BABYLON.SceneLoader.Load("../../../sampleModels/Box/glTF-Embedded/", "Box.gltf", engine, function (newScene) {
 
         scene = newScene;
         mesh = scene.meshes[0];
