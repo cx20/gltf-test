@@ -23,6 +23,6 @@ view.up = [
 new XEO.CameraControl();
 box.scene.on("tick",
     function () {
-        view.rotateEyeY(1.0);
-        view.rotateEyeX(1.0);
+        //view.rotateEyeY(1.0);
+        //view.rotateEyeX(1.0);
     });
