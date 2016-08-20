@@ -40,7 +40,7 @@ promise.then(function(mesh) {
     var render = function() {
         renderer.clearCanvas();
         renderer.draw(expression);
-        var rotateMatrix = GLBoost.Matrix33.rotateY(-1.0);
+        var rotateMatrix = GLBoost.Matrix33.rotateX(-1.0);
         var rotatedVector = rotateMatrix.multiplyVector(camera.eye);
         camera.eye = rotatedVector;
         requestAnimationFrame(render);
