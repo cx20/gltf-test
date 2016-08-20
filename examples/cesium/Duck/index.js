@@ -3,6 +3,8 @@ var viewer = new Cesium.Viewer('cesiumContainer', {
     selectionIndicator : false
 });                               
 
+var scene = viewer.scene;
+
 function createModel(url, height) {
     viewer.entities.removeAll();
 
@@ -36,6 +38,27 @@ function flyToHeadingPitchRoll() {
     });
 }
 
+var heading = 0;
+var pitch = 0;
+var roll = 0;
+
+function tick() {
+    scene.render();
+    var lon = 139.691706; // the updated lon
+    var lat = 35.689487; // updated lat
+    var height = 0;
+    var position = Cesium.Cartesian3.fromDegrees(lon, lat, height);
+    heading -= 0.1;
+
+    // create an orientation based on the new position
+    var orientation = Cesium.Transforms.headingPitchRollQuaternion(position, heading, pitch, roll);
+    viewer.trackedEntity.orientation = orientation;
+
+    Cesium.requestAnimationFrame(tick);
+}
+
 createModel('../../../sampleModels/Duck/glTF-Embedded/Duck.gltf', 10000);
 
 flyToHeadingPitchRoll();
+
+tick();
