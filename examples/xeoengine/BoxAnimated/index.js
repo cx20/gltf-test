@@ -11,7 +11,7 @@ view.eye = [
 ];
 view.look = [
     0.0,
-    0.0,
+    1.0,
     0.0
 ];
 view.up = [
