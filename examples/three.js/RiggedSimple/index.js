@@ -32,7 +32,7 @@ function init() {
     loader.load(url, function (data) {
         gltf = data;
         var object = gltf.scene;
-        object.scale.set(1, 1, 1);
+        object.scale.set(0.2, 0.2, 0.2);
         object.position.x -= 0.0;
         object.position.y -= 0.0;
         object.position.z -= 0.0;
