@@ -7,7 +7,7 @@ var view = model.scene.camera.view;
 view.eye = [
     0.0,
     0.0,
-    -3.0
+    -15.0
 ];
 view.look = [
     0.0,
