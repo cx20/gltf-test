@@ -1,6 +1,5 @@
 var canvas = document.getElementById("world");
 var glBoostContext = new GLBoost.GLBoostMiddleContext(canvas);
-var scene = glBoostContext.createScene();
 var renderer = glBoostContext.createRenderer({
     clearColor: {
         red: 0.6,
@@ -9,6 +8,7 @@ var renderer = glBoostContext.createRenderer({
         alpha: 1
     }
 });
+var scene = glBoostContext.createScene();
 
 var pointLight = glBoostContext.createPointLight(new GLBoost.Vector3(1.0, 1.0, 1.0));
 pointLight.translate = new GLBoost.Vector3(10, 10, 10);
