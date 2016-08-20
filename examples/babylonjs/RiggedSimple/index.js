@@ -9,7 +9,7 @@ var createScene = function(engine) {
 
         scene = newScene;
         mesh = scene.meshes[0];
-        mesh.scaling = new BABYLON.Vector3(1, 1, 1);
+        mesh.scaling = new BABYLON.Vector3(0.2, 0.2, 0.2);
 
         var camera = new BABYLON.ArcRotateCamera("camera", 0, 0, 5, BABYLON.Vector3.Zero(), scene);
         camera.lowerBetaLimit = 1.0;
