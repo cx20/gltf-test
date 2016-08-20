@@ -36,13 +36,22 @@ promise.then(function(mesh) {
     var expression = glBoostContext.createExpressionAndRenderPasses(1);
     expression.renderPasses[0].scene = scene;
     expression.prepareToRender();
+    
+    var angle = 0;
+    var axis = new GLBoost.Vector3(1,1,1);
    
     var render = function() {
         renderer.clearCanvas();
         renderer.draw(expression);
-        var rotateMatrix = GLBoost.Matrix33.rotateX(-1.0);
+/*
+        var rotateMatrix = GLBoost.Matrix33.rotateY(-1.0);
         var rotatedVector = rotateMatrix.multiplyVector(camera.eye);
         camera.eye = rotatedVector;
+*/
+        // quaternion ‚É‚æ‚é‰ñ“]
+        mesh.quaternion = GLBoost.Quaternion.axisAngle(axis, GLBoost.MathUtil.radianToDegree(angle));
+        angle += 0.02;
+
         requestAnimationFrame(render);
     };
     render();
