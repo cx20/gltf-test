@@ -27,7 +27,7 @@ var camera = glBoostContext.createPerspectiveCamera({
 scene.addChild(camera);
 
 var glTFLoader = GLBoost.GLTFLoader.getInstance();
-var promise = glTFLoader.loadGLTF(glBoostContext, '../../../sampleModels/Duck/glTF-Embedded/Box.gltf', 1, null);
+var promise = glTFLoader.loadGLTF(glBoostContext, '../../../sampleModels/Duck/glTF-Embedded/Duck.gltf', 1, null);
 promise.then(function(mesh) {
     console.log(mesh);
     scene.addChild(mesh);
