@@ -41,8 +41,8 @@ promise.then(function(group) {
         scene.setCurrentAnimationValue('time', gtime);
         renderer.clearCanvas();
         renderer.draw(expression);
-        gtime += 0.01;
-        if (gtime > 1.5) {
+        gtime += 0.03;
+        if (gtime > 5) {
             gtime = 0.0;
         }
         var rotateMatrix = GLBoost.Matrix33.rotateY(-1.0);
