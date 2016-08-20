@@ -24,5 +24,5 @@ new XEO.CameraControl();
 duck.scene.on("tick",
     function () {
         view.rotateEyeY(1.0);
-        view.rotateEyeX(1.0);
+        //view.rotateEyeX(1.0);
     });
