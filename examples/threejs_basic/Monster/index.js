@@ -30,8 +30,8 @@ function init() {
     var url = "../../../sampleModels/Monster/glTF-Embedded/Monster.gltf";
     loader.load(url, function (data) {
         var object = data.scene;
-        object.scale.set(0.001, 0.001, 0.001);
-        object.position.x -= 1.0;
+        object.scale.set(0.1, 0.1, 0.1);
+        object.position.x -= 0.0;
         object.position.y -= 0.0;
         object.position.z -= 0.0;
         camera.position.copy(new THREE.Vector3(0, 2, 3));
