@@ -30,7 +30,6 @@ function init() {
     var url = "../../../sampleModels/Box/glTF-Embedded/Box.gltf";
     loader.load(url, function (data) {
         var object = data.scene;
-        object.position.y -= 0.5;
         camera.position.copy(new THREE.Vector3(0, 2, 3));
         scene.add(object);
     });
