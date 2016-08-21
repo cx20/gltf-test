@@ -45,8 +45,8 @@ function init() {
     controls.userPanSpeed = 0.0;
     controls.maxDistance = 5000.0;
     controls.maxPolarAngle = Math.PI * 0.495;
-    controls.autoRotate = true;     //true:©“®‰ñ“]‚·‚é,false:©“®‰ñ“]‚µ‚È‚¢
-    controls.autoRotateSpeed = -10.0;    //©“®‰ñ“]‚·‚é‚Ì‘¬“x
+    controls.autoRotate = true;     //true:è‡ªå‹•å›è»¢ã™ã‚‹,false:è‡ªå‹•å›è»¢ã—ãªã„
+    controls.autoRotateSpeed = -10.0;    //è‡ªå‹•å›è»¢ã™ã‚‹æ™‚ã®é€Ÿåº¦
 
     renderer.setSize( width, height );
     document.body.appendChild( renderer.domElement );
