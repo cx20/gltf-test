@@ -30,7 +30,7 @@ function init() {
     var url = "../../../sampleModels/RiggedFigure/glTF-Embedded/RiggedFigure.gltf";
     loader.load(url, function (data) {
         var object = data.scene;
-        object.scale.set(0.2, 0.2, 0.2);
+        object.scale.set(1, 1, 1);
         camera.position.copy(new THREE.Vector3(0, 2, 3));
         scene.add(object);
     });
