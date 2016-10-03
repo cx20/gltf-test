@@ -1129,8 +1129,13 @@ GLTFParser.prototype.loadMaterials = function() {
 
 									if ( pname == "transparency" ) {
 
-										uvalue = value;
 										materialParams.transparent = true;
+
+									}
+
+									if ( value ) {
+
+										uvalue = value;
 
 									}
 
