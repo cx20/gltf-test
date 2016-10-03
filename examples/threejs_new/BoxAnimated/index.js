@@ -66,8 +66,8 @@ function init() {
 
 function animate() {
     requestAnimationFrame( animate );
-    THREE.GLTFAnimator.update();
-    THREE.GLTFShaders.update(scene, camera);
+    THREE.GLTFLoader.Animations.update();
+    THREE.GLTFLoader.Shaders.update(scene, camera);
     renderer.render( scene, camera );
     controls.update();
 }
