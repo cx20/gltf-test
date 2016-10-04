@@ -247,7 +247,7 @@ GLTFShader.prototype.update = function( scene, camera ) {
 
 		}
 
-	}.bind(this));
+	}.bind( this ));
 
 };
 
@@ -569,33 +569,38 @@ var _each = function( object, callback, thisObj ) {
 		results = [];
 
 		var length = object.length;
-		for ( let idx = 0; idx < length; idx ++ ) {
-			let value = callback.call( thisObj || this, object[ idx ], idx );
-			fns.push( value );
-			if ( value && value instanceof Promise ) {
-				value.then( function( value ) {
+		for ( var idx = 0; idx < length; idx ++ ) {
+			var value = callback.call( thisObj || this, object[ idx ], idx );
+			if ( value ) {
+				fns.push( value );
+				if ( value instanceof Promise ) {
+					value.then( function( key, value ) {
+						results[ idx ] = value;
+					}.bind( this, key ));
+				} else {
 					results[ idx ] = value;
-				});
-			} else {
-				results[ idx ] = value;
+				}
 			}
 
 		}
 
 	} else {
 
+
 		results = {};
 
-		for ( let key in object ) {
+		for ( var key in object ) {
 			if ( object.hasOwnProperty( key ) ) {
-				let value = callback.call( thisObj || this, object[ key ], key );
-				fns.push( value );
-				if ( value && value instanceof Promise ) {
-					value.then( function( value ) {
+				var value = callback.call( thisObj || this, object[ key ], key );
+				if ( value ) {
+					fns.push( value );
+					if ( value instanceof Promise ) {
+						value.then( function( key, value ) {
+							results[ key ] = value;
+						}.bind( this, key ));
+					} else {
 						results[ key ] = value;
-					});
-				} else {
-					results[ key ] = value;
+					}
 				}
 			}
 		}
@@ -966,8 +971,7 @@ GLTFParser.prototype.loadTextures = function() {
 
 				textureLoader.load( resolveURL( source.uri, path ), function( _texture ) {
 
-					// UV buffer attributes are also flipped
-					_texture.flipY = true;
+					_texture.flipY = false;
 
 					if ( texture.sampler ) {
 
@@ -1047,17 +1051,16 @@ GLTFParser.prototype.loadMaterials = function() {
 
 				});
 
-				if ( khr_material.doubleSided )
-				{
+				if ( khr_material.doubleSided || materialValues.doubleSided ) {
 
 					materialParams.side = THREE.DoubleSide;
 
 				}
 
-				if ( khr_material.transparent )
-				{
+				if ( khr_material.transparent || materialValues.transparent ) {
 
 					materialParams.transparent = true;
+					materialParams.opacity = ( materialValues.transparency !== undefined ) ? materialValues.transparency : 1;
 
 				}
 
@@ -1246,7 +1249,9 @@ GLTFParser.prototype.loadMaterials = function() {
 
 			}
 
-			if ( typeof( materialValues.reflective ) == 'string' ) {
+			delete materialParams.diffuse;
+
+			if ( typeof( materialValues.reflective ) === 'string' ) {
 
 				materialParams.envMap = library.textures[ materialValues.reflective ];
 
@@ -1258,10 +1263,23 @@ GLTFParser.prototype.loadMaterials = function() {
 
 			}
 
-			if ( Array.isArray( materialValues.emission ) ) materialParams.emissive = new THREE.Color().fromArray( materialValues.emission );
-			if ( Array.isArray( materialValues.specular ) ) materialParams.specular = new THREE.Color().fromArray( materialValues.specular );
+			if ( Array.isArray( materialValues.emission ) ) {
 
-			if ( materialValues.shininess !== undefined ) materialParams.shininess = materialValues.shininess;
+				materialParams.emissive = new THREE.Color().fromArray( materialValues.emission );
+
+			}
+
+			if ( Array.isArray( materialValues.specular ) ) {
+
+				materialParams.specular = new THREE.Color().fromArray( materialValues.specular );
+
+			}
+
+			if ( materialValues.shininess !== undefined ) {
+
+				materialParams.shininess = materialValues.shininess;
+
+			}
 
 			var _material = new materialType( materialParams );
 			_material.name = material.name;
@@ -1324,15 +1342,6 @@ GLTFParser.prototype.loadMeshes = function() {
 							case 'TEXCOORD_0':
 							case 'TEXCOORD0':
 							case 'TEXCOORD':
-								// Flip Y value for UVs
-								var floatArray = bufferAttribute.array;
-								for ( var i = 0; i < floatArray.length / 2; i ++ ) {
-
-									floatArray[ i * 2 + 1 ] = 1.0 - floatArray[ i * 2 + 1 ];
-
-								}
-								bufferAttribute.array = floatArray;
-
 								geometry.addAttribute( 'uv', bufferAttribute );
 								break;
 
