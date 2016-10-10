@@ -28,29 +28,12 @@ function createModel(url, height) {
         orientation : orientation,
         model : {
             uri : url,
-            minimumPixelSize : 128,
-            maximumScale : 20000
+            scale : 1000.0
         }
     });
-    //viewer.flyTo(entity, {
-    //    offset: new Cesium.HeadingPitchRange(
-    //        Cesium.Math.toRadians(-138.0), Cesium.Math.toRadians(-25.0), 100)
-    //});
-    //viewer.trackedEntity = entity;
-    viewer.flyTo(entity).then(function() { viewer.trackedEntity = entity; });
-}
-
-function flyToHeadingPitchRoll() {
-    viewer.camera.flyTo({
-        destination : Cesium.Cartesian3.fromDegrees(139.691706 + 0.035, 35.689487 + 0.03, 12000.0),
-        orientation : {
-            heading : Cesium.Math.toRadians(-138.0),
-            pitch : Cesium.Math.toRadians(-25.0),
-            roll : 0.0
-        }
+    viewer.flyTo(entity, { duration: 4 }).then(function() {
+        viewer.trackedEntity = entity;
     });
 }
 
 createModel('../../sampleModels/' + modelInfo.path, 10000);
-
-//flyToHeadingPitchRoll();
