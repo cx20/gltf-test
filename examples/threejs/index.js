@@ -1,3 +1,9 @@
+var modelInfo = ModelIndex.getCurrentModel();
+if (!modelInfo) {
+    document.getElementById('container').innerHTML = 'Please specify a model to load';
+    throw new Error('Model not specified or not found in list.');
+}
+
 var gltf = null;
 
 init();
@@ -27,14 +33,10 @@ function init() {
 
     var loader = new THREE.GLTFLoader();
 
-    var url = "../../../sampleModels/RiggedSimple/glTF-Embedded/RiggedSimple.gltf";
+    var url = "../../sampleModels/" + modelInfo.path;
     loader.load(url, function (data) {
         gltf = data;
         var object = gltf.scene;
-        object.scale.set(0.2, 0.2, 0.2);
-        object.position.x -= 0.0;
-        object.position.y -= 0.0;
-        object.position.z -= 0.0;
         camera.position.copy(new THREE.Vector3(0, 2, 3));
 
         if (gltf.animations && gltf.animations.length) {

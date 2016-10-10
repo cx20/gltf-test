@@ -1,6 +1,6 @@
 var engines = [{
-    name: 'Three.js + new loader',
-    path: 'examples/threejs_new/{model}/index.html'
+    name: 'Three.js',
+    path: 'examples/threejs/index.html?model={model}'
 }, {
     name: 'Babylon.js',
     path: 'examples/babylonjs/{model}/index.html'
@@ -43,7 +43,7 @@ for (j = 0; j < numModels; ++j) {
     for (i = 0; i < numEngines; ++i) {
         var td = document.createElement('td');
         var a = document.createElement('a');
-        a.textContent = 'Link';
+        a.textContent = engines[i].name;
         a.setAttribute('href', engines[i].path.replace('{model}', modelName));
         a.setAttribute('target', '_blank');
         td.appendChild(a);
