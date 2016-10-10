@@ -20,7 +20,23 @@ ModelIndex.List = [
     'VC'
 ];
 
-ModelIndex.getModelList = function() {
+ModelIndex.HasGifScreenshot = [  // List of only models that have *.gif screenshots (as opposed to *.png)
+    'BoxAnimated',
+    'BrainStem',
+    'CesiumMan',
+    'CesiumMilkTruck',
+    'Monster',
+    'RiggedFigure',
+    'RiggedSimple',
+    'VC'
+];
+
+ModelIndex.getScreenshot = function(name) {
+    var extension = ((ModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
+    return name + '/screenshot/screenshot.' + extension;
+};
+
+ModelIndex.getModelInfoCollection = function() {
     var numModels = ModelIndex.List.length;
     var modelInfoCollection = {};
     for (var i = 0; i < numModels; ++i) {
@@ -34,7 +50,7 @@ ModelIndex.getModelList = function() {
 }
 
 ModelIndex.getCurrentModel = function () {
-    var modelInfoCollection = ModelIndex.getModelList();
+    var modelInfoCollection = ModelIndex.getModelInfoCollection();
     var queryString = window.location.search.substring(1);
     var parts = queryString.replace(/\+/g, '%20').split('&');
     var options = {};
