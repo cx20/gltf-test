@@ -1,13 +1,12 @@
 var modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     document.getElementById('cesiumContainer').innerHTML = 'Please specify a model to load';
-    throw new Error('Model not specified');
+    throw new Error('Model not specified or not found in list.');
 }
 
 var terrain = Cesium.createDefaultTerrainProviderViewModels();
 
 var viewer = new Cesium.Viewer('cesiumContainer', {
-    infoBox : false,
     selectionIndicator : false,
     terrainProviderViewModels: terrain,
     selectedTerrainProviderViewModel: terrain[1]
@@ -23,7 +22,7 @@ function createModel(url, height) {
     var orientation = Cesium.Transforms.headingPitchRollQuaternion(position, heading, pitch, roll);
 
     var entity = viewer.entities.add({
-        name : url,
+        name : modelInfo.filename,
         position : position,
         orientation : orientation,
         model : {

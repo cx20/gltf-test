@@ -1,4 +1,4 @@
-@import url("https://cesiumjs.org/Cesium/Build/Cesium/Widgets/widgets.css");
+@import url("../../libs/cesium/1.26/Widgets/widgets.css");
 
 html, body, #cesiumContainer {
     position: absolute;
