@@ -1,18 +1,18 @@
 var engines = [{
     name: 'Three.js',
-    path: 'examples/threejs/index.html?model={model}'
+    path: 'examples/threejs/index.html?model={model}&scale={scale}'
 }, {
     name: 'Babylon.js',
-    path: 'examples/babylonjs/{model}/index.html'
+    path: 'examples/babylonjs/index.html?model={model}&scale={scale}'
 }, {
     name: 'Cesium',
-    path: 'examples/cesium/index.html?model={model}'
+    path: 'examples/cesium/index.html?model={model}&scale={scale}'
 }, {
     name: 'xeoEngine',
-    path: 'examples/xeoengine/{model}/index.html'
+    path: 'examples/xeoengine/index.html?model={model}&scale={scale}'
 }, {
     name: 'GLBoost',
-    path: 'examples/glboost/{model}/index.html'
+    path: 'examples/glboost/index.html?model={model}&scale={scale}'
 }];
 
 var modelList = ModelIndex.List;
@@ -30,7 +30,8 @@ for (i = 0; i < numEngines; ++i) {
 }
 
 for (j = 0; j < numModels; ++j) {
-    var modelName = modelList[j];
+    var modelName = modelList[j].name;
+    var scale = modelList[j].scale;
     var tr = document.createElement('tr');
     var tdName = document.createElement('td');
     tdName.textContent = modelName;
@@ -44,7 +45,10 @@ for (j = 0; j < numModels; ++j) {
         var td = document.createElement('td');
         var a = document.createElement('a');
         a.textContent = engines[i].name;
-        a.setAttribute('href', engines[i].path.replace('{model}', modelName));
+        var uri = engines[i].path;
+        uri = uri.replace('{model}', modelName);
+        uri = uri.replace('{scale}', scale);
+        a.setAttribute('href', uri);
         a.setAttribute('target', '_blank');
         td.appendChild(a);
         tr.appendChild(td);

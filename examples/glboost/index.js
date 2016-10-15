@@ -1,4 +1,14 @@
+var modelInfo = ModelIndex.getCurrentModel();
+if (!modelInfo) {
+    document.getElementById('container').innerHTML = 'Please specify a model to load';
+    throw new Error('Model not specified or not found in list.');
+}
+
 var canvas = document.getElementById("world");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+var scale = modelInfo.scale;
+
 var glBoostContext = new GLBoost.GLBoostMiddleContext(canvas);
 var renderer = glBoostContext.createRenderer({
     clearColor: {
@@ -8,14 +18,15 @@ var renderer = glBoostContext.createRenderer({
         alpha: 1
     }
 });
+
 var scene = glBoostContext.createScene();
 
 var pointLight = glBoostContext.createPointLight(new GLBoost.Vector3(1.0, 1.0, 1.0));
 pointLight.translate = new GLBoost.Vector3(10, 10, 10);
 scene.addChild(pointLight);
-
 var camera = glBoostContext.createPerspectiveCamera({
-    eye: new GLBoost.Vector3(0.0, 1.0, 10),
+    //eye: new GLBoost.Vector3(-5.0, 5.0, 5.0),
+    eye: new GLBoost.Vector3(0.0, 1.0, 10 * (1/scale)),
     center: new GLBoost.Vector3(0.0, 1.0, 0.0),
     up: new GLBoost.Vector3(0.0, 1.0, 0.0)
 }, {
@@ -26,21 +37,26 @@ var camera = glBoostContext.createPerspectiveCamera({
 });
 scene.addChild(camera);
 
+var gtime = 0;
 var glTFLoader = GLBoost.GLTFLoader.getInstance();
-var promise = glTFLoader.loadGLTF(glBoostContext, '../../../sampleModels/Box/glTF-Embedded/Box.gltf', 1, null);
-promise.then(function(mesh) {
-    console.log(mesh);
-    scene.addChild(mesh);
-    window.mesh = mesh;
+var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, 1, null);
+promise.then(function(group) {
+    console.log(group);
+    scene.addChild(group);
     
     var expression = glBoostContext.createExpressionAndRenderPasses(1);
     expression.renderPasses[0].scene = scene;
     expression.prepareToRender();
-   
+    
     var render = function() {
+        scene.setCurrentAnimationValue('time', gtime);
         renderer.clearCanvas();
         renderer.draw(expression);
-        var rotateMatrix = GLBoost.Matrix33.rotateY(-1.0);
+        gtime += 0.03;
+        if (gtime > 5) {
+            gtime = 0.0;
+        }
+        var rotateMatrix = GLBoost.Matrix33.rotateY(-0.5);
         var rotatedVector = rotateMatrix.multiplyVector(camera.eye);
         camera.eye = rotatedVector;
         requestAnimationFrame(render);

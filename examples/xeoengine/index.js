@@ -1,13 +1,21 @@
+var modelInfo = ModelIndex.getCurrentModel();
+if (!modelInfo) {
+    document.getElementById('container').innerHTML = 'Please specify a model to load';
+    throw new Error('Model not specified or not found in list.');
+}
+
+var scale = modelInfo.scale;
+
 // Load glTF
 var model = new XEO.Model({
-    src: "../../../sampleModels/RiggedSimple/glTF-Embedded/RiggedSimple.gltf"
+    src: "../../sampleModels/" + modelInfo.path
 });
 
 var view = model.scene.camera.view;
 view.eye = [
     0.0,
     0.0,
-    -15.0
+    -3.0 * (1/scale)
 ];
 view.look = [
     0.0,
