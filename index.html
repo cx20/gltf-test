@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Test of glTF loader in some WebGL libraries.</title>
+    <meta charset="utf-8" />
+    <title>Test of glTF loader in some WebGL libraries.</title>
+    <script src="sampleModels/model-index.js"></script>
 <style>
 table {
     border-collapse: collapse;
@@ -10,95 +12,16 @@ table {
 </head>
 <body>
 <p>Test of glTF loader in some WebGL libraries.<p>
-<table border="1">
-<tr>
-	<th>Model</th>
-	<th>Screenshot</th>
-	<th>Three.js + basic loader</th>
-	<th>Three.js + advance loader</th>
-	<th>Three.js + new loader</th>
-	<th>Babylon.js</th>
-	<th>Cesium.js</th>
-	<th>xeoEngine</th>
-	<th>GLBoost</th>
-</tr>
-<tr>
-	<td>Box</td>
-	<td><img src="./sampleModels/Box/screenshot/screenshot.png" /></td>
-	<td><a href="./examples/threejs_basic/Box/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_advance/Box/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_new/Box/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/babylonjs/Box/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/cesium/Box/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/xeoengine/Box/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/glboost/Box/index.html" target="_blank">Link</a></td>
-</tr>
-<tr>
-	<td>BoxTextured</td>
-	<td><img src="./sampleModels/BoxTextured/screenshot/screenshot.png" /></td>
-	<td><a href="./examples/threejs_basic/BoxTextured/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_advance/BoxTextured/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_new/BoxTextured/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/babylonjs/BoxTextured/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/cesium/BoxTextured/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/xeoengine/BoxTextured/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/glboost/BoxTextured/index.html" target="_blank">Link</a></td>
-</tr>
-<tr>
-	<td>Duck</td>
-	<td><img src="./sampleModels/Duck/screenshot/screenshot.png" /></td>
-	<td><a href="./examples/threejs_basic/Duck/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_advance/Duck/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_new/Duck/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/babylonjs/Duck/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/cesium/Duck/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/xeoengine/Duck/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/glboost/Duck/index.html" target="_blank">Link</a></td>
-</tr>
-<tr>
-	<td>Box Animated</td>
-	<td><img src="./sampleModels/BoxAnimated/screenshot/screenshot.gif" /></td>
-	<td><a href="./examples/threejs_basic/BoxAnimated/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_advance/BoxAnimated/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_new/BoxAnimated/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/babylonjs/BoxAnimated/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/cesium/BoxAnimated/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/xeoengine/BoxAnimated/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/glboost/BoxAnimated/index.html" target="_blank">Link</a></td>
-</tr>
-<tr>
-	<td>Rigged Simple</td>
-	<td><img src="./sampleModels/RiggedSimple/screenshot/screenshot.gif" /></td>
-	<td><a href="./examples/threejs_basic/RiggedSimple/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_advance/RiggedSimple/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_new/RiggedSimple/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/babylonjs/RiggedSimple/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/cesium/RiggedSimple/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/xeoengine/RiggedSimple/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/glboost/RiggedSimple/index.html" target="_blank">Link</a></td>
-</tr>
-<tr>
-	<td>Rigged Figure</td>
-	<td><img src="./sampleModels/RiggedFigure/screenshot/screenshot.gif" /></td>
-	<td><a href="./examples/threejs_basic/RiggedFigure/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_advance/RiggedFigure/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_new/RiggedFigure/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/babylonjs/RiggedFigure/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/cesium/RiggedFigure/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/xeoengine/RiggedFigure/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/glboost/RiggedFigure/index.html" target="_blank">Link</a></td>
-</tr>
-<tr>
-	<td>Monster</td>
-	<td><img src="./sampleModels/Monster/screenshot/screenshot.gif" /></td>
-	<td><a href="./examples/threejs_basic/Monster/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_advance/Monster/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/threejs_new/Monster/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/babylonjs/Monster/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/cesium/Monster/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/xeoengine/Monster/index.html" target="_blank">Link</a></td>
-	<td><a href="./examples/glboost/Monster/index.html" target="_blank">Link</a></td>
-</tr>
+<table border="1" id="modelTable">
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>Screenshot</th>
+        </tr>
+    </thead>
+    <tbody>
+    </tbody>
 </table>
+<script src="index.js"></script>
 </body>
 </html>
