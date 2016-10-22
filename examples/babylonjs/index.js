@@ -14,13 +14,33 @@ var createScene = function(engine) {
     var path = "../../sampleModels/" + modelInfo.path;
     var base = path.substr(0, path.lastIndexOf("/")+1);
     var file = path.substr(path.lastIndexOf("/")+1);
+    
+    function findParentOnMesh(mesh) {
+        var parentMesh = mesh;
+        if (mesh.parent !== null ) {
+            parentMesh = findParentOnMesh(mesh);
+        }
+        return parentMesh;
+    }
+
+    function findParentOnMeshes(meshes) {
+        var parentMesh;
+        for (var i = 0; i < meshes.length; i++ ) {
+            if ( scene.meshes[i].parent !== null ) {
+                parentMesh = scene.meshes[i].parent;
+                break;
+            }
+        }
+        parentMesh = findParentOnMesh(parentMesh);
+        return parentMesh;
+    }
 
     // Box.gltf
     BABYLON.SceneLoader.Load(base, file, engine, function (newScene) {
 
         scene = newScene;
-        mesh = scene.meshes[0];
-        mesh.scaling = new BABYLON.Vector3(scale, scale, scale);
+        var parentMesh = findParentOnMeshes(scene.meshes);
+        parentMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
 
         camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, false, false);
