@@ -20,7 +20,7 @@ ModelIndex.List = [
     {name:'VC', scale:0.2}
 ];
 
-ModelIndex.HasGifScreenshot = [  // List of only models that have *.gif screenshots (as opposed to *.png)
+ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
     'BoxAnimated',
     'BrainStem',
     'CesiumMan',
@@ -43,14 +43,14 @@ ModelIndex.getModelInfoCollection = function() {
         var name = ModelIndex.List[i].name;
         var scale = ModelIndex.List[i].scale;
         modelInfoCollection[name] = {
-            name: name, 
+            name: name,
             scale: scale
         };
     }
     return modelInfoCollection;
 }
 
-ModelIndex.getCurrentModel = function () {
+ModelIndex.getCurrentModel = function() {
     var modelInfoCollection = ModelIndex.getModelInfoCollection();
     var queryString = window.location.search.substring(1);
     var parts = queryString.replace(/\+/g, '%20').split('&');
@@ -64,14 +64,15 @@ ModelIndex.getCurrentModel = function () {
             options[name] = decodeURIComponent(value);
         }
     }
+    if (options.type === undefined) {
+        options.type = 'glTF';
+    }
     if (options.model && modelInfoCollection.hasOwnProperty(options.model)) {
         document.title += ' + ' + options.model + '.gltf';
-        if (options.type=='glTF-Binary')
-        {
-        modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.glb';
-        }
-        else{
-        modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.gltf';
+        if (options.type == 'glTF-Binary') {
+            modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.glb';
+        } else {
+            modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.gltf';
         }
         return modelInfoCollection[options.model];
     }
