@@ -12,34 +12,33 @@ var createScene = function(engine) {
 
     var scale = modelInfo.scale;
     var path = "../../sampleModels/" + modelInfo.path;
-    var base = path.substr(0, path.lastIndexOf("/")+1);
-    var file = path.substr(path.lastIndexOf("/")+1);
-    
-    function findParentOnMesh(mesh) {
+    var base = path.substr(0, path.lastIndexOf("/") + 1);
+    var file = path.substr(path.lastIndexOf("/") + 1);
+
+    function findParentForMesh(mesh) {
         var parentMesh = mesh;
-        if (mesh.parent !== null ) {
-            parentMesh = findParentOnMesh(mesh);
+        if (mesh.parent !== null) {
+            parentMesh = findParentForMesh(mesh);
         }
         return parentMesh;
     }
 
-    function findParentOnMeshes(meshes) {
+    function findParentForMeshes(meshes) {
         var parentMesh = meshes[0];
-        for (var i = 0; i < meshes.length; i++ ) {
-            if ( scene.meshes[i].parent !== null ) {
+        for (var i = 0; i < meshes.length; i++) {
+            if (scene.meshes[i].parent !== null) {
                 parentMesh = scene.meshes[i].parent;
                 break;
             }
         }
-        parentMesh = findParentOnMesh(parentMesh);
+        parentMesh = findParentForMesh(parentMesh);
         return parentMesh;
     }
 
-    // Box.gltf
-    BABYLON.SceneLoader.Load(base, file, engine, function (newScene) {
+    BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
         scene = newScene;
-        var parentMesh = findParentOnMeshes(scene.meshes);
+        var parentMesh = findParentForMeshes(scene.meshes);
         parentMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
 
         camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
@@ -48,7 +47,7 @@ var createScene = function(engine) {
         camera.angularSensibility = 500;
         scene.activeCamera = camera;
 
-        engine.runRenderLoop(function () {
+        engine.runRenderLoop(function() {
             scene.activeCamera.alpha += 0.01;
             scene.render();
         });
