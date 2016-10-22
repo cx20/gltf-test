@@ -24,7 +24,7 @@ var createScene = function(engine) {
     }
 
     function findParentOnMeshes(meshes) {
-        var parentMesh;
+        var parentMesh = meshes[0];
         for (var i = 0; i < meshes.length; i++ ) {
             if ( scene.meshes[i].parent !== null ) {
                 parentMesh = scene.meshes[i].parent;
