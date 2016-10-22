@@ -43,11 +43,11 @@ for (j = 0; j < numModels; ++j) {
     tr.appendChild(tdPic);
     for (i = 0; i < numEngines; ++i) {
         var td = document.createElement('td');
-        td.appendChild(createlink('gltf'));
+        td.appendChild(createlink('glTF'));
         td.appendChild(document.createElement('br'));
-        td.appendChild(createlink('gltf-Embedded'));
+        td.appendChild(createlink('glTF-Embedded'));
         td.appendChild(document.createElement('br'));
-        td.appendChild(createlink('gltf-Binary'));
+        td.appendChild(createlink('glTF-Binary'));
         tr.appendChild(td);
     }
     tableBody.appendChild(tr);
