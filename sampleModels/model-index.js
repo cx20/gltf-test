@@ -66,7 +66,7 @@ ModelIndex.getCurrentModel = function () {
     }
     if (options.model && modelInfoCollection.hasOwnProperty(options.model)) {
         document.title += ' + ' + options.model + '.gltf';
-        if (options.type=='gltf-Binary')
+        if (options.type=='glTF-Binary')
         {
         modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.glb';
         }
