@@ -1,18 +1,18 @@
 var engines = [{
     name: 'Three.js',
-    path: 'examples/threejs/index.html?model={model}&scale={scale}'
+    path: 'examples/threejs/index.html?model={model}&scale={scale}&type={type}'
 }, {
     name: 'Babylon.js',
-    path: 'examples/babylonjs/index.html?model={model}&scale={scale}'
+    path: 'examples/babylonjs/index.html?model={model}&scale={scale}&type={type}'
 }, {
     name: 'Cesium',
-    path: 'examples/cesium/index.html?model={model}&scale={scale}'
+    path: 'examples/cesium/index.html?model={model}&scale={scale}&type={type}'
 }, {
     name: 'xeoEngine',
-    path: 'examples/xeoengine/index.html?model={model}&scale={scale}'
+    path: 'examples/xeoengine/index.html?model={model}&scale={scale}&type={type}'
 }, {
     name: 'GLBoost',
-    path: 'examples/glboost/index.html?model={model}&scale={scale}'
+    path: 'examples/glboost/index.html?model={model}&scale={scale}&type={type}'
 }];
 
 var modelList = ModelIndex.List;
@@ -43,15 +43,26 @@ for (j = 0; j < numModels; ++j) {
     tr.appendChild(tdPic);
     for (i = 0; i < numEngines; ++i) {
         var td = document.createElement('td');
-        var a = document.createElement('a');
-        a.textContent = engines[i].name;
-        var uri = engines[i].path;
-        uri = uri.replace('{model}', modelName);
-        uri = uri.replace('{scale}', scale);
-        a.setAttribute('href', uri);
-        a.setAttribute('target', '_blank');
-        td.appendChild(a);
+        td.appendChild(createlink('gltf'));
+        td.appendChild(document.createElement('br'));
+        td.appendChild(createlink('gltf-Embedded'));
+        td.appendChild(document.createElement('br'));
+        td.appendChild(createlink('gltf-Binary'));
         tr.appendChild(td);
     }
     tableBody.appendChild(tr);
+}
+
+
+function createlink(type)
+{
+var a = document.createElement('a');
+        a.textContent = type;
+        var uri = engines[i].path;
+        uri = uri.replace('{model}', modelName);
+        uri = uri.replace('{type}', type);
+        uri = uri.replace('{scale}', scale);
+        a.setAttribute('href', uri);
+        a.setAttribute('target', '_blank');
+return a;
 }
