@@ -23,7 +23,11 @@ function init() {
     scene.add( directionalLight );
 
     camera = new THREE.PerspectiveCamera( 75, width / height, 1, 2000 );
-    camera.position.set(0, 2, 3);
+    if ( modelInfo.name == "GearboxAssy" ) {
+	    camera.position.set(0, 2, 200);
+    } else {
+	    camera.position.set(0, 2, 3);
+    }
 
     var manager = new THREE.LoadingManager();
     manager.onProgress = function ( item, loaded, total ) {
