@@ -5,8 +5,8 @@ if (!modelInfo) {
 }
 
 var canvas = document.getElementById("world");
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+var width = window.innerWidth;
+var height = window.innerHeight;
 var scale = modelInfo.scale;
 
 var glBoostContext = new GLBoost.GLBoostMiddleContext(canvas);
@@ -18,6 +18,7 @@ var renderer = glBoostContext.createRenderer({
         alpha: 1
     }
 });
+renderer.resize(width, height);
 
 var scene = glBoostContext.createScene();
 
@@ -30,7 +31,7 @@ var camera = glBoostContext.createPerspectiveCamera({
     up: new GLBoost.Vector3(0.0, 1.0, 0.0)
 }, {
     fovy: 75.0,
-    aspect: 1.0,
+    aspect: width/height,
     zNear: 0.1,
     zFar: 3000.0
 });
