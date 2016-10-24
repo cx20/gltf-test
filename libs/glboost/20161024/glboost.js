@@ -6599,29 +6599,6 @@
           //console.log(jointsHierarchy);
           var tempMatrices = [];
 
-          var mapTable = [];
-          for (var j = 0; j < jointsHierarchy.length; j++) {
-            for (var k = 0; k < joints.length; k++) {
-              if (jointsHierarchy[j].userFlavorName === joints[k].userFlavorName) {
-                mapTable[j] = k;
-              }
-            }
-          }
-
-          // skip if there are incomplete joint data
-          var doContinue = false;
-          for (var j = 0; j < jointsHierarchy.length; j++) {
-            if (typeof mapTable[j] === 'undefined') {
-              doContinue = true;
-              break;
-            }
-          }
-          if (doContinue) {
-            matrices[i] = Matrix44.identity();
-            globalJointTransform[i] = Matrix44.identity();
-            continue;
-          }
-
           for (var j = 0; j < jointsHierarchy.length; j++) {
             var thisLoopMatrix = jointsHierarchy[j].parent.transformMatrixGLTFStyle;
             if (j > 0) {
@@ -6640,7 +6617,8 @@
         for (var i = 0; i < joints.length; i++) {
 
           matrices[i] = Matrix44.multiply(Matrix44.invert(skeletalMesh.transformMatrixAccumulatedAncestry), globalJointTransform[i]);
-          matrices[i] = Matrix44.multiply(matrices[i], skeletalMesh.inverseBindMatrices[i]);
+          var inverseBindMatrix = typeof skeletalMesh.inverseBindMatrices[i] !== 'undefined' ? skeletalMesh.inverseBindMatrices[i] : Matrix44.identity();
+          matrices[i] = Matrix44.multiply(matrices[i], inverseBindMatrix);
           matrices[i] = Matrix44.multiply(matrices[i], skeletalMesh.bindShapeMatrix);
         }
 
@@ -9488,19 +9466,21 @@
         }
 
         if (nodeJson.meshes) {
-          // this node has mashes...
-          var meshStr = nodeJson.meshes[0];
-          var meshJson = json.meshes[meshStr];
+          for (var i = 0; i < nodeJson.meshes.length; i++) {
+            // this node has mashes...
+            var meshStr = nodeJson.meshes[i];
+            var meshJson = json.meshes[meshStr];
 
-          var rootJointStr = null;
-          var skinStr = null;
-          if (nodeJson.skeletons) {
-            rootJointStr = nodeJson.skeletons[0];
-            skinStr = nodeJson.skin;
+            var rootJointStr = null;
+            var skinStr = null;
+            if (nodeJson.skeletons) {
+              rootJointStr = nodeJson.skeletons[0];
+              skinStr = nodeJson.skin;
+            }
+            var mesh = this._loadMesh(glBoostContext, meshJson, arrayBuffer, basePath, json, canvas, scale, defaultShader, rootJointStr, skinStr);
+            mesh.userFlavorName = meshStr;
+            group.addChild(mesh);
           }
-          var mesh = this._loadMesh(glBoostContext, meshJson, arrayBuffer, basePath, json, canvas, scale, defaultShader, rootJointStr, skinStr);
-          mesh.userFlavorName = meshStr;
-          group.addChild(mesh);
         } else if (nodeJson.jointName) {
           var joint = glBoostContext.createJoint();
           joint.userFlavorName = nodeJson.jointName;
