@@ -8,8 +8,8 @@ var engines = [{
     name: 'Cesium',
     path: 'examples/cesium/index.html?model={model}&scale={scale}&type={type}'
 }, {
-    name: 'xeoEngine',
-    path: 'examples/xeoengine/index.html?model={model}&scale={scale}&type={type}'
+    name: 'xeogl',
+    path: 'examples/xeogl/index.html?model={model}&scale={scale}&type={type}'
 }, {
     name: 'GLBoost',
     path: 'examples/glboost/index.html?model={model}&scale={scale}&type={type}'

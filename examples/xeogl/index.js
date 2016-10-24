@@ -1,0 +1,36 @@
+var modelInfo = ModelIndex.getCurrentModel();
+if (!modelInfo) {
+    document.getElementById('container').innerHTML = 'Please specify a model to load';
+    throw new Error('Model not specified or not found in list.');
+}
+
+var scale = modelInfo.scale;
+
+// Load glTF
+var model = new xeogl.Model({
+    src: "../../sampleModels/" + modelInfo.path
+});
+
+var view = model.scene.camera.view;
+view.eye = [
+    0.0,
+    0.0,
+    -3.0 * (1/scale)
+];
+view.look = [
+    0.0,
+    0.0,
+    0.0
+];
+view.up = [
+    0.0,
+    1.0,
+    0.0
+];
+
+new xeogl.CameraControl();
+model.scene.on("tick",
+    function () {
+        view.rotateEyeY(1.0);
+        //view.rotateEyeX(1.0);
+    });
