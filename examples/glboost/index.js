@@ -26,7 +26,7 @@ var pointLight = glBoostContext.createPointLight(new GLBoost.Vector3(1.0, 1.0, 1
 pointLight.translate = new GLBoost.Vector3(10, 10, 10);
 scene.addChild(pointLight);
 var camera = glBoostContext.createPerspectiveCamera({
-    eye: new GLBoost.Vector3(0.0, 3.0/scale, 5.0/scale),
+    eye: new GLBoost.Vector3(0.0, 3.0, 4.0),
     center: new GLBoost.Vector3(0.0, 1.0, 0.0),
     up: new GLBoost.Vector3(0.0, 1.0, 0.0)
 }, {
@@ -42,6 +42,13 @@ var glTFLoader = GLBoost.GLTFLoader.getInstance();
 var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, 1, null);
 promise.then(function(group) {
     //console.log(group);
+    if (modelInfo.name == "GearboxAssy" ) {
+        scale = 0.2;
+        group.scale = new GLBoost.Vector3(scale, scale, scale);
+        group.translate = new GLBoost.Vector3(-159.20*scale, -17.02*scale, -3.21*scale);
+    } else {
+        group.scale = new GLBoost.Vector3(scale, scale, scale);
+    }
     scene.addChild(group);
     
     var expression = glBoostContext.createExpressionAndRenderPasses(1);
