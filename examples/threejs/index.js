@@ -23,11 +23,7 @@ function init() {
     scene.add( directionalLight );
 
     camera = new THREE.PerspectiveCamera( 75, width / height, 1, 2000 );
-    if ( modelInfo.name == "GearboxAssy" ) {
-	    camera.position.set(0, 2, 200);
-    } else {
-	    camera.position.set(0, 2, 3);
-    }
+    camera.position.set(0, 2, 3);
 
     var manager = new THREE.LoadingManager();
     manager.onProgress = function ( item, loaded, total ) {
@@ -41,7 +37,13 @@ function init() {
     loader.load(url, function (data) {
         gltf = data;
         var object = gltf.scene;
-        object.scale.set(scale, scale, scale);
+        if (modelInfo.name == "GearboxAssy" ) {
+            scale = 0.2;
+            object.scale.set(scale, scale, scale);
+            object.position.set(-159.20*scale, -17.02*scale, -3.21*scale);
+        } else {
+            object.scale.set(scale, scale, scale);
+        }
 
         if (gltf.animations && gltf.animations.length) {
 
