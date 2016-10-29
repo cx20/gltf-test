@@ -9565,7 +9565,7 @@
           mesh = glBoostContext.createMesh(geometry);
         }
 
-        var _indices = [];
+        var _indicesArray = [];
         var _positions = [];
         var _normals = [];
         var additional = {
@@ -9580,9 +9580,12 @@
           var primitiveJson = meshJson.primitives[i];
 
           // Geometry
-          var indicesAccessorStr = primitiveJson.indices;
-          var indices = this._accessBinary(indicesAccessorStr, json, arrayBuffer, 1.0, gl);
-          _indices.push(indices);
+          var indices = null;
+          if (typeof primitiveJson.indices !== 'undefined') {
+            var indicesAccessorStr = primitiveJson.indices;
+            indices = this._accessBinary(indicesAccessorStr, json, arrayBuffer, 1.0, gl);
+            _indicesArray.push(indices);
+          }
 
           var positionsAccessorStr = primitiveJson.attributes.POSITION;
           var positions = this._accessBinary(positionsAccessorStr, json, arrayBuffer, scale, gl);
@@ -9670,7 +9673,9 @@
 
           var opacityValue = 1.0 - materialJson.values.transparency;
 
-          material.setVertexN(geometry, indices.length);
+          if (indices !== null) {
+            material.setVertexN(geometry, indices.length);
+          }
           if (defaultShader) {
             material.shaderClass = defaultShader;
           } else {
@@ -9691,7 +9696,12 @@
           position: _positions,
           normal: _normals
         };
-        geometry.setVerticesData(ArrayUtil.merge(vertexData, additional), _indices);
+
+        if (_indicesArray.length === 0) {
+          _indicesArray = null;
+        }
+
+        geometry.setVerticesData(ArrayUtil.merge(vertexData, additional), _indicesArray);
         geometry.materials = materials;
 
         return mesh;
