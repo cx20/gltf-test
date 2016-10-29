@@ -6389,7 +6389,7 @@
           if (renderPass.renderTargetColorTextures || renderPass.renderTargetDepthTexture) {
             gl.viewport(renderPass.viewport.x, renderPass.viewport.y, renderPass.viewport.z, renderPass.viewport.w);
           } else {
-            gl.viewport(0, 0, canvas.width, canvas.width);
+            gl.viewport(0, 0, canvas.width, canvas.height);
           }
 
           _this2._clearBuffer(gl, renderPass);
