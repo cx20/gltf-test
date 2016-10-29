@@ -12,22 +12,28 @@ var model = new xeogl.Model({
 });
 
 var view = model.scene.camera.view;
-view.eye = [
-    0.0,
-    0.0,
-    -3.0 * (1/scale)
-];
-view.look = [
-    0.0,
-    0.0,
-    0.0
-];
-view.up = [
-    0.0,
-    1.0,
-    0.0
-];
-
+if (modelInfo.name == "GearboxAssy" ) {
+    view.eye = [184.21, 10.54, -7.03];
+    view.look = [159.20, 17.02, 3.21];
+    view.up = [-0.15, 0.97, 0.13];
+} else {
+    view.eye = [
+        0.0,
+        0.0,
+        -3.0 * (1/scale)
+    ];
+    view.look = [
+        0.0,
+        0.0,
+        0.0
+    ];
+    view.up = [
+        0.0,
+        1.0,
+        0.0
+    ];
+}
+ 
 new xeogl.CameraControl();
 model.scene.on("tick",
     function () {
