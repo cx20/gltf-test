@@ -7,7 +7,7 @@ if (!modelInfo) {
 var scale = modelInfo.scale;
 
 // Load glTF
-var model = new xeogl.Model({
+var model = new xeogl.GLTFModel({
     src: "../../sampleModels/" + modelInfo.path
 });
 
