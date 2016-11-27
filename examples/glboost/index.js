@@ -35,6 +35,7 @@ var camera = glBoostContext.createPerspectiveCamera({
     zNear: 0.1,
     zFar: 3000.0
 });
+camera.cameraController = glBoostContext.createCameraController();
 scene.addChild(camera);
 
 var gtime = 0;
