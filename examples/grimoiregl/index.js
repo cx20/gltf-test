@@ -23,7 +23,15 @@ gr.registerComponent('Rotate', {
 
 gr(function () {
   var MAIN = gr('#canvas');
-  MAIN('scene').append('<model src="' + "../../sampleModels/" + modelInfo.path + '" scale="' + modelInfo.scale + '"/>');
+  var scale = modelInfo.scale;
+  if (modelInfo.name == "GearboxAssy" ) {
+      scale = 0.2;
+      //MAIN('scene').append('<model src="' + "../../sampleModels/" + modelInfo.path + '" scale="' + scale + '" position="-159.20,-17.02,-3.21"/>');
+      MAIN('scene').append('<model src="' + "../../sampleModels/" + modelInfo.path + '" scale="' + scale + '" position="-31.84,-3.404,-0.642"/>');
+  } else {
+      MAIN('scene').append('<model src="' + "../../sampleModels/" + modelInfo.path + '" scale="' + scale + '"/>');
+  }
+  
   MAIN('model').addComponent('Rotate');
   MAIN('model')('Rotate').setAttribute('speed', Math.PI*1/180);
 });
