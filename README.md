@@ -4,7 +4,7 @@ Status of [glTF loader](https://github.com/KhronosGroup/glTF#webgl-engines) in s
 
 ## All Tests
 
-[Test of 17 models x 3 formats x 5 liblaries]( https://cx20.github.io/gltf-test/ )
+[Test of 17 models x 3 formats x 7 liblaries]( https://cx20.github.io/gltf-test/ )
 
 ## Windows + Chrome
 
