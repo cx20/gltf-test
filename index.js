@@ -16,6 +16,9 @@ var engines = [{
 }, {
     name: 'Grimore.js',
     path: 'examples/grimoiregl/index.html?model={model}&scale={scale}&type={type}'
+}, {
+    name: 'minimal-gltf-loader',
+    path: 'examples/minimal-gltf-loader/index.html?model={model}&scale={scale}&type={type}'
 }];
 
 var modelList = ModelIndex.List;
