@@ -13,6 +13,9 @@ var engines = [{
 }, {
     name: 'GLBoost',
     path: 'examples/glboost/index.html?model={model}&scale={scale}&type={type}'
+}, {
+    name: 'Grimore.js',
+    path: 'examples/grimoiregl/index.html?model={model}&scale={scale}&type={type}'
 }];
 
 var modelList = ModelIndex.List;

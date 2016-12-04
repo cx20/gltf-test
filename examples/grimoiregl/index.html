@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" type="text/css" media="screen,print" href="style.css" />
+<title>Grimoire.js + glTF Loader</title>
+<script src="../../sampleModels/model-index.js"></script>
+</head>
+<body>
+<!-- grimoire-preset-basic.js 1.3.2 -->
+<script src="../../libs/grimoiregl/grimoirejs-preset-basic/1.3.2/grimoire-preset-basic.js"></script>
+<!-- grimoire-gltf.min.js.js 1.2.4 -->
+<script src="../../libs/grimoiregl/grimoirejs-gltf/1.2.4/grimoire-gltf.min.js"></script>
+
+<script type="text/goml" id="canvas">
+  <goml width="fit" height="fit" bgColor="gray">
+    <renderer>
+      <texture-buffer name="bb1"/>
+      <render-scene/>
+    </renderer>
+    <scene>
+      <camera class="camera" near="0.01" far="40.0" aspect="1.5" fovy="45d" position="0,0,3">
+        <camera.components>
+          <MouseCameraControl center = "10"/>
+        </camera.components>
+      </camera>
+    </scene>
+  </goml>
+</script>
+
+<script src="index.js"></script>
+</body>
+</html>
