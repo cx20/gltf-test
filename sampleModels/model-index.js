@@ -17,7 +17,8 @@ ModelIndex.List = [
     {name:'CesiumMan', scale:1.0},
     {name:'Monster', scale:0.05},
     {name:'BrainStem', scale:1.0},
-    {name:'VC', scale:0.2}
+    {name:'VC', scale:0.2},
+    {name:'WalkingLady', scale:1.0}
 ];
 
 ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
@@ -28,7 +29,8 @@ ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screensho
     'Monster',
     'RiggedFigure',
     'RiggedSimple',
-    'VC'
+    'VC',
+    'WalkingLady'
 ];
 
 ModelIndex.getScreenshot = function(name) {
