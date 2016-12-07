@@ -33,5 +33,5 @@ gr(function () {
   }
   
   MAIN('model').addComponent('Rotate');
-  MAIN('model')('Rotate').setAttribute('speed', Math.PI*1/180);
+  MAIN('model')('Rotate').setAttribute('speed', 1);
 });
