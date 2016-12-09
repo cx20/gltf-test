@@ -5,6 +5,8 @@ if (!modelInfo) {
 }
 
 var gltf = null;
+var mixer = null;
+var clock = new THREE.Clock();
 
 init();
 animate();
@@ -44,13 +46,12 @@ function init() {
         } else {
             object.scale.set(scale, scale, scale);
         }
-
-        if (gltf.animations && gltf.animations.length) {
-
-            for (i = 0; i < gltf.animations.length; i++) {
-                var animation = gltf.animations[i];
-                animation.loop = true;
-                animation.play();
+        var animations = gltf.animations;
+        if ( animations && animations.length ) {
+            mixer = new THREE.AnimationMixer( object );
+            for ( var i = 0; i < animations.length; i ++ ) {
+                var animation = animations[ i ];
+                mixer.clipAction( animation ).play();
             }
         }
 
@@ -77,7 +78,8 @@ function init() {
 
 function animate() {
     requestAnimationFrame( animate );
-    THREE.GLTFLoader.Animations.update();
+    //THREE.GLTFLoader.Animations.update();
+    if (mixer) mixer.update(clock.getDelta());
     THREE.GLTFLoader.Shaders.update(scene, camera);
     renderer.render( scene, camera );
     controls.update();
