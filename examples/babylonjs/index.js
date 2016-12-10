@@ -41,37 +41,13 @@ var createScene = function(engine) {
         var parentMesh = findParentForMeshes(scene.meshes);
         parentMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
 
-/*
         if ( modelInfo.name == "GearboxAssy" ) {
             camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 200, BABYLON.Vector3.Zero(), scene);
         } else {
             camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         }
-*/
-        if ( modelInfo.name == "GearboxAssy" ) {
-            //camera = new BABYLON.ArcRotateCamera("camera", 0, 0, 0, new BABYLON.Vector3(0,0,0), scene);
-            //camera = new BABYLON.FreeCamera("Camera", new BABYLON.Vector3(0, 0, 0), scene);
-            camera = new BABYLON.FreeCamera("Camera", new BABYLON.Vector3(-159.20, -17.02, -3.21), scene);
-            //camera = new BABYLON.GamepadCamera("Camera", new BABYLON.Vector3(-159.20, -17.02, -3.21), scene);
-            //camera = new BABYLON.TouchCamera("Camera", new BABYLON.Vector3(-159.20, -17.02, -3.21), scene);
-            //camera = new BABYLON.FollowCamera("Camera", new BABYLON.Vector3(-159.20, -17.02, -3.21), scene);
-            
-            
-            //camera.setPosition(new BABYLON.Vector3(-159.20, -17.02, -3.21));
-        } else {
-            camera = new BABYLON.FreeCamera("Camera", new BABYLON.Vector3(0, 0, 0), scene);
-            //camera = new BABYLON.GamepadCamera("Camera", new BABYLON.Vector3(0, 0, 0), scene);
-            //camera = new BABYLON.TouchCamera("Camera", new BABYLON.Vector3(0, 0, 0), scene);
-            //camera = new BABYLON.FollowCamera("Camera", new BABYLON.Vector3(0, 0, 0), scene);
-            //camera = new BABYLON.ArcRotateCamera("camera", 0, 0, 0, new BABYLON.Vector3(0,0,0), scene);
-        }
-
-        scene.activeCamera = camera;
-        camera.attachControl(canvas, false, false);
-/*
-        camera.panningSensibility = 50.0;
-        camera.angularSensibility = 500;
-*/
+        
+        camera.attachControl(canvas, false);
         scene.forceShowBoundingBoxes = true;
         scene.debugLayer.show(true, camera);
 
