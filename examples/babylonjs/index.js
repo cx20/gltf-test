@@ -46,8 +46,9 @@ var createScene = function(engine) {
         } else {
             camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         }
+        camera.attachControl(canvas, false, false);
+        scene.activeCamera = camera;
         
-        camera.attachControl(canvas, false);
         scene.forceShowBoundingBoxes = true;
         scene.debugLayer.show(true, camera);
 
