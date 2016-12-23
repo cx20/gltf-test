@@ -40,7 +40,8 @@ scene.addChild(camera);
 
 var gtime = 0;
 var glTFLoader = GLBoost.GLTFLoader.getInstance();
-var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, 1, null);
+//var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, 1, null);
+var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, null);
 promise.then(function(group) {
     //console.log(group);
     if (modelInfo.name == "GearboxAssy" ) {
