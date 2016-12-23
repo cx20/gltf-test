@@ -39,13 +39,16 @@ var createScene = function(engine) {
 
         scene = newScene;
         var parentMesh = findParentForMeshes(scene.meshes);
-        parentMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
 
         if ( modelInfo.name == "GearboxAssy" ) {
-            camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 200, BABYLON.Vector3.Zero(), scene);
-        } else {
-            camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
+            scale = 0.2;
+            parentMesh.position.x -= 159.20;
+            parentMesh.position.y -= 17.02;
+            parentMesh.position.z -= 3.21;
         }
+        //parentMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
+        camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
+        camera.setPosition( new BABYLON.Vector3(0, 0, -5/scale) );
         camera.attachControl(canvas, false, false);
         scene.activeCamera = camera;
         
