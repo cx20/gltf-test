@@ -65,4 +65,7 @@ var createScene = function(engine) {
 
 var canvas = document.querySelector("#renderCanvas");
 var engine = new BABYLON.Engine(canvas, true);
+window.addEventListener('resize', function() {
+    engine.resize();
+});
 var scene = createScene(engine);
