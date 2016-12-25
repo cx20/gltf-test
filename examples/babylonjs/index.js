@@ -52,7 +52,7 @@ var createScene = function(engine) {
         camera.attachControl(canvas, false, false);
         scene.activeCamera = camera;
         
-        scene.forceShowBoundingBoxes = true;
+        //scene.forceShowBoundingBoxes = true;
         scene.debugLayer.show(true, camera);
 
         engine.runRenderLoop(function() {
