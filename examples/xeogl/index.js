@@ -1,5 +1,8 @@
 var modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
+    modelInfo = TutorialModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -8,7 +11,8 @@ var scale = modelInfo.scale;
 
 // Load glTF
 var model = new xeogl.GLTFModel({
-    src: "../../sampleModels/" + modelInfo.path
+    //src: "../../sampleModels/" + modelInfo.path
+    src: "../../" + modelInfo.category + "/" + modelInfo.path
 });
 
 var view = model.scene.camera.view;

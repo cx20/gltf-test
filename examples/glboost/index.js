@@ -1,5 +1,8 @@
 var modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
+    modelInfo = TutorialModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -40,8 +43,8 @@ scene.addChild(camera);
 
 var gtime = 0;
 var glTFLoader = GLBoost.GLTFLoader.getInstance();
-//var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, 1, null);
-var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, null);
+//var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, null);
+var promise = glTFLoader.loadGLTF(glBoostContext, "../../" + modelInfo.category + "/" + modelInfo.path, null);
 promise.then(function(group) {
     //console.log(group);
     if (modelInfo.name == "GearboxAssy" ) {

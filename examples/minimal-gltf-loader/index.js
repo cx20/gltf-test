@@ -2,6 +2,9 @@
 
 var modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
+    modelInfo = TutorialModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -39,7 +42,8 @@ window.onwheel = function(event) {
     t[2] += -event.deltaY / 10;
 };
 // -- Load glTF then render
-var gltfUrl = "../../sampleModels/" + modelInfo.path;
+//var gltfUrl = "../../sampleModels/" + modelInfo.path;
+var gltfUrl = "../../" + modelInfo.category + "/" + modelInfo.path;
 var glTFLoader = new MinimalGLTFLoader.glTFLoader(gl);
 glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     var curScene = glTF.scenes[glTF.defaultScene];
