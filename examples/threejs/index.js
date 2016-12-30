@@ -1,5 +1,8 @@
 var modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
+    modelInfo = TutorialModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -35,7 +38,8 @@ function init() {
     var loader = new THREE.GLTFLoader();
 
     var scale = modelInfo.scale;
-    var url = "../../sampleModels/" + modelInfo.path;
+    //var url = "../../sampleModels/" + modelInfo.path;
+    var url = "../../" + modelInfo.category + "/" + modelInfo.path;
     loader.load(url, function (data) {
         gltf = data;
         var object = gltf.scene;

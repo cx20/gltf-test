@@ -1,5 +1,8 @@
 var modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
+    modelInfo = TutorialModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('cesiumContainer').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -36,4 +39,5 @@ function createModel(url, height) {
     });
 }
 
-createModel('../../sampleModels/' + modelInfo.path, 10000);
+//createModel('../../sampleModels/' + modelInfo.path, 10000);
+createModel('../../' + modelInfo.category + '/' + modelInfo.path, 10000);

@@ -1,5 +1,8 @@
 var modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
+    modelInfo = TutorialModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -11,7 +14,8 @@ var createScene = function(engine) {
     scene.clearColor = new BABYLON.Color3(1, 1, 1);
 
     var scale = modelInfo.scale;
-    var path = "../../sampleModels/" + modelInfo.path;
+    //var path = "../../sampleModels/" + modelInfo.path;
+    var path = "../../" + modelInfo.category + "/" + modelInfo.path;
     var base = path.substr(0, path.lastIndexOf("/") + 1);
     var file = path.substr(path.lastIndexOf("/") + 1);
 

@@ -1,27 +1,27 @@
 var ModelIndex = {};
 
 ModelIndex.List = [
-    {name:'Box', scale:1.0},
-    {name:'BoxWithoutIndices', scale:1.0},
-    {name:'BoxTextured', scale:1.0},
-    {name:'BoxSemantics', scale:1.0},
-    {name:'Duck', scale:1.0},
-    {name:'2CylinderEngine', scale:0.005},
-    {name:'ReciprocatingSaw', scale:0.01},
-    {name:'GearboxAssy', scale:1.0},
-    {name:'Buggy', scale:0.02},
-    {name:'BoxAnimated', scale:1.0},
-    {name:'CesiumMilkTruck', scale:0.5},
-    {name:'RiggedSimple', scale:0.2},
-    {name:'RiggedFigure', scale:1.0},
-    {name:'CesiumMan', scale:1.0},
-    {name:'Monster', scale:0.05},
-    {name:'BrainStem', scale:1.0},
-    {name:'VC', scale:0.2},
-    {name:'WalkingLady', scale:1.0},
-    {name:'Avocado', scale:0.5},
-    {name:'BarramundiFish', scale:0.05},
-    {name:'SmilingFace', scale:1.0}
+    {category:'sampleModels', name:'Box', scale:1.0},
+    {category:'sampleModels', name:'BoxWithoutIndices', scale:1.0},
+    {category:'sampleModels', name:'BoxTextured', scale:1.0},
+    {category:'sampleModels', name:'BoxSemantics', scale:1.0},
+    {category:'sampleModels', name:'Duck', scale:1.0},
+    {category:'sampleModels', name:'2CylinderEngine', scale:0.005},
+    {category:'sampleModels', name:'ReciprocatingSaw', scale:0.01},
+    {category:'sampleModels', name:'GearboxAssy', scale:1.0},
+    {category:'sampleModels', name:'Buggy', scale:0.02},
+    {category:'sampleModels', name:'BoxAnimated', scale:1.0},
+    {category:'sampleModels', name:'CesiumMilkTruck', scale:0.5},
+    {category:'sampleModels', name:'RiggedSimple', scale:0.2},
+    {category:'sampleModels', name:'RiggedFigure', scale:1.0},
+    {category:'sampleModels', name:'CesiumMan', scale:1.0},
+    {category:'sampleModels', name:'Monster', scale:0.05},
+    {category:'sampleModels', name:'BrainStem', scale:1.0},
+    {category:'sampleModels', name:'VC', scale:0.2},
+    {category:'sampleModels', name:'WalkingLady', scale:1.0},
+    {category:'sampleModels', name:'Avocado', scale:0.5},
+    {category:'sampleModels', name:'BarramundiFish', scale:0.05},
+    {category:'sampleModels', name:'SmilingFace', scale:1.0}
 ];
 
 ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
@@ -45,9 +45,11 @@ ModelIndex.getModelInfoCollection = function() {
     var numModels = ModelIndex.List.length;
     var modelInfoCollection = {};
     for (var i = 0; i < numModels; ++i) {
+        var category = ModelIndex.List[i].category;
         var name = ModelIndex.List[i].name;
         var scale = ModelIndex.List[i].scale;
         modelInfoCollection[name] = {
+            category: category,
             name: name,
             scale: scale
         };
