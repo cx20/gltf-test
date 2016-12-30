@@ -132,7 +132,7 @@
     },
     "attributesBufferView" : {
       "buffer" : "buffer0",
-      "byteOffset" : 6,
+      "byteOffset" : 12,
       "byteLength" : 96,
       "target" : 34962
     }

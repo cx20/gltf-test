@@ -82,8 +82,8 @@
   
   "buffers" : {
     "buffer0" : {
-      "uri" : "data:application/octet-stream;base64,AAABAAIAAAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAA",
-      "byteLength" : 42
+      "uri" : "triangle0.bin",
+      "byteLength" : 48
     }
   },
   "bufferViews" : {
@@ -95,7 +95,7 @@
     },
     "positionsBufferView" : {
       "buffer" : "buffer0",
-      "byteOffset" : 6,
+      "byteOffset" : 12,
       "byteLength" : 36,
       "target" : 34962
     }

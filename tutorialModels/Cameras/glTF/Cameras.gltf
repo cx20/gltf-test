@@ -56,7 +56,7 @@
   "buffers" : {
     "buffer0" : {
       "uri" : "unitSquare0.bin",
-      "byteLength" : 140
+      "byteLength" : 144
     }
   },
   "bufferViews" : {

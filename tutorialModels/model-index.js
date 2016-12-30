@@ -4,9 +4,9 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'TriangleWithoutIndices', scale:1.0},
     {category:'tutorialModels', name:'Triangle', scale:1.0},
     {category:'tutorialModels', name:'AnimatedTriangle', scale:1.0},
-    {category:'tutorialModels', name:'TriangleWithSimpleMaterial', scale:1.0},
+    {category:'tutorialModels', name:'SimpleMaterial', scale:1.0},
     {category:'tutorialModels', name:'SimpleMeshes', scale:1.0},
-    {category:'tutorialModels', name:'SimpleMeshesWithAdvancedMaterial', scale:1.0},
+    {category:'tutorialModels', name:'AdvancedMaterial', scale:1.0},
     {category:'tutorialModels', name:'SimpleOpacity', scale:1.0},
     {category:'tutorialModels', name:'SimpleTexture', scale:1.0},
     {category:'tutorialModels', name:'Cameras', scale:1.0},
@@ -25,8 +25,8 @@ TutorialModelIndex.getScreenshot = function(name) {
 
 TutorialModelIndex.getEmbeddedFolderName = function(name) {
     var suffixHash = {
-        'TriangleWithSimpleMaterial': '-buffer',
-        'SimpleMeshesWithAdvancedMaterial': '-buffer',
+        'SimpleMaterial': '-buffer',
+        'AdvancedMaterial': '-buffer',
         'SimpleOpacity': '-buffer',
         'SimpleTexture': '-buffer',
         'SimpleSkin': '-buffers'

@@ -42,12 +42,12 @@
 
   "buffers" : {
     "buffer0" : {
-      "uri" : "data:application/octet-stream;base64,AAABAAIAAAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAA",
-      "byteLength" : 42
+      "uri" : "data:application/octet-stream;base64,AAABAAIAAAAAAAAAAAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAA",
+      "byteLength" : 48
     },
     "buffer1" : {
-      "uri" : "data:application/octet-stream;base64,AAAAAAAAgD4AAAA/AABAPwAAgD8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAD0/TQ/9P00PwAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAPT9ND/0/TS/AAAAAAAAAAAAAAAAAACAPw==",
-      "byteLength" : 100
+      "uri" : "data:application/octet-stream;base64,AAAAAAAAgD4AAAA/AABAPwAAgD8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAD0/TQ/9P00PwAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAPT9ND/0/TS/AAAAAAAAAAAAAAAAAACAPw==",
+      "byteLength" : 112
     }
   },
   "bufferViews" : {
@@ -59,14 +59,14 @@
     },
     "positionsBufferView" : {
       "buffer" : "buffer0",
-      "byteOffset" : 6,
+      "byteOffset" : 12,
       "byteLength" : 36,
       "target" : 34962
     },
     "animationsBufferView" : {
       "buffer" : "buffer1",
       "byteOffset" : 0,
-      "byteLength" : 100
+      "byteLength" : 112
     }
   },
   "accessors" : {
@@ -99,7 +99,7 @@
     },
     "rotationAccessor" : {
       "bufferView" : "animationsBufferView",
-      "byteOffset" : 20,
+      "byteOffset" : 32,
       "componentType" : 5126,
       "count" : 5,
       "type" : "VEC4",

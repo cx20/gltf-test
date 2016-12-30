@@ -24,7 +24,7 @@
   "buffers" : {
     "buffer0" : {
       "uri" : "triangle0.bin",
-      "byteLength" : 42
+      "byteLength" : 48
     }
   },
   "bufferViews" : {
@@ -36,7 +36,7 @@
     },
     "positionsBufferView" : {
       "buffer" : "buffer0",
-      "byteOffset" : 6,
+      "byteOffset" : 12,
       "byteLength" : 36,
       "target" : 34962
     }

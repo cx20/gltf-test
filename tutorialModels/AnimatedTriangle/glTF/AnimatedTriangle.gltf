@@ -43,11 +43,11 @@
   "buffers" : {
     "buffer0" : {
       "uri" : "triangle0.bin",
-      "byteLength" : 42
+      "byteLength" : 48
     },
     "buffer1" : {
       "uri" : "animation0.bin",
-      "byteLength" : 100
+      "byteLength" : 112
     }
   },
   "bufferViews" : {
@@ -59,14 +59,14 @@
     },
     "positionsBufferView" : {
       "buffer" : "buffer0",
-      "byteOffset" : 6,
+      "byteOffset" : 12,
       "byteLength" : 36,
       "target" : 34962
     },
     "animationsBufferView" : {
       "buffer" : "buffer1",
       "byteOffset" : 0,
-      "byteLength" : 100
+      "byteLength" : 112
     }
   },
   "accessors" : {
@@ -99,7 +99,7 @@
     },
     "rotationAccessor" : {
       "bufferView" : "animationsBufferView",
-      "byteOffset" : 20,
+      "byteOffset" : 32,
       "componentType" : 5126,
       "count" : 5,
       "type" : "VEC4",
