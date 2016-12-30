@@ -4,15 +4,14 @@ Status of [glTF loader](https://github.com/KhronosGroup/glTF#webgl-engines) in s
 
 ## All Tests
 
-[All Tests]( https://cx20.github.io/gltf-test/ )
+[All Tests]( https://cx20.github.io/gltf-test/ ) : https://cx20.github.io/gltf-test/
 - glTF Sample Test of 21 models x 3 formats x 7 libraries
 - glTF 1.1 Test of 10 models x 2 formats x 7 libraries
 
 
 ## [glTF 1.0 Sample Models](https://github.com/KhronosGroup/glTF-Sample-Models/tree/master/1.0)
 
-Test environment
-- Windows 10 + Chrome 55
+Test environment : Windows 10 + Chrome 55
 
 | Model                                              | Screenshot                                                   |[Three.js r84dev](https://github.com/mrdoob/three.js/tree/dev/examples/js/loaders/GLTFLoader.js)                           |[Babylon.js 2.6dev](https://github.com/BabylonJS/Babylon.js/tree/master/loaders/src/glTF)                                                         |[Cesium.js 1.28](https://github.com/AnalyticalGraphicsInc/cesium/)                                               |[xeogl 2016.12.13](https://github.com/xeolabs/xeogl/tree/master/src/models/gltf)                                               |[GLBoost 2016.12.30](https://github.com/emadurandal/GLBoost/blob/master/src/js/middle_level/loader/GLTFLoader.js)                  |[Grimoire.js 2016.12.28](https://github.com/GrimoireGL/grimoirejs-gltf)                                                               |
 |----------------------------------------------------|--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
@@ -40,8 +39,7 @@ Test environment
 
 ## [glTF 1.1 Tutorial Models](https://github.com/javagl/gltfTutorialModels)
 
-Test environment
-- Windows 10 + Chrome 55
+Test environment : Windows 10 + Chrome 55
 
 |Model                                               |Screenshot                                                          |[Three.js r84dev](https://github.com/mrdoob/three.js/tree/dev/examples/js/loaders/GLTFLoader.js)                                                 |[Babylon.js 2.6dev](https://github.com/BabylonJS/Babylon.js/tree/master/loaders/src/glTF)                                                          |[Cesium.js 1.28](https://github.com/AnalyticalGraphicsInc/cesium/)                                                                                        |[xeogl 2016.12.13](https://github.com/xeolabs/xeogl/tree/master/src/models/gltf)                                                               |[GLBoost 2016.12.30](https://github.com/emadurandal/GLBoost/blob/master/src/js/middle_level/loader/GLTFLoader.js)                                               |[Grimoire.js 2016.12.28](https://github.com/GrimoireGL/grimoirejs-gltf)                                                                             |
 |----------------------------------------------------|--------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
