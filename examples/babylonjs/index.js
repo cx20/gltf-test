@@ -57,7 +57,7 @@ var createScene = function(engine) {
         scene.activeCamera = camera;
         
         //scene.forceShowBoundingBoxes = true;
-        scene.debugLayer.show(true, camera);
+        //scene.debugLayer.show(true, camera);
 
         engine.runRenderLoop(function() {
             scene.activeCamera.alpha += 0.01;
