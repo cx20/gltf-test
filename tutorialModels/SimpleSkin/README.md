@@ -6,7 +6,7 @@ Parts of the skinning specification may be changed for glTF 1.1
 
 ## Screenshot
 
-![screenshot](screenshot/screenshot.png)
+![screenshot](screenshot/screenshot.gif)
 
 ## License Information
 
