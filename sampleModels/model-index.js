@@ -10,7 +10,7 @@ ModelIndex.List = [
     {category:'sampleModels', name:'ReciprocatingSaw', scale:0.01},
     {category:'sampleModels', name:'GearboxAssy', scale:1.0},
     {category:'sampleModels', name:'Buggy', scale:0.02},
-    {category:'sampleModels', name:'BoxAnimated', scale:1.0},
+    {category:'sampleModels', name:'BoxAnimated', scale:0.5},
     {category:'sampleModels', name:'CesiumMilkTruck', scale:0.5},
     {category:'sampleModels', name:'RiggedSimple', scale:0.2},
     {category:'sampleModels', name:'RiggedFigure', scale:1.0},
