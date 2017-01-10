@@ -42,7 +42,12 @@ function init() {
     var url = "../../" + modelInfo.category + "/" + modelInfo.path;
     loader.load(url, function (data) {
         gltf = data;
-        var object = gltf.scene;
+        var object;
+        if ( gltf.scene !== undefined ) {
+            object = gltf.scene; // default scene
+        } else if ( gltf.scenes.length > 0 ) {
+            object = gltf.scenes[0]; // other scene
+        }
         if (modelInfo.name == "GearboxAssy" ) {
             scale = 0.2;
             object.scale.set(scale, scale, scale);
