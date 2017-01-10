@@ -17,6 +17,9 @@ var engines = [{
     name: 'Grimore.js',
     path: 'examples/grimoiregl/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
+    name: 'X3DOM',
+    path: 'examples/x3dom/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
     name: 'minimal-gltf-loader',
     path: 'examples/minimal-gltf-loader/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
