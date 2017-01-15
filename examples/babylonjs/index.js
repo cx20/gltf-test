@@ -51,11 +51,15 @@ var createScene = function(engine) {
             parentMesh.position.z -= 3.21;
         }
         //parentMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
-        camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
+        var camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         camera.setPosition( new BABYLON.Vector3(0, 0, -5/scale) );
         camera.attachControl(canvas, false, false);
         scene.activeCamera = camera;
         
+        var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, -1), scene);
+        light.groundColor = new BABYLON.Color3(1, 0, 0);
+        light.position = new BABYLON.Vector3(20, 40, 20);
+
         //scene.forceShowBoundingBoxes = true;
         //scene.debugLayer.show(true, camera);
 
