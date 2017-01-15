@@ -110,7 +110,7 @@
   var global = ('global', eval)('this');
 
   (function (global) {
-    var GLBoost = typeof global.GLBoost !== 'undefined' ? global.GLBoost : { REVISION: 'r1' };
+    var GLBoost = typeof global.GLBoost !== 'undefined' ? global.GLBoost : { REVISION: 'r2-dev' };
 
     if (typeof define === 'function' && define.amd) {
       define(function () {
