@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 6cd263f57fbc049505c97ec73573e6c9c485b2a2 - Tue Jan 10 15:08:26 2017 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 78580df89ef6721437c070483ed5cc27aaecdfa9 - Wed Jan 18 13:57:58 2017 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -1174,6 +1174,11 @@ x3dom.RequestManager.requestHeaders = [];
  */
 x3dom.RequestManager.withCredentials = false;
 
+
+x3dom.RequestManager.onSendRequest = function( counters ) {}; 
+x3dom.RequestManager.onAbortAllRequests = function( counters ) {}; 
+
+
 /**
  *
  * @param header
@@ -1189,7 +1194,9 @@ x3dom.RequestManager.addRequestHeader = function( header, value )
  * @private
  */
 x3dom.RequestManager._sendRequest = function()
-{
+{       
+    this.onSendRequest( this._getCounters() );
+
     //Check if we have reached the maximum parallel request limit
     if ( this.activeRequests.length > this.maxParallelRequests )
     {
@@ -1210,6 +1217,19 @@ x3dom.RequestManager._sendRequest = function()
         //Trigger next request sending
         this._sendRequest();
     }
+};
+
+/**
+ *
+ */
+x3dom.RequestManager._getCounters = function () 
+{
+    return {
+        loaded: this.loadedRequests,
+        active: this.activeRequests.length,
+        failed: this.failedRequests,
+        total: this.totalRequests,
+    };
 };
 
 /**
@@ -1262,8 +1282,11 @@ x3dom.RequestManager.abortAllRequests = function()
         this.activeRequests[ i ].abort();
     }
 
-    this.requests = this.activeRequests = [];
-};
+    this.requests = [];
+    this.activeRequests = [];
+
+    this.onAbortAllRequests( this._getCounters() );
+}
 
 /**
  *
@@ -7964,6 +7987,7 @@ x3dom.glTF.glTFLoader.prototype.getNumComponentsForType = function(type)
     }
 };
 
+
 x3dom.glTF.glTFLoader.prototype.loadImage = function(imageNodeName, mimeType)
 {
     if(this.loaded.images == null)
@@ -7985,6 +8009,7 @@ x3dom.glTF.glTFLoader.prototype.loadImage = function(imageNodeName, mimeType)
         var blobUrl = window.URL.createObjectURL(blob);
 
         var image = new Image();
+
         image.src = blobUrl;
 
         this.loaded.images[imageNodeName] = image;
@@ -7995,8 +8020,16 @@ x3dom.glTF.glTFLoader.prototype.loadImage = function(imageNodeName, mimeType)
     return null;
 };
 
-x3dom.glTF.glTFLoader.prototype.loadTexture = function(gl, textureNode)
+x3dom.glTF.glTFLoader.prototype.loadTexture = function(gl, textureNodeName)
 {
+    if(this.loaded.textures == null)
+        this.loaded.textures = {};
+
+    if(this.loaded.textures[textureNodeName]!=null)
+        return this.loaded.textures[textureNodeName];
+
+    var textureNode = this.scene.textures[textureNodeName];
+
     var format = textureNode.format;
     var internalFormat = textureNode.internalFormat;
     var sampler = {};
@@ -8015,6 +8048,8 @@ x3dom.glTF.glTFLoader.prototype.loadTexture = function(gl, textureNode)
     var type = textureNode.type;
 
     var glTFTexture = new x3dom.glTF.glTFTexture(gl, format, internalFormat, sampler, target, type, image);
+
+    this.loaded.textures[textureNodeName] = glTFTexture;
 
     return glTFTexture;
 };
@@ -8037,8 +8072,7 @@ x3dom.glTF.glTFLoader.prototype.loadMaterial = function(gl, materialNode)
                     var value = materialNode.values[key];
                     if(typeof value === 'string')
                     {
-                        var textureNode = this.scene.textures[value];
-                        material[key+"Tex"] = this.loadTexture(gl, textureNode);
+                        material[key+"Tex"] = this.loadTexture(gl, value);
                     }
                     else
                     {
@@ -8070,8 +8104,7 @@ x3dom.glTF.glTFLoader.prototype.loadMaterial = function(gl, materialNode)
                     var value = materialNode.values[key];
                     if(typeof value === 'string')
                     {
-                        var textureNode = this.scene.textures[value];
-                        material.textures[key] = this.loadTexture(gl, textureNode);
+                        material.textures[key] = this.loadTexture(gl, value);
                     }
                     else
                     {
@@ -8251,6 +8284,7 @@ x3dom.glTF.glTFMesh.prototype.render = function(gl, polyMode)
         gl.drawElements(polyMode, this.drawCount, this.buffers[glTF_BUFFER_IDX.INDEX].type, this.buffers[glTF_BUFFER_IDX.INDEX].offset);
     else
         gl.drawArrays(polyMode, 0, this.drawCount);
+
 };
 
 x3dom.glTF.glTFTexture = function(gl, format, internalFormat, sampler, target, type, image)
@@ -8267,10 +8301,24 @@ x3dom.glTF.glTFTexture = function(gl, format, internalFormat, sampler, target, t
     this.create(gl);
 };
 
-x3dom.glTF.glTFTexture.prototype.isPowerOfTwo = function(x)
+x3dom.glTF.glTFTexture.prototype.needsPowerOfTwo = function(gl)
 {
-    var powerOfTwo = !(x == 0) && !(x & (x - 1));
-    return powerOfTwo;
+    var resize = true;
+    resize &= (this.sampler.magFilter == gl.LINEAR || this.sampler.magFilter == gl.NEAREST);
+    resize &= (this.sampler.minFilter == gl.LINEAR || this.sampler.minFilter == gl.NEAREST);
+    resize &= (this.sampler.wrapS == gl.CLAMP_TO_EDGE);
+    resize &= (this.sampler.wrapT == gl.CLAMP_TO_EDGE);
+
+    return !resize;
+};
+
+x3dom.glTF.glTFTexture.prototype.needsMipMaps = function(gl)
+{
+    var need = true;
+    need &= (this.sampler.magFilter == gl.LINEAR || this.sampler.magFilter == gl.NEAREST);
+    need &= (this.sampler.minFilter == gl.LINEAR || this.sampler.minFilter == gl.NEAREST);
+
+    return !need;
 };
 
 x3dom.glTF.glTFTexture.prototype.create = function(gl)
@@ -8280,25 +8328,37 @@ x3dom.glTF.glTFTexture.prototype.create = function(gl)
 
     this.glTexture = gl.createTexture();
 
+    var imgSrc = this.image;
+
+    if(this.needsPowerOfTwo(gl)){
+        var width = this.image.width;
+        var height = this.image.height;
+
+        var aspect = width / height;
+
+        imgSrc = x3dom.Utils.scaleImage(this.image);
+
+        var aspect2 = imgSrc.width / imgSrc.height;
+
+        if(Math.abs(aspect - aspect2) > 0.01){
+            console.warn("Image "+this.image.src+" was resized to power of two, but has unsupported aspect ratio and may be distorted!");
+        }
+    }
+
     gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, this.format, this.type, this.image);
+    gl.texImage2D(gl.TEXTURE_2D, 0, this.internalFormat, this.format, this.type, imgSrc);
 
-    if(this.sampler.magFilter != null)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.sampler.magFilter);
 
-    if(this.sampler.minFilter != null)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.sampler.minFilter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this.sampler.magFilter);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this.sampler.minFilter);
 
-    //if(!this.isPowerOfTwo(this.image.width)||!this.isPowerOfTwo(this.image.height)){
-        // gl.NEAREST is also allowed, instead of gl.LINEAR, as neither mipmap.
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        // Prevents s-coordinate wrapping (repeating).
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        // Prevents t-coordinate wrapping (repeating).
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this.sampler.wrapS);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this.sampler.wrapT);
+
     //}
 
-    //gl.generateMipmap(gl.TEXTURE_2D);
+    if(this.needsMipMaps(gl))
+        gl.generateMipmap(gl.TEXTURE_2D);
     gl.bindTexture(gl.TEXTURE_2D, null);
 
     this.created = true;
@@ -8306,10 +8366,11 @@ x3dom.glTF.glTFTexture.prototype.create = function(gl)
 
 x3dom.glTF.glTFTexture.prototype.bind = function(gl, textureUnit, shaderProgram, uniformName)
 {
+    gl.activeTexture(gl.TEXTURE0+textureUnit);
+
     if(!this.created)
         this.create(gl);
 
-    gl.activeTexture(gl.TEXTURE0+textureUnit);
     gl.bindTexture(gl.TEXTURE_2D, this.glTexture);
     gl.uniform1i(gl.getUniformLocation(shaderProgram, uniformName), textureUnit);
 };
@@ -8510,13 +8571,16 @@ x3dom.glTF.glTFMaterial.prototype.bind = function(gl, shaderParameter)
 
     this.updateTransforms(shaderParameter);
 
+    var texUnit = 0;
+
     for(var key in this.technique.uniforms)
         if(this.technique.uniforms.hasOwnProperty(key))
         {
             var uniformName = this.technique.uniforms[key];
             if(this.textures[uniformName] != null){
                 var texture = this.textures[uniformName];
-                texture.bind(gl, 0, this.program.program, key);
+                texture.bind(gl, texUnit, this.program.program, key);
+                texUnit++;
             }
             else if(this.values[uniformName] != null)
                 this.program[key] = this.values[uniformName];
@@ -8830,14 +8894,15 @@ x3dom.X3DCanvas.prototype.bindEventListeners = function() {
             
             if ( pos.x != that.lastMousePos.x || pos.y != that.lastMousePos.y ) {
                 that.lastMousePos = pos;
-                if (evt.shiftKey) { this.mouse_button = 1; }
-                if (evt.ctrlKey)  { this.mouse_button = 4; }
-                if (evt.altKey)   { this.mouse_button = 2; }
-
+                
                 this.mouse_drag_x = pos.x;
                 this.mouse_drag_y = pos.y;
 
                 if (this.mouse_dragging) {
+                    
+                    if (evt.shiftKey) { this.mouse_button = 1; }
+                    if (evt.ctrlKey)  { this.mouse_button = 4; }
+                    if (evt.altKey)   { this.mouse_button = 2; }
                     
                     if ( this.mouse_button == 1 && !this.parent.disableLeftDrag ||
                          this.mouse_button == 2 && !this.parent.disableRightDrag ||
@@ -56994,14 +57059,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '6cd263f57fbc049505c97ec73573e6c9c485b2a2',
-    date:     'Tue Jan 10 15:08:26 2017 +0100'
+    revision: '78580df89ef6721437c070483ed5cc27aaecdfa9',
+    date:     'Wed Jan 18 13:57:58 2017 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '6cd263f57fbc049505c97ec73573e6c9c485b2a2',
-    date:     'Tue Jan 10 15:08:26 2017 +0100'
+    revision: '78580df89ef6721437c070483ed5cc27aaecdfa9',
+    date:     'Wed Jan 18 13:57:58 2017 +0100'
 };
 

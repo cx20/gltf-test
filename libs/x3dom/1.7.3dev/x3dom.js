@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 6cd263f57fbc049505c97ec73573e6c9c485b2a2 - Tue Jan 10 15:08:26 2017 +0100 */
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 78580df89ef6721437c070483ed5cc27aaecdfa9 - Wed Jan 18 13:57:58 2017 +0100 */
 if(!Array.forEach){Array.forEach=function(array,fun,thisp){var len=array.length;for(var i=0;i<len;i++){if(i in array){fun.call(thisp,array[i],i,array);}}};}
 if(!Array.map){Array.map=function(array,fun,thisp){var len=array.length;var res=[];for(var i=0;i<len;i++){if(i in array){res[i]=fun.call(thisp,array[i],i,array);}}
 return res;};}
@@ -79,12 +79,13 @@ for(i=0;i<urls.length&&this.activeDownloads<this.maxDownloads;++i){this.tryNextD
 {var request;for(var i=0;i<this.requests.length;i++)
 {if(this.requests[i]!=undefined)
 {for(var j=0;j<this.requests[i].length;j++)
-{request=this.requests[i][j];request.xhr.abort();this.removeDownload(request);}}}}};x3dom.RequestManager={};x3dom.RequestManager.requests=[];x3dom.RequestManager.maxParallelRequests=40;x3dom.RequestManager.failedRequests=0;x3dom.RequestManager.loadedRequests=0;x3dom.RequestManager.totalRequests=0;x3dom.RequestManager.activeRequests=[];x3dom.RequestManager.requestHeaders=[];x3dom.RequestManager.withCredentials=false;x3dom.RequestManager.addRequestHeader=function(header,value)
+{request=this.requests[i][j];request.xhr.abort();this.removeDownload(request);}}}}};x3dom.RequestManager={};x3dom.RequestManager.requests=[];x3dom.RequestManager.maxParallelRequests=40;x3dom.RequestManager.failedRequests=0;x3dom.RequestManager.loadedRequests=0;x3dom.RequestManager.totalRequests=0;x3dom.RequestManager.activeRequests=[];x3dom.RequestManager.requestHeaders=[];x3dom.RequestManager.withCredentials=false;x3dom.RequestManager.onSendRequest=function(counters){};x3dom.RequestManager.onAbortAllRequests=function(counters){};x3dom.RequestManager.addRequestHeader=function(header,value)
 {this.requestHeaders.push({header:header,value:value});};x3dom.RequestManager._sendRequest=function()
-{if(this.activeRequests.length>this.maxParallelRequests)
+{this.onSendRequest(this._getCounters());if(this.activeRequests.length>this.maxParallelRequests)
 {return;}
 var request=this.requests.pop();if(request)
-{this.activeRequests.push(request);request.send(null);this._sendRequest();}};x3dom.RequestManager.addRequest=function(request)
+{this.activeRequests.push(request);request.send(null);this._sendRequest();}};x3dom.RequestManager._getCounters=function()
+{return{loaded:this.loadedRequests,active:this.activeRequests.length,failed:this.failedRequests,total:this.totalRequests,};};x3dom.RequestManager.addRequest=function(request)
 {if(!(request instanceof XMLHttpRequest))
 {return;}
 this.totalRequests++;request.withCredentials=this.withCredentials;for(var i=0;i<this.requestHeaders.length;i++)
@@ -92,7 +93,8 @@ this.totalRequests++;request.withCredentials=this.withCredentials;for(var i=0;i<
 request.addEventListener("load",this._onLoadHandler.bind(this));request.addEventListener("error",this._onErrorHandler.bind(this));this.requests.push(request);this._sendRequest();};x3dom.RequestManager.abortAllRequests=function()
 {for(var i=0;i<this.activeRequests.length;i++)
 {this.activeRequests[i].abort();}
-this.requests=this.activeRequests=[];};x3dom.RequestManager._removeActiveRequest=function(request)
+this.requests=[];this.activeRequests=[];this.onAbortAllRequests(this._getCounters());}
+x3dom.RequestManager._removeActiveRequest=function(request)
 {var idx=this.activeRequests.indexOf(request);return this.activeRequests.splice(idx,1);};x3dom.RequestManager._onLoadHandler=function(e)
 {this._removeActiveRequest(e.target);this.loadedRequests++;this._sendRequest();};x3dom.RequestManager._onErrorHandler=function(e)
 {this._removeActiveRequest(e.target);this.failedRequests++;this._sendRequest();};x3dom.MultiMaterial=function(params)
@@ -867,16 +869,18 @@ header.sceneFormat="JSON";header.bodyOffset=header.sceneLength+20;return header;
 this.loaded.images={};if(this.loaded.images[imageNodeName]!=null)
 return this.loaded.images[imageNodeName];var imageNode=this.scene.images[imageNodeName];if(imageNode.extensions!=null&&imageNode.extensions.KHR_binary_glTF!=null)
 {var ext=imageNode.extensions.KHR_binary_glTF;var bufferView=this.scene.bufferViews[ext.bufferView];var uint8Array=new Uint8Array(this.body.buffer,this.header.bodyOffset+bufferView.byteOffset,bufferView.byteLength);var blob=new Blob([uint8Array],{type:ext.mimeType});var blobUrl=window.URL.createObjectURL(blob);var image=new Image();image.src=blobUrl;this.loaded.images[imageNodeName]=image;return image;}
-return null;};x3dom.glTF.glTFLoader.prototype.loadTexture=function(gl,textureNode)
-{var format=textureNode.format;var internalFormat=textureNode.internalFormat;var sampler={};var samplerNode=this.scene.samplers[textureNode.sampler];if(samplerNode!=null)
+return null;};x3dom.glTF.glTFLoader.prototype.loadTexture=function(gl,textureNodeName)
+{if(this.loaded.textures==null)
+this.loaded.textures={};if(this.loaded.textures[textureNodeName]!=null)
+return this.loaded.textures[textureNodeName];var textureNode=this.scene.textures[textureNodeName];var format=textureNode.format;var internalFormat=textureNode.internalFormat;var sampler={};var samplerNode=this.scene.samplers[textureNode.sampler];if(samplerNode!=null)
 {for(var key in samplerNode){if(samplerNode.hasOwnProperty(key))
 sampler[key]=samplerNode[key];}}
-var image=this.loadImage(textureNode.source);var target=textureNode.target;var type=textureNode.type;var glTFTexture=new x3dom.glTF.glTFTexture(gl,format,internalFormat,sampler,target,type,image);return glTFTexture;};x3dom.glTF.glTFLoader.prototype.loadMaterial=function(gl,materialNode)
+var image=this.loadImage(textureNode.source);var target=textureNode.target;var type=textureNode.type;var glTFTexture=new x3dom.glTF.glTFTexture(gl,format,internalFormat,sampler,target,type,image);this.loaded.textures[textureNodeName]=glTFTexture;return glTFTexture;};x3dom.glTF.glTFLoader.prototype.loadMaterial=function(gl,materialNode)
 {if(materialNode){if(materialNode.extensions!=null&&materialNode.extensions.KHR_materials_common!=null)
 {materialNode=materialNode.extensions.KHR_materials_common;var material=new x3dom.glTF.glTFKHRMaterialCommons();material.technique=glTF_KHR_MATERIAL_COMMON_TECHNIQUE[materialNode.technique];material.doubleSided=materialNode.doubleSided;for(var key in materialNode.values)
 if(materialNode.values.hasOwnProperty(key))
 {var value=materialNode.values[key];if(typeof value==='string')
-{var textureNode=this.scene.textures[value];material[key+"Tex"]=this.loadTexture(gl,textureNode);}
+{material[key+"Tex"]=this.loadTexture(gl,value);}
 else
 {material[key]=value;}}
 return material;}else
@@ -884,7 +888,7 @@ return material;}else
 for(var key in materialNode.values)
 if(materialNode.values.hasOwnProperty(key))
 {var value=materialNode.values[key];if(typeof value==='string')
-{var textureNode=this.scene.textures[value];material.textures[key]=this.loadTexture(gl,textureNode);}
+{material.textures[key]=this.loadTexture(gl,value);}
 else
 {material.values[key]=value;}}
 return material;}}
@@ -914,14 +918,15 @@ return;if(polyMode==null||polyMode>this.primitiveType)
 polyMode=this.primitiveType;if(this.buffers[glTF_BUFFER_IDX.INDEX])
 gl.drawElements(polyMode,this.drawCount,this.buffers[glTF_BUFFER_IDX.INDEX].type,this.buffers[glTF_BUFFER_IDX.INDEX].offset);else
 gl.drawArrays(polyMode,0,this.drawCount);};x3dom.glTF.glTFTexture=function(gl,format,internalFormat,sampler,target,type,image)
-{this.format=format;this.internalFormat=internalFormat;this.sampler=sampler;this.target=target;this.type=type;this.image=image;this.created=false;this.create(gl);};x3dom.glTF.glTFTexture.prototype.isPowerOfTwo=function(x)
-{var powerOfTwo=!(x==0)&&!(x&(x-1));return powerOfTwo;};x3dom.glTF.glTFTexture.prototype.create=function(gl)
+{this.format=format;this.internalFormat=internalFormat;this.sampler=sampler;this.target=target;this.type=type;this.image=image;this.created=false;this.create(gl);};x3dom.glTF.glTFTexture.prototype.needsPowerOfTwo=function(gl)
+{var resize=true;resize&=(this.sampler.magFilter==gl.LINEAR||this.sampler.magFilter==gl.NEAREST);resize&=(this.sampler.minFilter==gl.LINEAR||this.sampler.minFilter==gl.NEAREST);resize&=(this.sampler.wrapS==gl.CLAMP_TO_EDGE);resize&=(this.sampler.wrapT==gl.CLAMP_TO_EDGE);return!resize;};x3dom.glTF.glTFTexture.prototype.needsMipMaps=function(gl)
+{var need=true;need&=(this.sampler.magFilter==gl.LINEAR||this.sampler.magFilter==gl.NEAREST);need&=(this.sampler.minFilter==gl.LINEAR||this.sampler.minFilter==gl.NEAREST);return!need;};x3dom.glTF.glTFTexture.prototype.create=function(gl)
 {if(this.image.complete==false)
-return;this.glTexture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,this.glTexture);gl.texImage2D(gl.TEXTURE_2D,0,this.internalFormat,this.format,this.type,this.image);if(this.sampler.magFilter!=null)
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,this.sampler.magFilter);if(this.sampler.minFilter!=null)
-gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,this.sampler.minFilter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.bindTexture(gl.TEXTURE_2D,null);this.created=true;};x3dom.glTF.glTFTexture.prototype.bind=function(gl,textureUnit,shaderProgram,uniformName)
-{if(!this.created)
-this.create(gl);gl.activeTexture(gl.TEXTURE0+textureUnit);gl.bindTexture(gl.TEXTURE_2D,this.glTexture);gl.uniform1i(gl.getUniformLocation(shaderProgram,uniformName),textureUnit);};x3dom.glTF.glTFKHRMaterialCommons=function()
+return;this.glTexture=gl.createTexture();var imgSrc=this.image;if(this.needsPowerOfTwo(gl)){var width=this.image.width;var height=this.image.height;var aspect=width/height;imgSrc=x3dom.Utils.scaleImage(this.image);var aspect2=imgSrc.width/imgSrc.height;if(Math.abs(aspect-aspect2)>0.01){console.warn("Image "+this.image.src+" was resized to power of two, but has unsupported aspect ratio and may be distorted!");}}
+gl.bindTexture(gl.TEXTURE_2D,this.glTexture);gl.texImage2D(gl.TEXTURE_2D,0,this.internalFormat,this.format,this.type,imgSrc);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,this.sampler.magFilter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,this.sampler.minFilter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,this.sampler.wrapS);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,this.sampler.wrapT);if(this.needsMipMaps(gl))
+gl.generateMipmap(gl.TEXTURE_2D);gl.bindTexture(gl.TEXTURE_2D,null);this.created=true;};x3dom.glTF.glTFTexture.prototype.bind=function(gl,textureUnit,shaderProgram,uniformName)
+{gl.activeTexture(gl.TEXTURE0+textureUnit);if(!this.created)
+this.create(gl);gl.bindTexture(gl.TEXTURE_2D,this.glTexture);gl.uniform1i(gl.getUniformLocation(shaderProgram,uniformName),textureUnit);};x3dom.glTF.glTFKHRMaterialCommons=function()
 {this.diffuse=[0.3,0.1,0.1,1];this.diffuseTex=null;this.emission=[0.0,0.0,0.0,1];this.emissionTex=null;this.specular=[0.8,0.8,0.8,1];this.specularTex=null;this.ambient=[0,0,0,1];this.shininess=2;this.transparency=0.0;this.globalAmbient=[0,0,0,1];this.lightVector=[1,0,0,1];this.doubleSided=false;this.technique=glTF_KHR_MATERIAL_COMMON_TECHNIQUE.CONSTANT;this.attributeMapping={};this.attributeMapping[glTF_BUFFER_IDX.POSITION]="position";this.attributeMapping[glTF_BUFFER_IDX.NORMAL]="normal";this.attributeMapping[glTF_BUFFER_IDX.TEXCOORD]="texcoord";this.attributeMapping[glTF_BUFFER_IDX.COLOR]="color";};x3dom.glTF.glTFKHRMaterialCommons.prototype.created=function()
 {if(this.diffuseTex!=null&&this.diffuseTex.created!=true)
 return false;if(this.emissionTex!=null&&this.emissionTex.created!=true)
@@ -955,9 +960,9 @@ switch(parameter.semantic){case"POSITION":this.attributeMapping[glTF_BUFFER_IDX.
 return false;}
 return true;};x3dom.glTF.glTFMaterial.prototype.bind=function(gl,shaderParameter)
 {if(this.program!=null)
-this.program.bind();this.updateTransforms(shaderParameter);for(var key in this.technique.uniforms)
+this.program.bind();this.updateTransforms(shaderParameter);var texUnit=0;for(var key in this.technique.uniforms)
 if(this.technique.uniforms.hasOwnProperty(key))
-{var uniformName=this.technique.uniforms[key];if(this.textures[uniformName]!=null){var texture=this.textures[uniformName];texture.bind(gl,0,this.program.program,key);}
+{var uniformName=this.technique.uniforms[key];if(this.textures[uniformName]!=null){var texture=this.textures[uniformName];texture.bind(gl,texUnit,this.program.program,key);texUnit++;}
 else if(this.values[uniformName]!=null)
 this.program[key]=this.values[uniformName];}};x3dom.glTF.glTFMaterial.prototype.updateTransforms=function(shaderParameter)
 {if(this.program!=null)
@@ -982,10 +987,10 @@ this.onMouseUp=function(evt){if(!this.isMulti){var prev_mouse_button=this.mouse_
 this.onMouseOver=function(evt){if(!this.isMulti){this.mouse_button=0;this.mouse_dragging=false;this.parent.doc.onMouseOver(that.gl,this.mouse_drag_x,this.mouse_drag_y,this.mouse_button);this.parent.doc.needRender=true;}}
 this.onMouseAlt=function(evt){if(!this.isMulti){this.mouse_button=0;this.mouse_dragging=false;this.classList.remove('x3dom-canvas-mousedown');this.parent.doc.onMouseOut(that.gl,this.mouse_drag_x,this.mouse_drag_y,this.mouse_button);this.parent.doc.needRender=true;}}
 this.onDoubleClick=function(evt){if(!this.isMulti){this.mouse_button=0;var pos=this.parent.mousePosition(evt);this.mouse_drag_x=pos.x;this.mouse_drag_y=pos.y;this.mouse_dragging=false;this.parent.doc.onDoubleClick(that.gl,this.mouse_drag_x,this.mouse_drag_y);this.parent.doc.needRender=true;}}
-this.onMouseMove=function(evt){if(!this.isMulti){var pos=this.parent.mousePosition(evt);if(pos.x!=that.lastMousePos.x||pos.y!=that.lastMousePos.y){that.lastMousePos=pos;if(evt.shiftKey){this.mouse_button=1;}
+this.onMouseMove=function(evt){if(!this.isMulti){var pos=this.parent.mousePosition(evt);if(pos.x!=that.lastMousePos.x||pos.y!=that.lastMousePos.y){that.lastMousePos=pos;this.mouse_drag_x=pos.x;this.mouse_drag_y=pos.y;if(this.mouse_dragging){if(evt.shiftKey){this.mouse_button=1;}
 if(evt.ctrlKey){this.mouse_button=4;}
 if(evt.altKey){this.mouse_button=2;}
-this.mouse_drag_x=pos.x;this.mouse_drag_y=pos.y;if(this.mouse_dragging){if(this.mouse_button==1&&!this.parent.disableLeftDrag||this.mouse_button==2&&!this.parent.disableRightDrag||this.mouse_button==4&&!this.parent.disableMiddleDrag)
+if(this.mouse_button==1&&!this.parent.disableLeftDrag||this.mouse_button==2&&!this.parent.disableRightDrag||this.mouse_button==4&&!this.parent.disableMiddleDrag)
 {this.parent.doc.onDrag(that.gl,this.mouse_drag_x,this.mouse_drag_y,this.mouse_button);}}
 else{this.parent.doc.onMove(that.gl,this.mouse_drag_x,this.mouse_drag_y,this.mouse_button);}
 this.parent.doc.needRender=true;evt.preventDefault();evt.stopPropagation();}}}
@@ -4924,4 +4929,4 @@ this._currentRotation=new x3dom.fields.Quaternion();}}));x3dom.registerNodeType(
 else
 {}},_stopDragging:function()
 {x3dom.nodeTypes.X3DDragSensorNode.prototype._stopDragging.call(this);if(this._vf.autoOffset)
-{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'6cd263f57fbc049505c97ec73573e6c9c485b2a2',date:'Tue Jan 10 15:08:26 2017 +0100'};
+{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'78580df89ef6721437c070483ed5cc27aaecdfa9',date:'Wed Jan 18 13:57:58 2017 +0100'};
