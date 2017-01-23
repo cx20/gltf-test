@@ -1434,6 +1434,8 @@
           return 3;
         } else if (element instanceof Vector4 || element instanceof Quaternion) {
           return 4;
+        } else if (Array.isArray(element)) {
+          return element.length;
         } else {
           return 0;
         }
