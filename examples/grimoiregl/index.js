@@ -29,13 +29,9 @@ gr(function () {
   var scale = modelInfo.scale;
   if (modelInfo.name == "GearboxAssy" ) {
       scale = 0.2;
-      //$$('scene').append('<model src="' + "../../sampleModels/" + modelInfo.path + '" scale="' + scale + '" position="-31.84,-3.404,-0.642"/>');
-      $$('scene').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '" position="-31.84,-3.404,-0.642"/>');
+      $$('#model-container').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
+      $$('model').setAttribute('position', '-31.84,-3.404,-0.642');
   } else {
-      //$$('scene').append('<model src="' + "../../sampleModels/" + modelInfo.path + '" scale="' + scale + '"/>');
-      $$('scene').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
+      $$('#model-container').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
   }
-  
-  $$('model').addComponent('Rotate');
-  //$$('model')('Rotate').setAttribute('speed', 1);
 });
