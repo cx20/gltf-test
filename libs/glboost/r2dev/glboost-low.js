@@ -4073,7 +4073,7 @@
 
         var newCenterVec = targetAABB.centerPoint;
 
-        var centerToCameraVec = Vector3.subtract(eyeVec, newCenterVec);
+        var centerToCameraVec = Vector3.subtract(eyeVec, centerVec);
         var centerToCameraVecNormalized = Vector3.normalize(centerToCameraVec);
 
         var newEyeVec = Vector3.multiply(centerToCameraVecNormalized, lengthCameraToObject).add(newCenterVec);
@@ -4111,7 +4111,7 @@
           var vectors = _this2._updateTargeting(camera, camera.eye, camera.center, camera.up, camera.fovy);
           camera.eye = vectors[0];
           camera.center = vectors[1];
-          camera.upVec = vectors[2];
+          camera.up = vectors[2];
         });
       }
     }, {
