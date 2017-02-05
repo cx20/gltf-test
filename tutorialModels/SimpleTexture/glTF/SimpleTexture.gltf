@@ -85,7 +85,7 @@
         },
         "shininessParameter": {
           "type": 5126,
-          "value": [ 80.0 ]
+          "value": [ 40.0 ]
         }
       },
       "states": {
