@@ -43,9 +43,9 @@
     "premultipliedAlpha": true,
     "profile": {
       "api": "WebGL",
-      "version": "1.0.2"
+      "version": "1.0"
     },
-    "version": "1.0"
+    "version": "2.0"
   },
   "bufferViews": {
     "bufferView_0": {
@@ -57,8 +57,8 @@
   },
   "buffers": {
     "BoxWithoutIndices": {
-      "byteLength": 864,
       "type": "arraybuffer",
+      "byteLength": 864,
       "uri": "BoxWithoutIndices.bin"
     }
   },
@@ -73,7 +73,9 @@
           0,
           1
         ],
-        "shininess": 256,
+        "shininess": [
+          256
+        ],
         "specular": [
           0.2,
           0.2,
@@ -99,7 +101,7 @@
     }
   },
   "nodes": {
-    "rootNode": {
+    "rootNode_0": {
       "children": [],
       "meshes": [
         "Geometry-mesh002"
@@ -138,7 +140,7 @@
   "scenes": {
     "defaultScene": {
       "nodes": [
-        "rootNode"
+        "rootNode_0"
       ]
     }
   },
@@ -211,5 +213,6 @@
   "cameras": {},
   "images": {},
   "samplers": {},
-  "textures": {}
+  "textures": {},
+  "extensionsRequired": []
 }
