@@ -1,0 +1,246 @@
+{
+    "asset": {
+        "generator": "COLLADA2GLTF",
+        "premultipliedAlpha": true,
+        "profile": {
+            "api": "WebGL",
+            "version": "1.0"
+        },
+        "version": "2.0"
+    },
+    "scene": 0,
+    "scenes": [
+        {
+            "nodes": [
+                0
+            ]
+        }
+    ],
+    "nodes": [
+        {
+            "meshes": [
+                0
+            ],
+            "matrix": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        }
+    ],
+    "meshes": [
+        {
+            "primitives": [
+                {
+                    "attributes": {
+                        "COLOR_0": 1,
+                        "NORMAL": 2,
+                        "POSITION": 3,
+                        "TEXCOORD_0": 4
+                    },
+                    "indices": 0,
+                    "mode": 4,
+                    "material": 0
+                }
+            ],
+            "name": "meshId0_name"
+        }
+    ],
+    "accessors": [
+        {
+            "bufferView": 0,
+            "byteOffset": 0,
+            "byteStride": 0,
+            "componentType": 5123,
+            "count": 14592,
+            "max": [
+                2550.0
+            ],
+            "min": [
+                0.0
+            ],
+            "type": "SCALAR"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 0,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "type": "VEC3"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 30612,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.9999155402183532,
+                0.9999614953994752,
+                0.999551236629486
+            ],
+            "min": [
+                -0.9999155402183532,
+                -0.9979230761528016,
+                -0.9998226761817932
+            ],
+            "type": "VEC3"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 61224,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.8106791973114014,
+                0.8187642097473145,
+                0.7583367228507996
+            ],
+            "min": [
+                -0.8106791973114014,
+                -0.8187641501426697,
+                -0.8632782101631165
+            ],
+            "type": "VEC3"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 91836,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.991733968257904,
+                0.98796808719635
+            ],
+            "min": [
+                0.011699199676513672,
+                0.0060114264488220219
+            ],
+            "type": "VEC2"
+        }
+    ],
+    "materials": [
+        {
+            "extensions": {
+                "KHR_materials_common": {
+                    "doubleSided": false,
+                    "technique": "PHONG",
+                    "transparent": false,
+                    "values": {
+                        "ambient": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "diffuse": [
+                            0
+                        ],
+                        "emission": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "specular": [
+                            1
+                        ],
+                        "shininess": [
+                            20.0
+                        ],
+                        "transparency": [
+                            1.0
+                        ]
+                    }
+                }
+            }
+        }
+    ],
+    "textures": [
+        {
+            "format": 6408,
+            "internalFormat": 6408,
+            "sampler": 0,
+            "source": 0,
+            "target": 3553,
+            "type": 5121
+        },
+        {
+            "format": 6408,
+            "internalFormat": 6408,
+            "sampler": 0,
+            "source": 1,
+            "target": 3553,
+            "type": 5121
+        }
+    ],
+    "images": [
+        {
+            "uri": "SmilingFace_texture_0001.jpg"
+        },
+        {
+            "uri": "SmilingFace_texture_0002.jpg"
+        }
+    ],
+    "samplers": [
+        {
+            "magFilter": 9729,
+            "minFilter": 9986,
+            "wrapS": 10497,
+            "wrapT": 10497
+        }
+    ],
+    "bufferViews": [
+        {
+            "buffer": 0,
+            "byteOffset": 112244,
+            "byteLength": 29184,
+            "target": 34963
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 0,
+            "byteLength": 112244,
+            "target": 34962
+        }
+    ],
+    "buffers": [
+        {
+            "byteLength": 141428,
+            "uri": "0.bin",
+            "type": "arraybuffer"
+        }
+    ],
+    "extensionsRequired": [
+        "KHR_materials_common"
+    ],
+    "extensionsUsed": [
+        "KHR_materials_common"
+    ]
+}

@@ -1,309 +1,326 @@
 {
-  "accessors": {
-    "accessor_31": {
-      "bufferView": "bufferView_1",
-      "byteOffset": 0,
-      "byteStride": 0,
-      "componentType": 5123,
-      "count": 14592,
-      "max": [
-        1359
-      ],
-      "min": [
-        0
-      ],
-      "type": "SCALAR"
+    "asset": {
+        "generator": "COLLADA2GLTF",
+        "premultipliedAlpha": true,
+        "profile": {
+            "api": "WebGL",
+            "version": "1.0"
+        },
+        "version": "2.0"
     },
-    "accessor_33": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 0,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 2551,
-      "max": [
-        0.8106791973114014,
-        0.8187642097473145,
-        0.7583367228507996
-      ],
-      "min": [
-        -0.8106791973114014,
-        -0.8187641501426697,
-        -0.8632782101631165
-      ],
-      "type": "VEC3"
-    },
-    "accessor_35": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 30612,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 2551,
-      "max": [
-        0.9999155402183533,
-        0.9999614953994751,
-        0.9995512366294861
-      ],
-      "min": [
-        -0.9999155402183533,
-        -0.9979230761528015,
-        -0.9998226761817932
-      ],
-      "type": "VEC3"
-    },
-    "accessor_37": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 61224,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 2551,
-      "max": [
-        0.991733968257904,
-        0.9879680871963501
-      ],
-      "min": [
-        0.011699199676513672,
-        0.0060114264488220215
-      ],
-      "type": "VEC2"
-    }
-  },
-  "animations": {},
-  "asset": {
-    "generator": "collada2gltf@f8f6279915175e9d2cc525531660ac439c114fac",
-    "premultipliedAlpha": true,
-    "profile": {
-      "api": "WebGL",
-      "version": "1.0"
-    },
-    "version": "2.0"
-  },
-  "bufferViews": {
-    "bufferView_0": {
-      "buffer": "SmilingFace",
-      "byteLength": 81632,
-      "byteOffset": 0,
-      "target": 34962
-    },
-    "bufferView_1": {
-      "buffer": "SmilingFace",
-      "byteLength": 29184,
-      "byteOffset": 81632,
-      "target": 34963
-    }
-  },
-  "buffers": {
-    "SmilingFace": {
-      "type": "arraybuffer",
-      "byteLength": 110816,
-      "uri": "SmilingFace.bin"
-    }
-  },
-  "images": {
-    "m0smiling_face_DF-diffuse-image": {
-      "name": "m0smiling_face_DF-diffuse-image",
-      "uri": "SmilingFace_texture_0001.jpg"
-    },
-    "m0smiling_face_DF-specular-image": {
-      "name": "m0smiling_face_DF-specular-image",
-      "uri": "SmilingFace_texture_0002.jpg"
-    }
-  },
-  "materials": {
-    "m0smiling_face_DF-fx": {
-      "name": "m0smiling_face_DF",
-      "technique": "technique0",
-      "values": {
-        "ambient": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "diffuse": [
-          "texture_m0smiling_face_DF-diffuse-image"
-        ],
-        "emission": [
-          0,
-          0,
-          0,
-          1
-        ],
-        "shininess": [
-          20
-        ],
-        "specular": [
-          "texture_m0smiling_face_DF-specular-image"
-        ]
-      }
-    }
-  },
-  "meshes": {
-    "meshId0": {
-      "name": "meshId0_name",
-      "primitives": [
+    "scene": 0,
+    "scenes": [
         {
-          "attributes": {
-            "NORMAL": "accessor_35",
-            "POSITION": "accessor_33",
-            "TEXCOORD_0": "accessor_37"
-          },
-          "indices": "accessor_31",
-          "material": "m0smiling_face_DF-fx",
-          "mode": 4
+            "nodes": [
+                0
+            ]
         }
-      ]
-    }
-  },
-  "nodes": {
-    "rootNode": {
-      "children": [],
-      "meshes": [
-        "meshId0"
-      ],
-      "matrix": [
-        1,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1
-      ]
-    }
-  },
-  "programs": {
-    "program_0": {
-      "attributes": [
-        "a_normal",
-        "a_position",
-        "a_texcoord0"
-      ],
-      "fragmentShader": "SmilingFace0FS",
-      "vertexShader": "SmilingFace0VS"
-    }
-  },
-  "samplers": {
-    "sampler_0": {
-      "magFilter": 9729,
-      "minFilter": 9729,
-      "wrapS": 10497,
-      "wrapT": 10497
-    }
-  },
-  "scene": "defaultScene",
-  "scenes": {
-    "defaultScene": {
-      "nodes": [
-        "rootNode"
-      ]
-    }
-  },
-  "shaders": {
-    "SmilingFace0FS": {
-      "type": 35632,
-      "uri": "SmilingFace0FS.glsl"
-    },
-    "SmilingFace0VS": {
-      "type": 35633,
-      "uri": "SmilingFace0VS.glsl"
-    }
-  },
-  "skins": {},
-  "techniques": {
-    "technique0": {
-      "attributes": {
-        "a_normal": "normal",
-        "a_position": "position",
-        "a_texcoord0": "texcoord0"
-      },
-      "parameters": {
-        "ambient": {
-          "type": 35666
-        },
-        "diffuse": {
-          "type": 35678
-        },
-        "emission": {
-          "type": 35666
-        },
-        "modelViewMatrix": {
-          "semantic": "MODELVIEW",
-          "type": 35676
-        },
-        "normal": {
-          "semantic": "NORMAL",
-          "type": 35665
-        },
-        "normalMatrix": {
-          "semantic": "MODELVIEWINVERSETRANSPOSE",
-          "type": 35675
-        },
-        "position": {
-          "semantic": "POSITION",
-          "type": 35665
-        },
-        "projectionMatrix": {
-          "semantic": "PROJECTION",
-          "type": 35676
-        },
-        "shininess": {
-          "type": 5126
-        },
-        "specular": {
-          "type": 35678
-        },
-        "texcoord0": {
-          "semantic": "TEXCOORD_0",
-          "type": 35664
+    ],
+    "nodes": [
+        {
+            "meshes": [
+                0
+            ],
+            "matrix": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
         }
-      },
-      "program": "program_0",
-      "states": {
-        "enable": [
-          2929,
-          2884
-        ]
-      },
-      "uniforms": {
-        "u_ambient": "ambient",
-        "u_diffuse": "diffuse",
-        "u_emission": "emission",
-        "u_modelViewMatrix": "modelViewMatrix",
-        "u_normalMatrix": "normalMatrix",
-        "u_projectionMatrix": "projectionMatrix",
-        "u_shininess": "shininess",
-        "u_specular": "specular"
-      }
-    }
-  },
-  "textures": {
-    "texture_m0smiling_face_DF-diffuse-image": {
-      "format": 6408,
-      "internalFormat": 6408,
-      "sampler": "sampler_0",
-      "source": "m0smiling_face_DF-diffuse-image",
-      "target": 3553,
-      "type": 5121
-    },
-    "texture_m0smiling_face_DF-specular-image": {
-      "format": 6408,
-      "internalFormat": 6408,
-      "sampler": "sampler_0",
-      "source": "m0smiling_face_DF-specular-image",
-      "target": 3553,
-      "type": 5121
-    }
-  },
-  "extensionsRequired": [],
-  "cameras": {},
-  "extensionsUsed": []
+    ],
+    "meshes": [
+        {
+            "primitives": [
+                {
+                    "attributes": {
+                        "COLOR_0": 1,
+                        "NORMAL": 2,
+                        "POSITION": 3,
+                        "TEXCOORD_0": 4
+                    },
+                    "indices": 0,
+                    "mode": 4,
+                    "material": 0
+                }
+            ],
+            "name": "meshId0_name"
+        }
+    ],
+    "accessors": [
+        {
+            "bufferView": 0,
+            "byteOffset": 0,
+            "byteStride": 0,
+            "componentType": 5123,
+            "count": 14592,
+            "max": [
+                2550.0
+            ],
+            "min": [
+                0.0
+            ],
+            "type": "SCALAR"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 0,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "type": "VEC3"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 30612,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.9999155402183532,
+                0.9999614953994752,
+                0.999551236629486
+            ],
+            "min": [
+                -0.9999155402183532,
+                -0.9979230761528016,
+                -0.9998226761817932
+            ],
+            "type": "VEC3"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 61224,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.8106791973114014,
+                0.8187642097473145,
+                0.7583367228507996
+            ],
+            "min": [
+                -0.8106791973114014,
+                -0.8187641501426697,
+                -0.8632782101631165
+            ],
+            "type": "VEC3"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 91836,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.991733968257904,
+                0.98796808719635
+            ],
+            "min": [
+                0.011699199676513672,
+                0.0060114264488220219
+            ],
+            "type": "VEC2"
+        }
+    ],
+    "materials": [
+        {
+            "values": {
+                "ambient": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "diffuse": [
+                    0
+                ],
+                "emission": [
+                    0.0,
+                    0.0,
+                    0.0,
+                    1.0
+                ],
+                "specular": [
+                    1
+                ],
+                "shininess": [
+                    20.0
+                ],
+                "transparency": [
+                    1.0
+                ]
+            },
+            "technique": 0
+        }
+    ],
+    "textures": [
+        {
+            "format": 6408,
+            "internalFormat": 6408,
+            "sampler": 0,
+            "source": 0,
+            "target": 3553,
+            "type": 5121
+        },
+        {
+            "format": 6408,
+            "internalFormat": 6408,
+            "sampler": 0,
+            "source": 1,
+            "target": 3553,
+            "type": 5121
+        }
+    ],
+    "images": [
+        {
+            "uri": "SmilingFace_texture_0001.jpg"
+        },
+        {
+            "uri": "SmilingFace_texture_0002.jpg"
+        }
+    ],
+    "samplers": [
+        {
+            "magFilter": 9729,
+            "minFilter": 9986,
+            "wrapS": 10497,
+            "wrapT": 10497
+        }
+    ],
+    "techniques": [
+        {
+            "attributes": {
+                "a_normal": "normal",
+                "a_position": "position",
+                "a_texcoord0": "texcoord0"
+            },
+            "parameters": {
+                "ambient": {
+                    "type": 35666
+                },
+                "diffuse": {
+                    "type": 35678
+                },
+                "emission": {
+                    "type": 35666
+                },
+                "modelViewMatrix": {
+                    "semantic": "MODELVIEW",
+                    "type": 35676
+                },
+                "normal": {
+                    "semantic": "NORMAL",
+                    "type": 35665
+                },
+                "normalMatrix": {
+                    "semantic": "MODELVIEWINVERSETRANSPOSE",
+                    "type": 35675
+                },
+                "position": {
+                    "semantic": "POSITION",
+                    "type": 35665
+                },
+                "projectionMatrix": {
+                    "semantic": "PROJECTION",
+                    "type": 35676
+                },
+                "shininess": {
+                    "type": 5126
+                },
+                "specular": {
+                    "type": 35678
+                },
+                "texcoord0": {
+                    "semantic": "TEXCOORD_0",
+                    "type": 35665
+                },
+                "transparency": {
+                    "type": 5126
+                }
+            },
+            "program": 0,
+            "states": {
+                "enable": [
+                    2884,
+                    2929
+                ]
+            },
+            "uniforms": {
+                "u_ambient": "ambient",
+                "u_diffuse": "diffuse",
+                "u_emission": "emission",
+                "u_modelViewMatrix": "modelViewMatrix",
+                "u_normalMatrix": "normalMatrix",
+                "u_projectionMatrix": "projectionMatrix",
+                "u_shininess": "shininess",
+                "u_specular": "specular",
+                "u_transparency": "transparency"
+            }
+        }
+    ],
+    "programs": [
+        {
+            "attributes": [
+                "a_normal",
+                "a_position",
+                "a_texcoord0"
+            ],
+            "fragmentShader": 1,
+            "vertexShader": 0
+        }
+    ],
+    "shaders": [
+        {
+            "type": 35633,
+            "uri": "0VS.glsl"
+        },
+        {
+            "type": 35632,
+            "uri": "1FS.glsl"
+        }
+    ],
+    "bufferViews": [
+        {
+            "buffer": 0,
+            "byteOffset": 112244,
+            "byteLength": 29184,
+            "target": 34963
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 0,
+            "byteLength": 112244,
+            "target": 34962
+        }
+    ],
+    "buffers": [
+        {
+            "byteLength": 141428,
+            "uri": "0.bin",
+            "type": "arraybuffer"
+        }
+    ]
 }
