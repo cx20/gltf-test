@@ -38,6 +38,8 @@ Test environment : Windows 10 + Chrome 56
 
 ## [glTF 2.0 Tutorial Models](https://github.com/javagl/gltfTutorialModels/tree/2.0)
 
+**Note:** These models are not yet updated to glTF 2.0!
+
 Test environment : Windows 10 + Chrome 56
 
 |Model                                                              |Screenshot                                                          |[Three.js r85dev](https://github.com/mrdoob/three.js/tree/dev/examples/js/loaders/GLTFLoader.js)                                                                                                              |[Babylon.js 2.6dev](https://github.com/BabylonJS/Babylon.js/tree/master/loaders/src/glTF)                                                                                                                             |[Cesium.js 1.30](https://github.com/AnalyticalGraphicsInc/cesium/)                                                                                                                                      |[xeogl 2017.02.09](https://github.com/xeolabs/xeogl/tree/master/src/models/gltf)                                                                                                             |[GLBoost r2dev](https://github.com/emadurandal/GLBoost/blob/master/src/js/middle_level/loader/GLTFLoader.js)                                                                                                  |[Grimoire.js 2017.01.28](https://github.com/GrimoireGL/grimoirejs-gltf)                                                                                                                           |
