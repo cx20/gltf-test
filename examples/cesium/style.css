@@ -1,5 +1,3 @@
-@import url("../../libs/cesium/1.26/Widgets/widgets.css");
-
 html, body, #cesiumContainer {
     position: absolute;
     top: 0;
