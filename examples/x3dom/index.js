@@ -12,5 +12,6 @@ document.onload = function () {
     var shape = $("#gltf");
     var scale = modelInfo.scale;
     shape.attr({scale: scale + " " + scale + " " + scale});
+    if (modelInfo.name == 'GearboxAssy') {document.querySelector('timesensor').remove();}
     shape.append("<ExternalShape id='exshape' url='../../" + modelInfo.category + "/" + modelInfo.path + "' />");
 }
