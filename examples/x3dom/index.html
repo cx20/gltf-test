@@ -23,7 +23,7 @@
         <Transform DEF="model" rotation="0 1 0 0" id="gltf">
             <!-- <ExternalShape id="exshape" url="https://cdn.rawgit.com/cx20/gltf-test/master/sampleModels/Duck/glTF-Binary/Duck.glb"></ExternalShape> -->
         </Transform>                
-        <timeSensor DEF="time" cycleInterval="2" loop="true"></timeSensor>
+        <timeSensor DEF="time" cycleInterval="20" loop="true"></timeSensor>
         <OrientationInterpolator DEF="move" key="0 0.5 1" keyValue="0 1 0 0, 0 1 0 3.14, 0 1 0 6.28"/>
         <Route fromNode="time" fromField ="fraction_changed" toNode="move" toField="set_fraction"></Route>
         <Route fromNode="move" fromField ="value_changed" toNode="model" toField="rotation"></Route>
