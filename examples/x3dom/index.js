@@ -10,6 +10,11 @@ if (!modelInfo) {
 
 document.onload = function () {
     var shape = $("#gltf");
+    if (!modelInfo.path.includes("glTF-Binary")) {
+        shape.append("<Shape><Box></Box></Shape>");
+        return;
+    }
+    
     var scale = modelInfo.scale;
     shape.attr({scale: scale + " " + scale + " " + scale});
     if (modelInfo.name == 'GearboxAssy') {
@@ -23,4 +28,5 @@ document.onload = function () {
         vp.attr({centerofrotation: "159.20 17.02 3.21"});
     }
     shape.append("<ExternalShape id='exshape' url='../../" + modelInfo.category + "/" + modelInfo.path + "' />");
+ 
 }
