@@ -10,6 +10,19 @@ if (!modelInfo) {
 
 document.onload = function () {
     var shape = $("#gltf");
+    if (!modelInfo.path.includes("glTF-Binary")) {
+        var notSupportedShape = "<shape>\n";
+        notSupportedShape += "<appearance>\n";
+        notSupportedShape += "  <material ambientIntensity='0.0933' diffuseColor='0.32 0.54 0.26' shininess='0.51' specularColor='0.46 0.46 0.46'></material>";
+        notSupportedShape += "</appearance>\n"
+        notSupportedShape += "<text string='"+'"Apologies" "only binary supported" " "'+"' solid='false'>";
+        notSupportedShape += "    <fontstyle family='"+'"SANS"'+"' size='0.8' justify='middle'></fontstyle>";
+        notSupportedShape += "</text>";
+        notSupportedShape += "</shape>";
+        shape.append(notSupportedShape);
+        return;
+    }
+    
     var scale = modelInfo.scale;
     shape.attr({scale: scale + " " + scale + " " + scale});
     if (modelInfo.name == 'GearboxAssy') {
@@ -23,4 +36,5 @@ document.onload = function () {
         vp.attr({centerofrotation: "159.20 17.02 3.21"});
     }
     shape.append("<ExternalShape id='exshape' url='../../" + modelInfo.category + "/" + modelInfo.path + "' />");
+ 
 }
