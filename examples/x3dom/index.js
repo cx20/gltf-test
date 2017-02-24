@@ -18,6 +18,7 @@ document.onload = function () {
         var vp = $("#vp");
         vp.attr({fieldofview: "0.263245"});
         vp.attr({position: "207.615 53.3281 51.6212"});
+        //from decomposition of camera node transform matrix
         vp.attr({orientation: "-0.5035214059784457 0.8384312102757996 0.20856485647622058 0.9177268588403985"});
         vp.attr({centerofrotation: "159.20 17.02 3.21"});
     }
