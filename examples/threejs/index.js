@@ -38,7 +38,8 @@ function init() {
         console.log( item, loaded, total );
     };
 
-    var loader = new THREE.GLTFLoader();
+    THREE.GLTF2Loader.Shaders.removeAll(); // remove all previous shaders
+    var loader = new THREE.GLTF2Loader();
 
     var scale = modelInfo.scale;
     //var url = "../../sampleModels/" + modelInfo.path;
@@ -90,9 +91,12 @@ function init() {
 
 function animate() {
     requestAnimationFrame( animate );
-    //THREE.GLTFLoader.Animations.update();
     if (mixer) mixer.update(clock.getDelta());
-    THREE.GLTFLoader.Shaders.update(scene, camera);
-    renderer.render( scene, camera );
+    THREE.GLTF2Loader.Shaders.update(scene, camera);
     controls.update();
+    render();
+}
+
+function render() {
+    renderer.render( scene, camera );
 }

@@ -3,19 +3,20 @@
  * @author mrdoob / http://mrdoob.com/
  * @author Tony Parisi / http://www.tonyparisi.com/
  * @author Takahiro / https://github.com/takahirox
+ * @author Don McCurdy / https://www.donmccurdy.com
  */
 
-THREE.GLTFLoader = ( function () {
+THREE.GLTF2Loader = ( function () {
 
-	function GLTFLoader( manager ) {
+	function GLTF2Loader( manager ) {
 
 		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
 
 	}
 
-	GLTFLoader.prototype = {
+	GLTF2Loader.prototype = {
 
-		constructor: GLTFLoader,
+		constructor: GLTF2Loader,
 
 		load: function ( url, onLoad, onProgress, onError ) {
 
@@ -73,7 +74,13 @@ THREE.GLTFLoader = ( function () {
 
 			}
 
-			console.time( 'GLTFLoader' );
+			if ( json.extensionsUsed && json.extensionsUsed.indexOf( EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ) >= 0 ) {
+
+				extensions[ EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ] = new GLTFMaterialsPBRExtension( json );
+
+			}
+
+			console.time( 'GLTF2Loader' );
 
 			var parser = new GLTFParser( json, extensions, {
 
@@ -84,7 +91,7 @@ THREE.GLTFLoader = ( function () {
 
 			parser.parse( function ( scene, scenes, cameras, animations ) {
 
-				console.timeEnd( 'GLTFLoader' );
+				console.timeEnd( 'GLTF2Loader' );
 
 				var glTF = {
 					"scene": scene,
@@ -164,7 +171,7 @@ THREE.GLTFLoader = ( function () {
 
 	/* GLTFSHADERS */
 
-	GLTFLoader.Shaders = new GLTFRegistry();
+	GLTF2Loader.Shaders = new GLTFRegistry();
 
 	/* GLTFSHADER */
 
@@ -269,26 +276,14 @@ THREE.GLTFLoader = ( function () {
 
 	};
 
-
-	/* ANIMATION */
-
-	GLTFLoader.Animations = {
-
-		update: function () {
-
-			console.warn( 'THREE.GLTFLoader.Animation has been deprecated. Use THREE.AnimationMixer instead.' );
-
-		}
-
-	};
-
 	/*********************************/
 	/********** EXTENSIONS ***********/
 	/*********************************/
 
 	var EXTENSIONS = {
 		KHR_BINARY_GLTF: 'KHR_binary_glTF',
-		KHR_MATERIALS_COMMON: 'KHR_materials_common'
+		KHR_MATERIALS_COMMON: 'KHR_materials_common',
+		FRAUNHOFER_MATERIALS_PBR: 'FRAUNHOFER_materials_pbr'
 	};
 
 	/* MATERIALS COMMON EXTENSION */
@@ -400,6 +395,115 @@ THREE.GLTFLoader = ( function () {
 		var stringData = convertUint8ArrayToString( new Uint8Array( bufferView ) );
 
 		return 'data:' + metadata.mimeType + ';base64,' + btoa( stringData );
+
+	};
+
+	/* MATERIALS PBR EXTENSION */
+
+	var PBR_EXTENSION_METAL_ROUGHNESS_MODEL = 'PBR_metal_roughness';
+
+	function GLTFMaterialsPBRExtension () {
+
+		this.name = EXTENSIONS.FRAUNHOFER_MATERIALS_PBR;
+
+	}
+
+	GLTFMaterialsPBRExtension.prototype.createMaterial = function (material, dependencies) {
+
+		if ( material.materialModel !== PBR_EXTENSION_METAL_ROUGHNESS_MODEL ) {
+
+			throw new Error( '[GLTFMaterialsPBRExtension] Unsupported material model "%s".', material.materialModel );
+
+		}
+
+		var materialValues = material.values;
+		var materialParams = {};
+
+		// Ambient occlusion.
+
+		if ( materialValues.aoFactor !== undefined ) {
+
+			materialParams.aoMapIntensity = materialValues.aoFactor;
+
+		}
+
+		if ( typeof( materialValues.aoTexture ) === 'string' ) {
+
+			materialParams.aoMap = dependencies.textures[ materialValues.aoTexture ];
+
+		}
+
+		// Color.
+
+		if ( Array.isArray( materialValues.baseColorFactor ) ) {
+
+			materialParams.color = new THREE.Color().fromArray( materialValues.baseColorFactor ).getHex();
+
+		}
+
+		if ( typeof( materialValues.baseColorTexture ) === 'string' ) {
+
+			materialParams.map = dependencies.textures[ materialValues.baseColorTexture ];
+
+		}
+
+		// Emissive.
+
+		if ( materialValues.emissiveFactor !== undefined ) {
+
+			materialParams.emissive = new THREE.Color().fromArray( materialValues.emissiveFactor );
+
+		}
+
+		if ( typeof( materialValues.emissiveTexture ) === 'string' ) {
+
+			materialParams.emissiveMap = dependencies.textures[ materialValues.emissiveTexture ];
+
+		}
+
+		// Metalness.
+
+		if ( materialValues.metallicFactor !== undefined ) {
+
+			materialParams.metalness = materialValues.metallicFactor;
+
+		}
+
+		if ( typeof( materialValues.metallicTexture ) === 'string' ) {
+
+			materialParams.metalnessMap = dependencies.textures[ materialValues.metallicTexture ];
+
+		}
+
+		// Normals.
+
+		// if ( materialValues.normalFactor !== undefined ) {
+
+		// 	materialParams.normalScale = materialValues.normalFactor;
+
+		// }
+
+		if ( typeof( materialValues.normalTexture ) === 'string' ) {
+
+			materialParams.normalMap = dependencies.textures[ materialValues.normalTexture ];
+
+		}
+
+		// Roughness.
+
+		if ( materialValues.roughnessFactor !== undefined ) {
+
+			materialParams.roughness = materialValues.roughnessFactor;
+
+		}
+
+		if ( typeof( materialValues.roughnessTexture ) === 'string' ) {
+
+			materialParams.roughnessMap = dependencies.textures[ materialValues.roughnessTexture ];
+
+		}
+
+		return new THREE.MeshStandardMaterial( materialParams );
 
 	};
 
@@ -580,9 +684,9 @@ THREE.GLTFLoader = ( function () {
 
 						value.then( function( key, value ) {
 
-							results[ idx ] = value;
+							results[ key ] = value;
 
-						}.bind( this, key ));
+						}.bind( this, idx ));
 
 					} else {
 
@@ -984,7 +1088,7 @@ THREE.GLTFLoader = ( function () {
 
 			} else {
 
-				console.warn( 'THREE.GLTFLoader: ' + buffer.type + ' buffer type is not supported' );
+				console.warn( 'THREE.GLTF2Loader: ' + buffer.type + ' buffer type is not supported' );
 
 			}
 
@@ -1108,7 +1212,7 @@ THREE.GLTFLoader = ( function () {
 
 							if ( texture.internalFormat !== undefined && _texture.format !== WEBGL_TEXTURE_FORMATS[ texture.internalFormat ] ) {
 
-								console.warn( 'THREE.GLTFLoader: Three.js doesn\'t support texture internalFormat which is different from texture format. ' +
+								console.warn( 'THREE.GLTF2Loader: Three.js doesn\'t support texture internalFormat which is different from texture format. ' +
 								              'internalFormat will be forced to be the same value as format.' );
 
 							}
@@ -1147,6 +1251,7 @@ THREE.GLTFLoader = ( function () {
 	GLTFParser.prototype.loadMaterials = function () {
 
 		var json = this.json;
+		var extensions = this.extensions;
 
 		return this._withDependencies( [
 
@@ -1162,10 +1267,15 @@ THREE.GLTFLoader = ( function () {
 				var materialParams = {};
 
 				var khr_material;
+				var pbr_material;
 
 				if ( material.extensions && material.extensions[ EXTENSIONS.KHR_MATERIALS_COMMON ] ) {
 
 					khr_material = material.extensions[ EXTENSIONS.KHR_MATERIALS_COMMON ];
+
+				} else if ( material.extensions && material.extensions[ EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ] ) {
+
+					pbr_material = material.extensions[ EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ];
 
 				}
 
@@ -1212,6 +1322,15 @@ THREE.GLTFLoader = ( function () {
 						materialParams.opacity = ( materialValues.transparency !== undefined ) ? materialValues.transparency : 1;
 
 					}
+
+				} else if ( pbr_material ) {
+
+					var pbrExtension = extensions[ EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ];
+					pbr_material = pbrExtension.createMaterial( pbr_material, dependencies );
+
+					if ( material.name !== undefined ) pbr_material.name = material.name;
+
+					return pbr_material;
 
 				} else if ( material.technique === undefined ) {
 
@@ -1944,7 +2063,7 @@ THREE.GLTFLoader = ( function () {
 
 							if ( group === undefined ) {
 
-								console.warn( 'GLTFLoader: Couldn\'t find node "' + mesh + '".' );
+								console.warn( 'GLTF2Loader: Couldn\'t find node "' + mesh + '".' );
 								continue;
 
 							}
@@ -2172,11 +2291,11 @@ THREE.GLTFLoader = ( function () {
 
 				_scene.traverse( function ( child ) {
 
-					// Register raw material meshes with GLTFLoader.Shaders
+					// Register raw material meshes with GLTF2Loader.Shaders
 					if ( child.material && child.material.isRawShaderMaterial ) {
 
 						var xshader = new GLTFShader( child, dependencies.nodes );
-						GLTFLoader.Shaders.add( child.uuid, xshader );
+						GLTF2Loader.Shaders.add( child.uuid, xshader );
 
 					}
 
@@ -2190,6 +2309,6 @@ THREE.GLTFLoader = ( function () {
 
 	};
 
-	return GLTFLoader;
+	return GLTF2Loader;
 
 } )();
