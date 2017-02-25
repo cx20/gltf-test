@@ -5,6 +5,9 @@ if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
+    modelInfo = TutorialPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }

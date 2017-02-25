@@ -122,6 +122,49 @@ function makeTutorialModelLinks() {
 
 }
 
+function makeTutorialPbrModelLinks() {
+    var modelList = TutorialPbrModelIndex.List;
+    var numModels = modelList.length;
+    var numEngines = engines.length;
+
+    var tableHead = document.querySelector('#tutorialPbrModelTable thead tr');
+    var tableBody = document.querySelector('#tutorialPbrModelTable tbody');
+
+    var i, j;
+    for (i = 0; i < numEngines; ++i) {
+        var th = document.createElement('th');
+        th.textContent = engines[i].name;
+        tableHead.appendChild(th);
+    }
+
+    for (j = 0; j < numModels; ++j) {
+        var modelName = modelList[j].name;
+        var scale = modelList[j].scale;
+        var tr = document.createElement('tr');
+        var tdName = document.createElement('td');
+        tdName.textContent = modelName;
+        tr.appendChild(tdName);
+        var tdPic = document.createElement('td');
+        var img = document.createElement('img');
+        img.setAttribute('src', 'tutorialModels/' + TutorialPbrModelIndex.getScreenshot(modelName));
+        img.setAttribute('width', 128);
+        img.setAttribute('height', 128);
+        tdPic.appendChild(img);
+        tr.appendChild(tdPic);
+        for (i = 0; i < numEngines; ++i) {
+            var td = document.createElement('td');
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            td.appendChild(document.createElement('br'));
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+            td.appendChild(document.createElement('br'));
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
+            tr.appendChild(td);
+        }
+        tableBody.appendChild(tr);
+    }
+
+}
+
 function createlink(engineName, categoryName, modelName, type, scale)
 {
     var a = document.createElement('a');
@@ -138,5 +181,6 @@ function createlink(engineName, categoryName, modelName, type, scale)
     return a;
 }
 
-makeSampleModelLinks();
 makeTutorialModelLinks();
+makeTutorialPbrModelLinks();
+makeSampleModelLinks();
