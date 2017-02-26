@@ -30,19 +30,22 @@ function init() {
     directionalLight.position.set( 0, 0, 1 );
     scene.add( directionalLight );
 
+    var directionalLight2 = new THREE.DirectionalLight( 0xffeedd );
+    directionalLight2.position.set( 0, 5, -5 );
+    scene.add( directionalLight2 );
+
     camera = new THREE.PerspectiveCamera( 75, width / height, 1, 2000 );
     camera.position.set(0, 2, 3);
+    scene.add( camera );
 
     var manager = new THREE.LoadingManager();
     manager.onProgress = function ( item, loaded, total ) {
         console.log( item, loaded, total );
     };
 
-    THREE.GLTF2Loader.Shaders.removeAll(); // remove all previous shaders
     var loader = new THREE.GLTF2Loader();
 
     var scale = modelInfo.scale;
-    //var url = "../../sampleModels/" + modelInfo.path;
     var url = "../../" + modelInfo.category + "/" + modelInfo.path;
     loader.load(url, function (data) {
         gltf = data;
@@ -92,7 +95,6 @@ function init() {
 function animate() {
     requestAnimationFrame( animate );
     if (mixer) mixer.update(clock.getDelta());
-    THREE.GLTF2Loader.Shaders.update(scene, camera);
     controls.update();
     render();
 }
