@@ -1623,7 +1623,10 @@ THREE.GLTF2Loader = ( function () {
 					if ( materialValues.pbrMetallicRoughness.metallicRoughnessTexture !== undefined ) {
 
 						materialParams.roughnessMap = dependencies.textures[ materialValues.pbrMetallicRoughness.metallicRoughnessTexture.index ];
-						materialParams.roughness = 0.6; // default value 0.5 is too shiny?
+						materialParams.roughness = 1.0;
+
+						materialParams.metalnessMap = dependencies.textures[ materialValues.pbrMetallicRoughness.metallicRoughnessTexture.index ];
+						materialParams.metalness = 1.0;
 
 					}
 
