@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 78580df89ef6721437c070483ed5cc27aaecdfa9 - Wed Jan 18 13:57:58 2017 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - e2b39d84fa87ee636a17993237bb62aa87ae3291 - Fri Mar 10 17:06:35 2017 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -1284,6 +1284,9 @@ x3dom.RequestManager.abortAllRequests = function()
 
     this.requests = [];
     this.activeRequests = [];
+    this.failedRequests = 0;
+    this.loadedRequests = 0;
+    this.totalRequests = 0;
 
     this.onAbortAllRequests( this._getCounters() );
 }
@@ -2467,6 +2470,8 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
 
         if (ids.length && ids.length > 1) //Multi select
         {
+            var hasChanged = false;
+
             //Get original pixels
             var dtPixels = parts.colorMap.getPixels();
             var eaPixels = parts.emissiveMap.getPixels();
@@ -2483,6 +2488,8 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
 
                 if( !this.multiPart._materials[partID]._highlighted )
                 {
+                    hasChanged = true;
+
                     this.multiPart._materials[partID]._highlighted = true;
 
                     dtPixels[pixelIDFront] = dtColor;
@@ -2495,9 +2502,11 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
                 }
             }
 
-            this.colorMap.setPixels(dtPixels, false);
-            this.emissiveMap.setPixels(eaPixels, false);
-            this.specularMap.setPixels(ssPixels, true);
+            if( hasChanged ) {
+                this.colorMap.setPixels(dtPixels, false);
+                this.emissiveMap.setPixels(eaPixels, false);
+                this.specularMap.setPixels(ssPixels, true);
+            }
         }
         else
         {
@@ -2538,6 +2547,8 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
 
         if (ids.length && ids.length > 1) //Multi select
         {
+            var hasChanged = false;
+
             //Get original pixels
             var dtPixels = parts.colorMap.getPixels();
             var eaPixels = parts.emissiveMap.getPixels();
@@ -2552,6 +2563,8 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
 
                 if( material._highlighted )
                 {
+                    hasChanged = true;
+
                     material._highlighted = false;
 
                     dtPixels[pixelIDFront] = new x3dom.fields.SFColorRGBA(material._diffuseColor.r, material._diffuseColor.g,
@@ -2570,9 +2583,13 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
                 }
             }
 
-            this.colorMap.setPixels(dtPixels, false);
-            this.emissiveMap.setPixels(eaPixels, false);
-            this.specularMap.setPixels(ssPixels, true);
+            if( hasChanged )
+            {
+                this.colorMap.setPixels(dtPixels, false);
+                this.emissiveMap.setPixels(eaPixels, false);
+                this.specularMap.setPixels(ssPixels, true);
+            }
+
         }
         else
         {
@@ -2807,13 +2824,15 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
                         this.multiPart._inlineNamespace.defMap[usage[j]]._vf.render = false;
                     }
                 }
-            }
 
-            parts.visibilityMap.setPixel(x, y, pixel);
-            this.multiPart.invalidateVolume();
+                parts.visibilityMap.setPixel(x, y, pixel);
+                this.multiPart.invalidateVolume();
+            }
         }
         else
         {
+            var hasChange = false;
+
             var pixels = parts.visibilityMap.getPixels();
 
             for (i = 0; i < parts.ids.length; i++) {
@@ -2822,6 +2841,8 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
 
                 if (pixels[parts.ids[i]].r != visibilityAsInt) {
                     pixels[parts.ids[i]].r = visibilityAsInt;
+
+                    hasChange = true;
 
                     this.multiPart._partVisibility[parts.ids[i]] = visibility;
 
@@ -2846,8 +2867,11 @@ x3dom.Parts = function(multiPart, ids, colorMap, emissiveMap, specularMap, visib
                 }
             }
 
-            parts.visibilityMap.setPixels(pixels);
-            this.multiPart.invalidateVolume();
+            if(hasChange)
+            {
+                parts.visibilityMap.setPixels(pixels);
+                this.multiPart.invalidateVolume();
+            }
         }
     };
 
@@ -7687,36 +7711,67 @@ x3dom.glTF.glTFLoader.prototype.updateScene = function(shape, shaderProgram, gl,
     for(var i = 0; i<nodes.length;++i)
     {
         var nodeID = nodes[i];
-        this.traverseNode(shape, shaderProgram, gl, this.scene.nodes[nodeID]);
+        var worldTransform = new x3dom.fields.SFMatrix4f(); // identity
+        this.traverseNode(shape, shaderProgram, gl, this.scene.nodes[nodeID], worldTransform);
     }
 };
 
-x3dom.glTF.glTFLoader.prototype.traverseNode = function(shape, shaderProgram, gl, node)
+
+x3dom.glTF.glTFLoader.prototype.traverseNode = function(shape, shaderProgram, gl, node, transform)
 {
+    var worldTransform = transform.mult(this.getTransform(node));
     var children = node["children"];
-    if(children!=null)
+    if(children != null)
         for(var i = 0; i<children.length;++i)
         {
             var childID = children[i];
-            this.traverseNode(shape, shaderProgram, gl, this.scene.nodes[childID]);
+            this.traverseNode(shape, shaderProgram, gl, this.scene.nodes[childID], worldTransform);
         }
 
     var meshes = node["meshes"];
     if(meshes != null && meshes.length > 0)
         for (var i = 0; i < meshes.length; ++i) {
             var meshID = meshes[i];
-            if (this.loaded.meshes[meshID] == null) {
-                this.updateMesh(shape, shaderProgram, gl, this.scene.meshes[meshID]);
+            //if (this.loaded.meshes[meshID] == null)
+            {
+                this.updateMesh(shape, shaderProgram, gl, this.scene.meshes[meshID], worldTransform);
                 this.loaded.meshes[meshID] = 1;
             }
         }
 };
 
-x3dom.glTF.glTFLoader.prototype.updateMesh = function(shape, shaderProgram, gl, mesh)
+
+x3dom.glTF.glTFLoader.prototype.getTransform = function (node) {
+    var transform = new x3dom.fields.SFMatrix4f();// start with identity
+    if ( node.matrix ) {
+        transform.setFromArray(node.matrix);
+        return transform;
+    }
+    if ( node.scale && node.scale.length == 3) {
+        var s = node.scale;
+        transform.setScale(new x3dom.fields.SFVec3f(s[0], s[1], s[2]));
+    }
+    if ( node.rotation && node.rotation.length == 4) {
+        var r = node.rotation;
+        var rotationMatrix = new x3dom.fields.SFMatrix4f();
+        rotationMatrix.setRotate(
+            new x3dom.fields.Quaternion(r[0], r[1], r[2], r[3]));
+        transform = rotationMatrix.mult(transform);
+    }
+    if ( node.translation && node.translation.length == 3 ) {
+        var t = node.translation;
+        var translationMatrix = x3dom.fields.SFMatrix4f.translation(
+            new x3dom.fields.SFVec3f(t[0], t[1], t[2]));
+        transform = translationMatrix.mult(transform);
+    }
+    return transform;
+};
+
+x3dom.glTF.glTFLoader.prototype.updateMesh = function(shape, shaderProgram, gl, mesh, worldTransform)
 {
     var primitives = mesh["primitives"];
     for(var i = 0; i<primitives.length; ++i){
-        this.loadglTFMesh(shape, shaderProgram, gl, primitives[i]);
+        this.loadglTFMesh(shape, shaderProgram, gl, primitives[i], worldTransform);
     }
 };
 
@@ -7814,7 +7869,7 @@ x3dom.glTF.glTFLoader.prototype.loadPrimitive =  function(shape, shaderProgram, 
     x3dom.BinaryContainerLoader.checkError(gl);
 };
 
-x3dom.glTF.glTFLoader.prototype.loadglTFMesh =  function(shape, shaderProgram, gl, primitive)
+x3dom.glTF.glTFLoader.prototype.loadglTFMesh =  function(shape, shaderProgram, gl, primitive, worldTransform)
 {
     "use strict";
 
@@ -7890,8 +7945,10 @@ x3dom.glTF.glTFLoader.prototype.loadglTFMesh =  function(shape, shaderProgram, g
     shape._nameSpace.doc.needRender = true;
     x3dom.BinaryContainerLoader.checkError(gl);
 
-    if(primitive.material != null && !this.meshOnly)
+    if(primitive.material != null && !this.meshOnly) {
         mesh.material = this.loadMaterial(gl, this.scene.materials[primitive.material]);
+        mesh.material.worldTransform = worldTransform;
+    }
 
     if(shape.meshes == null)
         shape.meshes = [];
@@ -8589,7 +8646,14 @@ x3dom.glTF.glTFMaterial.prototype.bind = function(gl, shaderParameter)
 
 x3dom.glTF.glTFMaterial.prototype.updateTransforms = function(shaderParameter)
 {
-    if(this.program != null)
+    var matrix4f = new x3dom.fields.SFMatrix4f();
+    
+    function glMultMatrix4 (gl, m) {
+        matrix4f.setFromArray(gl);
+        return matrix4f.mult(m).toGL(); //optimize by multiplying gl matrixes directly
+    }
+    
+    if(this.program !== null)
     {
         this.program.bind();
 
@@ -8600,13 +8664,18 @@ x3dom.glTF.glTFMaterial.prototype.updateTransforms = function(shaderParameter)
 
             switch(mapping){
                 case "modelViewMatrix":
-                    this.program[key] = shaderParameter.modelViewMatrix;
+                    this.program[key] = glMultMatrix4(shaderParameter.modelViewMatrix, this.worldTransform);
                     break;
                 case "viewMatrix":
                     this.program[key] = shaderParameter.viewMatrix;
                     break;
                 case "modelViewInverseTransposeMatrix":
-                    var mat = shaderParameter.normalMatrix;
+                    //var mat = shaderParameter.normalMatrix;
+                    //do modelviewinverse
+                    var worldInverse = this.worldTransform.inverse();
+                    matrix4f.setFromArray(shaderParameter.modelViewMatrixInverse);
+                    //mult in, transpose and to GL
+                    var mat = worldInverse.mult(matrix4f).transpose().toGL();
 
                     var model_view_inv_gl =
                         [mat[0], mat[1], mat[2],
@@ -8616,13 +8685,17 @@ x3dom.glTF.glTFMaterial.prototype.updateTransforms = function(shaderParameter)
                     this.program[key] = model_view_inv_gl;
                     break;
                 case "modelViewInverseMatrix":
-                    this.program[key] = shaderParameter.modelViewMatrixInverse;
+                    // work with worldTransform.inverse
+                    // (VM x W)-1 = W-1 x VM-1
+                    var worldInverse = this.worldTransform.inverse();
+                    matrix4f.setFromArray(shaderParameter.modelViewMatrixInverse);
+                    this.program[key] = worldInverse.mult(matrix4f);
                     break;
                 case "modelViewProjectionMatrix":
-                    this.program[key] = shaderParameter.modelViewProjectionMatrix;
+                    this.program[key] = glMultMatrix4(shaderParameter.modelViewProjectionMatrix, this.worldTransform);
                     break;
                 case "modelMatrix":
-                    this.program[key] = shaderParameter.model;
+                    this.program[key] = glMultMatrix4(shaderParameter.model, this.worldTransform);
                     break;
                 case "projectionMatrix":
                     this.program[key] = shaderParameter.projectionMatrix;
@@ -8632,8 +8705,8 @@ x3dom.glTF.glTFMaterial.prototype.updateTransforms = function(shaderParameter)
             }
         }
     }
-
 };
+
 /*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
@@ -11770,6 +11843,8 @@ x3dom.Texture.prototype.update = function()
 	{
 		this.updateTexture();
 	}
+
+    this.node.validateGLObject();
 };
 
 x3dom.Texture.prototype.setPixel = function(x, y, pixel, update)
@@ -11934,19 +12009,12 @@ x3dom.Texture.prototype.updateTexture = function()
         this.texture.height = tex._vf.image.height;
         this.texture.ready = true;
 
-		var pixelArr = tex._vf.image.array;//.toGL();
+		var pixelArr = tex._vf.image.array;
 		var pixelArrfont_size = tex._vf.image.width * tex._vf.image.height * tex._vf.image.comp;
 
-        if (pixelArr.length < pixelArrfont_size)
-        {
-            pixelArr = tex._vf.image.toGL();
+		var pixels = new Uint8Array(pixelArrfont_size);
 
-            while (pixelArr.length < pixelArrfont_size) {
-                pixelArr.push(0);
-            }
-        }
-
-		var pixels = new Uint8Array(pixelArr);
+        pixels.set(pixelArr);
 
 		gl.bindTexture(this.type, this.texture);
 		gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
@@ -43720,8 +43788,8 @@ x3dom.registerNodeType(
                     var dia = max.subtract(min);					
 					var tanfov2 = Math.tan(fov / 2.0);
 					
-					var dist1 = (dia.y / 2.0) / tanfov2 + dia.z;
-					var dist2 = (dia.x / 2.0) / tanfov2 + dia.z;
+					var dist1 = ( (dia.y / 2.0) / tanfov2 + dia.z ) + this._fieldOfView[2];
+					var dist2 = ( (dia.x / 2.0) / tanfov2 + dia.z ) + this._fieldOfView[2];
 					
 					znear = 0.00001;
 					zfar = (dist1 > dist2) ? dist1 * 4 : dist2 * 4;
@@ -46460,6 +46528,15 @@ x3dom.registerNodeType(
                         node.setAllDirty();
                     });
                 }
+            },
+            
+            validateGLObject: function ()
+            {
+                Array.forEach(this._parentNodes, function (node) {
+                    node._dirty.texture = false;
+                });
+
+                this._nameSpace.doc.needRender = true;
             }
         }
     ) // defineClass
@@ -47235,6 +47312,34 @@ x3dom.registerNodeType(
                                     Array.forEach(realShape._parentNodes, function (realShape2) {
                                         if (x3dom.isa(realShape2, x3dom.nodeTypes.X3DShapeNode)) {
                                             realShape2._dirty.texture = true;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+
+                this._nameSpace.doc.needRender = true;
+            },
+
+            validateGLObject: function ()
+            {
+                Array.forEach(this._parentNodes, function (app) {
+                    Array.forEach(app._parentNodes, function (shape) {
+                        // THINKABOUTME: this is a bit ugly, cleanup more generically
+                        if (x3dom.isa(shape, x3dom.nodeTypes.X3DShapeNode)) {
+                            shape._dirty.texture = false;
+                        }
+                        else {
+                            // Texture maybe in MultiTexture or CommonSurfaceShader
+                            Array.forEach(shape._parentNodes, function (realShape) {
+                                if (x3dom.isa(realShape, x3dom.nodeTypes.X3DShapeNode)) {
+                                    realShape._dirty.texture = false;
+                                } else {
+                                    Array.forEach(realShape._parentNodes, function (realShape2) {
+                                        if (x3dom.isa(realShape2, x3dom.nodeTypes.X3DShapeNode)) {
+                                            realShape2._dirty.texture = false;
                                         }
                                     });
                                 }
@@ -48109,7 +48214,7 @@ x3dom.registerNodeType(
 
                 this._vf.image.setPixels(pixels);
 
-                if( update ) {
+                if (update) {
                     this.invalidateGLObject();
                 }
             },
@@ -57059,14 +57164,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '78580df89ef6721437c070483ed5cc27aaecdfa9',
-    date:     'Wed Jan 18 13:57:58 2017 +0100'
+    revision: 'e2b39d84fa87ee636a17993237bb62aa87ae3291',
+    date:     'Fri Mar 10 17:06:35 2017 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '78580df89ef6721437c070483ed5cc27aaecdfa9',
-    date:     'Wed Jan 18 13:57:58 2017 +0100'
+    revision: 'e2b39d84fa87ee636a17993237bb62aa87ae3291',
+    date:     'Fri Mar 10 17:06:35 2017 +0100'
 };
 
