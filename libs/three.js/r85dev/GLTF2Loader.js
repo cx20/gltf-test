@@ -55,7 +55,7 @@ THREE.GLTF2Loader = ( function () {
 
 			var magic = convertUint8ArrayToString( new Uint8Array( data, 0, 4 ) );
 
-			if ( magic === BINARY_EXTENSION_HEADER_DEFAULTS.magic ) {
+			if ( magic === BINARY_EXTENSION_HEADER_MAGIC ) {
 
 				extensions[ EXTENSIONS.KHR_BINARY_GLTF ] = new GLTFBinaryExtension( data );
 				content = extensions[ EXTENSIONS.KHR_BINARY_GLTF ].content;
@@ -71,12 +71,6 @@ THREE.GLTF2Loader = ( function () {
 			if ( json.extensionsUsed && json.extensionsUsed.indexOf( EXTENSIONS.KHR_MATERIALS_COMMON ) >= 0 ) {
 
 				extensions[ EXTENSIONS.KHR_MATERIALS_COMMON ] = new GLTFMaterialsCommonExtension( json );
-
-			}
-
-			if ( json.extensionsUsed && json.extensionsUsed.indexOf( EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ) >= 0 ) {
-
-				extensions[ EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ] = new GLTFMaterialsPBRExtension( json );
 
 			}
 
@@ -269,8 +263,7 @@ THREE.GLTF2Loader = ( function () {
 
 	var EXTENSIONS = {
 		KHR_BINARY_GLTF: 'KHR_binary_glTF',
-		KHR_MATERIALS_COMMON: 'KHR_materials_common',
-		FRAUNHOFER_MATERIALS_PBR: 'FRAUNHOFER_materials_pbr'
+		KHR_MATERIALS_COMMON: 'KHR_materials_common'
 	};
 
 	/* MATERIALS COMMON EXTENSION */
@@ -327,172 +320,70 @@ THREE.GLTF2Loader = ( function () {
 	/* BINARY EXTENSION */
 
 	var BINARY_EXTENSION_BUFFER_NAME = 'binary_glTF';
-
-	var BINARY_EXTENSION_HEADER_DEFAULTS = { magic: 'glTF', version: 1, contentFormat: 0 };
-
-	var BINARY_EXTENSION_HEADER_LENGTH = 20;
+	var BINARY_EXTENSION_HEADER_MAGIC = 'glTF';
+	var BINARY_EXTENSION_HEADER_LENGTH = 12;
+	var BINARY_EXTENSION_CHUNK_TYPES = { JSON: 0x4E4F534A, BIN: 0x004E4942 };
 
 	function GLTFBinaryExtension( data ) {
 
 		this.name = EXTENSIONS.KHR_BINARY_GLTF;
+		this.content = null;
+		this.body = null;
 
 		var headerView = new DataView( data, 0, BINARY_EXTENSION_HEADER_LENGTH );
 
-		var header = {
+		this.header = {
 			magic: convertUint8ArrayToString( new Uint8Array( data.slice( 0, 4 ) ) ),
 			version: headerView.getUint32( 4, true ),
-			length: headerView.getUint32( 8, true ),
-			contentLength: headerView.getUint32( 12, true ),
-			contentFormat: headerView.getUint32( 16, true )
+			length: headerView.getUint32( 8, true )
 		};
 
-		for ( var key in BINARY_EXTENSION_HEADER_DEFAULTS ) {
+		if ( this.header.magic !== BINARY_EXTENSION_HEADER_MAGIC ) {
 
-			var value = BINARY_EXTENSION_HEADER_DEFAULTS[ key ];
+			throw new Error( 'GLTF2Loader: Unsupported glTF-Binary header.' );
 
-			if ( header[ key ] !== value ) {
+		} else if ( this.header.version < 2.0 ) {
 
-				throw new Error( 'Unsupported glTF-Binary header: Expected "%s" to be "%s".', key, value );
+			throw new Error( 'GLTF2Loader: Legacy binary file detected. Use GLTFLoader instead.' );
+
+		}
+
+		var chunkView = new DataView( data, BINARY_EXTENSION_HEADER_LENGTH );
+		var chunkIndex = 0;
+
+		while ( chunkIndex < chunkView.byteLength ) {
+
+			var chunkLength = chunkView.getUint32( chunkIndex, true );
+			chunkIndex += 4;
+
+			var chunkType = chunkView.getUint32( chunkIndex, true );
+			chunkIndex += 4;
+
+			if ( chunkType === BINARY_EXTENSION_CHUNK_TYPES.JSON ) {
+
+				var contentArray = new Uint8Array( data, BINARY_EXTENSION_HEADER_LENGTH + chunkIndex, chunkLength );
+				this.content = convertUint8ArrayToString( contentArray );
+
+			} else if ( chunkType === BINARY_EXTENSION_CHUNK_TYPES.BIN ) {
+
+				var byteOffset = BINARY_EXTENSION_HEADER_LENGTH + chunkIndex;
+				this.body = data.slice( byteOffset, byteOffset + chunkLength );
 
 			}
 
+			// Clients must ignore chunks with unknown types.
+
+			chunkIndex += chunkLength;
+
 		}
 
-		var contentArray = new Uint8Array( data, BINARY_EXTENSION_HEADER_LENGTH, header.contentLength );
+		if ( this.content === null ) {
 
-		this.header = header;
-		this.content = convertUint8ArrayToString( contentArray );
-		this.body = data.slice( BINARY_EXTENSION_HEADER_LENGTH + header.contentLength, header.length );
+			throw new Error( 'GLTF2Loader: JSON content not found.' );
+
+		}
 
 	}
-
-	GLTFBinaryExtension.prototype.loadShader = function ( shader, bufferViews ) {
-
-		var bufferView = bufferViews[ shader.extensions[ EXTENSIONS.KHR_BINARY_GLTF ].bufferView ];
-		var array = new Uint8Array( bufferView );
-
-		return convertUint8ArrayToString( array );
-
-	};
-
-	GLTFBinaryExtension.prototype.loadTextureSourceUri = function ( source, bufferViews ) {
-
-		var metadata = source.extensions[ EXTENSIONS.KHR_BINARY_GLTF ];
-		var bufferView = bufferViews[ metadata.bufferView ];
-		var stringData = convertUint8ArrayToString( new Uint8Array( bufferView ) );
-
-		return 'data:' + metadata.mimeType + ';base64,' + btoa( stringData );
-
-	};
-
-	/* MATERIALS PBR EXTENSION */
-
-	var PBR_EXTENSION_METAL_ROUGHNESS_MODEL = 'PBR_metal_roughness';
-
-	function GLTFMaterialsPBRExtension () {
-
-		this.name = EXTENSIONS.FRAUNHOFER_MATERIALS_PBR;
-
-	}
-
-	GLTFMaterialsPBRExtension.prototype.createMaterial = function (material, dependencies) {
-
-		if ( material.materialModel !== PBR_EXTENSION_METAL_ROUGHNESS_MODEL ) {
-
-			throw new Error( '[GLTFMaterialsPBRExtension] Unsupported material model "%s".', material.materialModel );
-
-		}
-
-		var materialValues = material.values;
-		var materialParams = {};
-
-		// Ambient occlusion.
-
-		if ( materialValues.aoFactor !== undefined ) {
-
-			materialParams.aoMapIntensity = materialValues.aoFactor;
-
-		}
-
-		if ( typeof( materialValues.aoTexture ) === 'string' ) {
-
-			materialParams.aoMap = dependencies.textures[ materialValues.aoTexture ];
-
-		}
-
-		// Color.
-
-		if ( Array.isArray( materialValues.baseColorFactor ) ) {
-
-			materialParams.color = new THREE.Color().fromArray( materialValues.baseColorFactor ).getHex();
-
-		}
-
-		if ( typeof( materialValues.baseColorTexture ) === 'string' ) {
-
-			materialParams.map = dependencies.textures[ materialValues.baseColorTexture ];
-
-		}
-
-		// Emissive.
-
-		if ( materialValues.emissiveFactor !== undefined ) {
-
-			materialParams.emissive = new THREE.Color().fromArray( materialValues.emissiveFactor );
-
-		}
-
-		if ( typeof( materialValues.emissiveTexture ) === 'string' ) {
-
-			materialParams.emissiveMap = dependencies.textures[ materialValues.emissiveTexture ];
-
-		}
-
-		// Metalness.
-
-		if ( materialValues.metallicFactor !== undefined ) {
-
-			materialParams.metalness = materialValues.metallicFactor;
-
-		}
-
-		if ( typeof( materialValues.metallicTexture ) === 'string' ) {
-
-			materialParams.metalnessMap = dependencies.textures[ materialValues.metallicTexture ];
-
-		}
-
-		// Normals.
-
-		// if ( materialValues.normalFactor !== undefined ) {
-
-		// 	materialParams.normalScale = materialValues.normalFactor;
-
-		// }
-
-		if ( typeof( materialValues.normalTexture ) === 'string' ) {
-
-			materialParams.normalMap = dependencies.textures[ materialValues.normalTexture ];
-
-		}
-
-		// Roughness.
-
-		if ( materialValues.roughnessFactor !== undefined ) {
-
-			materialParams.roughness = materialValues.roughnessFactor;
-
-		}
-
-		if ( typeof( materialValues.roughnessTexture ) === 'string' ) {
-
-			materialParams.roughnessMap = dependencies.textures[ materialValues.roughnessTexture ];
-
-		}
-
-		return new THREE.MeshStandardMaterial( materialParams );
-
-	};
 
 	/*********************************/
 	/********** INTERNALS ************/
@@ -749,6 +640,13 @@ THREE.GLTF2Loader = ( function () {
 
 		}
 
+		// Blob URL
+		if ( /^blob:.*$/i.test( url ) ) {
+
+			return url;
+
+		}
+
 		// Relative URL
 		return ( path || '' ) + url;
 
@@ -820,12 +718,12 @@ THREE.GLTF2Loader = ( function () {
 
 			switch ( semantic ) {
 
-				case "POSITION":
+				case 'POSITION':
 
 					shaderText = shaderText.replace( regEx, 'position' );
 					break;
 
-				case "NORMAL":
+				case 'NORMAL':
 
 					shaderText = shaderText.replace( regEx, 'normal' );
 					break;
@@ -837,6 +735,11 @@ THREE.GLTF2Loader = ( function () {
 					shaderText = shaderText.replace( regEx, 'uv' );
 					break;
 
+				case 'TEXCOORD_1':
+
+					shaderText = shaderText.replace( regEx, 'uv2' );
+					break;
+
 				case 'COLOR_0':
 				case 'COLOR0':
 				case 'COLOR':
@@ -844,12 +747,14 @@ THREE.GLTF2Loader = ( function () {
 					shaderText = shaderText.replace( regEx, 'color' );
 					break;
 
-				case "WEIGHT":
+				case 'WEIGHTS_0':
+				case 'WEIGHT': // WEIGHT semantic deprecated.
 
 					shaderText = shaderText.replace( regEx, 'skinWeight' );
 					break;
 
-				case "JOINT":
+				case 'JOINTS_0':
+				case 'JOINT': // JOINT semantic deprecated.
 
 					shaderText = shaderText.replace( regEx, 'skinIndex' );
 					break;
@@ -974,8 +879,6 @@ THREE.GLTF2Loader = ( function () {
 
 		] ).then( function ( dependencies ) {
 
-			var scene = dependencies.scenes[ json.scene ];
-
 			var scenes = [];
 
 			for ( var name in dependencies.scenes ) {
@@ -983,6 +886,8 @@ THREE.GLTF2Loader = ( function () {
 				scenes.push( dependencies.scenes[ name ] );
 
 			}
+
+			var scene = json.scene !== undefined ? dependencies.scenes[ json.scene ] : scenes[ 0 ];
 
 			var cameras = [];
 
@@ -1010,7 +915,6 @@ THREE.GLTF2Loader = ( function () {
 	GLTFParser.prototype.loadShaders = function () {
 
 		var json = this.json;
-		var extensions = this.extensions;
 		var options = this.options;
 
 		return this._withDependencies( [
@@ -1021,9 +925,11 @@ THREE.GLTF2Loader = ( function () {
 
 			return _each( json.shaders, function ( shader ) {
 
-				if ( shader.extensions && shader.extensions[ EXTENSIONS.KHR_BINARY_GLTF ] ) {
+				if ( shader.bufferView !== undefined ) {
 
-					return extensions[ EXTENSIONS.KHR_BINARY_GLTF ].loadShader( shader, dependencies.bufferViews );
+					var bufferView = dependencies.bufferViews[ shader.bufferView ];
+					var array = new Uint8Array( bufferView );
+					return convertUint8ArrayToString( array );
 
 				}
 
@@ -1053,13 +959,14 @@ THREE.GLTF2Loader = ( function () {
 
 		return _each( json.buffers, function ( buffer, name ) {
 
-			if ( name === BINARY_EXTENSION_BUFFER_NAME ) {
-
-				return extensions[ EXTENSIONS.KHR_BINARY_GLTF ].body;
-
-			}
-
 			if ( buffer.type === 'arraybuffer' || buffer.type === undefined ) {
+
+				// If present, GLB container is required to be the first buffer.
+				if ( buffer.uri === undefined && name === 0 ) {
+
+					return extensions[ EXTENSIONS.KHR_BINARY_GLTF ].body;
+
+				}
 
 				return new Promise( function ( resolve ) {
 
@@ -1127,11 +1034,13 @@ THREE.GLTF2Loader = ( function () {
 				var elementBytes = TypedArray.BYTES_PER_ELEMENT;
 				var itemBytes = elementBytes * itemSize;
 
+				var array;
+
 				// The buffer is not interleaved if the stride is the item size in bytes.
 				if ( accessor.byteStride && accessor.byteStride !== itemBytes ) {
 
 					// Use the full buffer if it's interleaved.
-					var array = new TypedArray( arraybuffer );
+					array = new TypedArray( arraybuffer );
 
 					// Integer parameters to IB/IBA are in array elements, not bytes.
 					var ib = new THREE.InterleavedBuffer( array, accessor.byteStride / elementBytes );
@@ -1155,7 +1064,6 @@ THREE.GLTF2Loader = ( function () {
 	GLTFParser.prototype.loadTextures = function () {
 
 		var json = this.json;
-		var extensions = this.extensions;
 		var options = this.options;
 
 		return this._withDependencies( [
@@ -1173,9 +1081,14 @@ THREE.GLTF2Loader = ( function () {
 						var source = json.images[ texture.source ];
 						var sourceUri = source.uri;
 
-						if ( source.extensions && source.extensions[ EXTENSIONS.KHR_BINARY_GLTF ] ) {
+						var urlCreator;
 
-							sourceUri = extensions[ EXTENSIONS.KHR_BINARY_GLTF ].loadTextureSourceUri( source, dependencies.bufferViews );
+						if ( source.bufferView !== undefined ) {
+
+							var bufferView = dependencies.bufferViews[ source.bufferView ];
+							var blob = new Blob( [ bufferView ], { type: source.mimeType } );
+							urlCreator = window.URL || window.webkitURL;
+							sourceUri = urlCreator.createObjectURL( blob );
 
 						}
 
@@ -1190,6 +1103,12 @@ THREE.GLTF2Loader = ( function () {
 						textureLoader.setCrossOrigin( options.crossOrigin );
 
 						textureLoader.load( resolveURL( sourceUri, options.path ), function ( _texture ) {
+
+							if ( urlCreator !== undefined ) {
+
+								urlCreator.revokeObjectURL( sourceUri );
+
+							}
 
 							_texture.flipY = false;
 
@@ -1238,7 +1157,6 @@ THREE.GLTF2Loader = ( function () {
 	GLTFParser.prototype.loadMaterials = function () {
 
 		var json = this.json;
-		var extensions = this.extensions;
 
 		return this._withDependencies( [
 
@@ -1254,15 +1172,10 @@ THREE.GLTF2Loader = ( function () {
 				var materialParams = {};
 
 				var khr_material;
-				var pbr_material;
 
 				if ( material.extensions && material.extensions[ EXTENSIONS.KHR_MATERIALS_COMMON ] ) {
 
 					khr_material = material.extensions[ EXTENSIONS.KHR_MATERIALS_COMMON ];
-
-				} else if ( material.extensions && material.extensions[ EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ] ) {
-
-					pbr_material = material.extensions[ EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ];
 
 				}
 
@@ -1310,25 +1223,101 @@ THREE.GLTF2Loader = ( function () {
 
 					}
 
-				} else if ( pbr_material ) {
-
-					var pbrExtension = extensions[ EXTENSIONS.FRAUNHOFER_MATERIALS_PBR ];
-					pbr_material = pbrExtension.createMaterial( pbr_material, dependencies );
-
-					if ( material.name !== undefined ) pbr_material.name = material.name;
-
-					return pbr_material;
-
 				} else if ( material.technique === undefined ) {
 
-					//materialType = THREE.MeshPhongMaterial;
-					materialType = THREE.MeshStandardMaterial;
+					if ( material.pbrMetallicRoughness !== undefined )  {
+
+						// specification
+						// https://github.com/sbtron/glTF/blob/30de0b365d1566b1bbd8b9c140f9e995d3203226/specification/2.0/README.md#metallic-roughness-material
+
+						materialType = THREE.MeshStandardMaterial;
+
+						if ( material.pbrMetallicRoughness !== undefined ) {
+
+							var metallicRoughness = material.pbrMetallicRoughness;
+
+							materialParams.color = new THREE.Color( 1.0, 1.0, 1.0 );
+							materialParams.opacity = 1.0;
+
+							if ( Array.isArray( metallicRoughness.baseColorFactor ) ) {
+
+								var array = metallicRoughness.baseColorFactor;
+
+								materialParams.color.fromArray( array );
+								materialParams.opacity = array[ 3 ];
+
+							}
+
+							if ( metallicRoughness.baseColorTexture !== undefined ) {
+
+								materialParams.map = dependencies.textures[ metallicRoughness.baseColorTexture.index ];
+
+							}
+
+							if ( materialParams.opacity < 1.0 ||
+							     ( materialParams.map !== undefined &&
+							       ( materialParams.map.format === THREE.AlphaFormat ||
+							         materialParams.map.format === THREE.RGBAFormat ||
+							         materialParams.map.format === THREE.LuminanceAlphaFormat ) ) ) {
+
+								materialParams.transparent = true;
+
+							}
+
+							materialParams.metalness = metallicRoughness.metallicFactor !== undefined ? metallicRoughness.metallicFactor : 1.0;
+							materialParams.roughness = metallicRoughness.roughnessFactor !== undefined ? metallicRoughness.roughnessFactor : 1.0;
+
+							if ( metallicRoughness.metallicRoughnessTexture !== undefined ) {
+
+								var textureIndex = metallicRoughness.metallicRoughnessTexture.index;
+
+								// Note that currently metalnessMap would be entirely ignored because
+								// Three.js and glTF specification use different texture channels for metalness
+								// (Blue: Three.js, Red: glTF).
+								// But glTF specification team is discussing if they can change.
+								// Let's keep an eye on it so far.
+								//
+								// https://github.com/KhronosGroup/glTF/issues/857
+								materialParams.metalnessMap = dependencies.textures[ textureIndex ];
+								materialParams.roughnessMap = dependencies.textures[ textureIndex ];
+
+							}
+
+						}
+
+					} else {
+
+						materialType = THREE.MeshPhongMaterial;
+
+					}
+
+					if ( material.normalTexture !== undefined ) {
+
+						materialParams.normalMap = dependencies.textures[ material.normalTexture.index ];
+
+					}
+
+					if ( material.occlusionTexture !== undefined ) {
+
+						materialParams.aoMap = dependencies.textures[ material.occlusionTexture.index ];
+
+					}
+
+					if ( material.emissiveTexture !== undefined ) {
+
+						materialParams.emissiveMap = dependencies.textures[ material.emissiveTexture.index ];
+
+					}
+
+					materialParams.emissive = new THREE.Color( 0.0, 0.0, 0.0 );
+
+					if ( material.emissiveFactor !== undefined ) {
+
+						materialParams.emissive.fromArray( material.emissiveFactor );
+
+					}
 
 					Object.assign( materialValues, material.values );
-					Object.assign( materialValues, material );
-
-					console.log(materialValues);
-					console.log(dependencies);
 
 				} else {
 
@@ -1606,56 +1595,6 @@ THREE.GLTF2Loader = ( function () {
 
 				}
 
-				if ( materialValues.pbrMetallicRoughness !== undefined ) {
-
-					if ( Array.isArray( materialValues.pbrMetallicRoughness.baseColorFactor ) ) {
-
-						materialParams.color = new THREE.Color().fromArray( materialValues.pbrMetallicRoughness.baseColorFactor ).getHex();
-
-					}
-
-					if ( materialValues.pbrMetallicRoughness.baseColorTexture !== undefined ) {
-
-						materialParams.map = dependencies.textures[ materialValues.pbrMetallicRoughness.baseColorTexture.index ];
-
-					}
-
-					if ( materialValues.pbrMetallicRoughness.metallicRoughnessTexture !== undefined ) {
-
-						materialParams.roughnessMap = dependencies.textures[ materialValues.pbrMetallicRoughness.metallicRoughnessTexture.index ];
-						materialParams.roughness = 1.0;
-
-						materialParams.metalnessMap = dependencies.textures[ materialValues.pbrMetallicRoughness.metallicRoughnessTexture.index ];
-						materialParams.metalness = 1.0;
-
-					}
-
-				}
-
-				if ( materialValues.normalTexture !== undefined ) {
-
-					materialParams.normalMap = dependencies.textures[ materialValues.normalTexture.index ];
-
-				}
-
-				if ( materialValues.occlusionTexture !== undefined ) {
-
-					materialParams.aoMap = dependencies.textures[ materialValues.occlusionTexture.index ];
-
-				}
-
-				if ( materialValues.emissiveTexture !== undefined ) {
-
-					materialParams.emissiveMap = dependencies.textures[ materialValues.emissiveTexture.index ];
-
-				}
-
-				if ( materialValues.emissiveFactor !== undefined ) {
-
-					materialParams.emissive = new THREE.Color().fromArray( materialValues.emissiveFactor );
-
-				}
-
 				if ( Array.isArray( materialValues.diffuse ) ) {
 
 					materialParams.color = new THREE.Color().fromArray( materialValues.diffuse );
@@ -1746,7 +1685,7 @@ THREE.GLTF2Loader = ( function () {
 
 			return _each( json.meshes, function ( mesh ) {
 
-				var group = new THREE.Object3D();
+				var group = new THREE.Group();
 				if ( mesh.name !== undefined ) group.name = mesh.name;
 
 				if ( mesh.extras ) group.userData = mesh.extras;
@@ -1757,9 +1696,15 @@ THREE.GLTF2Loader = ( function () {
 
 					var primitive = primitives[ name ];
 
+					var material = primitive.material !== undefined ? dependencies.materials[ primitive.material ] : createDefaultMaterial();
+
+					var geometry;
+
+					var meshNode;
+
 					if ( primitive.mode === WEBGL_CONSTANTS.TRIANGLES || primitive.mode === undefined ) {
 
-						var geometry = new THREE.BufferGeometry();
+						geometry = new THREE.BufferGeometry();
 
 						var attributes = primitive.attributes;
 
@@ -1774,30 +1719,43 @@ THREE.GLTF2Loader = ( function () {
 							switch ( attributeId ) {
 
 								case 'POSITION':
+
 									geometry.addAttribute( 'position', bufferAttribute );
 									break;
 
 								case 'NORMAL':
+
 									geometry.addAttribute( 'normal', bufferAttribute );
 									break;
 
 								case 'TEXCOORD_0':
 								case 'TEXCOORD0':
 								case 'TEXCOORD':
+
 									geometry.addAttribute( 'uv', bufferAttribute );
+									break;
+
+								case 'TEXCOORD_1':
+
+									geometry.addAttribute( 'uv2', bufferAttribute );
 									break;
 
 								case 'COLOR_0':
 								case 'COLOR0':
 								case 'COLOR':
+
 									geometry.addAttribute( 'color', bufferAttribute );
 									break;
 
-								case 'WEIGHT':
+								case 'WEIGHTS_0':
+								case 'WEIGHT': // WEIGHT semantic deprecated.
+
 									geometry.addAttribute( 'skinWeight', bufferAttribute );
 									break;
 
-								case 'JOINT':
+								case 'JOINTS_0':
+								case 'JOINT': // JOINT semantic deprecated.
+
 									geometry.addAttribute( 'skinIndex', bufferAttribute );
 									break;
 
@@ -1811,19 +1769,12 @@ THREE.GLTF2Loader = ( function () {
 
 						}
 
-						var material = dependencies.materials !== undefined ? dependencies.materials[ primitive.material ] : createDefaultMaterial();
-
-						var meshNode = new THREE.Mesh( geometry, material );
+						meshNode = new THREE.Mesh( geometry, material );
 						meshNode.castShadow = true;
-						meshNode.name = ( name === "0" ? group.name : group.name + name );
-
-						if ( primitive.extras ) meshNode.userData = primitive.extras;
-
-						group.add( meshNode );
 
 					} else if ( primitive.mode === WEBGL_CONSTANTS.LINES ) {
 
-						var geometry = new THREE.BufferGeometry();
+						geometry = new THREE.BufferGeometry();
 
 						var attributes = primitive.attributes;
 
@@ -1851,10 +1802,6 @@ THREE.GLTF2Loader = ( function () {
 
 						}
 
-						var material = dependencies.materials[ primitive.material ];
-
-						var meshNode;
-
 						if ( primitive.indices !== undefined ) {
 
 							geometry.setIndex( dependencies.accessors[ primitive.indices ] );
@@ -1867,17 +1814,24 @@ THREE.GLTF2Loader = ( function () {
 
 						}
 
-						meshNode.name = ( name === "0" ? group.name : group.name + name );
-
-						if ( primitive.extras ) meshNode.userData = primitive.extras;
-
-						group.add( meshNode );
-
 					} else {
 
-						console.warn( "Only triangular and line primitives are supported" );
+						throw new Error( "Only triangular and line primitives are supported" );
 
 					}
+
+					if ( geometry.attributes.color !== undefined ) {
+
+						material.vertexColors = THREE.VertexColors;
+						material.needsUpdate = true;
+
+					}
+
+					meshNode.name = ( name === "0" ? group.name : group.name + name );
+
+					if ( primitive.extras ) meshNode.userData = primitive.extras;
+
+					group.add( meshNode );
 
 				}
 
@@ -1979,7 +1933,7 @@ THREE.GLTF2Loader = ( function () {
 					if ( sampler ) {
 
 						var target = channel.target;
-						var name = target.id;
+						var name = target.node || target.id; // NOTE: target.id is deprecated.
 						var input = animation.parameters !== undefined ? animation.parameters[ sampler.input ] : sampler.input;
 						var output = animation.parameters !== undefined ? animation.parameters[ sampler.output ] : sampler.output;
 
@@ -2199,6 +2153,7 @@ THREE.GLTF2Loader = ( function () {
 
 									var geometry = originalGeometry;
 									var material = originalMaterial;
+									material.skinning = true;
 
 									child = new THREE.SkinnedMesh( geometry, material, false );
 									child.castShadow = true;
