@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -19,6 +14,7 @@
     "nodes": [
         {
             "children": [
+                4,
                 1
             ],
             "matrix": [
@@ -41,9 +37,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -62,37 +56,12 @@
                 0.0,
                 1.0
             ],
-            "skeletons": [
-                2
-            ],
+            "skeleton": 2,
             "skin": 0
         },
         {
             "children": [
                 3
-            ],
-            "matrix": [
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                -1.0,
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                1.0
-            ]
-        },
-        {
-            "children": [
-                4
             ],
             "translation": [
                 0.0,
@@ -130,6 +99,29 @@
                 1.0000001192092896
             ],
             "jointName": "Bone_001"
+        },
+        {
+            "children": [
+                2
+            ],
+            "matrix": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
         }
     ],
     "meshes": [
@@ -156,21 +148,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "scale"
                     }
                 }
@@ -198,21 +190,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "scale"
                     }
                 }
@@ -343,7 +335,7 @@
             "count": 96,
             "max": [
                 1.0,
-                0.261398196220398,
+                0.26139819622039797,
                 0.0,
                 0.0
             ],
@@ -579,9 +571,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "Material_001-effect"
                 }
-            }
+            },
+            "name": "Material_001-effect"
         }
     ],
     "bufferViews": [
@@ -606,8 +600,7 @@
     "buffers": [
         {
             "byteLength": 6128,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "RiggedSimple0.bin"
         }
     ],
     "extensionsRequired": [

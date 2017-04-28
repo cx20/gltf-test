@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -19,9 +14,7 @@
     ],
     "nodes": [
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -40,9 +33,7 @@
                 0.0,
                 1.0
             ],
-            "skeletons": [
-                1
-            ],
+            "skeleton": 1,
             "skin": 0
         },
         {
@@ -212,7 +203,7 @@
             ],
             "rotation": [
                 -0.03603024408221245,
-                0.026178697124123575,
+                0.026178697124123578,
                 -0.000944162195082754,
                 -0.9990073442459106
             ],
@@ -423,21 +414,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 1,
+                        "node": 1,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 1,
+                        "node": 1,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 1,
+                        "node": 1,
                         "path": "scale"
                     }
                 }
@@ -465,21 +456,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 8,
+                        "node": 8,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 8,
+                        "node": 8,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 8,
+                        "node": 8,
                         "path": "scale"
                     }
                 }
@@ -507,21 +498,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 15,
+                        "node": 15,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 15,
+                        "node": 15,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 15,
+                        "node": 15,
                         "path": "scale"
                     }
                 }
@@ -549,21 +540,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 12,
+                        "node": 12,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 12,
+                        "node": 12,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 12,
+                        "node": 12,
                         "path": "scale"
                     }
                 }
@@ -591,21 +582,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 13,
+                        "node": 13,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 13,
+                        "node": 13,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 13,
+                        "node": 13,
                         "path": "scale"
                     }
                 }
@@ -633,21 +624,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 9,
+                        "node": 9,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 9,
+                        "node": 9,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 9,
+                        "node": 9,
                         "path": "scale"
                     }
                 }
@@ -675,21 +666,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 5,
+                        "node": 5,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 5,
+                        "node": 5,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 5,
+                        "node": 5,
                         "path": "scale"
                     }
                 }
@@ -717,21 +708,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 6,
+                        "node": 6,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 6,
+                        "node": 6,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 6,
+                        "node": 6,
                         "path": "scale"
                     }
                 }
@@ -759,21 +750,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 2,
+                        "node": 2,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 2,
+                        "node": 2,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 2,
+                        "node": 2,
                         "path": "scale"
                     }
                 }
@@ -801,21 +792,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 3,
+                        "node": 3,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 3,
+                        "node": 3,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 3,
+                        "node": 3,
                         "path": "scale"
                     }
                 }
@@ -1572,7 +1563,7 @@
             "count": 30,
             "max": [
                 0.3991850018501282,
-                0.35532745718956,
+                0.35532745718955996,
                 0.9344059824943544,
                 0.05699191242456436
             ],
@@ -1756,9 +1747,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "AzumaAnimeHead1_blinn-fx"
                 }
-            }
+            },
+            "name": "AzumaAnimeHead1_blinn-fx"
         }
     ],
     "bufferViews": [
@@ -1783,8 +1776,7 @@
     "buffers": [
         {
             "byteLength": 1731676,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "WalkingLady0.bin"
         }
     ],
     "extensionsRequired": [

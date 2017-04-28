@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -182,9 +177,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -228,9 +221,7 @@
             ]
         },
         {
-            "meshes": [
-                1
-            ],
+            "mesh": 1,
             "matrix": [
                 1.0,
                 0.0,
@@ -274,9 +265,7 @@
             ]
         },
         {
-            "meshes": [
-                2
-            ],
+            "mesh": 2,
             "matrix": [
                 1.0,
                 0.0,
@@ -412,9 +401,7 @@
             ]
         },
         {
-            "meshes": [
-                3
-            ],
+            "mesh": 3,
             "matrix": [
                 1.0,
                 0.0,
@@ -500,7 +487,7 @@
     "accessors": [
         {
             "bufferView": 0,
-            "byteOffset": 44268,
+            "byteOffset": 23184,
             "byteStride": 0,
             "componentType": 5123,
             "count": 750,
@@ -514,7 +501,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 141120,
+            "byteOffset": 70016,
             "byteStride": 0,
             "componentType": 5126,
             "count": 220,
@@ -532,7 +519,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 143760,
+            "byteOffset": 72656,
             "byteStride": 0,
             "componentType": 5126,
             "count": 220,
@@ -550,7 +537,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 146400,
+            "byteOffset": 75296,
             "byteStride": 0,
             "componentType": 5126,
             "count": 220,
@@ -566,7 +553,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 15060,
+            "byteOffset": 24684,
             "byteStride": 0,
             "componentType": 5123,
             "count": 3012,
@@ -580,7 +567,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 48256,
+            "byteOffset": 77056,
             "byteStride": 0,
             "componentType": 5126,
             "count": 714,
@@ -598,7 +585,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 56824,
+            "byteOffset": 85624,
             "byteStride": 0,
             "componentType": 5126,
             "count": 714,
@@ -616,7 +603,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 65392,
+            "byteOffset": 94192,
             "byteStride": 0,
             "componentType": 5126,
             "count": 714,
@@ -632,7 +619,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 0,
+            "byteOffset": 30708,
             "byteStride": 0,
             "componentType": 5123,
             "count": 7530,
@@ -646,7 +633,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 0,
+            "byteOffset": 99904,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1508,
@@ -664,7 +651,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 18096,
+            "byteOffset": 118000,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1508,
@@ -682,7 +669,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 36192,
+            "byteOffset": 136096,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1508,
@@ -698,7 +685,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 21084,
+            "byteOffset": 0,
             "byteStride": 0,
             "componentType": 5123,
             "count": 11592,
@@ -712,7 +699,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 71104,
+            "byteOffset": 0,
             "byteStride": 0,
             "componentType": 5126,
             "count": 2188,
@@ -730,13 +717,13 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 97360,
+            "byteOffset": 26256,
             "byteStride": 0,
             "componentType": 5126,
             "count": 2188,
             "max": [
                 7.384162902832031,
-                28.66283226013184,
+                28.662832260131837,
                 31.773834228515626
             ],
             "min": [
@@ -748,7 +735,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 123616,
+            "byteOffset": 52512,
             "byteStride": 0,
             "componentType": 5126,
             "count": 2188,
@@ -792,9 +779,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "m0mtl_barramundi_fish"
                 }
-            }
+            },
+            "name": "m0mtl_barramundi_fish"
         }
     ],
     "textures": [
@@ -859,8 +848,7 @@
     "buffers": [
         {
             "byteLength": 193928,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "BarramundiFish0.bin"
         }
     ],
     "extensionsRequired": [

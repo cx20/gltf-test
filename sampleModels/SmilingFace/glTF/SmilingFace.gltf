@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -18,9 +13,7 @@
     ],
     "nodes": [
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -147,33 +140,11 @@
     ],
     "materials": [
         {
-            "values": {
-                "ambient": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "diffuse": [
-                    0
-                ],
-                "emission": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "specular": [
-                    1
-                ],
-                "shininess": [
-                    20.0
-                ],
-                "transparency": [
-                    1.0
-                ]
-            },
-            "technique": 0
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 0
+                }
+            }
         }
     ],
     "textures": [
@@ -184,22 +155,11 @@
             "source": 0,
             "target": 3553,
             "type": 5121
-        },
-        {
-            "format": 6408,
-            "internalFormat": 6408,
-            "sampler": 0,
-            "source": 1,
-            "target": 3553,
-            "type": 5121
         }
     ],
     "images": [
         {
             "uri": "SmilingFace_texture_0001.jpg"
-        },
-        {
-            "uri": "SmilingFace_texture_0002.jpg"
         }
     ],
     "samplers": [
@@ -208,98 +168,6 @@
             "minFilter": 9986,
             "wrapS": 10497,
             "wrapT": 10497
-        }
-    ],
-    "techniques": [
-        {
-            "attributes": {
-                "a_normal": "normal",
-                "a_position": "position",
-                "a_texcoord0": "texcoord0"
-            },
-            "parameters": {
-                "ambient": {
-                    "type": 35666
-                },
-                "diffuse": {
-                    "type": 35678
-                },
-                "emission": {
-                    "type": 35666
-                },
-                "modelViewMatrix": {
-                    "semantic": "MODELVIEW",
-                    "type": 35676
-                },
-                "normal": {
-                    "semantic": "NORMAL",
-                    "type": 35665
-                },
-                "normalMatrix": {
-                    "semantic": "MODELVIEWINVERSETRANSPOSE",
-                    "type": 35675
-                },
-                "position": {
-                    "semantic": "POSITION",
-                    "type": 35665
-                },
-                "projectionMatrix": {
-                    "semantic": "PROJECTION",
-                    "type": 35676
-                },
-                "shininess": {
-                    "type": 5126
-                },
-                "specular": {
-                    "type": 35678
-                },
-                "texcoord0": {
-                    "semantic": "TEXCOORD_0",
-                    "type": 35665
-                },
-                "transparency": {
-                    "type": 5126
-                }
-            },
-            "program": 0,
-            "states": {
-                "enable": [
-                    2884,
-                    2929
-                ]
-            },
-            "uniforms": {
-                "u_ambient": "ambient",
-                "u_diffuse": "diffuse",
-                "u_emission": "emission",
-                "u_modelViewMatrix": "modelViewMatrix",
-                "u_normalMatrix": "normalMatrix",
-                "u_projectionMatrix": "projectionMatrix",
-                "u_shininess": "shininess",
-                "u_specular": "specular",
-                "u_transparency": "transparency"
-            }
-        }
-    ],
-    "programs": [
-        {
-            "attributes": [
-                "a_normal",
-                "a_position",
-                "a_texcoord0"
-            ],
-            "fragmentShader": 1,
-            "vertexShader": 0
-        }
-    ],
-    "shaders": [
-        {
-            "type": 35633,
-            "uri": "0VS.glsl"
-        },
-        {
-            "type": 35632,
-            "uri": "1FS.glsl"
         }
     ],
     "bufferViews": [
@@ -319,8 +187,7 @@
     "buffers": [
         {
             "byteLength": 141428,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "SmilingFace0.bin"
         }
     ]
 }

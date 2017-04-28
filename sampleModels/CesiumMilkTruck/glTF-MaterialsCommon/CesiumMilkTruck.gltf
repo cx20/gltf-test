@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -40,9 +35,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "children": [
                 4,
                 2
@@ -90,9 +83,7 @@
             ]
         },
         {
-            "meshes": [
-                1
-            ],
+            "mesh": 1,
             "translation": [
                 0.0,
                 0.0,
@@ -134,9 +125,7 @@
             ]
         },
         {
-            "meshes": [
-                1
-            ],
+            "mesh": 1,
             "translation": [
                 0.0,
                 0.0,
@@ -236,7 +225,7 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 5,
+                        "node": 5,
                         "path": "rotation"
                     }
                 }
@@ -254,7 +243,7 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 3,
+                        "node": 3,
                         "path": "rotation"
                     }
                 }
@@ -271,7 +260,7 @@
     "accessors": [
         {
             "bufferView": 0,
-            "byteOffset": 4944,
+            "byteOffset": 6672,
             "byteStride": 0,
             "componentType": 5123,
             "count": 5232,
@@ -285,7 +274,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 20480,
+            "byteOffset": 31616,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
@@ -303,17 +292,17 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 42752,
+            "byteOffset": 53888,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
             "max": [
                 2.438000202178955,
-                2.5843698978424078,
+                2.5843698978424074,
                 1.3960000276565552
             ],
             "min": [
-                -2.4309098720550539,
+                -2.430909872055054,
                 0.2667999863624573,
                 -1.3960000276565552
             ],
@@ -321,7 +310,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 65024,
+            "byteOffset": 76160,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
@@ -337,7 +326,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 4608,
+            "byteOffset": 0,
             "byteStride": 0,
             "componentType": 5123,
             "count": 168,
@@ -351,7 +340,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 18752,
+            "byteOffset": 0,
             "byteStride": 0,
             "componentType": 5126,
             "count": 72,
@@ -369,7 +358,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 19616,
+            "byteOffset": 864,
             "byteStride": 0,
             "componentType": 5126,
             "count": 72,
@@ -379,7 +368,7 @@
                 1.3960000276565552
             ],
             "min": [
-                0.2288499921560288,
+                0.22884999215602876,
                 1.631850004196167,
                 -1.3960000276565552
             ],
@@ -387,7 +376,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 15408,
+            "byteOffset": 4944,
             "byteStride": 0,
             "componentType": 5123,
             "count": 864,
@@ -401,7 +390,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 79872,
+            "byteOffset": 20480,
             "byteStride": 0,
             "componentType": 5126,
             "count": 464,
@@ -419,7 +408,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 85440,
+            "byteOffset": 26048,
             "byteStride": 0,
             "componentType": 5126,
             "count": 464,
@@ -437,7 +426,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 0,
+            "byteOffset": 336,
             "byteStride": 0,
             "componentType": 5123,
             "count": 2304,
@@ -451,7 +440,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 0,
+            "byteOffset": 1728,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
@@ -469,7 +458,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 7032,
+            "byteOffset": 8760,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
@@ -487,7 +476,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 14064,
+            "byteOffset": 15792,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
@@ -593,9 +582,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "truck"
                 }
-            }
+            },
+            "name": "truck"
         },
         {
             "extensions": {
@@ -622,9 +613,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "glass"
                 }
-            }
+            },
+            "name": "glass"
         },
         {
             "extensions": {
@@ -651,9 +644,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "window_trim"
                 }
-            }
+            },
+            "name": "window_trim"
         },
         {
             "extensions": {
@@ -677,9 +672,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "wheels"
                 }
-            }
+            },
+            "name": "wheels"
         }
     ],
     "extensions": {
@@ -688,10 +685,10 @@
                 "type": "ambient",
                 "ambient": {
                     "color": [
-                        0,
-                        0,
-                        0,
-                        1
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
                     ]
                 }
             }
@@ -750,8 +747,7 @@
     "buffers": [
         {
             "byteLength": 109384,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "CesiumMilkTruck0.bin"
         }
     ],
     "extensionsRequired": [

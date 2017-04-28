@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -19,6 +14,7 @@
     "nodes": [
         {
             "children": [
+                4,
                 1
             ],
             "matrix": [
@@ -41,9 +37,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -62,37 +56,12 @@
                 0.0,
                 1.0
             ],
-            "skeletons": [
-                2
-            ],
+            "skeleton": 2,
             "skin": 0
         },
         {
             "children": [
                 3
-            ],
-            "matrix": [
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                -1.0,
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                1.0
-            ]
-        },
-        {
-            "children": [
-                4
             ],
             "translation": [
                 0.0,
@@ -130,6 +99,29 @@
                 1.0000001192092896
             ],
             "jointName": "Bone_001"
+        },
+        {
+            "children": [
+                2
+            ],
+            "matrix": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
         }
     ],
     "meshes": [
@@ -156,21 +148,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "scale"
                     }
                 }
@@ -198,21 +190,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "scale"
                     }
                 }
@@ -343,7 +335,7 @@
             "count": 96,
             "max": [
                 1.0,
-                0.261398196220398,
+                0.26139819622039797,
                 0.0,
                 0.0
             ],
@@ -542,143 +534,14 @@
     ],
     "materials": [
         {
-            "values": {
-                "ambient": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "diffuse": [
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
                     0.27963539958000185,
                     0.6399999856948853,
                     0.21094390749931336,
                     1.0
-                ],
-                "emission": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "specular": [
-                    0.5,
-                    0.5,
-                    0.5,
-                    1.0
-                ],
-                "shininess": [
-                    50.0
-                ],
-                "transparency": [
-                    1.0
                 ]
-            },
-            "technique": 0
-        }
-    ],
-    "techniques": [
-        {
-            "attributes": {
-                "a_joint": "joint",
-                "a_normal": "normal",
-                "a_position": "position",
-                "a_weight": "weight"
-            },
-            "parameters": {
-                "ambient": {
-                    "type": 35666
-                },
-                "diffuse": {
-                    "type": 35666
-                },
-                "emission": {
-                    "type": 35666
-                },
-                "joint": {
-                    "semantic": "JOINT",
-                    "type": 35666
-                },
-                "jointMatrix": {
-                    "semantic": "JOINTMATRIX",
-                    "count": 2,
-                    "type": 35676
-                },
-                "modelViewMatrix": {
-                    "semantic": "MODELVIEW",
-                    "type": 35676
-                },
-                "normal": {
-                    "semantic": "NORMAL",
-                    "type": 35665
-                },
-                "normalMatrix": {
-                    "semantic": "MODELVIEWINVERSETRANSPOSE",
-                    "type": 35675
-                },
-                "position": {
-                    "semantic": "POSITION",
-                    "type": 35665
-                },
-                "projectionMatrix": {
-                    "semantic": "PROJECTION",
-                    "type": 35676
-                },
-                "shininess": {
-                    "type": 5126
-                },
-                "specular": {
-                    "type": 35666
-                },
-                "transparency": {
-                    "type": 5126
-                },
-                "weight": {
-                    "semantic": "WEIGHT",
-                    "type": 35666
-                }
-            },
-            "program": 0,
-            "states": {
-                "enable": [
-                    2884,
-                    2929
-                ]
-            },
-            "uniforms": {
-                "u_ambient": "ambient",
-                "u_diffuse": "diffuse",
-                "u_emission": "emission",
-                "u_jointMatrix": "jointMatrix",
-                "u_modelViewMatrix": "modelViewMatrix",
-                "u_normalMatrix": "normalMatrix",
-                "u_projectionMatrix": "projectionMatrix",
-                "u_shininess": "shininess",
-                "u_specular": "specular",
-                "u_transparency": "transparency"
             }
-        }
-    ],
-    "programs": [
-        {
-            "attributes": [
-                "a_joint",
-                "a_normal",
-                "a_position",
-                "a_weight"
-            ],
-            "fragmentShader": 1,
-            "vertexShader": 0
-        }
-    ],
-    "shaders": [
-        {
-            "type": 35633,
-            "uri": "0VS.glsl"
-        },
-        {
-            "type": 35632,
-            "uri": "1FS.glsl"
         }
     ],
     "bufferViews": [
@@ -703,8 +566,7 @@
     "buffers": [
         {
             "byteLength": 6128,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "RiggedSimple0.bin"
         }
     ]
 }

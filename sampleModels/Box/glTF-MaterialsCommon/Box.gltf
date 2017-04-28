@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -41,9 +36,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -158,9 +151,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "Red"
                 }
-            }
+            },
+            "name": "Red"
         }
     ],
     "bufferViews": [
@@ -180,8 +175,7 @@
     "buffers": [
         {
             "byteLength": 648,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "Box0.bin"
         }
     ],
     "extensionsRequired": [

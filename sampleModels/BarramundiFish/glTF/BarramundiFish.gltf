@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -182,9 +177,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -228,9 +221,7 @@
             ]
         },
         {
-            "meshes": [
-                1
-            ],
+            "mesh": 1,
             "matrix": [
                 1.0,
                 0.0,
@@ -274,9 +265,7 @@
             ]
         },
         {
-            "meshes": [
-                2
-            ],
+            "mesh": 2,
             "matrix": [
                 1.0,
                 0.0,
@@ -412,9 +401,7 @@
             ]
         },
         {
-            "meshes": [
-                3
-            ],
+            "mesh": 3,
             "matrix": [
                 1.0,
                 0.0,
@@ -500,7 +487,7 @@
     "accessors": [
         {
             "bufferView": 0,
-            "byteOffset": 44268,
+            "byteOffset": 23184,
             "byteStride": 0,
             "componentType": 5123,
             "count": 750,
@@ -514,7 +501,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 141120,
+            "byteOffset": 70016,
             "byteStride": 0,
             "componentType": 5126,
             "count": 220,
@@ -532,7 +519,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 143760,
+            "byteOffset": 72656,
             "byteStride": 0,
             "componentType": 5126,
             "count": 220,
@@ -550,7 +537,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 146400,
+            "byteOffset": 75296,
             "byteStride": 0,
             "componentType": 5126,
             "count": 220,
@@ -566,7 +553,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 38244,
+            "byteOffset": 39744,
             "byteStride": 0,
             "componentType": 5123,
             "count": 3012,
@@ -580,7 +567,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 118272,
+            "byteOffset": 125312,
             "byteStride": 0,
             "componentType": 5126,
             "count": 714,
@@ -598,7 +585,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 126840,
+            "byteOffset": 133880,
             "byteStride": 0,
             "componentType": 5126,
             "count": 714,
@@ -616,7 +603,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 135408,
+            "byteOffset": 142448,
             "byteStride": 0,
             "componentType": 5126,
             "count": 714,
@@ -632,7 +619,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 23184,
+            "byteOffset": 24684,
             "byteStride": 0,
             "componentType": 5123,
             "count": 7530,
@@ -646,7 +633,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 70016,
+            "byteOffset": 77056,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1508,
@@ -664,7 +651,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 88112,
+            "byteOffset": 95152,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1508,
@@ -682,7 +669,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 106208,
+            "byteOffset": 113248,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1508,
@@ -736,7 +723,7 @@
             "count": 2188,
             "max": [
                 7.384162902832031,
-                28.66283226013184,
+                28.662832260131837,
                 31.773834228515626
             ],
             "min": [
@@ -765,108 +752,56 @@
     ],
     "materials": [
         {
-            "values": {
-                "ambient": [
-                    0
-                ],
-                "diffuse": [
-                    1
-                ],
-                "emission": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "specular": [
-                    2
-                ],
-                "shininess": [
-                    20.0
-                ],
-                "transparency": [
-                    1.0
-                ]
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 0
+                }
             },
-            "technique": 0
+            "normalTexture": {
+                "index": 1
+            },
+            "occlusionTexture": {
+                "index": 2
+            }
         },
         {
-            "values": {
-                "ambient": [
-                    0
-                ],
-                "diffuse": [
-                    1
-                ],
-                "emission": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "specular": [
-                    2
-                ],
-                "shininess": [
-                    20.0
-                ],
-                "transparency": [
-                    1.0
-                ]
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 0
+                }
             },
-            "technique": 0
+            "normalTexture": {
+                "index": 1
+            },
+            "occlusionTexture": {
+                "index": 2
+            }
         },
         {
-            "values": {
-                "ambient": [
-                    0
-                ],
-                "diffuse": [
-                    1
-                ],
-                "emission": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "specular": [
-                    2
-                ],
-                "shininess": [
-                    20.0
-                ],
-                "transparency": [
-                    1.0
-                ]
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 0
+                }
             },
-            "technique": 0
+            "normalTexture": {
+                "index": 1
+            },
+            "occlusionTexture": {
+                "index": 2
+            }
         },
         {
-            "values": {
-                "ambient": [
-                    0
-                ],
-                "diffuse": [
-                    1
-                ],
-                "emission": [
-                    0.0,
-                    0.0,
-                    0.0,
-                    1.0
-                ],
-                "specular": [
-                    2
-                ],
-                "shininess": [
-                    20.0
-                ],
-                "transparency": [
-                    1.0
-                ]
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 0
+                }
             },
-            "technique": 0
+            "normalTexture": {
+                "index": 1
+            },
+            "occlusionTexture": {
+                "index": 2
+            }
         }
     ],
     "textures": [
@@ -897,13 +832,13 @@
     ],
     "images": [
         {
-            "uri": "BarramundiFish_texture_0002.jpg"
-        },
-        {
             "uri": "BarramundiFish_texture_0001.jpg"
         },
         {
-            "uri": "BarramundiFish_texture_0003.jpg"
+            "uri": "BarramundiFish_texture_0004.jpg"
+        },
+        {
+            "uri": "BarramundiFish_texture_0002.jpg"
         }
     ],
     "samplers": [
@@ -912,98 +847,6 @@
             "minFilter": 9986,
             "wrapS": 10497,
             "wrapT": 10497
-        }
-    ],
-    "techniques": [
-        {
-            "attributes": {
-                "a_normal": "normal",
-                "a_position": "position",
-                "a_texcoord0": "texcoord0"
-            },
-            "parameters": {
-                "ambient": {
-                    "type": 35678
-                },
-                "diffuse": {
-                    "type": 35678
-                },
-                "emission": {
-                    "type": 35666
-                },
-                "modelViewMatrix": {
-                    "semantic": "MODELVIEW",
-                    "type": 35676
-                },
-                "normal": {
-                    "semantic": "NORMAL",
-                    "type": 35665
-                },
-                "normalMatrix": {
-                    "semantic": "MODELVIEWINVERSETRANSPOSE",
-                    "type": 35675
-                },
-                "position": {
-                    "semantic": "POSITION",
-                    "type": 35665
-                },
-                "projectionMatrix": {
-                    "semantic": "PROJECTION",
-                    "type": 35676
-                },
-                "shininess": {
-                    "type": 5126
-                },
-                "specular": {
-                    "type": 35678
-                },
-                "texcoord0": {
-                    "semantic": "TEXCOORD_0",
-                    "type": 35665
-                },
-                "transparency": {
-                    "type": 5126
-                }
-            },
-            "program": 0,
-            "states": {
-                "enable": [
-                    2884,
-                    2929
-                ]
-            },
-            "uniforms": {
-                "u_ambient": "ambient",
-                "u_diffuse": "diffuse",
-                "u_emission": "emission",
-                "u_modelViewMatrix": "modelViewMatrix",
-                "u_normalMatrix": "normalMatrix",
-                "u_projectionMatrix": "projectionMatrix",
-                "u_shininess": "shininess",
-                "u_specular": "specular",
-                "u_transparency": "transparency"
-            }
-        }
-    ],
-    "programs": [
-        {
-            "attributes": [
-                "a_normal",
-                "a_position",
-                "a_texcoord0"
-            ],
-            "fragmentShader": 1,
-            "vertexShader": 0
-        }
-    ],
-    "shaders": [
-        {
-            "type": 35633,
-            "uri": "0VS.glsl"
-        },
-        {
-            "type": 35632,
-            "uri": "1FS.glsl"
         }
     ],
     "bufferViews": [
@@ -1023,8 +866,7 @@
     "buffers": [
         {
             "byteLength": 193928,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "BarramundiFish0.bin"
         }
     ]
 }

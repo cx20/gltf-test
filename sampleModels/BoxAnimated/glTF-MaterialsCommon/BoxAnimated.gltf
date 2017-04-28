@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -111,9 +106,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "translation": [
                 0.0,
                 0.0,
@@ -132,9 +125,7 @@
             ]
         },
         {
-            "meshes": [
-                1
-            ],
+            "mesh": 1,
             "matrix": [
                 1.0,
                 0.0,
@@ -216,7 +207,7 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 4,
+                        "node": 4,
                         "path": "rotation"
                     }
                 }
@@ -234,7 +225,7 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 2,
+                        "node": 2,
                         "path": "translation"
                     }
                 }
@@ -373,13 +364,13 @@
                 1.0,
                 0.0,
                 0.0,
-                1.0
+                4.4896593387466768e-11
             ],
             "min": [
+                -0.0,
                 0.0,
                 0.0,
-                0.0,
-                4.4896593387466768e-11
+                -1.0
             ],
             "type": "VEC4"
         },
@@ -442,9 +433,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "inner"
                 }
-            }
+            },
+            "name": "inner"
         },
         {
             "extensions": {
@@ -471,9 +464,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "outer"
                 }
-            }
+            },
+            "name": "outer"
         }
     ],
     "extensions": {
@@ -482,10 +477,10 @@
                 "type": "directional",
                 "directional": {
                     "color": [
-                        1,
-                        1,
-                        1,
-                        1
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
                     ]
                 }
             },
@@ -493,10 +488,10 @@
                 "type": "ambient",
                 "ambient": {
                     "color": [
-                        0,
-                        0,
-                        0,
-                        1
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
                     ]
                 }
             }
@@ -524,8 +519,7 @@
     "buffers": [
         {
             "byteLength": 9308,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "BoxAnimated0.bin"
         }
     ],
     "extensionsRequired": [

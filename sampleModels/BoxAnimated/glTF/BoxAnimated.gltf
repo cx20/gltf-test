@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -106,9 +101,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "translation": [
                 0.0,
                 0.0,
@@ -127,9 +120,7 @@
             ]
         },
         {
-            "meshes": [
-                1
-            ],
+            "mesh": 1,
             "matrix": [
                 1.0,
                 0.0,
@@ -206,7 +197,7 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 4,
+                        "node": 4,
                         "path": "rotation"
                     }
                 }
@@ -224,7 +215,7 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 2,
+                        "node": 2,
                         "path": "translation"
                     }
                 }
@@ -241,7 +232,7 @@
     "accessors": [
         {
             "bufferView": 0,
-            "byteOffset": 1152,
+            "byteOffset": 0,
             "byteStride": 0,
             "componentType": 5123,
             "count": 186,
@@ -255,7 +246,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 5376,
+            "byteOffset": 0,
             "byteStride": 0,
             "componentType": 5126,
             "count": 96,
@@ -273,7 +264,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 6528,
+            "byteOffset": 1152,
             "byteStride": 0,
             "componentType": 5126,
             "count": 96,
@@ -291,7 +282,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 0,
+            "byteOffset": 372,
             "byteStride": 0,
             "componentType": 5123,
             "count": 576,
@@ -305,7 +296,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 0,
+            "byteOffset": 2304,
             "byteStride": 0,
             "componentType": 5126,
             "count": 224,
@@ -323,7 +314,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 2688,
+            "byteOffset": 4992,
             "byteStride": 0,
             "componentType": 5126,
             "count": 224,
@@ -363,13 +354,13 @@
                 1.0,
                 0.0,
                 0.0,
-                1.0
+                4.4896593387466768e-11
             ],
             "min": [
+                -0.0,
                 0.0,
                 0.0,
-                0.0,
-                4.4896593387466768e-11
+                -1.0
             ],
             "type": "VEC4"
         },
@@ -408,152 +399,24 @@
     ],
     "materials": [
         {
-            "values": {
-                "diffuse": [
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
                     0.800000011920929,
                     0.4159420132637024,
                     0.7952920198440552,
                     1.0
-                ],
-                "specular": [
-                    0.20000000298023225,
-                    0.20000000298023225,
-                    0.20000000298023225,
-                    1.0
-                ],
-                "shininess": [
-                    256.0
-                ],
-                "transparency": [
-                    1.0
                 ]
-            },
-            "technique": 0
+            }
         },
         {
-            "values": {
-                "diffuse": [
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
                     0.3016040027141571,
                     0.5335419774055481,
                     0.800000011920929,
                     1.0
-                ],
-                "specular": [
-                    0.20000000298023225,
-                    0.20000000298023225,
-                    0.20000000298023225,
-                    1.0
-                ],
-                "shininess": [
-                    256.0
-                ],
-                "transparency": [
-                    1.0
                 ]
-            },
-            "technique": 0
-        }
-    ],
-    "techniques": [
-        {
-            "attributes": {
-                "a_normal": "normal",
-                "a_position": "position"
-            },
-            "parameters": {
-                "diffuse": {
-                    "type": 35666
-                },
-                "light0Color": {
-                    "value": [
-                        1.0,
-                        1.0,
-                        1.0
-                    ],
-                    "type": 35665
-                },
-                "light0Transform": {
-                    "semantic": "MODELVIEW",
-                    "node": 0,
-                    "type": 35676
-                },
-                "light1Color": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "type": 35665
-                },
-                "modelViewMatrix": {
-                    "semantic": "MODELVIEW",
-                    "type": 35676
-                },
-                "normal": {
-                    "semantic": "NORMAL",
-                    "type": 35665
-                },
-                "normalMatrix": {
-                    "semantic": "MODELVIEWINVERSETRANSPOSE",
-                    "type": 35675
-                },
-                "position": {
-                    "semantic": "POSITION",
-                    "type": 35665
-                },
-                "projectionMatrix": {
-                    "semantic": "PROJECTION",
-                    "type": 35676
-                },
-                "shininess": {
-                    "type": 5126
-                },
-                "specular": {
-                    "type": 35666
-                },
-                "transparency": {
-                    "type": 5126
-                }
-            },
-            "program": 0,
-            "states": {
-                "enable": [
-                    2884,
-                    2929
-                ]
-            },
-            "uniforms": {
-                "u_diffuse": "diffuse",
-                "u_light0Color": "light0Color",
-                "u_light0Transform": "light0Transform",
-                "u_light1Color": "light1Color",
-                "u_modelViewMatrix": "modelViewMatrix",
-                "u_normalMatrix": "normalMatrix",
-                "u_projectionMatrix": "projectionMatrix",
-                "u_shininess": "shininess",
-                "u_specular": "specular",
-                "u_transparency": "transparency"
             }
-        }
-    ],
-    "programs": [
-        {
-            "attributes": [
-                "a_normal",
-                "a_position"
-            ],
-            "fragmentShader": 1,
-            "vertexShader": 0
-        }
-    ],
-    "shaders": [
-        {
-            "type": 35633,
-            "uri": "0VS.glsl"
-        },
-        {
-            "type": 35632,
-            "uri": "1FS.glsl"
         }
     ],
     "bufferViews": [
@@ -578,8 +441,7 @@
     "buffers": [
         {
             "byteLength": 9308,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "BoxAnimated0.bin"
         }
     ]
 }

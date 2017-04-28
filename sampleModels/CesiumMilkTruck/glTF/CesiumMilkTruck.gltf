@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -40,9 +35,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "children": [
                 4,
                 2
@@ -90,9 +83,7 @@
             ]
         },
         {
-            "meshes": [
-                1
-            ],
+            "mesh": 1,
             "translation": [
                 0.0,
                 0.0,
@@ -134,9 +125,7 @@
             ]
         },
         {
-            "meshes": [
-                1
-            ],
+            "mesh": 1,
             "translation": [
                 0.0,
                 0.0,
@@ -231,7 +220,7 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 5,
+                        "node": 5,
                         "path": "rotation"
                     }
                 }
@@ -249,7 +238,7 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 3,
+                        "node": 3,
                         "path": "rotation"
                     }
                 }
@@ -266,7 +255,7 @@
     "accessors": [
         {
             "bufferView": 0,
-            "byteOffset": 336,
+            "byteOffset": 4944,
             "byteStride": 0,
             "componentType": 5123,
             "count": 5232,
@@ -280,7 +269,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 1728,
+            "byteOffset": 20480,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
@@ -298,17 +287,17 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 24000,
+            "byteOffset": 42752,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
             "max": [
                 2.438000202178955,
-                2.5843698978424078,
+                2.5843698978424074,
                 1.3960000276565552
             ],
             "min": [
-                -2.4309098720550539,
+                -2.430909872055054,
                 0.2667999863624573,
                 -1.3960000276565552
             ],
@@ -316,7 +305,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 46272,
+            "byteOffset": 65024,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
@@ -374,7 +363,7 @@
                 1.3960000276565552
             ],
             "min": [
-                0.2288499921560288,
+                0.22884999215602876,
                 1.631850004196167,
                 -1.3960000276565552
             ],
@@ -432,7 +421,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 10800,
+            "byteOffset": 336,
             "byteStride": 0,
             "componentType": 5123,
             "count": 2304,
@@ -446,7 +435,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 61120,
+            "byteOffset": 1728,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
@@ -464,7 +453,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 68152,
+            "byteOffset": 8760,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
@@ -482,7 +471,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 75184,
+            "byteOffset": 15792,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
@@ -567,90 +556,38 @@
     ],
     "materials": [
         {
-            "values": {
-                "diffuse": [
-                    0
-                ],
-                "specular": [
-                    0.03999999910593033,
-                    0.03999999910593033,
-                    0.03999999910593033,
-                    1.0
-                ],
-                "shininess": [
-                    256.0
-                ],
-                "transparency": [
-                    1.0
-                ]
-            },
-            "technique": 0
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 0
+                }
+            }
         },
         {
-            "values": {
-                "diffuse": [
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
                     0.0,
                     0.04050629958510399,
                     0.021240700036287309,
                     1.0
-                ],
-                "specular": [
-                    0.6499999761581421,
-                    0.6499999761581421,
-                    0.6499999761581421,
-                    1.0
-                ],
-                "shininess": [
-                    256.0
-                ],
-                "transparency": [
-                    1.0
                 ]
-            },
-            "technique": 1
+            }
         },
         {
-            "values": {
-                "diffuse": [
+            "pbrMetallicRoughness": {
+                "baseColorFactor": [
                     0.06400000303983689,
                     0.06400000303983689,
                     0.06400000303983689,
-                    1.0
-                ],
-                "specular": [
-                    0.03999999910593033,
-                    0.03999999910593033,
-                    0.03999999910593033,
-                    1.0
-                ],
-                "shininess": [
-                    256.0
-                ],
-                "transparency": [
                     1.0
                 ]
-            },
-            "technique": 1
+            }
         },
         {
-            "values": {
-                "diffuse": [
-                    1
-                ],
-                "specular": [
-                    0.03999999910593033,
-                    0.03999999910593033,
-                    0.03999999910593033,
-                    1.0
-                ],
-                "shininess": [
-                    256.0
-                ],
-                "transparency": [
-                    1.0
-                ]
-            },
-            "technique": 0
+            "pbrMetallicRoughness": {
+                "baseColorTexture": {
+                    "index": 1
+                }
+            }
         }
     ],
     "textures": [
@@ -684,180 +621,6 @@
             "wrapT": 10497
         }
     ],
-    "techniques": [
-        {
-            "attributes": {
-                "a_normal": "normal",
-                "a_position": "position",
-                "a_texcoord0": "texcoord0"
-            },
-            "parameters": {
-                "diffuse": {
-                    "type": 35678
-                },
-                "light0Color": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "type": 35665
-                },
-                "modelViewMatrix": {
-                    "semantic": "MODELVIEW",
-                    "type": 35676
-                },
-                "normal": {
-                    "semantic": "NORMAL",
-                    "type": 35665
-                },
-                "normalMatrix": {
-                    "semantic": "MODELVIEWINVERSETRANSPOSE",
-                    "type": 35675
-                },
-                "position": {
-                    "semantic": "POSITION",
-                    "type": 35665
-                },
-                "projectionMatrix": {
-                    "semantic": "PROJECTION",
-                    "type": 35676
-                },
-                "shininess": {
-                    "type": 5126
-                },
-                "specular": {
-                    "type": 35666
-                },
-                "texcoord0": {
-                    "semantic": "TEXCOORD_0",
-                    "type": 35665
-                },
-                "transparency": {
-                    "type": 5126
-                }
-            },
-            "program": 0,
-            "states": {
-                "enable": [
-                    2884,
-                    2929
-                ]
-            },
-            "uniforms": {
-                "u_diffuse": "diffuse",
-                "u_light0Color": "light0Color",
-                "u_modelViewMatrix": "modelViewMatrix",
-                "u_normalMatrix": "normalMatrix",
-                "u_projectionMatrix": "projectionMatrix",
-                "u_shininess": "shininess",
-                "u_specular": "specular",
-                "u_transparency": "transparency"
-            }
-        },
-        {
-            "attributes": {
-                "a_normal": "normal",
-                "a_position": "position"
-            },
-            "parameters": {
-                "diffuse": {
-                    "type": 35666
-                },
-                "light0Color": {
-                    "value": [
-                        0.0,
-                        0.0,
-                        0.0
-                    ],
-                    "type": 35665
-                },
-                "modelViewMatrix": {
-                    "semantic": "MODELVIEW",
-                    "type": 35676
-                },
-                "normal": {
-                    "semantic": "NORMAL",
-                    "type": 35665
-                },
-                "normalMatrix": {
-                    "semantic": "MODELVIEWINVERSETRANSPOSE",
-                    "type": 35675
-                },
-                "position": {
-                    "semantic": "POSITION",
-                    "type": 35665
-                },
-                "projectionMatrix": {
-                    "semantic": "PROJECTION",
-                    "type": 35676
-                },
-                "shininess": {
-                    "type": 5126
-                },
-                "specular": {
-                    "type": 35666
-                },
-                "transparency": {
-                    "type": 5126
-                }
-            },
-            "program": 1,
-            "states": {
-                "enable": [
-                    2884,
-                    2929
-                ]
-            },
-            "uniforms": {
-                "u_diffuse": "diffuse",
-                "u_light0Color": "light0Color",
-                "u_modelViewMatrix": "modelViewMatrix",
-                "u_normalMatrix": "normalMatrix",
-                "u_projectionMatrix": "projectionMatrix",
-                "u_shininess": "shininess",
-                "u_specular": "specular",
-                "u_transparency": "transparency"
-            }
-        }
-    ],
-    "programs": [
-        {
-            "attributes": [
-                "a_normal",
-                "a_position",
-                "a_texcoord0"
-            ],
-            "fragmentShader": 1,
-            "vertexShader": 0
-        },
-        {
-            "attributes": [
-                "a_normal",
-                "a_position"
-            ],
-            "fragmentShader": 3,
-            "vertexShader": 2
-        }
-    ],
-    "shaders": [
-        {
-            "type": 35633,
-            "uri": "0VS.glsl"
-        },
-        {
-            "type": 35632,
-            "uri": "1FS.glsl"
-        },
-        {
-            "type": 35633,
-            "uri": "2VS.glsl"
-        },
-        {
-            "type": 35632,
-            "uri": "3FS.glsl"
-        }
-    ],
     "bufferViews": [
         {
             "buffer": 0,
@@ -880,8 +643,7 @@
     "buffers": [
         {
             "byteLength": 109384,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "CesiumMilkTruck0.bin"
         }
     ]
 }

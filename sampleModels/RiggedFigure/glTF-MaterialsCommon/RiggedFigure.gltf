@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -19,6 +14,7 @@
     "nodes": [
         {
             "children": [
+                21,
                 1
             ],
             "matrix": [
@@ -41,9 +37,7 @@
             ]
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -62,39 +56,14 @@
                 0.0,
                 1.0
             ],
-            "skeletons": [
-                2
-            ],
+            "skeleton": 2,
             "skin": 0
         },
         {
             "children": [
+                11,
+                7,
                 3
-            ],
-            "matrix": [
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                -1.0,
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                1.0
-            ]
-        },
-        {
-            "children": [
-                12,
-                8,
-                4
             ],
             "translation": [
                 2.7939699442924854e-9,
@@ -116,7 +85,7 @@
         },
         {
             "children": [
-                5
+                4
             ],
             "translation": [
                 -0.06845717132091522,
@@ -138,7 +107,7 @@
         },
         {
             "children": [
-                6
+                5
             ],
             "translation": [
                 0.0,
@@ -160,7 +129,7 @@
         },
         {
             "children": [
-                7
+                6
             ],
             "translation": [
                 -7.450579708745408e-9,
@@ -170,7 +139,7 @@
             "rotation": [
                 0.8471670746803284,
                 -0.03204828128218651,
-                -0.024840382859110837,
+                -0.024840382859110833,
                 -0.5297772288322449
             ],
             "scale": [
@@ -184,7 +153,7 @@
             "translation": [
                 -0.0014585329918190837,
                 -0.06619873642921448,
-                0.027856800705194478
+                0.027856800705194474
             ],
             "rotation": [
                 -0.03414325416088104,
@@ -201,7 +170,7 @@
         },
         {
             "children": [
-                9
+                8
             ],
             "translation": [
                 0.06761927157640457,
@@ -223,7 +192,7 @@
         },
         {
             "children": [
-                10
+                9
             ],
             "translation": [
                 0.0,
@@ -245,7 +214,7 @@
         },
         {
             "children": [
-                11
+                10
             ],
             "translation": [
                 0.0,
@@ -286,7 +255,7 @@
         },
         {
             "children": [
-                13
+                12
             ],
             "translation": [
                 0.0009999809553846717,
@@ -296,7 +265,7 @@
             "rotation": [
                 -0.7380747199058533,
                 -0.001967150717973709,
-                0.0021518853027373558,
+                0.0021518853027373554,
                 -0.6747126579284668
             ],
             "scale": [
@@ -308,13 +277,13 @@
         },
         {
             "children": [
-                20,
-                17,
-                14
+                19,
+                16,
+                13
             ],
             "translation": [
                 0.0,
-                0.2180176973342896,
+                0.21801769733428956,
                 3.725289854372704e-9
             ],
             "rotation": [
@@ -332,7 +301,7 @@
         },
         {
             "children": [
-                15
+                14
             ],
             "translation": [
                 -0.08800055086612702,
@@ -354,7 +323,7 @@
         },
         {
             "children": [
-                16
+                15
             ],
             "translation": [
                 -7.450579708745408e-9,
@@ -365,7 +334,7 @@
                 -0.2280062586069107,
                 0.9096477627754213,
                 -0.1480233669281006,
-                -0.31407487392425539
+                -0.3140748739242554
             ],
             "scale": [
                 0.9999999403953552,
@@ -395,7 +364,7 @@
         },
         {
             "children": [
-                18
+                17
             ],
             "translation": [
                 0.08800055086612702,
@@ -417,15 +386,15 @@
         },
         {
             "children": [
-                19
+                18
             ],
             "translation": [
-                1.862650034212265e-9,
+                1.8626500342122655e-9,
                 0.24452590942382813,
                 -5.96045985901128e-8
             ],
             "rotation": [
-                0.002400061814114452,
+                0.0024000618141144516,
                 -0.13981154561042789,
                 -0.2718312442302704,
                 -0.9521317481994628
@@ -458,7 +427,7 @@
         },
         {
             "children": [
-                21
+                20
             ],
             "translation": [
                 0.0,
@@ -496,6 +465,29 @@
                 1.0
             ],
             "jointName": "neck_joint_2"
+        },
+        {
+            "children": [
+                2
+            ],
+            "matrix": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
         }
     ],
     "meshes": [
@@ -522,21 +514,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 3,
+                        "node": 2,
                         "path": "scale"
                     }
                 }
@@ -564,21 +556,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 12,
+                        "node": 11,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 12,
+                        "node": 11,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 12,
+                        "node": 11,
                         "path": "scale"
                     }
                 }
@@ -606,21 +598,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 13,
+                        "node": 12,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 13,
+                        "node": 12,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 13,
+                        "node": 12,
                         "path": "scale"
                     }
                 }
@@ -648,21 +640,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 20,
+                        "node": 19,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 20,
+                        "node": 19,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 20,
+                        "node": 19,
                         "path": "scale"
                     }
                 }
@@ -690,21 +682,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 21,
+                        "node": 20,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 21,
+                        "node": 20,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 21,
+                        "node": 20,
                         "path": "scale"
                     }
                 }
@@ -732,21 +724,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 17,
+                        "node": 16,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 17,
+                        "node": 16,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 17,
+                        "node": 16,
                         "path": "scale"
                     }
                 }
@@ -774,21 +766,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 18,
+                        "node": 17,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 18,
+                        "node": 17,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 18,
+                        "node": 17,
                         "path": "scale"
                     }
                 }
@@ -816,21 +808,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 19,
+                        "node": 18,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 19,
+                        "node": 18,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 19,
+                        "node": 18,
                         "path": "scale"
                     }
                 }
@@ -858,21 +850,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 14,
+                        "node": 13,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 14,
+                        "node": 13,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 14,
+                        "node": 13,
                         "path": "scale"
                     }
                 }
@@ -900,21 +892,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 15,
+                        "node": 14,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 15,
+                        "node": 14,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 15,
+                        "node": 14,
                         "path": "scale"
                     }
                 }
@@ -942,21 +934,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 16,
+                        "node": 15,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 16,
+                        "node": 15,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 16,
+                        "node": 15,
                         "path": "scale"
                     }
                 }
@@ -984,21 +976,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 8,
+                        "node": 7,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 8,
+                        "node": 7,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 8,
+                        "node": 7,
                         "path": "scale"
                     }
                 }
@@ -1026,21 +1018,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 9,
+                        "node": 8,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 9,
+                        "node": 8,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 9,
+                        "node": 8,
                         "path": "scale"
                     }
                 }
@@ -1068,21 +1060,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 10,
+                        "node": 9,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 10,
+                        "node": 9,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 10,
+                        "node": 9,
                         "path": "scale"
                     }
                 }
@@ -1110,21 +1102,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 11,
+                        "node": 10,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 11,
+                        "node": 10,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 11,
+                        "node": 10,
                         "path": "scale"
                     }
                 }
@@ -1152,21 +1144,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 4,
+                        "node": 3,
                         "path": "scale"
                     }
                 }
@@ -1194,21 +1186,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 5,
+                        "node": 4,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 5,
+                        "node": 4,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 5,
+                        "node": 4,
                         "path": "scale"
                     }
                 }
@@ -1236,21 +1228,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 6,
+                        "node": 5,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 6,
+                        "node": 5,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 6,
+                        "node": 5,
                         "path": "scale"
                     }
                 }
@@ -1278,21 +1270,21 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "id": 7,
+                        "node": 6,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "id": 7,
+                        "node": 6,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "id": 7,
+                        "node": 6,
                         "path": "scale"
                     }
                 }
@@ -1615,12 +1607,12 @@
             "max": [
                 -7.105429898699844e-15,
                 0.2180179059505463,
-                -1.862650034212265e-9
+                -1.8626500342122655e-9
             ],
             "min": [
                 -7.105429898699844e-15,
                 0.2180179059505463,
-                -1.862650034212265e-9
+                -1.8626500342122655e-9
             ],
             "type": "VEC3"
         },
@@ -1685,7 +1677,7 @@
             "max": [
                 -8.881779961836516e-15,
                 -1.4901200273698124e-8,
-                0.05255949124693871
+                0.052559491246938708
             ],
             "min": [
                 -8.881779961836516e-15,
@@ -2332,13 +2324,13 @@
             "count": 2,
             "max": [
                 0.21115465462207798,
-                -0.298433005809784,
+                -0.29843300580978396,
                 -0.04688597097992897,
                 -0.9295986890792848
             ],
             "min": [
                 0.21115465462207798,
-                -0.298433005809784,
+                -0.29843300580978396,
                 -0.04688597097992897,
                 -0.9295986890792848
             ],
@@ -2385,12 +2377,12 @@
             "max": [
                 0.0,
                 0.27582401037216189,
-                -1.862650034212265e-9
+                -1.8626500342122655e-9
             ],
             "min": [
                 0.0,
                 0.27582401037216189,
-                -1.862650034212265e-9
+                -1.8626500342122655e-9
             ],
             "type": "VEC3"
         },
@@ -2524,12 +2516,12 @@
             "count": 2,
             "max": [
                 -0.06845720112323761,
-                0.0044607738964259628,
+                0.004460773896425963,
                 -0.07147085666656494
             ],
             "min": [
                 -0.06845720112323761,
-                0.0044607738964259628,
+                0.004460773896425963,
                 -0.07147085666656494
             ],
             "type": "VEC3"
@@ -2611,13 +2603,13 @@
             "componentType": 5126,
             "count": 2,
             "max": [
-                0.2160616368055344,
+                0.21606163680553437,
                 0.08108014613389969,
                 -0.010079950094223025,
                 -0.9729555249214172
             ],
             "min": [
-                0.2160616368055344,
+                0.21606163680553437,
                 0.08108014613389969,
                 -0.010079950094223025,
                 -0.9729555249214172
@@ -2809,7 +2801,7 @@
             "min": [
                 -1.0,
                 -0.8915209174156189,
-                -0.4486669003963471,
+                -0.44866690039634707,
                 0.0,
                 -0.7738311886787415,
                 -0.993836224079132,
@@ -2866,9 +2858,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "Default-effect"
                 }
-            }
+            },
+            "name": "Default-effect"
         }
     ],
     "bufferViews": [
@@ -2893,8 +2887,7 @@
     "buffers": [
         {
             "byteLength": 22184,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "RiggedFigure0.bin"
         }
     ],
     "extensionsRequired": [

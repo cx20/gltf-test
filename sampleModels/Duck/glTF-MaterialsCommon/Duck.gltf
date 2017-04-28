@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -39,7 +34,7 @@
                 -0.6847409009933472,
                 0.0,
                 148.6540069580078,
-                183.6720123291016,
+                183.67201232910157,
                 -292.1790161132813,
                 1.0
             ]
@@ -66,9 +61,7 @@
             "camera": 0
         },
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -219,9 +212,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "blinn3-fx"
                 }
-            }
+            },
+            "name": "blinn3-fx"
         }
     ],
     "extensions": {
@@ -230,10 +225,10 @@
                 "type": "directional",
                 "directional": {
                     "color": [
-                        1,
-                        1,
-                        1,
-                        1
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
                     ]
                 }
             }
@@ -279,8 +274,7 @@
     "buffers": [
         {
             "byteLength": 102040,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "Duck0.bin"
         }
     ],
     "extensionsRequired": [

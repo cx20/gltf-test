@@ -1,11 +1,6 @@
 {
     "asset": {
         "generator": "COLLADA2GLTF",
-        "premultipliedAlpha": true,
-        "profile": {
-            "api": "WebGL",
-            "version": "1.0"
-        },
         "version": "2.0"
     },
     "scene": 0,
@@ -18,9 +13,7 @@
     ],
     "nodes": [
         {
-            "meshes": [
-                0
-            ],
+            "mesh": 0,
             "matrix": [
                 1.0,
                 0.0,
@@ -177,9 +170,11 @@
                         "transparency": [
                             1.0
                         ]
-                    }
+                    },
+                    "name": "m0smiling_face_DF"
                 }
-            }
+            },
+            "name": "m0smiling_face_DF"
         }
     ],
     "textures": [
@@ -233,8 +228,7 @@
     "buffers": [
         {
             "byteLength": 141428,
-            "uri": "0.bin",
-            "type": "arraybuffer"
+            "uri": "SmilingFace0.bin"
         }
     ],
     "extensionsRequired": [
