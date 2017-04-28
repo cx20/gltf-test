@@ -192,7 +192,7 @@ function makeTutorialFurtherPbrModelLinks() {
         var tdPic = document.createElement('td');
         var img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialFurtherPbrModelIndex.getScreenshot(modelName));
-        img.setAttribute('width', 128);
+        img.setAttribute('width', 170);
         img.setAttribute('height', 128);
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
