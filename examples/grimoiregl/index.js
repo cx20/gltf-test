@@ -25,13 +25,15 @@ gr.registerComponent('Rotate', {
     this.phi = 0;
   },
   $update: function () {
-    this.phi += this.getAttribute('speed');
-    this.node.setAttribute('rotation', 0 + ',' + this.phi + ',' + 0);
+    //this.phi += this.getAttribute('speed');
+    this.phi -= this.getAttribute('speed'); // reverse rotate
+    this.node.setAttribute('rotation',0 + ',' + this.phi + ',' + 0);
   },
 });
 
 gr(function () {
   var $$ = gr('#canvas');
+  $$('#group').addComponent('Rotate');
   var scale = modelInfo.scale;
   if (modelInfo.name == "GearboxAssy" ) {
       scale = 0.2;

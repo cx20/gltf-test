@@ -24,20 +24,22 @@
       <render-scene/>
     </renderer>
     <scene>
-      <camera class="camera" position="0,3,5">
-        <camera.components>
-          <MouseCameraControl center = "0"/>
-        </camera.components>
-      </camera>
-      <object id="model-container">
-        <object.components>
-          <Rotate/>
-        </object.components>
+      <object id="group">
+        <camera class="camera" position="0,3,5">
+          <camera.components>
+            <MouseCameraControl center = "0"/>
+          </camera.components>
+        </camera>
       </object>
+      <object id="model-container">
+      </object>
+      <light type="directional" rotation="-30d,-30d,0d"  color="white" intensity="1.0"/>
+<!--
       <light type="directional" rotation="0d,0d,0d"  color="white" intensity="1.0"/>
       <light type="directional" rotation="0d,120d,0d" color="white" intensity="1.0"/>
       <light type="directional" rotation="0d,-120d,0d" color="white" intensity="1.0"/>
       <light type="point" position="0,-1,-1"  color="white"  distance="10" decay="0.3" intensity="1.0"/>
+-->
     </scene>
   </goml>
 </script>
