@@ -12,10 +12,10 @@
 <body>
 <!-- grimoire-preset-basic.js 1.9.26 -->
 <script src="../../libs/grimoiregl/grimoirejs-preset-basic/1.9.26/grimoire-preset-basic.js"></script>
-<!-- grimoire-gltf.js.js 2.0.0 -->
-<script src="../../libs/grimoiregl/grimoirejs-gltf/2.0.0/grimoire-gltf.js"></script>
 <!-- grimoirejs-forward-shading.js.js 1.5.0 -->
 <script src="../../libs/grimoiregl/grimoirejs-forward-shading/1.5.0/grimoire-forward-shading.js"></script>
+<!-- grimoire-gltf.js.js 2.0.0 -->
+<script src="../../libs/grimoiregl/grimoirejs-gltf/2.0.0/grimoire-gltf.js"></script>
 
 <script type="text/goml" id="canvas">
   <goml width="fit" height="fit" bgColor="gray">
@@ -34,6 +34,10 @@
           <Rotate/>
         </object.components>
       </object>
+      <light type="directional" rotation="0d,0d,0d"  color="white" intensity="1.0"/>
+      <light type="directional" rotation="0d,120d,0d" color="white" intensity="1.0"/>
+      <light type="directional" rotation="0d,-120d,0d" color="white" intensity="1.0"/>
+      <light type="point" position="0,-1,-1"  color="white"  distance="10" decay="0.3" intensity="1.0"/>
     </scene>
   </goml>
 </script>
