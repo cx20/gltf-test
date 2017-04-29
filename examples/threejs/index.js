@@ -47,6 +47,7 @@ function init() {
     };
 
     var loader = new THREE.GLTF2Loader();
+    loader.setCrossOrigin( 'anonymous' );
 
     var scale = modelInfo.scale;
     var url = "../../" + modelInfo.category + "/" + modelInfo.path;
