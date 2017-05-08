@@ -939,7 +939,10 @@ var DefaultParserModule = function (_ParserModule) {
             var tex = new _Texture2D2.default(this.__gl);
             tex.update(arg.image);
             var texInfo = arg.tf.textures[arg.texIndex];
-            var samplerInfo = arg.tf.samplers[texInfo.sampler];
+            var samplerInfo = {};
+            if (!texInfo) {
+                samplerInfo = arg.tf.samplers[texInfo.sampler];
+            }
             tex.magFilter = samplerInfo.magFilter || WebGLRenderingContext.LINEAR;
             tex.minFilter = samplerInfo.minFilter || WebGLRenderingContext.NEAREST_MIPMAP_LINEAR;
             tex.wrapS = samplerInfo.wrapS || WebGLRenderingContext.REPEAT;
@@ -2221,7 +2224,7 @@ var _main2 = _interopRequireDefault(_main);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var __VERSION__ = "0.0.0-development";
+var __VERSION__ = "0.0.1-development";
 var __NAME__ = "grimoirejs-gltf";
 
 var __EXPOSE__ = {
