@@ -69,6 +69,21 @@ var createScene = function(engine) {
         light.groundColor = new BABYLON.Color3(1, 0, 0);
         light.position = new BABYLON.Vector3(20, 40, 20);
 
+        // Skybox
+        var skybox = BABYLON.Mesh.CreateBox("skyBox", 1000.0, scene);
+        var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+        skyboxMaterial.backFaceCulling = false;
+        skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+            "../../textures/cube/skybox/",
+            scene,
+            ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]
+            );
+        skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+        skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.disableLighting = true;
+        skybox.material = skyboxMaterial;
+
         //scene.forceShowBoundingBoxes = true;
         //scene.debugLayer.show(true, camera);
 
