@@ -117,7 +117,9 @@ function getEnvMap() {
         path + 'py' + format, path + 'ny' + format,
         path + 'pz' + format, path + 'nz' + format
     ];
-    var envMap = new THREE.CubeTextureLoader().load( urls );
+    var loader = new THREE.CubeTextureLoader();
+    loader.setCrossOrigin( 'anonymous' );
+    var envMap = loader.load( urls );
     envMap.format = THREE.RGBFormat;
     return envMap;
 }
