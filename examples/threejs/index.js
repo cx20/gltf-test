@@ -110,7 +110,7 @@ function init() {
 
 // https://github.com/mrdoob/three.js/tree/dev/examples/textures/cube/skybox
 function getEnvMap() {
-    var path = '../..//textures/cube/skybox/';
+    var path = '../../textures/cube/skybox/';
     var format = '.jpg';
     var urls = [
         path + 'px' + format, path + 'nx' + format,
