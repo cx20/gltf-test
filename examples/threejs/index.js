@@ -77,6 +77,15 @@ function init() {
                 mixer.clipAction( animation ).play();
             }
         }
+        
+        var envMap = getEnvMap();
+        object.traverse( function( node ) {
+            if ( node.material ) {
+                node.material.envMap = envMap;
+                node.material.needsUpdate = true;
+            }
+        } );
+        scene.background = envMap;
 
         scene.add(object);
     });
@@ -97,6 +106,20 @@ function init() {
 
     renderer.setSize( width, height );
     document.body.appendChild( renderer.domElement );
+}
+
+// https://github.com/mrdoob/three.js/tree/dev/examples/textures/cube/skybox
+function getEnvMap() {
+    var path = '../..//textures/cube/skybox/';
+    var format = '.jpg';
+    var urls = [
+        path + 'px' + format, path + 'nx' + format,
+        path + 'py' + format, path + 'ny' + format,
+        path + 'pz' + format, path + 'nz' + format
+    ];
+    var envMap = new THREE.CubeTextureLoader().load( urls );
+    envMap.format = THREE.RGBFormat;
+    return envMap;
 }
 
 function animate() {
