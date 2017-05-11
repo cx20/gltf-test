@@ -29,14 +29,16 @@ TutorialModelIndex.getScreenshot = function(name) {
 
 TutorialModelIndex.getEmbeddedFolderName = function(name) {
     var suffixHash = {
-        'SimpleMaterial': '-buffer',
-        'AdvancedMaterial': '-buffer',
-        'SimpleOpacity': '-buffer',
-        'SimpleTexture': '-buffer',
-        'SimpleSkin': '-buffers'
+        'AnimatedMorphCube': '-Binary',
+        'AnimatedMorphSphere': '-Binary',
+        'SimpleMaterial': '-Embedded-buffer',
+        'AdvancedMaterial': '-Embedded-buffer',
+        'SimpleOpacity': '-Embedded-buffer',
+        'SimpleTexture': '-Embedded-buffer',
+        'SimpleSkin': '-Embedded-buffers'
     };
     var suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
-    return 'glTF-Embedded' + suffix;
+    return 'glTF' + suffix;
 };
 
 TutorialModelIndex.getModelInfoCollection = function() {
