@@ -37,7 +37,7 @@ TutorialModelIndex.getEmbeddedFolderName = function(name) {
         'SimpleTexture': '-Embedded-buffer',
         'SimpleSkin': '-Embedded-buffers'
     };
-    var suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
+    var suffix = suffixHash[name] === undefined ? '-Embedded' : suffixHash[name];
     return 'glTF' + suffix;
 };
 
