@@ -92,8 +92,8 @@
             "rotation": [
                 -0.0,
                 -0.0,
-                0.08848562091588974,
-                -0.9960774779319764
+                0.08848590403795243,
+                -0.9960774183273317
             ],
             "scale": [
                 1.0,
@@ -134,8 +134,8 @@
             "rotation": [
                 -0.0,
                 -0.0,
-                0.08848562091588974,
-                -0.9960774779319764
+                0.08848590403795243,
+                -0.9960774183273317
             ],
             "scale": [
                 1.0,
@@ -255,7 +255,7 @@
     "accessors": [
         {
             "bufferView": 0,
-            "byteOffset": 2064,
+            "byteOffset": 4944,
             "byteStride": 0,
             "componentType": 5123,
             "count": 5232,
@@ -269,7 +269,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 12864,
+            "byteOffset": 20480,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
@@ -287,17 +287,17 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 35136,
+            "byteOffset": 42752,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
             "max": [
-                2.438000202178955,
+                2.437999963760376,
                 2.5843698978424074,
                 1.3960000276565552
             ],
             "min": [
-                -2.430909872055054,
+                -2.430910110473633,
                 0.2667999863624573,
                 -1.3960000276565552
             ],
@@ -305,12 +305,12 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 57408,
+            "byteOffset": 65024,
             "byteStride": 0,
             "componentType": 5126,
             "count": 1856,
             "max": [
-                0.8964579701423645,
+                0.8964580297470093,
                 0.997245192527771
             ],
             "min": [
@@ -340,7 +340,7 @@
             "componentType": 5126,
             "count": 72,
             "max": [
-                0.9574799537658693,
+                0.957480013370514,
                 0.28850099444389346,
                 1.0
             ],
@@ -359,11 +359,11 @@
             "count": 72,
             "max": [
                 1.6011799573898316,
-                2.3545398712158205,
+                2.3545401096343996,
                 1.3960000276565552
             ],
             "min": [
-                0.22884999215602876,
+                0.22885000705718998,
                 1.631850004196167,
                 -1.3960000276565552
             ],
@@ -371,7 +371,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 336,
+            "byteOffset": 15408,
             "byteStride": 0,
             "componentType": 5123,
             "count": 864,
@@ -385,7 +385,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 1728,
+            "byteOffset": 79872,
             "byteStride": 0,
             "componentType": 5126,
             "count": 464,
@@ -403,17 +403,17 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 7296,
+            "byteOffset": 85440,
             "byteStride": 0,
             "componentType": 5126,
             "count": 464,
             "max": [
-                1.6226699352264405,
-                2.392000198364258,
+                1.62267005443573,
+                2.3919999599456789,
                 1.100000023841858
             ],
             "min": [
-                0.1931999921798706,
+                0.1932000070810318,
                 1.5961999893188477,
                 -1.1100000143051148
             ],
@@ -421,7 +421,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 12528,
+            "byteOffset": 336,
             "byteStride": 0,
             "componentType": 5123,
             "count": 2304,
@@ -435,7 +435,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 72256,
+            "byteOffset": 1728,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
@@ -453,25 +453,25 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 79288,
+            "byteOffset": 8760,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
             "max": [
                 0.4277999997138977,
                 0.4277999997138977,
-                1.058000087738037
+                1.0579999685287476
             ],
             "min": [
                 -0.4277999997138977,
                 -0.4277999997138977,
-                -1.058000087738037
+                -1.0579999685287476
             ],
             "type": "VEC3"
         },
         {
             "bufferView": 1,
-            "byteOffset": 86320,
+            "byteOffset": 15792,
             "byteStride": 0,
             "componentType": 5126,
             "count": 586,
@@ -515,7 +515,7 @@
                 -0.0,
                 -0.0,
                 0.0,
-                -0.9960774779319764
+                -0.9960774183273317
             ],
             "type": "VEC4"
         },
@@ -549,7 +549,7 @@
                 -0.0,
                 -0.0,
                 0.0,
-                -0.9960774779319764
+                -0.9960774183273317
             ],
             "type": "VEC4"
         }
@@ -565,7 +565,15 @@
                 "KHR_materials_pbrSpecularGlossiness": {
                     "diffuseTexture": {
                         "index": 0
-                    }
+                    },
+                    "specularFactor": [
+                        0.03999999910593033,
+                        0.03999999910593033,
+                        0.03999999910593033
+                    ],
+                    "glossinessFactor": [
+                        256.0
+                    ]
                 }
             }
         },
@@ -599,27 +607,27 @@
                 "KHR_materials_pbrSpecularGlossiness": {
                     "diffuseTexture": {
                         "index": 1
-                    }
+                    },
+                    "specularFactor": [
+                        0.03999999910593033,
+                        0.03999999910593033,
+                        0.03999999910593033
+                    ],
+                    "glossinessFactor": [
+                        256.0
+                    ]
                 }
             }
         }
     ],
     "textures": [
         {
-            "format": 6408,
-            "internalFormat": 6408,
             "sampler": 0,
-            "source": 0,
-            "target": 3553,
-            "type": 5121
+            "source": 0
         },
         {
-            "format": 6408,
-            "internalFormat": 6408,
             "sampler": 0,
-            "source": 0,
-            "target": 3553,
-            "type": 5121
+            "source": 0
         }
     ],
     "images": [

@@ -195,12 +195,8 @@
     ],
     "textures": [
         {
-            "format": 6408,
-            "internalFormat": 6408,
             "sampler": 0,
-            "source": 0,
-            "target": 3553,
-            "type": 5121
+            "source": 0
         }
     ],
     "images": [

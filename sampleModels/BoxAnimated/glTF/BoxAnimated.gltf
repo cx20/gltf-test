@@ -232,7 +232,7 @@
     "accessors": [
         {
             "bufferView": 0,
-            "byteOffset": 0,
+            "byteOffset": 1152,
             "byteStride": 0,
             "componentType": 5123,
             "count": 186,
@@ -246,7 +246,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 0,
+            "byteOffset": 5376,
             "byteStride": 0,
             "componentType": 5126,
             "count": 96,
@@ -264,7 +264,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 1152,
+            "byteOffset": 6528,
             "byteStride": 0,
             "componentType": 5126,
             "count": 96,
@@ -282,7 +282,7 @@
         },
         {
             "bufferView": 0,
-            "byteOffset": 372,
+            "byteOffset": 0,
             "byteStride": 0,
             "componentType": 5123,
             "count": 576,
@@ -296,7 +296,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 2304,
+            "byteOffset": 0,
             "byteStride": 0,
             "componentType": 5126,
             "count": 224,
@@ -314,7 +314,7 @@
         },
         {
             "bufferView": 1,
-            "byteOffset": 4992,
+            "byteOffset": 2688,
             "byteStride": 0,
             "componentType": 5126,
             "count": 224,

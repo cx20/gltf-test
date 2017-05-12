@@ -174,19 +174,23 @@
                 "KHR_materials_pbrSpecularGlossiness": {
                     "diffuseTexture": {
                         "index": 0
-                    }
+                    },
+                    "specularFactor": [
+                        0.20000000298023225,
+                        0.20000000298023225,
+                        0.20000000298023225
+                    ],
+                    "glossinessFactor": [
+                        256.0
+                    ]
                 }
             }
         }
     ],
     "textures": [
         {
-            "format": 6408,
-            "internalFormat": 6408,
             "sampler": 0,
-            "source": 0,
-            "target": 3553,
-            "type": 5121
+            "source": 0
         }
     ],
     "images": [
