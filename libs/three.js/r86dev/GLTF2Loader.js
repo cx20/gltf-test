@@ -1309,9 +1309,10 @@ THREE.GLTF2Loader = ( function () {
 
 				var arraybuffer = dependencies.buffers[ bufferView.buffer ];
 
-				var byteLength = bufferView.byteLength !== undefined ? bufferView.byteLength : 0;
+				var byteLength = bufferView.byteLength || 0;
+				var byteOffset = bufferView.byteOffset || 0;
 
-				return arraybuffer.slice( bufferView.byteOffset, bufferView.byteOffset + byteLength );
+				return arraybuffer.slice( byteOffset, byteOffset + byteLength );
 
 			} );
 
@@ -1586,6 +1587,12 @@ THREE.GLTF2Loader = ( function () {
 					} else {
 
 						materialType = THREE.MeshPhongMaterial;
+
+					}
+
+					if ( material.doubleSided === true ) {
+
+						materialParams.side = THREE.DoubleSide;
 
 					}
 
@@ -2089,6 +2096,15 @@ THREE.GLTF2Loader = ( function () {
 						if ( primitive.indices !== undefined ) {
 
 							geometry.setIndex( dependencies.accessors[ primitive.indices ] );
+
+						}
+
+						if ( material.aoMap !== undefined
+								&& geometry.attributes.uv2 === undefined
+								&& geometry.attributes.uv !== undefined ) {
+
+							console.log( 'GLTF2Loader: Duplicating UVs to support aoMap.' );
+							geometry.addAttribute( 'uv2', new THREE.BufferAttribute( geometry.attributes.uv.array, 2 ) );
 
 						}
 
