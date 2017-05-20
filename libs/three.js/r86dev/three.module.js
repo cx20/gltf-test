@@ -750,16 +750,10 @@ Object.assign( Vector2.prototype, {
 
 	clampScalar: function () {
 
-		var min, max;
+		var min = new Vector2();
+		var max = new Vector2();
 
 		return function clampScalar( minVal, maxVal ) {
-
-			if ( min === undefined ) {
-
-				min = new Vector2();
-				max = new Vector2();
-
-			}
 
 			min.set( minVal, minVal );
 			max.set( maxVal, maxVal );
@@ -2319,7 +2313,8 @@ Object.assign( Quaternion.prototype, {
 
 		// assumes direction vectors vFrom and vTo are normalized
 
-		var v1, r;
+		var v1 = new Vector3();
+		var r;
 
 		var EPS = 0.000001;
 
@@ -2805,7 +2800,7 @@ Object.assign( Vector3.prototype, {
 
 	applyEuler: function () {
 
-		var quaternion;
+		var quaternion = new Quaternion();
 
 		return function applyEuler( euler ) {
 
@@ -2815,8 +2810,6 @@ Object.assign( Vector3.prototype, {
 
 			}
 
-			if ( quaternion === undefined ) quaternion = new Quaternion();
-
 			return this.applyQuaternion( quaternion.setFromEuler( euler ) );
 
 		};
@@ -2825,11 +2818,9 @@ Object.assign( Vector3.prototype, {
 
 	applyAxisAngle: function () {
 
-		var quaternion;
+		var quaternion = new Quaternion();
 
 		return function applyAxisAngle( axis, angle ) {
-
-			if ( quaternion === undefined ) quaternion = new Quaternion();
 
 			return this.applyQuaternion( quaternion.setFromAxisAngle( axis, angle ) );
 
@@ -2888,11 +2879,9 @@ Object.assign( Vector3.prototype, {
 
 	project: function () {
 
-		var matrix;
+		var matrix = new Matrix4();
 
 		return function project( camera ) {
-
-			if ( matrix === undefined ) matrix = new Matrix4();
 
 			matrix.multiplyMatrices( camera.projectionMatrix, matrix.getInverse( camera.matrixWorld ) );
 			return this.applyMatrix4( matrix );
@@ -2903,11 +2892,9 @@ Object.assign( Vector3.prototype, {
 
 	unproject: function () {
 
-		var matrix;
+		var matrix = new Matrix4();
 
 		return function unproject( camera ) {
-
-			if ( matrix === undefined ) matrix = new Matrix4();
 
 			matrix.multiplyMatrices( camera.matrixWorld, matrix.getInverse( camera.projectionMatrix ) );
 			return this.applyMatrix4( matrix );
@@ -2982,16 +2969,10 @@ Object.assign( Vector3.prototype, {
 
 	clampScalar: function () {
 
-		var min, max;
+		var min = new Vector3();
+		var max = new Vector3();
 
 		return function clampScalar( minVal, maxVal ) {
-
-			if ( min === undefined ) {
-
-				min = new Vector3();
-				max = new Vector3();
-
-			}
 
 			min.set( minVal, minVal, minVal );
 			max.set( maxVal, maxVal, maxVal );
@@ -3156,11 +3137,9 @@ Object.assign( Vector3.prototype, {
 
 	projectOnPlane: function () {
 
-		var v1;
+		var v1 = new Vector3();
 
 		return function projectOnPlane( planeNormal ) {
-
-			if ( v1 === undefined ) v1 = new Vector3();
 
 			v1.copy( this ).projectOnVector( planeNormal );
 
@@ -3175,11 +3154,9 @@ Object.assign( Vector3.prototype, {
 		// reflect incident vector off plane orthogonal to normal
 		// normal is assumed to have unit length
 
-		var v1;
+		var v1 = new Vector3();
 
 		return function reflect( normal ) {
-
-			if ( v1 === undefined ) v1 = new Vector3();
 
 			return this.sub( v1.copy( normal ).multiplyScalar( 2 * this.dot( normal ) ) );
 
@@ -3436,11 +3413,9 @@ Object.assign( Matrix4.prototype, {
 
 	extractRotation: function () {
 
-		var v1;
+		var v1 = new Vector3();
 
 		return function extractRotation( m ) {
-
-			if ( v1 === undefined ) v1 = new Vector3();
 
 			var te = this.elements;
 			var me = m.elements;
@@ -3634,17 +3609,11 @@ Object.assign( Matrix4.prototype, {
 
 	lookAt: function () {
 
-		var x, y, z;
+		var x = new Vector3();
+		var y = new Vector3();
+		var z = new Vector3();
 
 		return function lookAt( eye, target, up ) {
-
-			if ( x === undefined ) {
-
-				x = new Vector3();
-				y = new Vector3();
-				z = new Vector3();
-
-			}
 
 			var te = this.elements;
 
@@ -3757,11 +3726,9 @@ Object.assign( Matrix4.prototype, {
 
 	applyToBufferAttribute: function () {
 
-		var v1;
+		var v1 = new Vector3();
 
 		return function applyToBufferAttribute( attribute ) {
-
-			if ( v1 === undefined ) v1 = new Vector3();
 
 			for ( var i = 0, l = attribute.count; i < l; i ++ ) {
 
@@ -4079,16 +4046,10 @@ Object.assign( Matrix4.prototype, {
 
 	decompose: function () {
 
-		var vector, matrix;
+		var vector = new Vector3();
+		var matrix = new Matrix4();
 
 		return function decompose( position, quaternion, scale ) {
-
-			if ( vector === undefined ) {
-
-				vector = new Vector3();
-				matrix = new Matrix4();
-
-			}
 
 			var te = this.elements;
 
@@ -7973,11 +7934,9 @@ Object.assign( Box3.prototype, {
 
 	intersectsSphere: ( function () {
 
-		var closestPoint;
+		var closestPoint = new Vector3();
 
 		return function intersectsSphere( sphere ) {
-
-			if ( closestPoint === undefined ) closestPoint = new Vector3();
 
 			// Find the point on the AABB closest to the sphere center.
 			this.clampPoint( sphere.center, closestPoint );
@@ -8173,11 +8132,9 @@ Object.assign( Sphere.prototype, {
 
 	setFromPoints: function () {
 
-		var box;
+		var box = new Box3();
 
 		return function setFromPoints( points, optionalCenter ) {
-
-			if ( box === undefined ) box = new Box3(); // see #10547
 
 			var center = this.center;
 
@@ -8415,11 +8372,9 @@ Object.assign( Matrix3.prototype, {
 
 	applyToBufferAttribute: function () {
 
-		var v1;
+		var v1 = new Vector3();
 
 		return function applyToBufferAttribute( attribute ) {
-
-			if ( v1 === undefined ) v1 = new Vector3();
 
 			for ( var i = 0, l = attribute.count; i < l; i ++ ) {
 
@@ -9188,12 +9143,13 @@ function WebGLShadowMap( _renderer, _lights, _objects, capabilities ) {
 
 		// render depth map
 
-		var faceCount, isPointLight;
+		var faceCount;
 
 		for ( var i = 0, il = _lightShadows.length; i < il; i ++ ) {
 
 			var light = _lightShadows[ i ];
 			var shadow = light.shadow;
+			var isPointLight = light && light.isPointLight;
 
 			if ( shadow === undefined ) {
 
@@ -9202,25 +9158,12 @@ function WebGLShadowMap( _renderer, _lights, _objects, capabilities ) {
 
 			}
 
-			if ( shadow.isSpotLightShadow ) {
-
-				shadow.update( light );
-
-			}
-
 			var shadowCamera = shadow.camera;
-			var shadowMatrix = shadow.matrix;
-
-			_lightPositionWorld.setFromMatrixPosition( light.matrixWorld );
-			shadowCamera.position.copy( _lightPositionWorld );
 
 			_shadowMapSize.copy( shadow.mapSize );
 			_shadowMapSize.min( _maxShadowMapSize );
 
-			if ( light && light.isPointLight ) {
-
-				faceCount = 6;
-				isPointLight = true;
+			if ( isPointLight ) {
 
 				var vpWidth = _shadowMapSize.x;
 				var vpHeight = _shadowMapSize.y;
@@ -9254,6 +9197,34 @@ function WebGLShadowMap( _renderer, _lights, _objects, capabilities ) {
 				_shadowMapSize.x *= 4.0;
 				_shadowMapSize.y *= 2.0;
 
+			}
+
+			if ( shadow.map === null ) {
+
+				var pars = { minFilter: NearestFilter, magFilter: NearestFilter, format: RGBAFormat };
+
+				shadow.map = new WebGLRenderTarget( _shadowMapSize.x, _shadowMapSize.y, pars );
+				shadow.map.texture.name = light.name + ".shadowMap";
+
+				shadowCamera.updateProjectionMatrix();
+
+			}
+
+			if ( shadow.isSpotLightShadow ) {
+
+				shadow.update( light );
+
+			}
+
+			var shadowMap = shadow.map;
+			var shadowMatrix = shadow.matrix;
+
+			_lightPositionWorld.setFromMatrixPosition( light.matrixWorld );
+			shadowCamera.position.copy( _lightPositionWorld );
+
+			if ( isPointLight ) {
+
+				faceCount = 6;
 
 				// for point lights we set the shadow matrix to be a translation-only matrix
 				// equal to inverse of the light's position
@@ -9263,7 +9234,6 @@ function WebGLShadowMap( _renderer, _lights, _objects, capabilities ) {
 			} else {
 
 				faceCount = 1;
-				isPointLight = false;
 
 				_lookTarget.setFromMatrixPosition( light.target.matrixWorld );
 				shadowCamera.lookAt( _lookTarget );
@@ -9283,19 +9253,6 @@ function WebGLShadowMap( _renderer, _lights, _objects, capabilities ) {
 				shadowMatrix.multiply( shadowCamera.matrixWorldInverse );
 
 			}
-
-			if ( shadow.map === null ) {
-
-				var pars = { minFilter: NearestFilter, magFilter: NearestFilter, format: RGBAFormat };
-
-				shadow.map = new WebGLRenderTarget( _shadowMapSize.x, _shadowMapSize.y, pars );
-				shadow.map.texture.name = light.name + ".shadowMap";
-
-				shadowCamera.updateProjectionMatrix();
-
-			}
-
-			var shadowMap = shadow.map;
 
 			_renderer.setRenderTarget( shadowMap );
 			_renderer.clear();
@@ -10303,11 +10260,9 @@ Object.assign( Euler.prototype, {
 
 	setFromQuaternion: function () {
 
-		var matrix;
+		var matrix = new Matrix4();
 
 		return function setFromQuaternion( q, order, update ) {
-
-			if ( matrix === undefined ) matrix = new Matrix4();
 
 			matrix.makeRotationFromQuaternion( q );
 
@@ -10527,10 +10482,6 @@ function Object3D() {
 	this.renderOrder = 0;
 
 	this.userData = {};
-
-	this.onBeforeRender = function () {};
-	this.onAfterRender = function () {};
-
 }
 
 Object3D.DefaultUp = new Vector3( 0, 1, 0 );
@@ -10540,11 +10491,22 @@ Object.assign( Object3D.prototype, EventDispatcher.prototype, {
 
 	isObject3D: true,
 
+	onBeforeRender: function () {},
+	onAfterRender: function () {},
+
 	applyMatrix: function ( matrix ) {
 
 		this.matrix.multiplyMatrices( matrix, this.matrix );
 
 		this.matrix.decompose( this.position, this.quaternion, this.scale );
+
+	},
+
+	applyQuaternion: function ( q ) {
+
+		this.quaternion.premultiply( q );
+
+		return this;
 
 	},
 
@@ -10708,7 +10670,7 @@ Object.assign( Object3D.prototype, EventDispatcher.prototype, {
 
 	lookAt: function () {
 
-		// This routine does not support objects with rotated and/or translated parent(s)
+		// This method does not support objects with rotated and/or translated parent(s)
 
 		var m1 = new Matrix4();
 
@@ -11503,18 +11465,12 @@ Object.assign( Triangle.prototype, {
 
 	closestPointToPoint: function () {
 
-		var plane, edgeList, projectedPoint, closestPoint;
+		var plane = new Plane();
+		var edgeList = [ new Line3(), new Line3(), new Line3() ];
+		var projectedPoint = new Vector3();
+		var closestPoint = new Vector3();
 
 		return function closestPointToPoint( point, optionalTarget ) {
-
-			if ( plane === undefined ) {
-
-				plane = new Plane();
-				edgeList = [ new Line3(), new Line3(), new Line3() ];
-				projectedPoint = new Vector3();
-				closestPoint = new Vector3();
-
-			}
 
 			var result = optionalTarget || new Vector3();
 			var minDistance = Infinity;
@@ -11758,6 +11714,7 @@ function BufferAttribute( array, itemSize, normalized ) {
 	}
 
 	this.uuid = _Math.generateUUID();
+	this.name = '';
 
 	this.array = array;
 	this.itemSize = itemSize;
@@ -12546,11 +12503,9 @@ Object.assign( Geometry.prototype, EventDispatcher.prototype, {
 
 		// rotate geometry around world x-axis
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function rotateX( angle ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeRotationX( angle );
 
@@ -12566,11 +12521,9 @@ Object.assign( Geometry.prototype, EventDispatcher.prototype, {
 
 		// rotate geometry around world y-axis
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function rotateY( angle ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeRotationY( angle );
 
@@ -12586,11 +12539,9 @@ Object.assign( Geometry.prototype, EventDispatcher.prototype, {
 
 		// rotate geometry around world z-axis
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function rotateZ( angle ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeRotationZ( angle );
 
@@ -12606,11 +12557,9 @@ Object.assign( Geometry.prototype, EventDispatcher.prototype, {
 
 		// translate geometry
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function translate( x, y, z ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeTranslation( x, y, z );
 
@@ -12626,11 +12575,9 @@ Object.assign( Geometry.prototype, EventDispatcher.prototype, {
 
 		// scale geometry
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function scale( x, y, z ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeScale( x, y, z );
 
@@ -12644,11 +12591,9 @@ Object.assign( Geometry.prototype, EventDispatcher.prototype, {
 
 	lookAt: function () {
 
-		var obj;
+		var obj = new Object3D();
 
 		return function lookAt( vector ) {
-
-			if ( obj === undefined ) obj = new Object3D();
 
 			obj.lookAt( vector );
 
@@ -14044,11 +13989,9 @@ Object.assign( BufferGeometry.prototype, EventDispatcher.prototype, {
 
 		// rotate geometry around world x-axis
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function rotateX( angle ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeRotationX( angle );
 
@@ -14064,11 +14007,9 @@ Object.assign( BufferGeometry.prototype, EventDispatcher.prototype, {
 
 		// rotate geometry around world y-axis
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function rotateY( angle ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeRotationY( angle );
 
@@ -14084,11 +14025,9 @@ Object.assign( BufferGeometry.prototype, EventDispatcher.prototype, {
 
 		// rotate geometry around world z-axis
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function rotateZ( angle ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeRotationZ( angle );
 
@@ -14104,11 +14043,9 @@ Object.assign( BufferGeometry.prototype, EventDispatcher.prototype, {
 
 		// translate geometry
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function translate( x, y, z ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeTranslation( x, y, z );
 
@@ -14124,11 +14061,9 @@ Object.assign( BufferGeometry.prototype, EventDispatcher.prototype, {
 
 		// scale geometry
 
-		var m1;
+		var m1 = new Matrix4();
 
 		return function scale( x, y, z ) {
-
-			if ( m1 === undefined ) m1 = new Matrix4();
 
 			m1.makeScale( x, y, z );
 
@@ -14142,11 +14077,9 @@ Object.assign( BufferGeometry.prototype, EventDispatcher.prototype, {
 
 	lookAt: function () {
 
-		var obj;
+		var obj = new Object3D();
 
 		return function lookAt( vector ) {
-
-			if ( obj === undefined ) obj = new Object3D();
 
 			obj.lookAt( vector );
 
@@ -15026,17 +14959,53 @@ Mesh.prototype = Object.assign( Object.create( Object3D.prototype ), {
 
 	updateMorphTargets: function () {
 
-		var morphTargets = this.geometry.morphTargets;
+		var geometry = this.geometry;
+		var m, ml, name;
 
-		if ( morphTargets !== undefined && morphTargets.length > 0 ) {
+		if ( geometry.isBufferGeometry ) {
 
-			this.morphTargetInfluences = [];
-			this.morphTargetDictionary = {};
+			var morphAttributes = geometry.morphAttributes;
+			var keys = Object.keys( morphAttributes );
 
-			for ( var m = 0, ml = morphTargets.length; m < ml; m ++ ) {
+			if ( keys.length > 0 ) {
 
-				this.morphTargetInfluences.push( 0 );
-				this.morphTargetDictionary[ morphTargets[ m ].name ] = m;
+				var morphAttribute = morphAttributes[ keys[ 0 ] ];
+
+				if ( morphAttribute !== undefined ) {
+
+					this.morphTargetInfluences = [];
+					this.morphTargetDictionary = {};
+
+					for ( m = 0, ml = morphAttribute.length; m < ml; m ++ ) {
+
+						name = morphAttribute[ m ].name || String( m );
+
+						this.morphTargetInfluences.push( 0 );
+						this.morphTargetDictionary[ name ] = m;
+
+					}
+
+				}
+
+			}
+
+		} else {
+
+			var morphTargets = geometry.morphTargets;
+
+			if ( morphTargets !== undefined && morphTargets.length > 0 ) {
+
+				this.morphTargetInfluences = [];
+				this.morphTargetDictionary = {};
+
+				for ( m = 0, ml = morphTargets.length; m < ml; m ++ ) {
+
+					name = morphTargets[ m ].name || String( m );
+
+					this.morphTargetInfluences.push( 0 );
+					this.morphTargetDictionary[ name ] = m;
+
+				}
 
 			}
 
@@ -17782,6 +17751,8 @@ function WebGLPrograms( renderer, capabilities ) {
 
 		}
 
+		array.push( renderer.gammaOutput );
+
 		return array.join();
 
 	};
@@ -19189,7 +19160,7 @@ function WebGLState( gl, extensions, paramThreeToGL ) {
 
 		}
 
-		if ( blending !== currentBlending || premultipliedAlpha !== currentPremultipledAlpha ) {
+		if ( ( blending !== CustomBlending ) && ( blending !== currentBlending || premultipliedAlpha !== currentPremultipledAlpha ) ) {
 
 			if ( blending === AdditiveBlending ) {
 
@@ -32282,10 +32253,9 @@ Object.assign( MaterialLoader.prototype, {
 		var scope = this;
 
 		var loader = new FileLoader( scope.manager );
-		loader.setResponseType( 'json' );
-		loader.load( url, function ( json ) {
+		loader.load( url, function ( text ) {
 
-			onLoad( scope.parse( json ) );
+			onLoad( scope.parse( JSON.parse( text ) ) );
 
 		}, onProgress, onError );
 
@@ -32429,10 +32399,9 @@ Object.assign( BufferGeometryLoader.prototype, {
 		var scope = this;
 
 		var loader = new FileLoader( scope.manager );
-		loader.setResponseType( 'json' );
-		loader.load( url, function ( json ) {
+		loader.load( url, function ( text ) {
 
-			onLoad( scope.parse( json ) );
+			onLoad( scope.parse( JSON.parse( text ) ) );
 
 		}, onProgress, onError );
 
@@ -32596,13 +32565,11 @@ Object.assign( Loader.prototype, {
 			CustomBlending: CustomBlending
 		};
 
-		var color, textureLoader, materialLoader;
+		var color = new Color();
+		var textureLoader = new TextureLoader();
+		var materialLoader = new MaterialLoader();
 
 		return function createMaterial( m, texturePath, crossOrigin ) {
-
-			if ( color === undefined ) color = new Color();
-			if ( textureLoader === undefined ) textureLoader = new TextureLoader();
-			if ( materialLoader === undefined ) materialLoader = new MaterialLoader();
 
 			// convert from old material format
 
@@ -32872,10 +32839,10 @@ Object.assign( JSONLoader.prototype, {
 		var texturePath = this.texturePath && ( typeof this.texturePath === "string" ) ? this.texturePath : Loader.prototype.extractUrlBase( url );
 
 		var loader = new FileLoader( this.manager );
-		loader.setResponseType( 'json' );
 		loader.setWithCredentials( this.withCredentials );
-		loader.load( url, function ( json ) {
+		loader.load( url, function ( text ) {
 
+			var json = JSON.parse( text );
 			var metadata = json.metadata;
 
 			if ( metadata !== undefined ) {
@@ -37416,19 +37383,44 @@ Object.assign( PropertyBinding.prototype, { // prototype, continued
 
 				}
 
-				if ( ! targetObject.geometry.morphTargets ) {
+				if ( targetObject.geometry.isBufferGeometry ) {
 
-					console.error( '  can not bind to morphTargetInfluences becasuse node does not have a geometry.morphTargets', this );
-					return;
+					if ( ! targetObject.geometry.morphAttributes ) {
 
-				}
+						console.error( '  can not bind to morphTargetInfluences becasuse node does not have a geometry.morphAttributes', this );
+						return;
 
-				for ( var i = 0; i < this.node.geometry.morphTargets.length; i ++ ) {
+					}
 
-					if ( targetObject.geometry.morphTargets[ i ].name === propertyIndex ) {
+					for ( var i = 0; i < this.node.geometry.morphAttributes.position.length; i ++ ) {
 
-						propertyIndex = i;
-						break;
+						if ( targetObject.geometry.morphAttributes.position[ i ].name === propertyIndex ) {
+
+							propertyIndex = i;
+							break;
+
+						}
+
+					}
+
+
+				} else {
+
+					if ( ! targetObject.geometry.morphTargets ) {
+
+						console.error( '  can not bind to morphTargetInfluences becasuse node does not have a geometry.morphTargets', this );
+						return;
+
+					}
+
+					for ( var i = 0; i < this.node.geometry.morphTargets.length; i ++ ) {
+
+						if ( targetObject.geometry.morphTargets[ i ].name === propertyIndex ) {
+
+							propertyIndex = i;
+							break;
+
+						}
 
 					}
 
