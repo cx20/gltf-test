@@ -6,8 +6,8 @@ ModelIndex.List = [
     {category:'sampleModels', name:'BoxTextured', scale:1.0},
     {category:'sampleModels', name:'BoxSemantics', scale:1.0},
     {category:'sampleModels', name:'Duck', scale:1.0},
-    {category:'sampleModels', name:'Avocado', scale:0.5},
-    {category:'sampleModels', name:'BarramundiFish', scale:0.05},
+    //{category:'sampleModels', name:'Avocado', scale:0.5},	// moved to tutorialModels
+    //{category:'sampleModels', name:'BarramundiFish', scale:0.05},	// moved to tutorialModels
     {category:'sampleModels', name:'SmilingFace', scale:1.0},
     {category:'sampleModels', name:'2CylinderEngine', scale:0.005},
     {category:'sampleModels', name:'ReciprocatingSaw', scale:0.01},

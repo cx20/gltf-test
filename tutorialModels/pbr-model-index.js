@@ -1,9 +1,11 @@
 var TutorialPbrModelIndex = {};
 
 TutorialPbrModelIndex.List = [
-    {category:'tutorialModels', name:'BoomBox', scale:1.0},
-    {category:'tutorialModels', name:'Corset', scale:1.0},
-    {category:'tutorialModels', name:'Lantern', scale:1.0},
+    {category:'tutorialModels', name:'Avocado', scale:30.0},	// copied from sampleModels
+    {category:'tutorialModels', name:'BarramundiFish', scale:5.0},	// copied from sampleModels
+    {category:'tutorialModels', name:'BoomBox', scale:80.0},
+    {category:'tutorialModels', name:'Corset', scale:25.0},
+    {category:'tutorialModels', name:'Lantern', scale:0.06},
 ];
 
 TutorialPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
