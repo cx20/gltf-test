@@ -59,7 +59,8 @@ var createScene = function(engine) {
             parentMesh.position.y -= 17.02;
             parentMesh.position.z -= 3.21;
         }
-        parentMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
+        var modelScaling = parentMesh.scaling;
+        parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
         var camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
         camera.attachControl(canvas, false, false);
