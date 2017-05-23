@@ -1,7 +1,7 @@
 var TutorialAgiPbrModelIndex = {};
 
 TutorialAgiPbrModelIndex.List = [
-    {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.1},
+    {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.2},
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
 ];
 
