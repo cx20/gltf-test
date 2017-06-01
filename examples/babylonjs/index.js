@@ -66,9 +66,13 @@ var createScene = function(engine) {
         camera.attachControl(canvas, false, false);
         scene.activeCamera = camera;
         
-        var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, -1), scene);
-        light.groundColor = new BABYLON.Color3(1, 0, 0);
-        light.position = new BABYLON.Vector3(20, 40, 20);
+        var light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, 0, 1), scene);
+        light1.groundColor = new BABYLON.Color3(1, 0, 0);
+        light1.position = new BABYLON.Vector3(20, 40, 20);
+
+        var light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(0, 0, -1), scene);
+        light2.groundColor = new BABYLON.Color3(1, 0, 0);
+        light2.position = new BABYLON.Vector3(20, 40, -20);
 
         // Skybox
         var skybox = BABYLON.Mesh.CreateBox("skyBox", 1000.0, scene);
