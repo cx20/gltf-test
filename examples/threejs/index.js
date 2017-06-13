@@ -48,7 +48,11 @@ function init() {
     manager.onProgress = function ( item, loaded, total ) {
         console.log( item, loaded, total );
     };
-
+    
+    // monkeypatch 
+    // https://github.com/mrdoob/three.js/pull/11498#issuecomment-308136310
+    THREE.PropertyBinding.sanitizeNodeName = (n) => n;
+    
     var loader = new THREE.GLTF2Loader();
     loader.setCrossOrigin( 'anonymous' );
 
