@@ -3,6 +3,7 @@ var TutorialAgiPbrModelIndex = {};
 TutorialAgiPbrModelIndex.List = [
     {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.2},
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
+    {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
 ];
 
 TutorialAgiPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
