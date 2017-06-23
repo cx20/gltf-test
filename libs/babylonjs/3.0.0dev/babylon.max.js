@@ -8289,7 +8289,9 @@ var BABYLON;
         Engine.prototype.restoreDefaultFramebuffer = function () {
             this._currentRenderTarget = null;
             this.bindUnboundFramebuffer(null);
-            this.setViewport(this._cachedViewport);
+            if (this._cachedViewport) {
+                this.setViewport(this._cachedViewport);
+            }
             this.wipeCaches();
         };
         // UBOs
@@ -8729,7 +8731,11 @@ var BABYLON;
             var fragment = baseName.fragmentElement || baseName.fragment || baseName;
             var name = vertex + "+" + fragment + "@" + (defines ? defines : attributesNamesOrOptions.defines);
             if (this._compiledEffects[name]) {
-                return this._compiledEffects[name];
+                var compiledEffect = this._compiledEffects[name];
+                if (onCompiled && compiledEffect.isReady()) {
+                    onCompiled(compiledEffect);
+                }
+                return compiledEffect;
             }
             var effect = new BABYLON.Effect(baseName, attributesNamesOrOptions, uniformsNamesOrEngine, samplers, this, defines, fallbacks, onCompiled, onError, indexParameters);
             effect._key = name;
@@ -8791,6 +8797,7 @@ var BABYLON;
             if (effect.onBind) {
                 effect.onBind(effect);
             }
+            effect.onBindObservable.notifyObservers(effect);
         };
         Engine.prototype.setIntArray = function (uniform, array) {
             if (!uniform)
@@ -9972,20 +9979,28 @@ var BABYLON;
             }
             return rgbaData;
         };
-        Engine.prototype._releaseTexture = function (texture) {
+        Engine.prototype._releaseFramebufferObjects = function (texture) {
             var gl = this._gl;
             if (texture._framebuffer) {
                 gl.deleteFramebuffer(texture._framebuffer);
+                texture._framebuffer = null;
             }
             if (texture._depthStencilBuffer) {
                 gl.deleteRenderbuffer(texture._depthStencilBuffer);
+                texture._depthStencilBuffer = null;
             }
             if (texture._MSAAFramebuffer) {
                 gl.deleteFramebuffer(texture._MSAAFramebuffer);
+                texture._MSAAFramebuffer = null;
             }
             if (texture._MSAARenderBuffer) {
                 gl.deleteRenderbuffer(texture._MSAARenderBuffer);
+                texture._MSAARenderBuffer = null;
             }
+        };
+        Engine.prototype._releaseTexture = function (texture) {
+            var gl = this._gl;
+            this._releaseFramebufferObjects(texture);
             gl.deleteTexture(texture);
             // Unbind channels
             this.unbindAllTextures();
@@ -22543,6 +22558,9 @@ var BABYLON;
         function Effect(baseName, attributesNamesOrOptions, uniformsNamesOrEngine, samplers, engine, defines, fallbacks, onCompiled, onError, indexParameters) {
             var _this = this;
             this.uniqueId = 0;
+            this.onCompileObservable = new BABYLON.Observable();
+            this.onErrorObservable = new BABYLON.Observable();
+            this.onBindObservable = new BABYLON.Observable();
             this._uniformBuffersNames = {};
             this._isReady = false;
             this._compilationError = "";
@@ -22657,6 +22675,17 @@ var BABYLON;
             return this._evaluateDefinesOnString(this._engine.getFragmentShaderSource(this._program));
         };
         // Methods
+        Effect.prototype.executeWhenCompiled = function (func) {
+            var _this = this;
+            if (this.isReady()) {
+                func(this);
+                return;
+            }
+            var observer = this.onCompileObservable.add(function (effect) {
+                _this.onCompileObservable.remove(observer);
+                func(effect);
+            });
+        };
         Effect.prototype._loadVertexShader = function (vertex, callback) {
             // DOM element ?
             if (vertex instanceof HTMLElement) {
@@ -22890,6 +22919,7 @@ var BABYLON;
                 if (this.onCompiled) {
                     this.onCompiled(this);
                 }
+                this.onCompileObservable.notifyObservers(this);
             }
             catch (e) {
                 this._compilationError = e.message;
@@ -22912,6 +22942,7 @@ var BABYLON;
                     if (this.onError) {
                         this.onError(this, this._compilationError);
                     }
+                    this.onErrorObservable.notifyObservers(this);
                 }
             }
         };
@@ -42879,6 +42910,7 @@ var BABYLON;
             _this._currentRefreshId = -1;
             _this._refreshRate = 1;
             _this._samples = 1;
+            scene = _this.getScene();
             _this.name = name;
             _this.isRenderTarget = true;
             _this._size = size;
@@ -43290,12 +43322,29 @@ var BABYLON;
             }
             return serializationObject;
         };
+        // This will remove the attached framebuffer objects. The texture will not be able to be used as render target anymore
+        RenderTargetTexture.prototype.disposeFramebufferObjects = function () {
+            this.getScene().getEngine()._releaseFramebufferObjects(this.getInternalTexture());
+        };
         RenderTargetTexture.prototype.dispose = function () {
             if (this._postProcessManager) {
                 this._postProcessManager.dispose();
                 this._postProcessManager = null;
             }
             this.clearPostProcesses(true);
+            // Remove from custom render targets
+            var scene = this.getScene();
+            var index = scene.customRenderTargets.indexOf(this);
+            if (index >= 0) {
+                scene.customRenderTargets.splice(index, 1);
+            }
+            for (var _i = 0, _a = scene.cameras; _i < _a.length; _i++) {
+                var camera = _a[_i];
+                index = camera.customRenderTargets.indexOf(this);
+                if (index >= 0) {
+                    camera.customRenderTargets.splice(index, 1);
+                }
+            }
             _super.prototype.dispose.call(this);
         };
         return RenderTargetTexture;
@@ -43523,7 +43572,7 @@ var BABYLON;
                 var textureType = engine.getCaps().textureFloatRender ? BABYLON.Engine.TEXTURETYPE_FLOAT : BABYLON.Engine.TEXTURETYPE_HALF_FLOAT;
                 this._blurX = new BABYLON.BlurPostProcess("horizontal blur", new BABYLON.Vector2(1.0, 0), this._blurKernelX, this._blurRatio, null, BABYLON.Texture.BILINEAR_SAMPLINGMODE, engine, false, textureType);
                 this._blurX.autoClear = false;
-                if (this._blurRatio === 1) {
+                if (this._blurRatio === 1 && this.samples < 2) {
                     this._blurX.outputTexture = this._texture;
                 }
                 else {
@@ -44065,13 +44114,16 @@ var BABYLON;
         PostProcess.prototype.getEngine = function () {
             return this._engine;
         };
+        PostProcess.prototype.getEffect = function () {
+            return this._effect;
+        };
         PostProcess.prototype.shareOutputWith = function (postProcess) {
             this._disposeTextures();
             this._shareOutputWithPostProcess = postProcess;
             return this;
         };
-        PostProcess.prototype.updateEffect = function (defines, uniforms, samplers, indexParameters) {
-            this._effect = this._engine.createEffect({ vertex: this._vertexUrl, fragment: this._fragmentUrl }, ["position"], uniforms || this._parameters, samplers || this._samplers, defines !== undefined ? defines : "", null, null, null, indexParameters || this._indexParameters);
+        PostProcess.prototype.updateEffect = function (defines, uniforms, samplers, indexParameters, onCompiled, onError) {
+            this._effect = this._engine.createEffect({ vertex: this._vertexUrl, fragment: this._fragmentUrl }, ["position"], uniforms || this._parameters, samplers || this._samplers, defines !== undefined ? defines : "", null, onCompiled, onError, indexParameters || this._indexParameters);
         };
         PostProcess.prototype.isReusable = function () {
             return this._reusable;
@@ -66815,6 +66867,46 @@ var BABYLON;
     var TextureTools = (function () {
         function TextureTools() {
         }
+        /**
+         * Uses the GPU to create a copy texture rescaled at a given size
+         * @param texture Texture to copy from
+         * @param width Desired width
+         * @param height Desired height
+         * @return Generated texture
+         */
+        TextureTools.CreateResizedCopy = function (texture, width, height, useBilinearMode) {
+            if (useBilinearMode === void 0) { useBilinearMode = true; }
+            var rtt = new BABYLON.RenderTargetTexture('resized' + texture.name, { width: width, height: height }, scene, !texture.noMipmap, true, texture._texture.type, false, texture._samplingMode, false);
+            var scene = texture.getScene();
+            var engine = scene.getEngine();
+            rtt.wrapU = texture.wrapU;
+            rtt.wrapV = texture.wrapV;
+            rtt.uOffset = texture.uOffset;
+            rtt.vOffset = texture.vOffset;
+            rtt.uScale = texture.uScale;
+            rtt.vScale = texture.vScale;
+            rtt.uAng = texture.uAng;
+            rtt.vAng = texture.vAng;
+            rtt.wAng = texture.wAng;
+            rtt.coordinatesIndex = texture.coordinatesIndex;
+            rtt.level = texture.level;
+            rtt.anisotropicFilteringLevel = texture.anisotropicFilteringLevel;
+            rtt._texture.isReady = false;
+            texture.wrapU = BABYLON.Texture.CLAMP_ADDRESSMODE;
+            texture.wrapV = BABYLON.Texture.CLAMP_ADDRESSMODE;
+            var passPostProcess = new BABYLON.PassPostProcess("pass", 1, null, useBilinearMode ? BABYLON.Texture.BILINEAR_SAMPLINGMODE : BABYLON.Texture.NEAREST_SAMPLINGMODE, engine, false, BABYLON.Engine.TEXTURETYPE_UNSIGNED_INT);
+            passPostProcess.getEffect().executeWhenCompiled(function () {
+                passPostProcess.onApply = function (effect) {
+                    effect.setTexture("textureSampler", texture);
+                };
+                scene.postProcessManager.directRender([passPostProcess], rtt.getInternalTexture());
+                engine.unBindFramebuffer(rtt.getInternalTexture());
+                rtt.disposeFramebufferObjects();
+                passPostProcess.dispose();
+                rtt._texture.isReady = true;
+            });
+            return rtt;
+        };
         return TextureTools;
     }());
     BABYLON.TextureTools = TextureTools;
