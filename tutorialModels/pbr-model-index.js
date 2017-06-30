@@ -6,14 +6,21 @@ TutorialPbrModelIndex.List = [
     {category:'tutorialModels', name:'BoomBox', scale:80.0},
     {category:'tutorialModels', name:'Corset', scale:25.0},
     {category:'tutorialModels', name:'Lantern', scale:0.06},
+    {category:'tutorialModels', name:'DamagedHelmet', scale:1.0},
 ];
 
 TutorialPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
 ];
 
+TutorialPbrModelIndex.HasPngScreenshot = [ // List of only models that have *.png screenshots
+    'DamagedHelmet',
+];
+
+
 TutorialPbrModelIndex.getScreenshot = function(name) {
     //var extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
     var extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
+    extension = ((TutorialPbrModelIndex.HasPngScreenshot.indexOf(name) < 0) ? extension : 'png');
     return name + '/screenshot/screenshot.' + extension;
 };
 

@@ -3,6 +3,7 @@ var ModelIndex = {};
 ModelIndex.List = [
     {category:'sampleModels', name:'Box', scale:1.0},
     {category:'sampleModels', name:'BoxWithoutIndices', scale:1.0},
+    {category:'sampleModels', name:'BoxInterleaved', scale:1.0},
     {category:'sampleModels', name:'BoxTextured', scale:1.0},
     {category:'sampleModels', name:'BoxSemantics', scale:1.0},
     {category:'sampleModels', name:'Duck', scale:1.0},
