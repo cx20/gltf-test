@@ -11,11 +11,72 @@
 <script src="../../tutorialModels/agi-pbr-model-index.js"></script>
 </head>
 <!-- gl-matrix.js v2.3.2 -->
-<script src="../../libs/minimal-gltf-loader/20161028/gl-matrix.js"></script>
-<!-- minimal-gltf-loader 2016.10.28 -->
-<script src="../../libs/minimal-gltf-loader/20161028/minimal-gltf-loader.min.js"></script>
+<script src="../../libs/minimal-gltf-loader/20170721/gl-matrix.js"></script>
+<!-- minimal-gltf-loader 2017.07.21 -->
+<script src="../../libs/minimal-gltf-loader/20170721/minimal-gltf-loader.js"></script>
 <!-- utility.js -->
-<script src="../../libs/minimal-gltf-loader/20161028/utility.js"></script>
+<script src="../../libs/minimal-gltf-loader/20170721/utility.js"></script>
+
+<script id="vs-normal" type="x-shader/x-vertex">
+    #version 300 es
+    #define POSITION_LOCATION 0
+    #define NORMAL_LOCATION 1
+
+    precision highp float;
+    precision highp int;
+
+    uniform mat4 u_MVP;
+    uniform mat4 u_MVNormal;
+
+    layout(location = POSITION_LOCATION) in vec3 position;
+    layout(location = NORMAL_LOCATION) in vec3 normal;
+
+    out vec3 v_normal;
+
+    void main()
+    {
+        v_normal = normalize((u_MVNormal * vec4(normal, 0)).xyz);
+        gl_Position = u_MVP * vec4(position, 1.0) ;
+    }
+</script>
+
+<script id="fs-normal" type="x-shader/x-fragment">
+    #version 300 es
+    #define FRAG_COLOR_LOCATION 0
+
+    precision highp float;
+    precision highp int;
+
+    in vec3 v_normal;
+
+    layout(location = FRAG_COLOR_LOCATION) out vec4 color;
+
+    void main()
+    {
+        color = vec4(v_normal, 1.0);
+        //color = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+</script>
+
+<script id="fs-base-color" type="x-shader/x-fragment">
+    #version 300 es
+    #define FRAG_COLOR_LOCATION 0
+
+    precision highp float;
+    precision highp int;
+
+    uniform vec4 u_baseColorFactor;
+
+    in vec3 v_normal;
+
+    layout(location = FRAG_COLOR_LOCATION) out vec4 color;
+
+    void main()
+    {
+        float intensity = dot(v_normal, vec3(0.0, 0.0, 1.0));
+        color = u_baseColorFactor * intensity; 
+    }
+</script>
 
 <canvas id="world" width="465" height="465"></canvas>
 
