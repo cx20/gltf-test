@@ -5,8 +5,35 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
     // Data classes
     var Scene = MinimalGLTFLoader.Scene = function () {
         this.nodes = [];    // root node id of this scene, reference to glTFModel.nodes
-        this.meshes = [];   // mesh id number, reference to glTFModel.meshes
+
     };
+
+    /**
+     * 
+     * @param {vec3} min
+     * @param {vec3} max
+     */
+    var BoundingBox = MinimalGLTFLoader.BoundingBox = function (min, max) {
+        this.min = min;
+        this.max = max;
+
+        this.transform = mat4.create();
+    };
+
+    BoundingBox.prototype.updateBoundingBox = function (bbox) {
+        vec3.min(this.min, this.min, bbox.min);
+        vec3.max(this.max, this.max, bbox.max);
+    }
+
+    BoundingBox.prototype.calculateTransform = function () {
+        this.transform[0] = this.max[0] - this.min[0];
+        this.transform[5] = this.max[1] - this.min[1];
+        this.transform[10] = this.max[2] - this.min[2];
+        this.transform[12] = this.min[0];
+        this.transform[13] = this.min[1];
+        this.transform[14] = this.min[2];
+    }
+
 
 
 
@@ -19,20 +46,10 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
         this.count = a.count;   // required
         this.type = a.type;     // required
         this.size = Type2NumOfComponent[this.type];
+
+        this.min = a.min;
+        this.max = a.max;
     };
-
-    // Accessor.prototype.setup = function() {
-    //     gl.vertexAttribPointer(
-    //         PROGRAM_ATTRIBUTE_LOCATION,
-    //         accessor.size,
-    //         accessor.componentType,
-    //         accessor.normalized,
-    //         accessor.byteStride,
-    //         accessor.byteOffset
-    //         );
-    // }
-
-
 
     var BufferView = MinimalGLTFLoader.BufferView = function(bf, bufferData) {
         this.byteLength = bf.byteLength;    //required
@@ -42,14 +59,7 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
 
         this.data = bufferData.slice(this.byteOffset, this.byteOffset + this.byteLength);
 
-        this.buffer = null;
-
-        // if (gl) {
-        //     this.buffer = gl.createBuffer();
-        // }
-
-        // //temp
-        // this.json = bf;
+        this.buffer = null;     // gl buffer
     };
 
 
@@ -63,15 +73,18 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
     var Mesh = MinimalGLTFLoader.Mesh = function () {
         this.meshID = -1;     // mesh id name in glTF json meshes
         this.primitives = [];
+
+        this.boundingBox = null;
     };
 
     var Primitive = MinimalGLTFLoader.Primitive = function (json, p) {
         // <attribute name, accessor id>, required
+        // get hook up with accessor object in _postprocessing
         this.attributes = p.attributes;
-
         this.indices = p.indices !== undefined ? p.indices : null;  // accessor id
 
-        // tmp
+
+        // temp
         this.indicesComponentType = json.accessors[this.indices].componentType;
         this.indicesLength = json.accessors[this.indices].count;
         this.indicesOffset = (json.accessors[this.indices].byteOffset || 0);
@@ -93,6 +106,8 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
         this.vertexBuffer = null;
         this.indexBuffer = null;
 
+
+        this.boundingBox = null;
     };
 
 
@@ -125,8 +140,8 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
             this.meshes = new Array(gltf.meshes.length);    // store mesh object
         }
 
-        this.shaders = {};      //glTF 1.0, deprecated in 2.0 core
-        this.programs = {};     //glTF 1.0, deprecated in 2.0 core
+        // this.shaders = {};      //glTF 1.0, deprecated in 2.0 core
+        // this.programs = {};     //glTF 1.0, deprecated in 2.0 core
 
         if (gltf.images) {
             this.images = new Array(gltf.images.length);
@@ -182,7 +197,7 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
                 console.log('dependent buffer data ready (instant), create bufferView ' + bufferViewID);
                 this.glTF.bufferViews[bufferViewID] = bufferViewObject = new BufferView( bufferView, bufferData );
                 callback(bufferViewObject);
-                // this._checkComplete();
+                this._checkComplete();
             } else {
                 // buffer not yet loaded
                 // add pending task to _bufferTasks
@@ -209,7 +224,7 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
                     }
                     
                     callback(bufferViewObject);
-                    loader._checkComplete();
+                    // loader._checkComplete();
 
                     // // create new bufferView for each mesh access with a different hierarchy
                     // // hierarchy transformation will be prepared in this way
@@ -241,6 +256,9 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
         }
 
         if (this._loadDone && this._parseDone && this._pendingTasks == this._finishedPendingTasks) {
+
+            this._postprocess();
+
             this.onload(this.glTF);
         }
     };
@@ -544,6 +562,72 @@ var MinimalGLTFLoader = MinimalGLTFLoader || {};
             loader._parseGLTF(json);
         });
     };
+
+
+    glTFLoader.prototype._postprocess = function () {
+        console.log('finish loading all assets, do a second pass postprocess');
+
+        
+        // @todo: ?? hook up pointers, get scene bounding box, etc.
+        var i, leni, j, lenj;
+
+        var node;
+        var mesh, primitive, accessor;
+
+        // for (i = 0, leni = this.glTF.nodes.length; i < leni; i++) {
+        //     node = this.glTF.nodes[i];
+        //     if (node.mesh !== null) {
+        //         node.mesh = this.glTF.meshes[ node.mesh ];
+        //     }
+        // } 
+
+
+
+        // bounding box
+        
+        
+        for (i = 0, leni = this.glTF.meshes.length; i < leni; i++) {
+            mesh = this.glTF.meshes[i];
+            mesh.boundingBox = new BoundingBox( vec3.fromValues(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY), vec3.fromValues(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY) );
+            
+            for (j = 0, lenj = mesh.primitives.length; j < lenj; j++) {
+                primitive = mesh.primitives[j];
+
+                if (primitive.attributes['POSITION'] !== undefined) {
+                    accessor = this.glTF.accessors[ primitive.attributes['POSITION'] ];
+                    if (accessor.max) {
+                        // @todo: handle cases where no min max are provided
+
+                        // assume vec3
+                        if (accessor.type === 'VEC3') {
+                            primitive.boundingBox = new BoundingBox(
+                                vec3.fromValues(accessor.min[0], accessor.min[1], accessor.min[2]),
+                                vec3.fromValues(accessor.max[0], accessor.max[1], accessor.max[2])
+                            );
+                            primitive.boundingBox.calculateTransform();
+                            
+
+                            mesh.boundingBox.updateBoundingBox(primitive.boundingBox);
+                        }
+                        
+                    }
+                }
+
+
+                // // hook up accessors
+                // for (var att in primitive.attributes) {
+                //     primitive.attributes[att] = this.glTF.accessors[ primitive.attributes[att] ];
+                // }
+
+            }
+
+            mesh.boundingBox.calculateTransform();
+        }
+
+
+    };
+
+
 
 
 

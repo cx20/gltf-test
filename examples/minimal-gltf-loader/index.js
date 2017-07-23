@@ -18,6 +18,8 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+var drawBoundingBox = true;
+
 var canvas = document.getElementById("world");
 var gl = canvas.getContext( 'webgl2', { antialias: true } );
 resizeCanvas();
@@ -29,6 +31,73 @@ function resizeCanvas() {
     canvas.height = window.innerHeight;
     gl.viewport(0, 0, canvas.width, canvas.height);
 }
+
+var BOUNDING_BOX = {
+    vertexData: new Float32Array([
+        0.0, 0.0, 0.0
+        ,1.0, 0.0, 0.0
+        ,0.0, 0.0, 0.0
+        ,0.0, 1.0, 0.0
+        ,0.0, 0.0, 0.0
+        ,0.0, 0.0, 1.0
+
+        ,0.0, 1.0, 1.0
+        ,1.0, 1.0, 1.0
+        ,0.0, 1.0, 1.0
+        ,0.0, 1.0, 0.0
+        ,0.0, 1.0, 1.0
+        ,0.0, 0.0, 1.0
+
+        ,1.0, 1.0, 0.0
+        ,1.0, 1.0, 1.0
+        ,1.0, 1.0, 0.0
+        ,0.0, 1.0, 0.0
+        ,1.0, 1.0, 0.0
+        ,1.0, 0.0, 0.0
+
+        ,1.0, 0.0, 1.0
+        ,1.0, 0.0, 0.0
+        ,1.0, 0.0, 1.0
+        ,1.0, 1.0, 1.0
+        ,1.0, 0.0, 1.0
+        ,0.0, 0.0, 1.0
+    ]),
+
+    vertexArray: gl.createVertexArray(),
+    vertexBuffer: gl.createBuffer(),
+
+    program: createProgram(gl, getShaderSource('vs-bbox'), getShaderSource('fs-bbox')),
+    positionLocation: 0,
+    uniformMvpLocation: 0, 
+
+    
+    draw: (function() {
+        var MVP = mat4.create();
+        return (function(bbox, nodeTransform, V, P) {
+            gl.useProgram(this.program);
+
+            mat4.mul(MVP, nodeTransform, bbox.transform);
+            mat4.mul(MVP, V, MVP);
+            mat4.mul(MVP, P, MVP);
+
+            gl.uniformMatrix4fv(this.uniformMvpLocation, false, MVP);
+            gl.bindVertexArray(this.vertexArray);
+            gl.drawArrays(gl.LINES, 0, 24);
+            gl.bindVertexArray(null);
+        });
+    })()
+};
+
+BOUNDING_BOX.uniformMvpLocation = gl.getUniformLocation(BOUNDING_BOX.program, "u_MVP");
+
+gl.bindVertexArray(BOUNDING_BOX.vertexArray);
+
+gl.bindBuffer(gl.ARRAY_BUFFER, BOUNDING_BOX.vertexBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, BOUNDING_BOX.vertexData, gl.STATIC_DRAW);
+gl.vertexAttribPointer(BOUNDING_BOX.positionLocation, 3, gl.FLOAT, false, 0, 0);
+gl.enableVertexAttribArray(BOUNDING_BOX.positionLocation);
+
+gl.bindVertexArray(null);
 
 // -- Mouse Behaviour
 var s = modelInfo.scale * 100;
@@ -270,6 +339,9 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
                 // draw primitive
                 drawPrimitive(mesh.primitives[i], matrix);
             }
+
+            // BOUNDING_BOX.draw(mesh.boundingBox, matrix, modelView, perspective);
+            // gl.useProgram(program);
         }
         
 
@@ -301,8 +373,35 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
 
         gl.useProgram(program);
         
-        for (i = 0, lenNodes = curScene.nodes.length; i < lenNodes; i++) {
+                for (var i = 0, len = curScene.nodes.length; i < len; i++) {
             drawNode( glTF.nodes[curScene.nodes[i]], curScene.nodes[i] );
+        }
+
+        if (drawBoundingBox) {
+            gl.useProgram(BOUNDING_BOX.program);
+            gl.bindVertexArray(BOUNDING_BOX.vertexArray);
+
+            var node, mesh;
+            // @temp: assume all nodes are in cur scene
+            // @potential fix: can label each node's scene at the setup
+            for (i = 0, len = glTF.nodes.length; i < len; i++) {
+                node = glTF.nodes[i];
+                if (node.mesh !== null) {
+                    mesh = glTF.meshes[node.mesh];
+                    mat4.mul(localMVP, nodeMatrix[i], mesh.boundingBox.transform);
+                    mat4.mul(localMVP, modelView, localMVP);
+                    mat4.mul(localMVP, perspective, localMVP);
+
+                    gl.uniformMatrix4fv(BOUNDING_BOX.uniformMvpLocation, false, localMVP);
+                    
+                    gl.drawArrays(gl.LINES, 0, 24);
+                    
+                }
+                
+            }
+
+            gl.bindVertexArray(null);
+            gl.useProgram(program);
         }
 
         requestAnimationFrame(render);
