@@ -30,7 +30,7 @@ var createScene = function(engine) {
 
     function findParentForMesh(mesh) {
         var parentMesh = mesh;
-        if (mesh.parent !== null) {
+        if (mesh.parent !== null && mesh.parent !== undefined) {
             parentMesh = findParentForMesh(mesh);
         }
         return parentMesh;
@@ -39,7 +39,7 @@ var createScene = function(engine) {
     function findParentForMeshes(meshes) {
         var parentMesh = meshes[0];
         for (var i = 0; i < meshes.length; i++) {
-            if (scene.meshes[i].parent !== null) {
+            if (scene.meshes[i].parent !== null && scene.meshes[i].parent !== undefined) {
                 parentMesh = scene.meshes[i].parent;
                 break;
             }
