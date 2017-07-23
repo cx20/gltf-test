@@ -20,6 +20,15 @@ if (!modelInfo) {
 
 var canvas = document.getElementById("world");
 var gl = canvas.getContext( 'webgl2', { antialias: true } );
+resizeCanvas();
+window.addEventListener("resize", function(){
+    resizeCanvas();
+});
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+}
 
 // -- Mouse Behaviour
 //var s = 0.1;
@@ -196,7 +205,8 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     var rotationSpeedY= 0.01;
 
     var perspective = mat4.create();
-    mat4.perspective(perspective, 0.785, 1, 1, 1000);
+    //mat4.perspective(perspective, 0.785, 1, 1, 1000);
+    mat4.perspective(perspective, 0.785, window.innerWidth/window.innerHeight, 1, 1000);
 
     var modelView = mat4.create();
 
