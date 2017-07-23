@@ -31,11 +31,7 @@ function resizeCanvas() {
 }
 
 // -- Mouse Behaviour
-//var s = 0.1;
 var s = modelInfo.scale * 100;
-// var s = 1;
-//var t = -100;
-// var t = -5;
 var t = -5 * 100;
 var mouseDown = false;
 var lastMouseY = 0;
