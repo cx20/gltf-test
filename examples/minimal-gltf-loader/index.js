@@ -19,7 +19,7 @@ if (!modelInfo) {
 }
 
 var canvas = document.getElementById("world");
-var gl = canvas.getContext( 'webgl2', { antialias: false } );
+var gl = canvas.getContext( 'webgl2', { antialias: true } );
 
 // -- Mouse Behaviour
 //var s = 0.1;
@@ -83,80 +83,107 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     var mesh;
     var primitive;
     var vertexBuffer;
-    var indicesBuffer;
+    var indexBuffer;
     var vertexArray;
 
     var nid, lenNodes;
     var mid, lenMeshes;
     var i, len;
+    var attribute;
 
+    var accessor, bufferView;
+
+    // console.log(glTF.bufferViews);
+    // console.log(glTF.accessors);
+
+    // create buffers
+    for (i = 0, len = glTF.bufferViews.length; i < len; i++) {
+        bufferView = glTF.bufferViews[i];
+        bufferView.buffer = gl.createBuffer();
+        if (bufferView.target) {
+            gl.bindBuffer(bufferView.target, bufferView.buffer);
+            gl.bufferData(bufferView.target, bufferView.data, gl.STATIC_DRAW);
+            gl.bindBuffer(bufferView.target, null);
+        }
+    }
+
+    // create vaos
     for (mid = 0, lenMeshes = glTF.meshes.length; mid < lenMeshes; mid++) {
         mesh = glTF.meshes[mid];
         // vertexArrayMaps[mid] = [];
 
         for (i = 0, len = mesh.primitives.length; i < len; ++i) {
             primitive = mesh.primitives[i];
-            
-            // create buffers
-            vertexBuffer = gl.createBuffer();
-            indicesBuffer = gl.createBuffer();
-
             // WebGL2: create vertexArray
-            // vertexArray = gl.createVertexArray();
-            // vertexArrayMaps[mid].push(vertexArray);
             primitive.vertexArray = vertexArray = gl.createVertexArray();
-
-            // -- Initialize buffer
-            var vertices = primitive.verticesData;
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-            var indices = primitive.indicesData;
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-
-            // -- VertexAttribPointer
-            var positionInfo = primitive.attributes.POSITION;
-
             gl.bindVertexArray(vertexArray);
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
             
-
+            // attributes
+            // for (attribute in primitive.attributes) {
+            //     accessor = glTF.accessors[ primitive.attributes[attribute] ];
+            // }
+            accessor = glTF.accessors[ primitive.attributes['POSITION'] ];
+            bufferView = accessor.bufferView;
+            if (bufferView.target === null) {
+                // bufferView.target = gl.ARRAY_BUFFER;
+                gl.bindBuffer(gl.ARRAY_BUFFER, bufferView.buffer);
+                gl.bufferData(gl.ARRAY_BUFFER, bufferView.data, gl.STATIC_DRAW);
+            } else {
+                gl.bindBuffer(gl.ARRAY_BUFFER, bufferView.buffer);
+            }
+            
             gl.vertexAttribPointer(
                 POSITION_LOCATION,
-                positionInfo.size,
-                positionInfo.type,
-                false,
-                positionInfo.stride,
-                positionInfo.offset
+                accessor.size,
+                accessor.componentType,
+                accessor.normalized,
+                accessor.byteStride,
+                accessor.byteOffset
                 );
             gl.enableVertexAttribArray(POSITION_LOCATION);
 
-            var normalInfo = primitive.attributes.NORMAL;
+            accessor = glTF.accessors[ primitive.attributes['NORMAL'] ];
+            bufferView = accessor.bufferView;
+            if (bufferView.target === null) {
+                // bufferView.target = gl.ARRAY_BUFFER;
+                gl.bindBuffer(gl.ARRAY_BUFFER, bufferView.buffer);
+                gl.bufferData(gl.ARRAY_BUFFER, bufferView.data, gl.STATIC_DRAW);
+            } else {
+                gl.bindBuffer(gl.ARRAY_BUFFER, bufferView.buffer);
+            }
+            
             gl.vertexAttribPointer(
                 NORMAL_LOCATION,
-                normalInfo.size,
-                normalInfo.type,
-                false,
-                normalInfo.stride,
-                normalInfo.offset
+                accessor.size,
+                accessor.componentType,
+                accessor.normalized,
+                accessor.byteStride,
+                accessor.byteOffset
                 );
             gl.enableVertexAttribArray(NORMAL_LOCATION);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indicesBuffer);
+            // indices ( assume use indices )
+            accessor = glTF.accessors[ primitive.indices ];
+            bufferView = accessor.bufferView;
+            if (bufferView.target === null) {
+                // bufferView.target = gl.ARRAY_BUFFER;
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferView.buffer);
+                gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, bufferView.data, gl.STATIC_DRAW);
+            } else {
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferView.buffer);
+            }
+            
 
             gl.bindVertexArray(null);
 
-
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         }
         
     }
     
+
+
     // -- Render preparation
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
@@ -204,13 +231,14 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
 
         gl.uniform4fv(uniformBaseColorFactorLocation, baseColor);
 
-        // gl.bindVertexArray(vertexArrayMaps[mid][i]);
         gl.bindVertexArray(primitive.vertexArray);
 
         // TODO: when no indices, do drawArrays
-        gl.drawElements(primitive.mode, primitive.indicesData.length, primitive.indicesComponentType, 0);
+        gl.drawElements(primitive.mode, primitive.indicesLength, primitive.indicesComponentType, primitive.indicesOffset);
+        // gl.drawElements(primitive.mode, 3, primitive.indicesComponentType, primitive.indicesOffset);
 
         gl.bindVertexArray(null);
+
     }
 
     // function drawMesh(mesh, matrix) {
