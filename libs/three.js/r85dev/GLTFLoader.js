@@ -745,14 +745,11 @@ THREE.GLTFLoader = ( function () {
 					shaderText = shaderText.replace( regEx, 'uv' );
 					break;
 
-<<<<<<< HEAD
-=======
 				case 'TEXCOORD_1':
 
 					shaderText = shaderText.replace( regEx, 'uv2' );
 					break;
 
->>>>>>> 2.0
 				case 'COLOR_0':
 				case 'COLOR0':
 				case 'COLOR':
@@ -890,11 +887,6 @@ THREE.GLTFLoader = ( function () {
 
 		] ).then( function ( dependencies ) {
 
-<<<<<<< HEAD
-			var scene = dependencies.scenes[ json.scene ];
-
-=======
->>>>>>> 2.0
 			var scenes = [];
 
 			for ( var name in dependencies.scenes ) {
@@ -903,11 +895,8 @@ THREE.GLTFLoader = ( function () {
 
 			}
 
-<<<<<<< HEAD
-=======
 			var scene = json.scene !== undefined ? dependencies.scenes[ json.scene ] : scenes[ 0 ];
 
->>>>>>> 2.0
 			var cameras = [];
 
 			for ( var name in dependencies.cameras ) {
@@ -1641,13 +1630,10 @@ THREE.GLTFLoader = ( function () {
 									geometry.addAttribute( 'uv', bufferAttribute );
 									break;
 
-<<<<<<< HEAD
-=======
 								case 'TEXCOORD_1':
 									geometry.addAttribute( 'uv2', bufferAttribute );
 									break;
 
->>>>>>> 2.0
 								case 'COLOR_0':
 								case 'COLOR0':
 								case 'COLOR':

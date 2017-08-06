@@ -96,8 +96,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 	};
 
-<<<<<<< HEAD
-=======
 	this.saveState = function () {
 
 		scope.target0.copy( scope.target );
@@ -106,7 +104,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 	};
 
->>>>>>> 2.0
 	this.reset = function () {
 
 		scope.target.copy( scope.target0 );
@@ -665,31 +662,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		event.preventDefault();
 
-<<<<<<< HEAD
-		if ( event.button === scope.mouseButtons.ORBIT ) {
-
-			if ( scope.enableRotate === false ) return;
-
-			handleMouseDownRotate( event );
-
-			state = STATE.ROTATE;
-
-		} else if ( event.button === scope.mouseButtons.ZOOM ) {
-
-			if ( scope.enableZoom === false ) return;
-
-			handleMouseDownDolly( event );
-
-			state = STATE.DOLLY;
-
-		} else if ( event.button === scope.mouseButtons.PAN ) {
-
-			if ( scope.enablePan === false ) return;
-
-			handleMouseDownPan( event );
-
-			state = STATE.PAN;
-=======
 		switch ( event.button ) {
 
 			case scope.mouseButtons.ORBIT:
@@ -721,7 +693,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 				state = STATE.PAN;
 
 				break;
->>>>>>> 2.0
 
 		}
 
@@ -742,25 +713,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		event.preventDefault();
 
-<<<<<<< HEAD
-		if ( state === STATE.ROTATE ) {
-
-			if ( scope.enableRotate === false ) return;
-
-			handleMouseMoveRotate( event );
-
-		} else if ( state === STATE.DOLLY ) {
-
-			if ( scope.enableZoom === false ) return;
-
-			handleMouseMoveDolly( event );
-
-		} else if ( state === STATE.PAN ) {
-
-			if ( scope.enablePan === false ) return;
-
-			handleMouseMovePan( event );
-=======
 		switch ( state ) {
 
 			case STATE.ROTATE:
@@ -786,7 +738,6 @@ THREE.OrbitControls = function ( object, domElement ) {
 				handleMouseMovePan( event );
 
 				break;
->>>>>>> 2.0
 
 		}
 

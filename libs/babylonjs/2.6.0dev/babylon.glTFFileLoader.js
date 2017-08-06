@@ -840,93 +840,6 @@ var BABYLON;
     /**
     * glTF File Loader Plugin
     */
-<<<<<<< HEAD
-    var GLTFFileLoaderBase = (function () {
-        function GLTFFileLoaderBase() {
-        }
-        GLTFFileLoaderBase.CreateRuntime = function (parsedData, scene, rootUrl) {
-            var gltfRuntime = {
-                extensions: {},
-                accessors: {},
-                buffers: {},
-                bufferViews: {},
-                meshes: {},
-                lights: {},
-                cameras: {},
-                nodes: {},
-                images: {},
-                textures: {},
-                shaders: {},
-                programs: {},
-                samplers: {},
-                techniques: {},
-                materials: {},
-                animations: {},
-                skins: {},
-                extensionsUsed: [],
-                scenes: {},
-                buffersCount: 0,
-                shaderscount: 0,
-                scene: scene,
-                rootUrl: rootUrl,
-                loadedBufferCount: 0,
-                loadedBufferViews: {},
-                loadedShaderCount: 0,
-                importOnlyMeshes: false,
-                dummyNodes: []
-            };
-            // Parse
-            if (parsedData.extensions) {
-                parseObject(parsedData.extensions, "extensions", gltfRuntime);
-            }
-            if (parsedData.extensionsUsed) {
-                parseObject(parsedData.extensionsUsed, "extensionsUsed", gltfRuntime);
-            }
-            if (parsedData.buffers) {
-                parseBuffers(parsedData.buffers, gltfRuntime);
-            }
-            if (parsedData.bufferViews) {
-                parseObject(parsedData.bufferViews, "bufferViews", gltfRuntime);
-            }
-            if (parsedData.accessors) {
-                parseObject(parsedData.accessors, "accessors", gltfRuntime);
-            }
-            if (parsedData.meshes) {
-                parseObject(parsedData.meshes, "meshes", gltfRuntime);
-            }
-            if (parsedData.lights) {
-                parseObject(parsedData.lights, "lights", gltfRuntime);
-            }
-            if (parsedData.cameras) {
-                parseObject(parsedData.cameras, "cameras", gltfRuntime);
-            }
-            if (parsedData.nodes) {
-                parseObject(parsedData.nodes, "nodes", gltfRuntime);
-            }
-            if (parsedData.images) {
-                parseObject(parsedData.images, "images", gltfRuntime);
-            }
-            if (parsedData.textures) {
-                parseObject(parsedData.textures, "textures", gltfRuntime);
-            }
-            if (parsedData.shaders) {
-                parseShaders(parsedData.shaders, gltfRuntime);
-            }
-            if (parsedData.programs) {
-                parseObject(parsedData.programs, "programs", gltfRuntime);
-            }
-            if (parsedData.samplers) {
-                parseObject(parsedData.samplers, "samplers", gltfRuntime);
-            }
-            if (parsedData.techniques) {
-                parseObject(parsedData.techniques, "techniques", gltfRuntime);
-            }
-            if (parsedData.materials) {
-                parseObject(parsedData.materials, "materials", gltfRuntime);
-            }
-            if (parsedData.animations) {
-                parseObject(parsedData.animations, "animations", gltfRuntime);
-=======
     var GLTFFileLoader = (function () {
         function GLTFFileLoader() {
             /**
@@ -941,7 +854,6 @@ var BABYLON;
             if (GLTFFileLoader.Extensions[extension.name]) {
                 BABYLON.Tools.Error("Tool with the same name \"" + extension.name + "\" already exists");
                 return;
->>>>>>> 2.0
             }
             GLTFFileLoader.Extensions[extension.name] = extension;
         };
@@ -1106,27 +1018,6 @@ var BABYLON;
         */
         GLTFFileLoader.prototype.loadAsync = function (scene, data, rootUrl, onSuccess, onError) {
             scene.useRightHandedSystem = true;
-<<<<<<< HEAD
-            BABYLON.GLTFFileLoaderExtension.LoadRuntimeAsync(scene, data, rootUrl, function (gltfRuntime) {
-                // Load runtime extensios
-                BABYLON.GLTFFileLoaderExtension.LoadRuntimeExtensionsAsync(gltfRuntime, function () {
-                    // Create nodes
-                    _this._createNodes(gltfRuntime);
-                    // Load buffers, shaders, materials, etc.
-                    _this._loadBuffersAsync(gltfRuntime, function () {
-                        _this._loadShadersAsync(gltfRuntime, function () {
-                            importMaterials(gltfRuntime);
-                            postLoad(gltfRuntime);
-                            if (!GLTFFileLoader.IncrementalLoading) {
-                                onSuccess();
-                            }
-                        });
-                    });
-                    if (GLTFFileLoader.IncrementalLoading) {
-                        onSuccess();
-                    }
-                }, onError);
-=======
             var runtime = this._createRuntime(scene, data, rootUrl, false);
             if (!runtime) {
                 if (onError)
@@ -1140,7 +1031,6 @@ var BABYLON;
                 if (!GLTFFileLoader.IncrementalLoading) {
                     onSuccess();
                 }
->>>>>>> 2.0
             }, onError);
             if (GLTFFileLoader.IncrementalLoading) {
                 onSuccess();
@@ -1432,115 +1322,6 @@ var BABYLON;
             enumerable: true,
             configurable: true
         });
-<<<<<<< HEAD
-        /**
-        * Defines an override for loading the runtime
-        * Return true to stop further extensions from loading the runtime
-        */
-        GLTFFileLoaderExtension.prototype.loadRuntimeAsync = function (scene, data, rootUrl, onSuccess, onError) {
-            return false;
-        };
-        /**
-         * Defines an onverride for creating gltf runtime
-         * Return true to stop further extensions from creating the runtime
-         */
-        GLTFFileLoaderExtension.prototype.loadRuntimeExtensionsAsync = function (gltfRuntime, onSuccess, onError) {
-            return false;
-        };
-        /**
-        * Defines an override for loading buffers
-        * Return true to stop further extensions from loading this buffer
-        */
-        GLTFFileLoaderExtension.prototype.loadBufferAsync = function (gltfRuntime, id, onSuccess, onError) {
-            return false;
-        };
-        /**
-        * Defines an override for loading texture buffers
-        * Return true to stop further extensions from loading this texture data
-        */
-        GLTFFileLoaderExtension.prototype.loadTextureBufferAsync = function (gltfRuntime, id, onSuccess, onError) {
-            return false;
-        };
-        /**
-        * Defines an override for creating textures
-        * Return true to stop further extensions from loading this texture
-        */
-        GLTFFileLoaderExtension.prototype.createTextureAsync = function (gltfRuntime, id, buffer, onSuccess, onError) {
-            return false;
-        };
-        /**
-        * Defines an override for loading shader strings
-        * Return true to stop further extensions from loading this shader data
-        */
-        GLTFFileLoaderExtension.prototype.loadShaderStringAsync = function (gltfRuntime, id, onSuccess, onError) {
-            return false;
-        };
-        /**
-        * Defines an override for loading materials
-        * Return true to stop further extensions from loading this material
-        */
-        GLTFFileLoaderExtension.prototype.loadMaterialAsync = function (gltfRuntime, id, onSuccess, onError) {
-            return false;
-        };
-        // ---------
-        // Utilities
-        // ---------
-        GLTFFileLoaderExtension.LoadRuntimeAsync = function (scene, data, rootUrl, onSuccess, onError) {
-            GLTFFileLoaderExtension.ApplyExtensions(function (loaderExtension) {
-                return loaderExtension.loadRuntimeAsync(scene, data, rootUrl, onSuccess, onError);
-            }, function () {
-                setTimeout(function () {
-                    onSuccess(BABYLON.GLTFFileLoaderBase.CreateRuntime(JSON.parse(data), scene, rootUrl));
-                });
-            });
-        };
-        GLTFFileLoaderExtension.LoadRuntimeExtensionsAsync = function (gltfRuntime, onSuccess, onError) {
-            GLTFFileLoaderExtension.ApplyExtensions(function (loaderExtension) {
-                return loaderExtension.loadRuntimeExtensionsAsync(gltfRuntime, onSuccess, onError);
-            }, function () {
-                setTimeout(function () {
-                    onSuccess();
-                });
-            });
-        };
-        GLTFFileLoaderExtension.LoadBufferAsync = function (gltfRuntime, id, onSuccess, onError) {
-            GLTFFileLoaderExtension.ApplyExtensions(function (loaderExtension) {
-                return loaderExtension.loadBufferAsync(gltfRuntime, id, onSuccess, onError);
-            }, function () {
-                BABYLON.GLTFFileLoaderBase.LoadBufferAsync(gltfRuntime, id, onSuccess, onError);
-            });
-        };
-        GLTFFileLoaderExtension.LoadTextureAsync = function (gltfRuntime, id, onSuccess, onError) {
-            GLTFFileLoaderExtension.LoadTextureBufferAsync(gltfRuntime, id, function (buffer) { return GLTFFileLoaderExtension.CreateTextureAsync(gltfRuntime, id, buffer, onSuccess, onError); }, onError);
-        };
-        GLTFFileLoaderExtension.LoadShaderStringAsync = function (gltfRuntime, id, onSuccess, onError) {
-            GLTFFileLoaderExtension.ApplyExtensions(function (loaderExtension) {
-                return loaderExtension.loadShaderStringAsync(gltfRuntime, id, onSuccess, onError);
-            }, function () {
-                BABYLON.GLTFFileLoaderBase.LoadShaderStringAsync(gltfRuntime, id, onSuccess, onError);
-            });
-        };
-        GLTFFileLoaderExtension.LoadMaterialAsync = function (gltfRuntime, id, onSuccess, onError) {
-            GLTFFileLoaderExtension.ApplyExtensions(function (loaderExtension) {
-                return loaderExtension.loadMaterialAsync(gltfRuntime, id, onSuccess, onError);
-            }, function () {
-                BABYLON.GLTFFileLoaderBase.LoadMaterialAsync(gltfRuntime, id, onSuccess, onError);
-            });
-        };
-        GLTFFileLoaderExtension.LoadTextureBufferAsync = function (gltfRuntime, id, onSuccess, onError) {
-            GLTFFileLoaderExtension.ApplyExtensions(function (loaderExtension) {
-                return loaderExtension.loadTextureBufferAsync(gltfRuntime, id, onSuccess, onError);
-            }, function () {
-                BABYLON.GLTFFileLoaderBase.LoadTextureBufferAsync(gltfRuntime, id, onSuccess, onError);
-            });
-        };
-        GLTFFileLoaderExtension.CreateTextureAsync = function (gltfRuntime, id, buffer, onSuccess, onError) {
-            GLTFFileLoaderExtension.ApplyExtensions(function (loaderExtension) {
-                return loaderExtension.createTextureAsync(gltfRuntime, id, buffer, onSuccess, onError);
-            }, function () {
-                BABYLON.GLTFFileLoaderBase.CreateTextureAsync(gltfRuntime, id, buffer, onSuccess, onError);
-            });
-=======
         GLTFFileLoaderExtension.prototype.postCreateRuntime = function (runtime) { };
         // Return true to stop other extensions from loading materials.
         GLTFFileLoaderExtension.prototype.loadMaterial = function (runtime, index) { return false; };
@@ -1552,7 +1333,6 @@ var BABYLON;
                 var extension = BABYLON.GLTFFileLoader.Extensions[extensionName];
                 extension.postCreateRuntime(runtime);
             }
->>>>>>> 2.0
         };
         GLTFFileLoaderExtension.LoadMaterial = function (runtime, index) {
             for (var extensionName in BABYLON.GLTFFileLoader.Extensions) {
@@ -1735,124 +1515,4 @@ var BABYLON;
     BABYLON.GLTFFileLoader.RegisterExtension(new GLTFMaterialsPbrSpecularGlossinessExtension());
 })(BABYLON || (BABYLON = {}));
 
-<<<<<<< HEAD
-//# sourceMappingURL=babylon.glTFBinaryExtension.js.map
-
-/// <reference path="../../../dist/preview release/babylon.d.ts"/>
-var __extends = (this && this.__extends) || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-};
-var BABYLON;
-(function (BABYLON) {
-    ;
-    ;
-    ;
-    var GLTFMaterialCommonExtension = (function (_super) {
-        __extends(GLTFMaterialCommonExtension, _super);
-        function GLTFMaterialCommonExtension() {
-            return _super.call(this, "KHR_materials_common") || this;
-        }
-        GLTFMaterialCommonExtension.prototype.loadRuntimeExtensionsAsync = function (gltfRuntime, onSuccess, onError) {
-            if (!gltfRuntime.extensions)
-                return false;
-            var extension = gltfRuntime.extensions[this.name];
-            if (!extension)
-                return false;
-            // Create lights
-            var lights = extension.lights;
-            if (lights) {
-                for (var thing in lights) {
-                    var light = lights[thing];
-                    switch (light.type) {
-                        case "ambient":
-                            var ambientLight = new BABYLON.HemisphericLight(light.name, new BABYLON.Vector3(0, 1, 0), gltfRuntime.scene);
-                            var ambient = light.ambient;
-                            ambientLight.diffuse = BABYLON.Color3.FromArray(ambient.color || [1, 1, 1]);
-                            break;
-                        case "point":
-                            var pointLight = new BABYLON.PointLight(light.name, new BABYLON.Vector3(10, 10, 10), gltfRuntime.scene);
-                            var point = light.point;
-                            pointLight.diffuse = BABYLON.Color3.FromArray(point.color || [1, 1, 1]);
-                            break;
-                        case "directional":
-                            var dirLight = new BABYLON.DirectionalLight(light.name, new BABYLON.Vector3(0, -1, 0), gltfRuntime.scene);
-                            var directional = light.directional;
-                            dirLight.diffuse = BABYLON.Color3.FromArray(directional.color || [1, 1, 1]);
-                            break;
-                        case "spot":
-                            var spot = light.spot;
-                            var spotLight = new BABYLON.SpotLight(light.name, new BABYLON.Vector3(0, 10, 0), new BABYLON.Vector3(0, -1, 0), light.spot.fallOffAngle || Math.PI, light.spot.fallOffExponent || 0.0, gltfRuntime.scene);
-                            spotLight.diffuse = BABYLON.Color3.FromArray(spot.color || [1, 1, 1]);
-                            break;
-                        default:
-                            BABYLON.Tools.Warn("GLTF Material Common extension: light type \"" + light.type + "\” not supported");
-                            break;
-                    }
-                }
-            }
-            return false;
-        };
-        GLTFMaterialCommonExtension.prototype.loadMaterialAsync = function (gltfRuntime, id, onSuccess, onError) {
-            var material = gltfRuntime.materials[id];
-            if (!material || !material.extensions)
-                return false;
-            var extension = material.extensions[this.name];
-            if (!extension)
-                return false;
-            var standardMaterial = new BABYLON.StandardMaterial(id, gltfRuntime.scene);
-            standardMaterial.sideOrientation = BABYLON.Material.CounterClockWiseSideOrientation;
-            if (extension.technique === "CONSTANT") {
-                standardMaterial.disableLighting = true;
-            }
-            standardMaterial.backFaceCulling = extension.doubleSided === undefined ? false : !extension.doubleSided;
-            standardMaterial.alpha = extension.values.transparency === undefined ? 1.0 : extension.values.transparency;
-            standardMaterial.specularPower = extension.values.shininess === undefined ? 0.0 : extension.values.shininess;
-            // Ambient
-            if (typeof extension.values.ambient === "string") {
-                this._loadTexture(gltfRuntime, extension.values.ambient, standardMaterial, "ambientTexture", onError);
-            }
-            else {
-                standardMaterial.ambientColor = BABYLON.Color3.FromArray(extension.values.ambient || [0, 0, 0]);
-            }
-            // Diffuse
-            if (typeof extension.values.diffuse === "string") {
-                this._loadTexture(gltfRuntime, extension.values.diffuse, standardMaterial, "diffuseTexture", onError);
-            }
-            else {
-                standardMaterial.diffuseColor = BABYLON.Color3.FromArray(extension.values.diffuse || [0, 0, 0]);
-            }
-            // Emission
-            if (typeof extension.values.emission === "string") {
-                this._loadTexture(gltfRuntime, extension.values.emission, standardMaterial, "emissiveTexture", onError);
-            }
-            else {
-                standardMaterial.emissiveColor = BABYLON.Color3.FromArray(extension.values.emission || [0, 0, 0]);
-            }
-            // Specular
-            if (typeof extension.values.specular === "string") {
-                this._loadTexture(gltfRuntime, extension.values.specular, standardMaterial, "specularTexture", onError);
-            }
-            else {
-                standardMaterial.specularColor = BABYLON.Color3.FromArray(extension.values.specular || [0, 0, 0]);
-            }
-            return true;
-        };
-        GLTFMaterialCommonExtension.prototype._loadTexture = function (gltfRuntime, id, material, propertyPath, onError) {
-            // Create buffer from texture url
-            BABYLON.GLTFFileLoaderBase.LoadTextureBufferAsync(gltfRuntime, id, function (buffer) {
-                // Create texture from buffer
-                BABYLON.GLTFFileLoaderBase.CreateTextureAsync(gltfRuntime, id, buffer, function (texture) { return material[propertyPath] = texture; }, onError);
-            }, onError);
-        };
-        return GLTFMaterialCommonExtension;
-    }(BABYLON.GLTFFileLoaderExtension));
-    BABYLON.GLTFMaterialCommonExtension = GLTFMaterialCommonExtension;
-    BABYLON.GLTFFileLoader.RegisterExtension(new GLTFMaterialCommonExtension());
-})(BABYLON || (BABYLON = {}));
-
-//# sourceMappingURL=babylon.glTFMaterialCommonExtension.js.map
-=======
 //# sourceMappingURL=babylon.glTFMaterialsPbrSpecularGlossinessExtension.js.map
->>>>>>> 2.0
