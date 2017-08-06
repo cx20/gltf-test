@@ -96,6 +96,17 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 	};
 
+<<<<<<< HEAD
+=======
+	this.saveState = function () {
+
+		scope.target0.copy( scope.target );
+		scope.position0.copy( scope.object.position );
+		scope.zoom0 = scope.object.zoom;
+
+	};
+
+>>>>>>> 2.0
 	this.reset = function () {
 
 		scope.target.copy( scope.target0 );
@@ -654,6 +665,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		event.preventDefault();
 
+<<<<<<< HEAD
 		if ( event.button === scope.mouseButtons.ORBIT ) {
 
 			if ( scope.enableRotate === false ) return;
@@ -677,6 +689,39 @@ THREE.OrbitControls = function ( object, domElement ) {
 			handleMouseDownPan( event );
 
 			state = STATE.PAN;
+=======
+		switch ( event.button ) {
+
+			case scope.mouseButtons.ORBIT:
+
+				if ( scope.enableRotate === false ) return;
+
+				handleMouseDownRotate( event );
+
+				state = STATE.ROTATE;
+
+				break;
+
+			case scope.mouseButtons.ZOOM:
+
+				if ( scope.enableZoom === false ) return;
+
+				handleMouseDownDolly( event );
+
+				state = STATE.DOLLY;
+
+				break;
+
+			case scope.mouseButtons.PAN:
+
+				if ( scope.enablePan === false ) return;
+
+				handleMouseDownPan( event );
+
+				state = STATE.PAN;
+
+				break;
+>>>>>>> 2.0
 
 		}
 
@@ -697,6 +742,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 		event.preventDefault();
 
+<<<<<<< HEAD
 		if ( state === STATE.ROTATE ) {
 
 			if ( scope.enableRotate === false ) return;
@@ -714,6 +760,33 @@ THREE.OrbitControls = function ( object, domElement ) {
 			if ( scope.enablePan === false ) return;
 
 			handleMouseMovePan( event );
+=======
+		switch ( state ) {
+
+			case STATE.ROTATE:
+
+				if ( scope.enableRotate === false ) return;
+
+				handleMouseMoveRotate( event );
+
+				break;
+
+			case STATE.DOLLY:
+
+				if ( scope.enableZoom === false ) return;
+
+				handleMouseMoveDolly( event );
+
+				break;
+
+			case STATE.PAN:
+
+				if ( scope.enablePan === false ) return;
+
+				handleMouseMovePan( event );
+
+				break;
+>>>>>>> 2.0
 
 		}
 

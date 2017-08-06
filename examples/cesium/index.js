@@ -3,6 +3,15 @@ if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
+    modelInfo = TutorialPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
+    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
+    modelInfo = TutorialAgiPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('cesiumContainer').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }

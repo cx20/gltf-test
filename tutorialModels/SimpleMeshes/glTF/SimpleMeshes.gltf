@@ -1,55 +1,55 @@
 {
-  "scenes" : {
-    "scene0" : {
-      "nodes" : [ "node0", "node1" ]
+  "scenes" : [
+    {
+      "nodes" : [ 0, 1]
     }
-  },
-  "nodes" : {
-    "node0" : {
-      "meshes" : [ "mesh0" ]
+  ],
+  "nodes" : [
+    {
+      "mesh" : 0
     },
-    "node1" : {
-      "meshes" : [ "mesh0" ],
+    {
+      "mesh" : 0,
       "translation" : [ 1.0, 0.0, 0.0 ]
     }
-  },
+  ],
   
-  "meshes" : {
-    "mesh0" : {
+  "meshes" : [
+    {
       "primitives" : [ {
         "attributes" : {
-          "POSITION" : "positionsAccessor",
-          "NORMAL" : "normalsAccessor",
-          "TEXCOORD_0" : "texCoordsAccessor"
+          "POSITION" : 1,
+          "NORMAL" : 2
         },
-        "indices" : "indicesAccessor"
+        "indices" : 0
       } ]
     }
-  },
+  ],
 
-  "buffers" : {
-    "buffer0" : {
-      "uri" : "simpleMesh0.bin",
-      "byteLength" : 108
+  "buffers" : [
+    {
+      "uri" : "triangle.bin",
+      "byteLength" : 80
     }
-  },
-  "bufferViews" : {
-    "indicesBufferView" : {
-      "buffer" : "buffer0",
+  ],
+  "bufferViews" : [
+    {
+      "buffer" : 0,
       "byteOffset" : 0,
       "byteLength" : 6,
       "target" : 34963
     },
-    "attributesBufferView" : {
-      "buffer" : "buffer0",
-      "byteOffset" : 12,
-      "byteLength" : 96,
+    {
+      "buffer" : 0,
+      "byteOffset" : 8,
+      "byteLength" : 72,
+      "byteStride" : 12,
       "target" : 34962
     }
-  },
-  "accessors" : {
-    "indicesAccessor" : {
-      "bufferView" : "indicesBufferView",
+  ],
+  "accessors" : [
+    {
+      "bufferView" : 0,
       "byteOffset" : 0,
       "componentType" : 5123,
       "count" : 3,
@@ -57,8 +57,8 @@
       "max" : [ 2 ],
       "min" : [ 0 ]
     },
-    "positionsAccessor" : {
-      "bufferView" : "attributesBufferView",
+    {
+      "bufferView" : 1,
       "byteOffset" : 0,
       "componentType" : 5126,
       "count" : 3,
@@ -66,26 +66,18 @@
       "max" : [ 1.0, 1.0, 0.0 ],
       "min" : [ 0.0, 0.0, 0.0 ]
     },
-    "normalsAccessor" : {
-      "bufferView" : "attributesBufferView",
+    {
+      "bufferView" : 1,
       "byteOffset" : 36,
       "componentType" : 5126,
       "count" : 3,
       "type" : "VEC3",
       "max" : [ 0.0, 0.0, 1.0 ],
       "min" : [ 0.0, 0.0, 1.0 ]
-    },
-    "texCoordsAccessor" : {
-      "bufferView" : "attributesBufferView",
-      "byteOffset" : 72,
-      "componentType" : 5126,
-      "count" : 3,
-      "type" : "VEC2",
-      "max" : [ 1.0, 1.0 ],
-      "min" : [ 0.0, 0.0 ]
     }
-  },
+  ],
+  
   "asset" : {
-    "version" : "1.1"
+    "version" : "2.0"
   }
 }

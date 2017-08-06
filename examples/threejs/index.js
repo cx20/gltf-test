@@ -3,6 +3,15 @@ if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
+    modelInfo = TutorialPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
+    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
+    modelInfo = TutorialAgiPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -27,18 +36,27 @@ function init() {
     directionalLight.position.set( 0, 0, 1 );
     scene.add( directionalLight );
 
+    var directionalLight2 = new THREE.DirectionalLight( 0xffeedd );
+    directionalLight2.position.set( 0, 5, -5 );
+    scene.add( directionalLight2 );
+
     camera = new THREE.PerspectiveCamera( 75, width / height, 1, 2000 );
     camera.position.set(0, 2, 3);
+    scene.add( camera );
 
     var manager = new THREE.LoadingManager();
     manager.onProgress = function ( item, loaded, total ) {
         console.log( item, loaded, total );
     };
-
-    var loader = new THREE.GLTFLoader();
+    
+    // monkeypatch 
+    // https://github.com/mrdoob/three.js/pull/11498#issuecomment-308136310
+    THREE.PropertyBinding.sanitizeNodeName = (n) => n;
+    
+    var loader = new THREE.GLTF2Loader();
+    loader.setCrossOrigin( 'anonymous' );
 
     var scale = modelInfo.scale;
-    //var url = "../../sampleModels/" + modelInfo.path;
     var url = "../../" + modelInfo.category + "/" + modelInfo.path;
     loader.load(url, function (data) {
         gltf = data;
@@ -63,6 +81,15 @@ function init() {
                 mixer.clipAction( animation ).play();
             }
         }
+        
+        var envMap = getEnvMap();
+        object.traverse( function( node ) {
+            if ( node.material ) {
+                node.material.envMap = envMap;
+                node.material.needsUpdate = true;
+            }
+        } );
+        scene.background = envMap;
 
         scene.add(object);
     });
@@ -85,11 +112,29 @@ function init() {
     document.body.appendChild( renderer.domElement );
 }
 
+// https://github.com/mrdoob/three.js/tree/dev/examples/textures/cube/skybox
+function getEnvMap() {
+    var path = '../../textures/cube/skybox/';
+    var format = '.jpg';
+    var urls = [
+        path + 'px' + format, path + 'nx' + format,
+        path + 'py' + format, path + 'ny' + format,
+        path + 'pz' + format, path + 'nz' + format
+    ];
+    var loader = new THREE.CubeTextureLoader();
+    loader.setCrossOrigin( 'anonymous' );
+    var envMap = loader.load( urls );
+    envMap.format = THREE.RGBFormat;
+    return envMap;
+}
+
 function animate() {
     requestAnimationFrame( animate );
-    //THREE.GLTFLoader.Animations.update();
     if (mixer) mixer.update(clock.getDelta());
-    THREE.GLTFLoader.Shaders.update(scene, camera);
-    renderer.render( scene, camera );
     controls.update();
+    render();
+}
+
+function render() {
+    renderer.render( scene, camera );
 }

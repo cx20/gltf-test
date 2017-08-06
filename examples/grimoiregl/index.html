@@ -6,12 +6,26 @@
 <title>Grimoire.js + glTF Loader</title>
 <script src="../../sampleModels/model-index.js"></script>
 <script src="../../tutorialModels/model-index.js"></script>
+<script src="../../tutorialModels/pbr-model-index.js"></script>
+<script src="../../tutorialModels/further-pbr-model-index.js"></script>
+<script src="../../tutorialModels/agi-pbr-model-index.js"></script>
 </head>
 <body>
+<<<<<<< HEAD
 <!-- grimoire-preset-basic.js 1.9.7 -->
 <script src="../../libs/grimoiregl/grimoirejs-preset-basic/1.9.7/grimoire-preset-basic.js"></script>
 <!-- grimoire-gltf.min.js.js 1.8.8 -->
 <script src="../../libs/grimoiregl/grimoirejs-gltf/1.8.8/grimoire-gltf.min.js"></script>
+=======
+<!-- grimoire-preset-basic.js 1.10.20 -->
+<script src="../../libs/grimoiregl/grimoirejs-preset-basic/1.10.20/grimoire-preset-basic.js"></script>
+<!-- grimoire-animation.js 1.2.0 -->
+<script src="../../libs/grimoiregl/grimoirejs-animation/1.2.0/grimoire-animation.js"></script>
+<!-- grimoirejs-forward-shading.js.js 1.7.3 -->
+<script src="../../libs/grimoiregl/grimoirejs-forward-shading/1.7.3/grimoire-forward-shading.js"></script>
+<!-- grimoire-gltf.js.js 2.2.0 -->
+<script src="../../libs/grimoiregl/grimoirejs-gltf/2.2.0/grimoire-gltf.js"></script>
+>>>>>>> 2.0
 
 <script type="text/goml" id="canvas">
   <goml width="fit" height="fit" bgColor="gray">
@@ -20,16 +34,21 @@
       <render-scene/>
     </renderer>
     <scene>
-      <camera class="camera" position="0,3,5">
-        <camera.components>
-          <MouseCameraControl center = "0"/>
-        </camera.components>
-      </camera>
-      <object id="model-container">
-        <object.components>
-          <Rotate/>
-        </object.components>
+      <object id="group">
+        <camera class="camera" position="0,3,5">
+          <camera.components>
+            <MouseCameraControl center = "0"/>
+          </camera.components>
+        </camera>
       </object>
+      <object id="model-container">
+      </object>
+<!--
+      <light type="directional" rotation="0d,0d,0d"  color="white" intensity="5.0"/>
+      <light type="directional" rotation="0d,-120d,0d" color="white" intensity="5.0"/>
+-->
+      <light type="directional" rotation="0d,120d,0d" color="white" intensity="5.0"/>
+      <light type="point" position="0,10,-10"  color="white"  distance="20" decay="0.3" intensity="10.0"/>
     </scene>
   </goml>
 </script>

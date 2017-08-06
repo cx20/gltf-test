@@ -1,150 +1,187 @@
 {
-  "accessors": {
-    "accessor_18": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 0,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 36,
-      "max": [
-        0.5,
-        0.5,
-        0.5
-      ],
-      "min": [
-        -0.5,
-        -0.5,
-        -0.5
-      ],
-      "type": "VEC3"
+    "asset": {
+        "generator": "COLLADA2GLTF",
+        "version": "2.0"
     },
-    "accessor_20": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 432,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 36,
-      "max": [
-        1,
-        1,
-        1
-      ],
-      "min": [
-        -1,
-        -1,
-        -1
-      ],
-      "type": "VEC3"
-    }
-  },
-  "animations": {},
-  "asset": {
-    "generator": "collada2gltf@027f74366341d569dea42e9a68b7104cc3892054",
-    "premultipliedAlpha": true,
-    "profile": {
-      "api": "WebGL",
-      "version": "1.0.2"
-    },
-    "version": "1.0"
-  },
-  "bufferViews": {
-    "bufferView_0": {
-      "buffer": "BoxWithoutIndices",
-      "byteLength": 864,
-      "byteOffset": 0,
-      "target": 34962
-    }
-  },
-  "buffers": {
-    "BoxWithoutIndices": {
-      "byteLength": 864,
-      "type": "arraybuffer",
-      "uri": "BoxWithoutIndices.bin"
-    }
-  },
-  "materials": {
-    "Effect-Red": {
-      "extensions": {
-          "KHR_materials_common": {
-              "doubleSided": false,
-              "jointCount": 0,
-              "technique": "PHONG",
-              "transparent": false,
-              "values": {
-                  "diffuse": [
-                      0.8,
-                      0,
-                      0,
-                      1
-                  ],
-                  "shininess": 256,
-                  "specular": [
-                      0.2,
-                      0.2,
-                      0.2,
-                      1
-                  ]
-              }
-          }
-      },
-      "name": "Red"
-    }
-  },
-  "meshes": {
-    "Geometry-mesh002": {
-      "name": "Mesh",
-      "primitives": [
+    "scene": 0,
+    "scenes": [
         {
-          "attributes": {
-            "NORMAL": "accessor_20",
-            "POSITION": "accessor_18"
-          },
-          "material": "Effect-Red",
-          "mode": 4
+            "nodes": [
+                0
+            ]
         }
-      ]
-    }
-  },
-  "nodes": {
-    "rootNode": {
-      "children": [],
-      "meshes": [
-        "Geometry-mesh002"
-      ],
-      "matrix": [
-        1,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1
-      ]
-    }
-  },
-  "scene": "defaultScene",
-  "scenes": {
-    "defaultScene": {
-      "nodes": [
-        "rootNode"
-      ]
-    }
-  },
-  "skins": {},
-  "extensionsUsed": [
-      "KHR_materials_common"
-  ],
-  "cameras": {},
-  "images": {},
-  "samplers": {},
-  "textures": {}
+    ],
+    "nodes": [
+        {
+            "children": [
+                1
+            ],
+            "matrix": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                -1.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        },
+        {
+            "mesh": 0,
+            "matrix": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ]
+        }
+    ],
+    "meshes": [
+        {
+            "primitives": [
+                {
+                    "attributes": {
+                        "NORMAL": 1,
+                        "POSITION": 2
+                    },
+                    "indices": 0,
+                    "mode": 4,
+                    "material": 0
+                }
+            ],
+            "name": "Mesh"
+        }
+    ],
+    "accessors": [
+        {
+            "bufferView": 0,
+            "byteOffset": 0,
+            "byteStride": 0,
+            "componentType": 5123,
+            "count": 36,
+            "max": [
+                23.0
+            ],
+            "min": [
+                0.0
+            ],
+            "type": "SCALAR"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 0,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 24,
+            "max": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "min": [
+                -1.0,
+                -1.0,
+                -1.0
+            ],
+            "type": "VEC3"
+        },
+        {
+            "bufferView": 1,
+            "byteOffset": 288,
+            "byteStride": 0,
+            "componentType": 5126,
+            "count": 24,
+            "max": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "min": [
+                -0.5,
+                -0.5,
+                -0.5
+            ],
+            "type": "VEC3"
+        }
+    ],
+    "materials": [
+        {
+            "extensions": {
+                "KHR_materials_common": {
+                    "doubleSided": false,
+                    "technique": "PHONG",
+                    "transparent": false,
+                    "values": {
+                        "diffuse": [
+                            0.800000011920929,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "specular": [
+                            0.20000000298023225,
+                            0.20000000298023225,
+                            0.20000000298023225,
+                            1.0
+                        ],
+                        "shininess": [
+                            256.0
+                        ],
+                        "transparency": [
+                            1.0
+                        ]
+                    },
+                    "name": "Red"
+                }
+            },
+            "name": "Red"
+        }
+    ],
+    "bufferViews": [
+        {
+            "buffer": 0,
+            "byteOffset": 576,
+            "byteLength": 72,
+            "target": 34963
+        },
+        {
+            "buffer": 0,
+            "byteOffset": 0,
+            "byteLength": 576,
+            "target": 34962
+        }
+    ],
+    "buffers": [
+        {
+            "byteLength": 648,
+            "uri": "BoxWithoutIndices0.bin"
+        }
+    ],
+    "extensionsRequired": [
+        "KHR_materials_common"
+    ],
+    "extensionsUsed": [
+        "KHR_materials_common"
+    ]
 }

@@ -3,6 +3,15 @@ if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
+    modelInfo = TutorialPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
+    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
+    modelInfo = TutorialAgiPbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -21,7 +30,7 @@ var createScene = function(engine) {
 
     function findParentForMesh(mesh) {
         var parentMesh = mesh;
-        if (mesh.parent !== null) {
+        if (mesh.parent !== null && mesh.parent !== undefined) {
             parentMesh = findParentForMesh(mesh);
         }
         return parentMesh;
@@ -30,7 +39,7 @@ var createScene = function(engine) {
     function findParentForMeshes(meshes) {
         var parentMesh = meshes[0];
         for (var i = 0; i < meshes.length; i++) {
-            if (scene.meshes[i].parent !== null) {
+            if (scene.meshes[i].parent !== null && scene.meshes[i].parent !== undefined) {
                 parentMesh = scene.meshes[i].parent;
                 break;
             }
@@ -50,15 +59,30 @@ var createScene = function(engine) {
             parentMesh.position.y -= 17.02;
             parentMesh.position.z -= 3.21;
         }
-        //parentMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
+        var modelScaling = parentMesh.scaling;
+        parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
         var camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
-        camera.setPosition( new BABYLON.Vector3(0, 0, -5/scale) );
+        camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
         camera.attachControl(canvas, false, false);
         scene.activeCamera = camera;
         
-        var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, -1), scene);
-        light.groundColor = new BABYLON.Color3(1, 0, 0);
-        light.position = new BABYLON.Vector3(20, 40, 20);
+        var light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
+        var light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
+
+        // Skybox
+        var skybox = BABYLON.Mesh.CreateBox("skyBox", 1000.0, scene);
+        var skyboxMaterial = new BABYLON.StandardMaterial("skyBox", scene);
+        skyboxMaterial.backFaceCulling = false;
+        skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+            "../../textures/cube/skybox/",
+            scene,
+            ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]
+            );
+        skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+        skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.disableLighting = true;
+        skybox.material = skyboxMaterial;
 
         //scene.forceShowBoundingBoxes = true;
         //scene.debugLayer.show(true, camera);

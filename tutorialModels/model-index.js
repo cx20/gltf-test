@@ -4,17 +4,21 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'TriangleWithoutIndices', scale:1.0},
     {category:'tutorialModels', name:'Triangle', scale:1.0},
     {category:'tutorialModels', name:'AnimatedTriangle', scale:1.0},
-    {category:'tutorialModels', name:'SimpleMaterial', scale:1.0},
+    {category:'tutorialModels', name:'AnimatedMorphCube', scale:1.0},
+    {category:'tutorialModels', name:'AnimatedMorphSphere', scale:1.0},
+    //{category:'tutorialModels', name:'SimpleMaterial', scale:1.0},
     {category:'tutorialModels', name:'SimpleMeshes', scale:1.0},
-    {category:'tutorialModels', name:'AdvancedMaterial', scale:1.0},
-    {category:'tutorialModels', name:'SimpleOpacity', scale:1.0},
-    {category:'tutorialModels', name:'SimpleTexture', scale:1.0},
-    {category:'tutorialModels', name:'Cameras', scale:1.0},
-    {category:'tutorialModels', name:'SimpleSkin', scale:1.0}
+    //{category:'tutorialModels', name:'AdvancedMaterial', scale:1.0},
+    //{category:'tutorialModels', name:'SimpleOpacity', scale:1.0},
+    //{category:'tutorialModels', name:'SimpleTexture', scale:1.0},
+    {category:'tutorialModels', name:'Cameras', scale:1.0}
+    //{category:'tutorialModels', name:'SimpleSkin', scale:1.0}
 ];
 
 TutorialModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
     'AnimatedTriangle',
+    'AnimatedMorphCube',
+    'AnimatedMorphSphere',
     'SimpleSkin'
 ];
 
@@ -25,14 +29,16 @@ TutorialModelIndex.getScreenshot = function(name) {
 
 TutorialModelIndex.getEmbeddedFolderName = function(name) {
     var suffixHash = {
-        'SimpleMaterial': '-buffer',
-        'AdvancedMaterial': '-buffer',
-        'SimpleOpacity': '-buffer',
-        'SimpleTexture': '-buffer',
-        'SimpleSkin': '-buffers'
+        'AnimatedMorphCube': '-Binary',
+        'AnimatedMorphSphere': '-Binary',
+        'SimpleMaterial': '-Embedded-buffer',
+        'AdvancedMaterial': '-Embedded-buffer',
+        'SimpleOpacity': '-Embedded-buffer',
+        'SimpleTexture': '-Embedded-buffer',
+        'SimpleSkin': '-Embedded-buffers'
     };
-    var suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
-    return 'glTF-Embedded' + suffix;
+    var suffix = suffixHash[name] === undefined ? '-Embedded' : suffixHash[name];
+    return 'glTF' + suffix;
 };
 
 TutorialModelIndex.getModelInfoCollection = function() {
