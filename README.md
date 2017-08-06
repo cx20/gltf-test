@@ -4,7 +4,7 @@ Status of [glTF loader](https://github.com/KhronosGroup/glTF#webgl-engines) in s
 
 ## All Tests
 
-[All Tests]( https://cx20.github.io/gltf-test/index.html ) : https://github.com/cx20/gltf-test/
+[All Tests]( https://cx20.github.io/gltf-test/index.html ) : https://cx20.github.io/gltf-test/
 
 |Model Name           |Models  |Formats  |Libraries|Tests|
 |:--------------------|:------:|:-------:|:-------:|:---:|
