@@ -19,10 +19,8 @@ if (!modelInfo) {
 var scale = modelInfo.scale;
 
 // Load glTF
-var model = new xeogl.GLTFModel({
-    //src: "../../sampleModels/" + modelInfo.path
-    src: "../../" + modelInfo.category + "/" + modelInfo.path
-});
+var model = new xeogl.GLTFModel();
+model.src = "../../" + modelInfo.category + "/" + modelInfo.path;
 
 var view = model.scene.camera.view;
 if (modelInfo.name == "GearboxAssy" ) {
