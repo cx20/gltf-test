@@ -214,8 +214,8 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         vec3.scale(tmpVec3Translate, sceneDeltaTranslate, i);
         mat4.fromTranslation(scenes[i].rootTransform, tmpVec3Translate);
     }
-
-
+    
+    
     
     // center
     s = 1.0 / Math.max( curScene.boundingBox.transform[0], Math.max(curScene.boundingBox.transform[5], curScene.boundingBox.transform[10]) );
@@ -229,40 +229,32 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     modelMatrix[5] = s;
     modelMatrix[10] = s;
     mat4.translate(modelMatrix, modelMatrix, translate);
-
     vec3.set(translate, 0, 0, -1.5);
     s = 1;
-
-
     // -- Initialize vertex array
     var POSITION_LOCATION = 0; // set with GLSL layout qualifier
     var NORMAL_LOCATION = 1; // set with GLSL layout qualifier
     var TEXCOORD_0_LOCATION = 2; // set with GLSL layout qualifier
-
     // var vertexArrayMaps = {};
     // var vertexArrayMaps = [];
-
     // var in loop
     var mesh;
     var primitive;
     var vertexBuffer;
     var indexBuffer;
     var vertexArray;
-
     var nid, lenNodes;
     var mid, lenMeshes;
     var i, len;
     var attribute;
-
     var image, texture, sampler;
-
     var accessor, bufferView;
     var animation, animationSampler, channel;
     program = programBaseColor;
     // // animations typed array
     // for (i = 0, len = glTF.animations.length; i < len; i++) {
     //     animation = glTF.animations[i];
-
+        
     // }
     // create buffers
     for (i = 0, len = glTF.bufferViews.length; i < len; i++) {
@@ -276,7 +268,7 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         bufferView.createBuffer(gl);
         bufferView.bindData(gl);
     }
-
+    
     // create textures
     if (this.glTF.textures) {
         for (i = 0, len = glTF.textures.length; i < len; i++) {
@@ -294,7 +286,6 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
             texture.createTexture(i, gl);
         }
     }
-
     // create samplers
     if (this.glTF.samplers) {
         for (i = 0, len = glTF.samplers.length; i < len; i++) {
@@ -303,12 +294,10 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
             sampler.createSampler(gl);
         }
     }
-
     // create vaos
     for (mid = 0, lenMeshes = glTF.meshes.length; mid < lenMeshes; mid++) {
         mesh = glTF.meshes[mid];
         // vertexArrayMaps[mid] = [];
-
         for (i = 0, len = mesh.primitives.length; i < len; ++i) {
             primitive = mesh.primitives[i];
             // WebGL2: create vertexArray
@@ -355,7 +344,6 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
                 accessor.byteOffset
                 );
             gl.enableVertexAttribArray(NORMAL_LOCATION);
-
             // @tmp, should consider together with material
             if (primitive.attributes.TEXCOORD_0 !== undefined) {
                 accessor = glTF.accessors[ primitive.attributes.TEXCOORD_0 ];
@@ -378,7 +366,6 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
                 gl.enableVertexAttribArray(TEXCOORD_0_LOCATION);
             }
             
-
             // indices ( assume use indices )
             accessor = glTF.accessors[ primitive.indices ];
             bufferView = accessor.bufferView;
@@ -389,9 +376,7 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bufferView.buffer);
             }
             
-
             gl.bindVertexArray(null);
-
             gl.bindBuffer(gl.ARRAY_BUFFER, null);
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
         }
@@ -401,21 +386,17 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     // -- Render preparation
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
-
+    
     var scale = vec3.create();
     
     var r = 0.0;
     var rotationSpeedY= 0.01;
-
     var perspective = mat4.create();
     mat4.perspective(perspective, 0.785, canvas.width / canvas.height, 0.1, 100);
-
     var modelView = mat4.create();
-
     var localMV = mat4.create();
     var localMVP = mat4.create();
     var localMVNormal = mat4.create();
-
     var VP = mat4.create();
     // var nodeMatrix = new Array(glTF.nodes.length);
     // for(i = 0, len = nodeMatrix.length; i < len; i++) {
@@ -426,10 +407,8 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         mat4.multiply(localMV, modelView, matrix);
         mat4.multiply(localMVP, perspective, localMV);
         // mat4.multiply(localMVP, VP, matrix);
-
         mat4.invert(localMVNormal, localMV);
         mat4.transpose(localMVNormal, localMVNormal);
-
         // @tmp: material
         var baseColor = defaultColor;
         if (primitive.material !== null) {
@@ -441,7 +420,6 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
                         program = programBaseColor;
                     }
                 }
-
                 if ( primitive.material.pbrMetallicRoughness.baseColorTexture ) {
                     if (primitive.material.normalTexture) {
                         if (program != programBaseTextureNormalMap) {
@@ -459,10 +437,10 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
                         }
                         gl.bindSampler(primitive.material.normalTexture.index, sampler);
                     } else {
-                    if (program != programBaseTexture) {
-                        gl.useProgram(programBaseTexture.program);
-                        program = programBaseTexture;
-                    }
+                        if (program != programBaseTexture) {
+                            gl.useProgram(programBaseTexture.program);
+                            program = programBaseTexture;
+                        }
                     }
                     gl.uniform1i(program.uniformBaseColorTextureLocation, primitive.material.pbrMetallicRoughness.baseColorTexture.index);
                     gl.activeTexture(gl.TEXTURE0 + primitive.material.pbrMetallicRoughness.baseColorTexture.index);
@@ -474,28 +452,20 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
                     } else {
                         sampler = defaultSampler;
                     }
-
                     gl.bindSampler(primitive.material.pbrMetallicRoughness.baseColorTexture.index, sampler);
                 }
-
+                
             }
         }
-
         gl.uniform4fv(program.uniformBaseColorFactorLocation, baseColor);
-
         gl.uniformMatrix4fv(program.uniformMvpLocation, false, localMVP);
         gl.uniformMatrix4fv(program.uniformMvNormalLocation, false, localMVNormal);
-
         gl.bindVertexArray(primitive.vertexArray);
-
         // TODO: when no indices, do drawArrays
         gl.drawElements(primitive.mode, primitive.indicesLength, primitive.indicesComponentType, primitive.indicesOffset);
         // gl.drawElements(primitive.mode, 3, primitive.indicesComponentType, primitive.indicesOffset);
-
         gl.bindVertexArray(null);
-
     }
-
     // function drawMesh(mesh, matrix) {
     // }
     
@@ -510,23 +480,19 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         }
         // mat4.mul(matrix, parentModelMatrix, node.matrix);
         var i, len;
-
         // draw cur node's mesh
         if (node.mesh !== null) {
             // drawMesh(glTF.meshes[node.mesh], matrix);
-
             // var mesh = glTF.meshes[node.mesh];
             var mesh = node.mesh;
             for (i = 0, len = mesh.primitives.length; i < len; i++) {
                 // draw primitive
                 drawPrimitive(mesh.primitives[i], matrix);
             }
-
             // BOUNDING_BOX.draw(mesh.boundingBox, matrix, modelView, perspective);
             // gl.useProgram(program);
         }
         
-
         // draw children
         
         var childNodeID;
@@ -570,7 +536,7 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
                     mat4.mul(localMVP, VP, localMVP);
                 }
                 gl.uniformMatrix4fv(BOUNDING_BOX.uniformMvpLocation, false, localMVP);
-
+                    
                 gl.drawArrays(gl.LINES, 0, 24);
             }   
         }
@@ -580,7 +546,7 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         gl.uniformMatrix4fv(BOUNDING_BOX.uniformMvpLocation, false, localMVP);
         gl.drawArrays(gl.LINES, 0, 24);
     }
-
+    
     var timeParameter = 0;
     // -- Render loop
     (function render() {
@@ -629,7 +595,6 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
         vec3.set(scale, s, s, s);
         // mat4.identity(modelView);
         // mat4.translate(modelView, modelView, translate);
@@ -645,13 +610,9 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         
         mat4.scale(modelView, modelView, scale);
         mat4.mul(modelView, modelView, modelMatrix);
-
         // mat4.perspective(perspective, 0.785, canvas.width / canvas.height, 0.1, translate[2] + curScene.boundingBox.transform[10]);
-
-
-
+        
         mat4.mul(VP, perspective, modelView);
-
         gl.useProgram(program.program);
         for (i = 0, len = scenes.length; i < len; i++) {
             drawScene(scenes[i]);
@@ -667,7 +628,6 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
             gl.bindVertexArray(null);
             gl.useProgram(program.program);
         }
-
         requestAnimationFrame(render);
         timeParameter += 0.01;
     })();
