@@ -223,8 +223,6 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         mat4.fromTranslation(scenes[i].rootTransform, tmpVec3Translate);
     }
     
-    
-    
     // center
     s = 1.0 / Math.max( curScene.boundingBox.transform[0], Math.max(curScene.boundingBox.transform[5], curScene.boundingBox.transform[10]) );
     mat4.getTranslation(translate, curScene.boundingBox.transform);
@@ -392,7 +390,7 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     var localMVNormal = mat4.create();
     var VP = mat4.create();
     var hasIndices = true;
-    var hasSkin = true;
+    var hasSkin = false;
     // var nodeMatrix = new Array(glTF.nodes.length);
     // for(i = 0, len = nodeMatrix.length; i < len; i++) {
     //     nodeMatrix[i] = mat4.create();
@@ -408,7 +406,9 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         var baseColor = defaultColor;
         if (hasSkin) {
             // @tmp: assume material only use base color
+            if ( primitive.material.pbrMetallicRoughness.baseColorFactor ) {
             baseColor = primitive.material.pbrMetallicRoughness.baseColorFactor;
+            }
         } else {
         if (primitive.material !== null) {
             if (primitive.material.pbrMetallicRoughness !== null) {
@@ -481,6 +481,7 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
             mat4.copy(matrix, node.matrix);
         }
         // mat4.mul(matrix, parentModelMatrix, node.matrix);
+        hasSkin = false;
         if (node.skin !== null) {
             // mesh node with skin
             hasSkin = true;
