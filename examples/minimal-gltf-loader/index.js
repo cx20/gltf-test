@@ -144,7 +144,7 @@ var programBaseTexture = {
     uniformMvpLocation: gl.getUniformLocation(program, "u_MVP"),
     uniformMvNormalLocation: gl.getUniformLocation(program, "u_MVNormal"),
     uniformBaseColorFactorLocation: gl.getUniformLocation(program, "u_baseColorFactor"),
-    uniformBaseColorTextureLocation: gl.getUniformLocation(program, "u_baseColorTexture"),
+    uniformBaseColorTextureLocation: gl.getUniformLocation(program, "u_baseColorTexture")
 };
 // @temp test
 program = createProgram(gl, getShaderSource('vs-texture'), getShaderSource('fs-texture-normal-map'));
@@ -163,6 +163,16 @@ var programSkinBaseColor = {
     uniformMvpLocation: gl.getUniformLocation(program, "u_MVP"),
     uniformMvNormalLocation: gl.getUniformLocation(program, "u_MVNormal"),
     uniformBaseColorFactorLocation: gl.getUniformLocation(program, "u_baseColorFactor"),
+    uniformBlockIndexJointMatrix: gl.getUniformBlockIndex(program, "JointMatrix")
+};
+// temp
+program = createProgram(gl, getShaderSource('vs-skin-texture'), getShaderSource('fs-texture'));
+var programSkinBaseTexture = {
+    program: program,
+    uniformMvpLocation: gl.getUniformLocation(program, "u_MVP"),
+    uniformMvNormalLocation: gl.getUniformLocation(program, "u_MVNormal"),
+    uniformBaseColorFactorLocation: gl.getUniformLocation(program, "u_baseColorFactor"),
+    uniformBaseColorTextureLocation: gl.getUniformLocation(program, "u_baseColorTexture"),
     uniformBlockIndexJointMatrix: gl.getUniformBlockIndex(program, "JointMatrix")
 };
         
@@ -305,8 +315,8 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         }
     }
     if (glTF.skins) {
-        gl.useProgram(programSkinBaseColor.program);
-        gl.uniformBlockBinding(programSkinBaseColor.program, programSkinBaseColor.uniformBlockIndexJointMatrix, 0);
+        // gl.useProgram(programSkinBaseColor.program);
+        // gl.uniformBlockBinding(programSkinBaseColor.program, programSkinBaseColor.uniformBlockIndexJointMatrix, 0);
         // gl.useProgram(null);
         for (i = 0, len = glTF.skins.length; i < len; i++) {
             skin = glTF.skins[i];
@@ -403,12 +413,38 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         mat4.invert(localMVNormal, localMV);
         mat4.transpose(localMVNormal, localMVNormal);
         // @tmp: program choice
+        // super ugly code
         var baseColor = defaultColor;
         if (hasSkin) {
-            // @tmp: assume material only use base color
+            if (primitive.material !== null) {
+                if (primitive.material.pbrMetallicRoughness !== null) {
             if ( primitive.material.pbrMetallicRoughness.baseColorFactor ) {
             baseColor = primitive.material.pbrMetallicRoughness.baseColorFactor;
+                        if (program != programSkinBaseColor) {
+                            gl.useProgram(programSkinBaseColor.program);
+                            program = programSkinBaseColor;
             }
+                    }
+                    if ( primitive.material.pbrMetallicRoughness.baseColorTexture ) {
+                        if (program != programSkinBaseTexture) {
+                            gl.useProgram(programSkinBaseTexture.program);
+                            program = programSkinBaseTexture;
+                        }
+                        gl.uniform1i(program.uniformBaseColorTextureLocation, primitive.material.pbrMetallicRoughness.baseColorTexture.index);
+                        gl.activeTexture(gl.TEXTURE0 + primitive.material.pbrMetallicRoughness.baseColorTexture.index);
+                        // gl.activeTexture(gl.TEXTURE1);
+                        texture = glTF.textures[ primitive.material.pbrMetallicRoughness.baseColorTexture.index ];
+                        gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+                        if (texture.sampler) {
+                            sampler = texture.sampler.sampler;
+                        } else {
+                            sampler = defaultSampler;
+                        }
+                        gl.bindSampler(primitive.material.pbrMetallicRoughness.baseColorTexture.index, sampler);
+                    }
+                }
+            }
+            gl.uniformBlockBinding(program.program, program.uniformBlockIndexJointMatrix, 0);
         } else {
         if (primitive.material !== null) {
             if (primitive.material.pbrMetallicRoughness !== null) {
