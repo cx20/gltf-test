@@ -177,38 +177,63 @@ var programSkinBaseTexture = {
 };
         
 // -- Mouse Behaviour
+var isDisplayRotation = true;
 var s = 1;
 var eulerX = 0;
+var eulerY = 0;
 // var s = 1;
 // var t = -100;
 var translate = vec3.create();
 // var t = -5;
 var modelMatrix = mat4.create();
 var mouseDown = false;
+var mouseButtonId = 0;
 var lastMouseY = 0;
+var lastMouseX = 0;
 var identityQ = quat.create();
 window.onmousedown = function(event) {
     mouseDown = true;
+    mouseButtonId = event.which;
     lastMouseY = event.clientY;
+    lastMouseX = event.clientX;
+    if (mouseButtonId === 1) {
+        isDisplayRotation = false;
+    }
 };
 window.onmouseup = function(event) {
     mouseDown = false;  
+    isDisplayRotation = true;
 };
 window.onmousemove = function(event) {
     if(!mouseDown) {
         return;
     }
     var newY = event.clientY;
+    var newX = event.clientX;
     
     var deltaY = newY - lastMouseY;
+    var deltaX = newX - lastMouseX;
     
     // s *= (1 + deltaY / 1000);
+    switch(mouseButtonId) {
+        case 1:
+        // left: rotation
     eulerX += -deltaY * 0.01;
+        eulerY += deltaX * 0.01;
+        break;
+        case 3:
+        // right
+        translate[0] += deltaX * 0.001;
+        translate[1] += -deltaY * 0.001;
+        break;
+    }
+    
     
     lastMouseY = newY;
+    lastMouseX = newX;
 };
 window.onwheel = function(event) {
-    translate[2] += -event.deltaY * 0.004;
+    translate[2] += -event.deltaY * 0.001;
     // translate[2] *= 1 + (-event.deltaY * 0.01);
 };
 // -- Load glTF then render
@@ -218,6 +243,9 @@ var gltfUrl = "../../" + modelInfo.category + "/" + modelInfo.path;
 var glTFLoader = new MinimalGLTFLoader.glTFLoader(gl);
 var glTFModelCount = 1;
 var scenes = [];
+gl.enable(gl.CULL_FACE);
+gl.cullFace(gl.BACK);
+gl.frontFace(gl.CCW);
 glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     var curScene = glTF.scenes[glTF.defaultScene];
     // // draw multiple copies of the glTF scene
@@ -393,7 +421,7 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     var rotationSpeedY= 0.01;
     // var rotationSpeedY= 0.0;
     var perspective = mat4.create();
-    mat4.perspective(perspective, 0.785, canvas.width / canvas.height, 0.1, 100);
+    mat4.perspective(perspective, 0.785, canvas.width / canvas.height, 0.01, 100);
     var modelView = mat4.create();
     var localMV = mat4.create();
     var localMVP = mat4.create();
@@ -682,13 +710,20 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         // mat4.mul(modelView, modelView, modelMatrix);
         mat4.identity(modelView);
         mat4.translate(modelView, modelView, translate);
+        if (isDisplayRotation) {
         r += rotationSpeedY;
+        }
         
-        mat4.rotateY(modelView, modelView, r);
+        
         mat4.rotateX(modelView, modelView, eulerX);
+        mat4.rotateY(modelView, modelView, r);
+        
         
         mat4.scale(modelView, modelView, scale);
         mat4.mul(modelView, modelView, modelMatrix);
+        mat4.rotateY(modelView, modelView, eulerY);
+        
+        
         // mat4.perspective(perspective, 0.785, canvas.width / canvas.height, 0.1, translate[2] + curScene.boundingBox.transform[10]);
         
         mat4.mul(VP, perspective, modelView);
