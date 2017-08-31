@@ -79,7 +79,6 @@ var BOUNDING_BOX = {
     positionLocation: 0,
     uniformMvpLocation: 0, 
 
-    
     draw: (function() {
         var MVP = mat4.create();
         return (function(bbox, nodeTransform, V, P) {
@@ -246,6 +245,7 @@ var scenes = [];
 gl.enable(gl.CULL_FACE);
 gl.cullFace(gl.BACK);
 gl.frontFace(gl.CCW);
+var isFaceCulling = true;
 glTFLoader.loadGLTF(gltfUrl, function(glTF) {
     var curScene = glTF.scenes[glTF.defaultScene];
     // // draw multiple copies of the glTF scene
@@ -440,6 +440,17 @@ glTFLoader.loadGLTF(gltfUrl, function(glTF) {
         // mat4.multiply(localMVP, VP, matrix);
         mat4.invert(localMVNormal, localMV);
         mat4.transpose(localMVNormal, localMVNormal);
+        if (primitive.material !== null) {
+            if (primitive.material.doubleSided === isFaceCulling) {
+                isFaceCulling = !primitive.material.doubleSided;
+                if (isFaceCulling) {
+                    gl.enable(gl.CULL_FACE);
+                } else {
+                    gl.disable(gl.CULL_FACE);
+                }
+            }
+        }
+        
         // @tmp: program choice
         // super ugly code
         var baseColor = defaultColor;

@@ -11,11 +11,11 @@
 <script src="../../tutorialModels/agi-pbr-model-index.js"></script>
 </head>
 <!-- gl-matrix.js v2.3.2 -->
-<script src="../../libs/minimal-gltf-loader/20170829/gl-matrix.js"></script>
-<!-- minimal-gltf-loader 2017.08.29 -->
-<script src="../../libs/minimal-gltf-loader/20170829/minimal-gltf-loader.js"></script>
+<script src="../../libs/minimal-gltf-loader/20170901/gl-matrix.js"></script>
+<!-- minimal-gltf-loader 2017.09.201-->
+<script src="../../libs/minimal-gltf-loader/20170901/minimal-gltf-loader.js"></script>
 <!-- utility.js -->
-<script src="../../libs/minimal-gltf-loader/20170829/utility.js"></script>
+<script src="../../libs/minimal-gltf-loader/20170901/utility.js"></script>
 
 <script id="vs-bbox" type="x-shader/x-vertex">
     #version 300 es
@@ -69,7 +69,7 @@
     layout(location = FRAG_COLOR_LOCATION) out vec4 color;
     void main()
     {
-        color = vec4(v_normal, 1.0);
+        color = vec4(gl_FrontFacing ? v_normal : -v_normal, 1.0);
     }
 </script>
 
@@ -83,7 +83,7 @@
     layout(location = FRAG_COLOR_LOCATION) out vec4 color;
     void main()
     {
-        float intensity = dot(v_normal, vec3(0.0, 0.0, 1.0));
+        float intensity = dot(gl_FrontFacing ? v_normal : -v_normal, vec3(0.0, 0.0, 1.0));
         color = u_baseColorFactor * intensity;
         color.a = 1.0;
     }
@@ -190,7 +190,7 @@
     layout(location = FRAG_COLOR_LOCATION) out vec4 color;
     void main()
     {
-        float intensity = dot(v_normal, vec3(0.0, 0.0, 1.0));
+        float intensity = dot(gl_FrontFacing ? v_normal : -v_normal, vec3(0.0, 0.0, 1.0));
         color = u_baseColorFactor * texture(u_baseColorTexture, v_uv) * intensity; 
         color.a = 1.0;
     }
@@ -217,6 +217,7 @@
     void main()
     {
         vec3 normal = applyNormalMap( v_normal, texture(u_normalTexture, v_uv).rgb );
+        normal = gl_FrontFacing ? normal : -normal;
         float intensity = dot(normal, vec3(0.0, 0.0, 1.0));
         color = u_baseColorFactor * texture(u_baseColorTexture, v_uv) * intensity;
         color.a = 1.0;
