@@ -84,7 +84,8 @@
     void main()
     {
         float intensity = dot(v_normal, vec3(0.0, 0.0, 1.0));
-        color = u_baseColorFactor * intensity; 
+        color = u_baseColorFactor * intensity;
+        color.a = 1.0;
     }
 </script>
 
@@ -191,6 +192,7 @@
     {
         float intensity = dot(v_normal, vec3(0.0, 0.0, 1.0));
         color = u_baseColorFactor * texture(u_baseColorTexture, v_uv) * intensity; 
+        color.a = 1.0;
     }
 </script>
 
@@ -217,8 +219,7 @@
         vec3 normal = applyNormalMap( v_normal, texture(u_normalTexture, v_uv).rgb );
         float intensity = dot(normal, vec3(0.0, 0.0, 1.0));
         color = u_baseColorFactor * texture(u_baseColorTexture, v_uv) * intensity;
-        
-        //color = color * 0.0 + vec4(normal, 1.0);
+        color.a = 1.0;
     }
 </script>
 
