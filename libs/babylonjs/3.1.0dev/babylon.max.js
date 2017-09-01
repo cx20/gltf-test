@@ -8117,13 +8117,9 @@ var BABYLON;
                 scene._rebuildGeometries();
                 scene._rebuildTextures();
             }
-            for (var _b = 0, _c = this.postProcesses; _b < _c.length; _b++) {
-                var postprocess = _c[_b];
-                postprocess._rebuild();
-            }
             // Uniforms
-            for (var _d = 0, _e = this._uniformBuffers; _d < _e.length; _d++) {
-                var uniformBuffer = _e[_d];
+            for (var _b = 0, _c = this._uniformBuffers; _b < _c.length; _b++) {
+                var uniformBuffer = _c[_b];
                 uniformBuffer._rebuild();
             }
         };
@@ -8423,22 +8419,21 @@ var BABYLON;
             }
         };
         Engine.prototype._renderLoop = function () {
-            if (this._contextWasLost) {
-                return;
-            }
-            var shouldRender = true;
-            if (!this.renderEvenInBackground && this._windowIsBackground) {
-                shouldRender = false;
-            }
-            if (shouldRender) {
-                // Start new frame
-                this.beginFrame();
-                for (var index = 0; index < this._activeRenderLoops.length; index++) {
-                    var renderFunction = this._activeRenderLoops[index];
-                    renderFunction();
+            if (!this._contextWasLost) {
+                var shouldRender = true;
+                if (!this.renderEvenInBackground && this._windowIsBackground) {
+                    shouldRender = false;
                 }
-                // Present
-                this.endFrame();
+                if (shouldRender) {
+                    // Start new frame
+                    this.beginFrame();
+                    for (var index = 0; index < this._activeRenderLoops.length; index++) {
+                        var renderFunction = this._activeRenderLoops[index];
+                        renderFunction();
+                    }
+                    // Present
+                    this.endFrame();
+                }
             }
             if (this._activeRenderLoops.length > 0) {
                 // Register new frame
@@ -8649,14 +8644,11 @@ var BABYLON;
         Engine.prototype._getVRDisplays = function () {
             var _this = this;
             var getWebVRDevices = function (devices) {
-                var size = devices.length;
-                var i = 0;
                 _this._vrDisplays = devices.filter(function (device) {
-                    return devices[i] instanceof VRDisplay;
+                    return device instanceof VRDisplay;
                 });
                 return _this._vrDisplays;
             };
-            //using a key due to typescript
             if (navigator.getVRDisplays) {
                 this.vrDisplaysPromise = navigator.getVRDisplays().then(getWebVRDevices);
             }
@@ -10409,6 +10401,9 @@ var BABYLON;
             texture.generateMipMaps = generateMipMaps;
             texture.format = format;
             texture.type = type;
+            if (!this._doNotHandleContextLost) {
+                texture._bufferViewArray = data;
+            }
             var textureType = this._getWebGLTextureType(type);
             var internalFormat = this._getInternalFormat(format);
             var internalSizedFomat = this._getRGBABufferInternalSizedFormat(type);
@@ -10426,7 +10421,7 @@ var BABYLON;
             if (!isPot) {
                 generateMipMaps = false;
             }
-            // Upload data if needed. The texture won t be ready until then.
+            // Upload data if needed. The texture won't be ready until then.
             if (data) {
                 this.updateRawCubeTexture(texture, data, format, type, invertY, compression);
             }
@@ -13347,7 +13342,7 @@ var BABYLON;
             enumerable: true,
             configurable: true
         });
-        AbstractMesh.prototype.moveWithCollisions = function (velocity) {
+        AbstractMesh.prototype.moveWithCollisions = function (direction) {
             var globalPosition = this.getAbsolutePosition();
             globalPosition.subtractFromFloatsToRef(0, this.ellipsoid.y, 0, this._oldPositionForCollisions);
             this._oldPositionForCollisions.addInPlace(this.ellipsoidOffset);
@@ -13355,7 +13350,7 @@ var BABYLON;
                 this._collider = new BABYLON.Collider();
             }
             this._collider.radius = this.ellipsoid;
-            this.getScene().collisionCoordinator.getNewPosition(this._oldPositionForCollisions, velocity, this._collider, 3, this, this._onCollisionPositionChange, this.uniqueId);
+            this.getScene().collisionCoordinator.getNewPosition(this._oldPositionForCollisions, direction, this._collider, 3, this, this._onCollisionPositionChange, this.uniqueId);
             return this;
         };
         // Submeshes octree
@@ -19404,13 +19399,16 @@ var BABYLON;
                 var mesh = _c[_b];
                 mesh._rebuild();
             }
-            for (var _d = 0, _e = this.postProcesses; _d < _e.length; _d++) {
-                var postprocess = _e[_d];
-                postprocess._rebuild();
+            if (this.postProcessManager) {
+                this.postProcessManager._rebuild();
             }
-            for (var _f = 0, _g = this.layers; _f < _g.length; _f++) {
-                var layer = _g[_f];
+            for (var _d = 0, _e = this.layers; _d < _e.length; _d++) {
+                var layer = _e[_d];
                 layer._rebuild();
+            }
+            for (var _f = 0, _g = this.highlightLayers; _f < _g.length; _f++) {
+                var highlightLayer = _g[_f];
+                highlightLayer._rebuild();
             }
         };
         Scene.prototype._rebuildTextures = function () {
@@ -20046,6 +20044,11 @@ var BABYLON;
                         _this.isReady = true;
                     }, null, this.format, this._extension);
                     proxy._swapAndDie(this);
+                    return;
+                case InternalTexture.DATASOURCE_CUBERAW:
+                    proxy = this._engine.createRawCubeTexture(this._bufferViewArray, this.width, this.format, this.type, this.generateMipMaps, this.invertY, this.samplingMode, this._compression);
+                    proxy._swapAndDie(this);
+                    this.isReady = true;
                     return;
                 case InternalTexture.DATASOURCE_CUBEPREFILTERED:
                     proxy = this._engine.createPrefilteredCubeTexture(this.url, null, this._lodGenerationScale, this._lodGenerationOffset, function (proxy) {
@@ -29779,6 +29782,9 @@ var BABYLON;
             vertices.push(-1, -1);
             vertices.push(1, -1);
             this._vertexBuffers[BABYLON.VertexBuffer.PositionKind] = new BABYLON.VertexBuffer(this._scene.getEngine(), vertices, BABYLON.VertexBuffer.PositionKind, false, false, 2);
+            this._buildIndexBuffer();
+        };
+        PostProcessManager.prototype._buildIndexBuffer = function () {
             // Indices
             var indices = [];
             indices.push(0);
@@ -29788,6 +29794,13 @@ var BABYLON;
             indices.push(2);
             indices.push(3);
             this._indexBuffer = this._scene.getEngine().createIndexBuffer(indices);
+        };
+        PostProcessManager.prototype._rebuild = function () {
+            if (!this._vertexBuffers[BABYLON.VertexBuffer.PositionKind]) {
+                return;
+            }
+            this._vertexBuffers[BABYLON.VertexBuffer.PositionKind]._rebuild();
+            this._buildIndexBuffer();
         };
         // Methods
         PostProcessManager.prototype._prepareFrame = function (sourceTexture, postProcesses) {
@@ -34628,7 +34641,7 @@ var BABYLON;
             enumerable: true,
             configurable: true
         });
-        FreeCamera.prototype._collideWithWorld = function (velocity) {
+        FreeCamera.prototype._collideWithWorld = function (direction) {
             var globalPosition;
             if (this.parent) {
                 globalPosition = BABYLON.Vector3.TransformCoordinates(this.position, this.parent.getWorldMatrix());
@@ -34643,13 +34656,13 @@ var BABYLON;
             this._collider.radius = this.ellipsoid;
             this._collider.collisionMask = this._collisionMask;
             //no need for clone, as long as gravity is not on.
-            var actualVelocity = velocity;
-            //add gravity to the velocity to prevent the dual-collision checking
+            var actualDirection = direction;
+            //add gravity to the direction to prevent the dual-collision checking
             if (this.applyGravity) {
                 //this prevents mending with cameraDirection, a global variable of the free camera class.
-                actualVelocity = velocity.add(this.getScene().gravity);
+                actualDirection = direction.add(this.getScene().gravity);
             }
-            this.getScene().collisionCoordinator.getNewPosition(this._oldPosition, actualVelocity, this._collider, 3, null, this._onCollisionPositionChange, this.uniqueId);
+            this.getScene().collisionCoordinator.getNewPosition(this._oldPosition, actualDirection, this._collider, 3, null, this._onCollisionPositionChange, this.uniqueId);
         };
         FreeCamera.prototype._checkInputs = function () {
             if (!this._localDirection) {
@@ -45909,6 +45922,9 @@ var BABYLON;
             if (this.refreshRate === RenderTargetTexture.REFRESHRATE_RENDER_ONCE) {
                 this.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
             }
+            if (this._postProcessManager) {
+                this._postProcessManager._rebuild();
+            }
         };
         RenderTargetTexture._REFRESHRATE_RENDER_ONCE = 0;
         RenderTargetTexture._REFRESHRATE_RENDER_ONEVERYFRAME = 1;
@@ -46840,8 +46856,6 @@ var BABYLON;
             }
             this._textures.dispose();
         };
-        PostProcess.prototype._rebuild = function () {
-        };
         PostProcess.prototype.dispose = function (camera) {
             camera = camera || this._camera;
             this._disposeTextures();
@@ -47113,6 +47127,9 @@ var BABYLON;
                 return this.filter === ShadowGenerator.FILTER_POISSONSAMPLING;
             },
             set: function (value) {
+                if (!value && this.filter !== ShadowGenerator.FILTER_POISSONSAMPLING) {
+                    return;
+                }
                 this.filter = (value ? ShadowGenerator.FILTER_POISSONSAMPLING : ShadowGenerator.FILTER_NONE);
             },
             enumerable: true,
@@ -47147,6 +47164,9 @@ var BABYLON;
                 return this.filter === ShadowGenerator.FILTER_EXPONENTIALSHADOWMAP;
             },
             set: function (value) {
+                if (!value && this.filter !== ShadowGenerator.FILTER_EXPONENTIALSHADOWMAP) {
+                    return;
+                }
                 this.filter = (value ? ShadowGenerator.FILTER_EXPONENTIALSHADOWMAP : ShadowGenerator.FILTER_NONE);
             },
             enumerable: true,
@@ -47157,6 +47177,9 @@ var BABYLON;
                 return this.filter === ShadowGenerator.FILTER_BLUREXPONENTIALSHADOWMAP;
             },
             set: function (value) {
+                if (!value && this.filter !== ShadowGenerator.FILTER_BLUREXPONENTIALSHADOWMAP) {
+                    return;
+                }
                 this.filter = (value ? ShadowGenerator.FILTER_BLUREXPONENTIALSHADOWMAP : ShadowGenerator.FILTER_NONE);
             },
             enumerable: true,
@@ -47167,6 +47190,9 @@ var BABYLON;
                 return this.filter === ShadowGenerator.FILTER_CLOSEEXPONENTIALSHADOWMAP;
             },
             set: function (value) {
+                if (!value && this.filter !== ShadowGenerator.FILTER_CLOSEEXPONENTIALSHADOWMAP) {
+                    return;
+                }
                 this.filter = (value ? ShadowGenerator.FILTER_CLOSEEXPONENTIALSHADOWMAP : ShadowGenerator.FILTER_NONE);
             },
             enumerable: true,
@@ -47177,6 +47203,9 @@ var BABYLON;
                 return this.filter === ShadowGenerator.FILTER_BLURCLOSEEXPONENTIALSHADOWMAP;
             },
             set: function (value) {
+                if (!value && this.filter !== ShadowGenerator.FILTER_BLURCLOSEEXPONENTIALSHADOWMAP) {
+                    return;
+                }
                 this.filter = (value ? ShadowGenerator.FILTER_BLURCLOSEEXPONENTIALSHADOWMAP : ShadowGenerator.FILTER_NONE);
             },
             enumerable: true,
@@ -52260,8 +52289,10 @@ var BABYLON;
         Object.defineProperty(PostProcessRenderPipeline.prototype, "isSupported", {
             get: function () {
                 for (var renderEffectName in this._renderEffects) {
-                    if (!this._renderEffects[renderEffectName].isSupported) {
-                        return false;
+                    if (this._renderEffects.hasOwnProperty(renderEffectName)) {
+                        if (!this._renderEffects[renderEffectName].isSupported) {
+                            return false;
+                        }
                     }
                 }
                 return true;
@@ -52304,13 +52335,17 @@ var BABYLON;
                 cameras.splice(indicesToDelete[i], 1);
             }
             for (var renderEffectName in this._renderEffects) {
-                this._renderEffects[renderEffectName]._attachCameras(_cam);
+                if (this._renderEffects.hasOwnProperty(renderEffectName)) {
+                    this._renderEffects[renderEffectName]._attachCameras(_cam);
+                }
             }
         };
         PostProcessRenderPipeline.prototype._detachCameras = function (cameras) {
             var _cam = BABYLON.Tools.MakeArray(cameras || this._cameras);
             for (var renderEffectName in this._renderEffects) {
-                this._renderEffects[renderEffectName]._detachCameras(_cam);
+                if (this._renderEffects.hasOwnProperty(renderEffectName)) {
+                    this._renderEffects[renderEffectName]._detachCameras(_cam);
+                }
             }
             for (var i = 0; i < _cam.length; i++) {
                 this._cameras.splice(this._cameras.indexOf(_cam[i]), 1);
@@ -52322,16 +52357,20 @@ var BABYLON;
             var pass = null;
             var renderEffectName;
             for (renderEffectName in this._renderEffects) {
-                pass = this._renderEffects[renderEffectName].getPass(passName);
-                if (pass != null) {
-                    break;
+                if (this._renderEffects.hasOwnProperty(renderEffectName)) {
+                    pass = this._renderEffects[renderEffectName].getPass(passName);
+                    if (pass != null) {
+                        break;
+                    }
                 }
             }
             if (pass === null) {
                 return;
             }
             for (renderEffectName in this._renderEffects) {
-                this._renderEffects[renderEffectName]._disable(_cam);
+                if (this._renderEffects.hasOwnProperty(renderEffectName)) {
+                    this._renderEffects[renderEffectName]._disable(_cam);
+                }
             }
             pass._name = PostProcessRenderPipeline.PASS_SAMPLER_NAME;
             for (var i = 0; i < _cam.length; i++) {
@@ -52353,12 +52392,16 @@ var BABYLON;
                 this._renderEffectsForIsolatedPass[cameraName]._disable(camera);
             }
             for (var renderEffectName in this._renderEffects) {
-                this._renderEffects[renderEffectName]._enable(_cam);
+                if (this._renderEffects.hasOwnProperty(renderEffectName)) {
+                    this._renderEffects[renderEffectName]._enable(_cam);
+                }
             }
         };
         PostProcessRenderPipeline.prototype._update = function () {
             for (var renderEffectName in this._renderEffects) {
-                this._renderEffects[renderEffectName]._update();
+                if (this._renderEffects.hasOwnProperty(renderEffectName)) {
+                    this._renderEffects[renderEffectName]._update();
+                }
             }
             for (var i = 0; i < this._cameras.length; i++) {
                 var cameraName = this._cameras[i].name;
@@ -68124,15 +68167,7 @@ var BABYLON;
             vertices.push(1, -1);
             var vertexBuffer = new BABYLON.VertexBuffer(engine, vertices, BABYLON.VertexBuffer.PositionKind, false, false, 2);
             this._vertexBuffers[BABYLON.VertexBuffer.PositionKind] = vertexBuffer;
-            // Indices
-            var indices = [];
-            indices.push(0);
-            indices.push(1);
-            indices.push(2);
-            indices.push(0);
-            indices.push(2);
-            indices.push(3);
-            this._indexBuffer = engine.createIndexBuffer(indices);
+            this._createIndexBuffer();
             // Effect
             this._glowMapMergeEffect = engine.createEffect("glowMapMerge", [BABYLON.VertexBuffer.PositionKind], ["offset"], ["textureSampler"], "");
             // Render target
@@ -68182,6 +68217,22 @@ var BABYLON;
             enumerable: true,
             configurable: true
         });
+        HighlightLayer.prototype._createIndexBuffer = function () {
+            var engine = this._scene.getEngine();
+            // Indices
+            var indices = [];
+            indices.push(0);
+            indices.push(1);
+            indices.push(2);
+            indices.push(0);
+            indices.push(2);
+            indices.push(3);
+            this._indexBuffer = engine.createIndexBuffer(indices);
+        };
+        HighlightLayer.prototype._rebuild = function () {
+            this._vertexBuffers[BABYLON.VertexBuffer.PositionKind]._rebuild();
+            this._createIndexBuffer();
+        };
         /**
          * Creates the render target textures and post processes used in the highlight layer.
          */
@@ -70230,7 +70281,15 @@ var BABYLON;
             this._scene = scene || BABYLON.Engine.LastCreatedScene;
             this._scene.layers.push(this);
             var engine = this._scene.getEngine();
-            this._rebuild();
+            // VBO
+            var vertices = [];
+            vertices.push(1, 1);
+            vertices.push(-1, 1);
+            vertices.push(-1, -1);
+            vertices.push(1, -1);
+            var vertexBuffer = new BABYLON.VertexBuffer(engine, vertices, BABYLON.VertexBuffer.PositionKind, false, false, 2);
+            this._vertexBuffers[BABYLON.VertexBuffer.PositionKind] = vertexBuffer;
+            this._createIndexBuffer();
             // Effects
             this._effect = engine.createEffect("layer", [BABYLON.VertexBuffer.PositionKind], ["textureMatrix", "color", "scale", "offset"], ["textureSampler"], "");
             this._alphaTestEffect = engine.createEffect("layer", [BABYLON.VertexBuffer.PositionKind], ["textureMatrix", "color", "scale", "offset"], ["textureSampler"], "#define ALPHATEST");
@@ -70265,16 +70324,8 @@ var BABYLON;
             enumerable: true,
             configurable: true
         });
-        Layer.prototype._rebuild = function () {
+        Layer.prototype._createIndexBuffer = function () {
             var engine = this._scene.getEngine();
-            // VBO
-            var vertices = [];
-            vertices.push(1, 1);
-            vertices.push(-1, 1);
-            vertices.push(-1, -1);
-            vertices.push(1, -1);
-            var vertexBuffer = new BABYLON.VertexBuffer(engine, vertices, BABYLON.VertexBuffer.PositionKind, false, false, 2);
-            this._vertexBuffers[BABYLON.VertexBuffer.PositionKind] = vertexBuffer;
             // Indices
             var indices = [];
             indices.push(0);
@@ -70284,6 +70335,10 @@ var BABYLON;
             indices.push(2);
             indices.push(3);
             this._indexBuffer = engine.createIndexBuffer(indices);
+        };
+        Layer.prototype._rebuild = function () {
+            this._vertexBuffers[BABYLON.VertexBuffer.PositionKind]._rebuild();
+            this._createIndexBuffer();
         };
         Layer.prototype.render = function () {
             var currentEffect = this.alphaTest ? this._alphaTestEffect : this._effect;
@@ -71064,7 +71119,7 @@ var BABYLON;
             });
             this._onAfterCheckInputsObserver = camera.onAfterCheckInputsObservable.add(function () {
                 var now = BABYLON.Tools.Now;
-                var dt = 16;
+                var dt = 0;
                 if (_this._lastFrameTime != null) {
                     dt = now - _this._lastFrameTime;
                 }

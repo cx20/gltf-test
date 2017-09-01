@@ -3340,7 +3340,7 @@ var BABYLON;
                 if (material.normalTexture) {
                     babylonMaterial.bumpTexture = this.loadTexture(material.normalTexture);
                     babylonMaterial.invertNormalMapX = true;
-                    babylonMaterial.invertNormalMapY = true;
+                    babylonMaterial.invertNormalMapY = false;
                     if (material.normalTexture.scale !== undefined) {
                         babylonMaterial.bumpTexture.level = material.normalTexture.scale;
                     }
@@ -3499,7 +3499,7 @@ var BABYLON;
                 // Set defaults if undefined
                 mode = mode === undefined ? GLTF2.ETextureWrapMode.REPEAT : mode;
                 switch (mode) {
-                    case GLTF2.ETextureWrapMode.CLAMP_TO_EDGE: BABYLON.Texture.CLAMP_ADDRESSMODE;
+                    case GLTF2.ETextureWrapMode.CLAMP_TO_EDGE: return BABYLON.Texture.CLAMP_ADDRESSMODE;
                     case GLTF2.ETextureWrapMode.MIRRORED_REPEAT: return BABYLON.Texture.MIRROR_ADDRESSMODE;
                     case GLTF2.ETextureWrapMode.REPEAT: return BABYLON.Texture.WRAP_ADDRESSMODE;
                     default:
