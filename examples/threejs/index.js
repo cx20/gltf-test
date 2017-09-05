@@ -53,7 +53,7 @@ function init() {
     // https://github.com/mrdoob/three.js/pull/11498#issuecomment-308136310
     THREE.PropertyBinding.sanitizeNodeName = (n) => n;
     
-    var loader = new THREE.GLTF2Loader();
+    var loader = new THREE.GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
     var scale = modelInfo.scale;
