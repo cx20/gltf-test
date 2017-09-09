@@ -8,11 +8,11 @@ Status of [glTF loader](https://github.com/KhronosGroup/glTF#webgl-engines) in s
 
 |Model Name           |Models  |Formats  |Libraries|Tests|
 |:--------------------|:------:|:-------:|:-------:|:---:|
-|Simple models        |   7    |   2     |    7    |  98 |
-|More complex models  |  20    |   6     |    7    | 840 |
-|PBR Sample           |   6    |   3     |    7    | 126 |
-|Further PBR Sample   |   5    |   1     |    7    |  35 |
-|AGI PBR Sample       |   4    |   2     |    7    |  56 |
+|Simple models        |   7    |   2     |    8    | 112 |
+|More complex models  |  20    |   6     |    8    | 960 |
+|PBR Sample           |   6    |   3     |    8    | 144 |
+|Further PBR Sample   |   5    |   1     |    8    |  40 |
+|AGI PBR Sample       |   4    |   2     |    8    |  64 |
 
 
 # [glTF 2.0 Sample Models](https://github.com/KhronosGroup/glTF-Sample-Models/blob/master/2.0/README.md#gltf-20-sample-models)
