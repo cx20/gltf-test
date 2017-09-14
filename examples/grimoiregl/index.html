@@ -11,14 +11,14 @@
 <script src="../../tutorialModels/agi-pbr-model-index.js"></script>
 </head>
 <body>
-<!-- grimoire-preset-basic.js 1.11.5 -->
-<script src="../../libs/grimoiregl/grimoirejs-preset-basic/1.11.5/grimoire-preset-basic.js"></script>
+<!-- grimoire-preset-basic.js 1.11.9 -->
+<script src="../../libs/grimoiregl/grimoirejs-preset-basic/1.11.9/grimoire-preset-basic.js"></script>
 <!-- grimoire-animation.js 1.2.0 -->
 <script src="../../libs/grimoiregl/grimoirejs-animation/1.2.0/grimoire-animation.js"></script>
 <!-- grimoirejs-forward-shading.js.js 1.7.3 -->
 <script src="../../libs/grimoiregl/grimoirejs-forward-shading/1.7.3/grimoire-forward-shading.js"></script>
-<!-- grimoire-gltf.js.js 2.2.1 -->
-<script src="../../libs/grimoiregl/grimoirejs-gltf/2.2.1/grimoire-gltf.js"></script>
+<!-- grimoire-gltf.js.js 2.2.3 -->
+<script src="../../libs/grimoiregl/grimoirejs-gltf/2.2.3/grimoire-gltf.js"></script>
 
 <script type="text/goml" id="canvas">
   <goml width="fit" height="fit" bgColor="gray">
@@ -36,12 +36,12 @@
       </object>
       <object id="model-container">
       </object>
+      <light type="directional" rotation="0d,30d,0d"  color="white" intensity="3.0"/>
+      <light type="directional" rotation="0d,-150d,0d" color="white" intensity="3.0"/>
 <!--
-      <light type="directional" rotation="0d,0d,0d"  color="white" intensity="5.0"/>
-      <light type="directional" rotation="0d,-120d,0d" color="white" intensity="5.0"/>
--->
       <light type="directional" rotation="0d,120d,0d" color="white" intensity="5"/>
-      <light type="point" position="0,10,-10"  color="white"  distance="20" decay="0.3" intensity="5.0"/>
+-->
+      <light type="point" position="0,5,0"  color="white"  distance="20" decay="0.3" intensity="3.0"/>
     </scene>
   </goml>
 </script>
