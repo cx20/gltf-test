@@ -9,3 +9,10 @@ body {
   background: #000;
   font: 30px sans-serif;
 }
+
+#info {
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    padding: 5px;
+}
