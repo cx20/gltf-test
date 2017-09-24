@@ -88,7 +88,7 @@ var createScene = function(engine) {
         //scene.debugLayer.show(true, camera);
 
         engine.runRenderLoop(function() {
-            //scene.activeCamera.alpha += 0.01;
+            scene.activeCamera.alpha += 0.01;
             scene.render();
         });
     });
