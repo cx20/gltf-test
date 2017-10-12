@@ -28,8 +28,7 @@ gr.registerComponent('Rotate', {
     this.phi = 0;
   },
   $update: function () {
-    //this.phi += this.getAttribute('speed');
-    this.phi -= this.getAttribute('speed'); // reverse rotate
+    this.phi += this.getAttribute('speed');
     this.node.setAttribute('rotation',0 + ',' + this.phi + ',' + 0);
   },
 });
