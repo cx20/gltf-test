@@ -25,6 +25,9 @@ var engines = [{
 }, {
     name: 'Khronos glTF Loader',
     path: 'examples/khronos-gltf-loader/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'qtek glTF Loader',
+    path: 'examples/qtek/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function getEngineByName(name) {
