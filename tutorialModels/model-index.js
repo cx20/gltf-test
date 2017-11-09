@@ -4,6 +4,8 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'TriangleWithoutIndices', scale:1.0},
     {category:'tutorialModels', name:'Triangle', scale:1.0},
     {category:'tutorialModels', name:'AnimatedTriangle', scale:1.0},
+    {category:'tutorialModels', name:'SimpleMorph', scale:1.0},
+    {category:'tutorialModels', name:'SimpleSparseAccessor', scale:1.0},
     {category:'tutorialModels', name:'AnimatedMorphCube', scale:1.0},
     {category:'tutorialModels', name:'AnimatedMorphSphere', scale:1.0},
     //{category:'tutorialModels', name:'SimpleMaterial', scale:1.0},
