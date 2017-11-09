@@ -2634,6 +2634,8 @@ var Utils = Utils || {};
 
     var drawBoundingBox = true;
     var boundingBoxType = 'obb';
+    var curAnimationId = 0;
+    var playAllAnimationTogether = true;
 /*
     document.getElementById("gltf-model").addEventListener("change", function() {
         selectedGltfSampleModel = this.value;
@@ -3725,16 +3727,10 @@ var Utils = Utils || {};
         }
 
 
-        var drawScene = Renderer.drawScene = function (scene) {
-            // animation
-            var animation;
-            var i, len, j, lenj;
+        function applyAnimation(animation, glTF) {
+            var j, lenj;
             var channel, animationSampler, node;
 
-            var glTF = scene.glTF;
-            if (glTF.animations) {
-                for (i = 0, len = glTF.animations.length; i < len; i++) {
-                    animation = glTF.animations[i];
                     for (j = 0, lenj = animation.samplers.length; j < lenj; j++) {
                         animation.samplers[j].getValue(timeParameter);
                     }
@@ -3761,6 +3757,23 @@ var Utils = Utils || {};
                         node.updateMatrixFromTRS();
                         
                     }
+                }
+
+        var drawScene = Renderer.drawScene = function (scene) {
+            // animation
+            var animation;
+            var i, len;
+
+            var glTF = scene.glTF;
+            if (glTF.animations) {
+                if (playAllAnimationTogether) {
+                    for (i = 0, len = glTF.animations.length; i < len; i++) {
+                        animation = glTF.animations[i];
+                        applyAnimation(animation, glTF);
+                    }
+                } else {
+                    animation = glTF.animations[curAnimationId];
+                    applyAnimation(animation, glTF);
                 }
             }
 
@@ -8042,6 +8055,8 @@ var globalUniformBlockID = 0;
 
 var curLoader = null;       // @tmp, might be unsafe if loading multiple model at the same time
 
+var NUM_MAX_JOINTS = 65;
+
 // Data classes
 var Scene = MinimalGLTFLoader.Scene = function (gltf, s) {
     this.name = s.name !== undefined ? s.name : null;
@@ -8050,6 +8065,10 @@ var Scene = MinimalGLTFLoader.Scene = function (gltf, s) {
         this.nodes[i] = gltf.nodes[s.nodes[i]];
         }
         
+    this.extensions = s.extensions !== undefined ? s.extensions : null;
+    this.extras = s.extras !== undefined ? s.extras : null;
+
+
     this.boundingBox = null;
 };
 
@@ -8151,6 +8170,9 @@ var Accessor = MinimalGLTFLoader.Accessor = function (a, bufferViewObject) {
 
     this.min = a.min;   // @tmp assume required for now (for bbox)
     this.max = a.max;   // @tmp assume required for now (for bbox)
+
+    this.extensions = a.extensions !== undefined ? a.extensions : null;
+    this.extras = a.extras !== undefined ? a.extras : null;
 };
 
 Accessor.prototype.prepareVertexAttrib = function(location, gl) {
@@ -8172,6 +8194,9 @@ var BufferView = MinimalGLTFLoader.BufferView = function(bf, bufferData) {
     this.target = bf.target !== undefined ? bf.target : null;
 
     this.data = bufferData.slice(this.byteOffset, this.byteOffset + this.byteLength);
+
+    this.extensions = bf.extensions !== undefined ? bf.extensions : null;
+    this.extras = bf.extras !== undefined ? bf.extras : null;
 
     // runtime stuffs -------------
     this.buffer = null;     // gl buffer
@@ -8203,6 +8228,9 @@ var Camera = MinimalGLTFLoader.Camera = function(c) {
         zfar: c.perspective.zfar !== undefined ? c.perspective.zfar : null,
         aspectRatio: c.perspective.aspectRatio !== undefined ? c.perspective.aspectRatio : null
     };
+
+    this.extensions = c.extensions !== undefined ? c.extensions : null;
+    this.extras = c.extras !== undefined ? c.extras : null;
 };
 
 
@@ -8218,6 +8246,15 @@ var Node = MinimalGLTFLoader.Node = function (n, nodeID) {
         for(var i = 0; i < 16; ++i) {
             this.matrix[i] = n.matrix[i];
         }
+
+        this.translation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["vec3"].create();
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["mat4"].getTranslation(this.translation, this.matrix);
+
+        this.rotation = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["quat"].create();
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["mat4"].getRotation(this.rotation, this.matrix);
+
+        this.scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["vec3"].create();
+        __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["mat4"].getScaling(this.scale, this.matrix);
     } else {
         // this.translation = null;
         // this.rotation = null;
@@ -8246,6 +8283,9 @@ var Node = MinimalGLTFLoader.Node = function (n, nodeID) {
     // TODO: morph targets weights
     this.weights = n.weights !== undefined ? n.weights : null;
 
+
+    this.extensions = n.extensions !== undefined ? n.extensions : null;
+    this.extras = n.extras !== undefined ? n.extras : null;
 
     // runtime stuffs--------------
 
@@ -8328,7 +8368,8 @@ var Mesh = MinimalGLTFLoader.Mesh = function (m, meshID) {
     // TODO: weights for morph targets
     this.weights = m.weights !== undefined ? m.weights : null;
 
-
+    this.extensions = m.extensions !== undefined ? m.extensions : null;
+    this.extras = m.extras !== undefined ? m.extras : null;
 
 };
 
@@ -8378,6 +8419,10 @@ var Primitive = MinimalGLTFLoader.Primitive = function (gltf, p) {
     this.targets = p.targets;
 
 
+    this.extensions = p.extensions !== undefined ? p.extensions : null;
+    this.extras = p.extras !== undefined ? p.extras : null;
+
+
     // ----gl run time related
     this.vertexArray = null;    //vao
 
@@ -8417,6 +8462,9 @@ var Texture = MinimalGLTFLoader.Texture = function (t) {
     this.sampler = t.sampler !== undefined ? curLoader.glTF.samplers[t.sampler] : null;
     this.source = t.source !== undefined ? curLoader.glTF.images[t.source] : null;
 
+    this.extensions = t.extensions !== undefined ? t.extensions : null;
+    this.extras = t.extras !== undefined ? t.extras : null;
+
     // runtime
     this.texture = null;
 };
@@ -8445,6 +8493,9 @@ var Sampler = MinimalGLTFLoader.Sampler = function (s) {
     this.wrapS = s.wrapS !== undefined ? s.wrapS : 10497;
     this.wrapT = s.wrapT !== undefined ? s.wrapT : 10497;
 
+    this.extensions = s.extensions !== undefined ? s.extensions : null;
+    this.extras = s.extras !== undefined ? s.extras : null;
+
     this.sampler = null;
 };
 
@@ -8471,6 +8522,9 @@ Sampler.prototype.createSampler = function(gl) {
 var TextureInfo = MinimalGLTFLoader.TextureInfo = function (json) {
     this.index = json.index;
     this.texCoord = json.texCoord !== undefined ? json.texCoord : 0 ;
+
+    this.extensions = json.extensions !== undefined ? json.extensions : null;
+    this.extras = json.extras !== undefined ? json.extras : null;
 };
 
 var PbrMetallicRoughness = MinimalGLTFLoader.PbrMetallicRoughness = function (json) {
@@ -8479,18 +8533,27 @@ var PbrMetallicRoughness = MinimalGLTFLoader.PbrMetallicRoughness = function (js
     this.metallicFactor = json.metallicFactor !== undefined ? json.metallicFactor : 1 ;
     this.roughnessFactor = json.roughnessFactor !== undefined ? json.roughnessFactor : 1 ;
     this.metallicRoughnessTexture = json.metallicRoughnessTexture !== undefined ? new TextureInfo(json.metallicRoughnessTexture): null;
+
+    this.extensions = json.extensions !== undefined ? json.extensions : null;
+    this.extras = json.extras !== undefined ? json.extras : null;
 };
 
 var NormalTextureInfo = MinimalGLTFLoader.NormalTextureInfo = function (json) {
     this.index = json.index;
     this.texCoord = json.texCoord !== undefined ? json.texCoord : 0 ;
     this.scale = json.scale !== undefined ? json.scale : 1 ;
+
+    this.extensions = json.extensions !== undefined ? json.extensions : null;
+    this.extras = json.extras !== undefined ? json.extras : null;
 };
 
 var OcclusionTextureInfo = MinimalGLTFLoader.OcclusionTextureInfo = function (json) {
     this.index = json.index;
     this.texCoord = json.texCoord !== undefined ? json.texCoord : 0 ;
     this.strength = json.strength !== undefined ? json.strength : 1 ;
+
+    this.extensions = json.extensions !== undefined ? json.extensions : null;
+    this.extras = json.extras !== undefined ? json.extras : null;
 };
 
 var Material = MinimalGLTFLoader.Material = function (m) {
@@ -8510,6 +8573,9 @@ var Material = MinimalGLTFLoader.Material = function (m) {
     this.alphaMode = m.alphaMode !== undefined ? m.alphaMode : "OPAQUE";
     this.alphaCutoff = m.alphaCutoff !== undefined ? m.alphaCutoff : 0.5;
     this.doubleSided = m.doubleSided || false;
+
+    this.extensions = m.extensions !== undefined ? m.extensions : null;
+    this.extras = m.extras !== undefined ? m.extras : null;
 };
 
 
@@ -8525,6 +8591,10 @@ var Skin = MinimalGLTFLoader.Skin = function (gltf, s, skinID) {
 
     this.skeleton = s.skeleton !== undefined ? gltf.nodes[s.skeleton] : null;
     this.inverseBindMatrices = s.inverseBindMatrices !== undefined ? gltf.accessors[s.inverseBindMatrices] : null;
+
+    this.extensions = s.extensions !== undefined ? s.extensions : null;
+    this.extras = s.extras !== undefined ? s.extras : null;
+
 
     // @tmp: runtime stuff should be taken care of renderer
     // since glTF model should only store info
@@ -8546,7 +8616,7 @@ var Skin = MinimalGLTFLoader.Skin = function (gltf, s, skinID) {
         // );      // for copy to UBO
 
         // @tmp: fixed length to coordinate with shader, for copy to UBO
-        this.jointMatrixUnidormBufferData = new Float32Array(32 * 16);
+        this.jointMatrixUnidormBufferData = new Float32Array(NUM_MAX_JOINTS * 16);
 
         for (i = 0, len = this.inverseBindMatricesData.length; i < len; i += 16) {
             this.inverseBindMatrix.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["mat4"].fromValues(
@@ -8610,7 +8680,7 @@ var SkinLink = MinimalGLTFLoader.SkinLink = function (gltf, linkedSkin, inverseB
         // );      // for copy to UBO
 
         // @tmp: fixed length to coordinate with shader, for copy to UBO
-        this.jointMatrixUnidormBufferData = new Float32Array(32 * 16);
+        this.jointMatrixUnidormBufferData = new Float32Array(NUM_MAX_JOINTS * 16);
 
         for (var i = 0, len = this.inverseBindMatricesData.length; i < len; i += 16) {
             this.inverseBindMatrix.push(__WEBPACK_IMPORTED_MODULE_0_gl_matrix__["mat4"].fromValues(
@@ -8647,11 +8717,17 @@ var SkinLink = MinimalGLTFLoader.SkinLink = function (gltf, linkedSkin, inverseB
 var Target = MinimalGLTFLoader.Target = function (t) {
     this.nodeID = t.node !== undefined ? t.node : null ;  //id, to be hooked up to object later
     this.path = t.path;     //required, string
+
+    this.extensions = t.extensions !== undefined ? t.extensions : null;
+    this.extras = t.extras !== undefined ? t.extras : null;
 };
 
 var Channel = MinimalGLTFLoader.Channel = function (c, animation) {
     this.sampler = animation.samplers[c.sampler];   //required
     this.target = new Target(c.target);     //required
+
+    this.extensions = c.extensions !== undefined ? c.extensions : null;
+    this.extras = c.extras !== undefined ? c.extras : null;
 };
 
 var AnimationSampler = MinimalGLTFLoader.AnimationSampler = function (gltf, s) {
@@ -8668,21 +8744,28 @@ var AnimationSampler = MinimalGLTFLoader.AnimationSampler = function (gltf, s) {
     // "CUBICSPLINE"
     this.interpolation = s.interpolation !== undefined ? s.interpolation : 'LINEAR' ;
     
+
+    this.extensions = s.extensions !== undefined ? s.extensions : null;
+    this.extras = s.extras !== undefined ? s.extras : null;
+
     // ------- extra runtime info -----------
     // runtime status thing
     this.curIdx = 0;
     // this.curValue = 0;
     this.curValue = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["vec4"].create();
-    this.inputMax = this.inputTypedArray[this.inputTypedArray.length - 1];
-
-    this.loopOffset = 0;
+    this.endT = this.inputTypedArray[this.inputTypedArray.length - 1];
+    this.inputMax = this.endT - this.inputTypedArray[0];
 };
 
 var animationOutputValueVec4a = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["vec4"].create();
 var animationOutputValueVec4b = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["vec4"].create();
 
 AnimationSampler.prototype.getValue = function (t) {
-    t -= this.loopOffset;
+    if (t > this.endT) {
+        t -= this.inputMax * Math.ceil((t - this.endT) / this.inputMax);
+        this.curIdx = 0;
+    }
+
     var len = this.inputTypedArray.length;
     while (this.curIdx <= len - 2 && t >= this.inputTypedArray[this.curIdx + 1]) {
         this.curIdx++;
@@ -8691,8 +8774,6 @@ AnimationSampler.prototype.getValue = function (t) {
 
     if (this.curIdx >= len - 1) {
         // loop
-        
-        this.loopOffset += this.inputMax;
         t -= this.inputMax;
         this.curIdx = 0;
 }
@@ -8715,7 +8796,6 @@ AnimationSampler.prototype.getValue = function (t) {
 
     switch(this.interpolation) {
         case 'LINEAR': 
-        // v4lerp(this.curValue, animationOutputValueVec4a, animationOutputValueVec4b, t - this.loopOffset - this.inputTypedArray[i]);
         v4lerp(this.curValue, animationOutputValueVec4a, animationOutputValueVec4b, u);
         break;
 
@@ -8744,6 +8824,9 @@ var Animation = MinimalGLTFLoader.Animation = function (gltf, a) {
     for (i = 0, len = a.channels.length; i < len; i++) {
         this.channels[i] = new Channel(a.channels[i], this);
 }
+
+    this.extensions = a.extensions !== undefined ? a.extensions : null;
+    this.extras = a.extras !== undefined ? a.extras : null;
 };
 
 
@@ -8804,6 +8887,9 @@ var glTFModel = MinimalGLTFLoader.glTFModel = function (gltf) {
     if (gltf.cameras) {
         this.cameras = new Array(gltf.cameras.length);
     }
+
+    this.extensions = gltf.extensions !== undefined ? gltf.extensions : null;
+    this.extras = gltf.extras !== undefined ? gltf.extras : null;
 
 };
 
@@ -8945,7 +9031,7 @@ glTFLoader.prototype._postprocess = function () {
     // if there's no plan for progressive loading (streaming)
     // than simply everything should be placed here
 
-    console.log('finish loading all assets, do a second pass postprocess');
+    // console.log('finish loading all assets, do a second pass postprocess');
 
     curLoader = this;
 
@@ -9046,12 +9132,6 @@ glTFLoader.prototype._postprocess = function () {
             if (mesh.boundingBox) {
 
                 n.aabb = BoundingBox.getAABBFromOBB(mesh.boundingBox, tmpMat4);
-
-                // vec3.min(scene.boundingBox.min, scene.boundingBox.min, n.aabb.min);
-                // vec3.max(scene.boundingBox.max, scene.boundingBox.max, n.aabb.max);
-
-                // vec3.min(parentBVH.min, parentBVH.min, n.aabb.min);
-                // vec3.max(parentBVH.max, parentBVH.max, n.aabb.max);
 
                 if (n.children.length === 0) {
                     // n.bvh = n.aabb;
@@ -9829,31 +9909,31 @@ module.exports = function (css) {
 /* 17 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\r\n#define POSITION_LOCATION 0\r\n\r\nprecision highp float;\r\nprecision highp int;\r\n\r\nuniform mat4 u_MVP;\r\n\r\nlayout(location = POSITION_LOCATION) in vec3 position;\r\n\r\nvoid main()\r\n{\r\n    gl_Position = u_MVP * vec4(position, 1.0) ;\r\n}"
+module.exports = "#version 300 es\n#define POSITION_LOCATION 0\n\nprecision highp float;\nprecision highp int;\n\nuniform mat4 u_MVP;\n\nlayout(location = POSITION_LOCATION) in vec3 position;\n\nvoid main()\n{\n    gl_Position = u_MVP * vec4(position, 1.0) ;\n}"
 
 /***/ }),
 /* 18 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\r\n#define FRAG_COLOR_LOCATION 0\r\n\r\nprecision highp float;\r\nprecision highp int;\r\n\r\nlayout(location = FRAG_COLOR_LOCATION) out vec4 color;\r\n\r\nvoid main()\r\n{\r\n    color = vec4(1.0, 0.0, 0.0, 1.0);\r\n}"
+module.exports = "#version 300 es\n#define FRAG_COLOR_LOCATION 0\n\nprecision highp float;\nprecision highp int;\n\nlayout(location = FRAG_COLOR_LOCATION) out vec4 color;\n\nvoid main()\n{\n    color = vec4(1.0, 0.0, 0.0, 1.0);\n}"
 
 /***/ }),
 /* 19 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\r\nprecision highp float;\r\nprecision highp int;\r\n\r\nuniform mat4 u_MVP;\r\n\r\nlayout(location = 0) in vec3 position;\r\n\r\nout vec3 texcoord;\r\n\r\nvoid main()\r\n{\r\n    vec4 pos = u_MVP * vec4(position, 1.0);\r\n    gl_Position = pos.xyww;\r\n    texcoord = position;\r\n}"
+module.exports = "#version 300 es\nprecision highp float;\nprecision highp int;\n\nuniform mat4 u_MVP;\n\nlayout(location = 0) in vec3 position;\n\nout vec3 texcoord;\n\nvoid main()\n{\n    vec4 pos = u_MVP * vec4(position, 1.0);\n    gl_Position = pos.xyww;\n    texcoord = position;\n}"
 
 /***/ }),
 /* 20 */
 /***/ (function(module, exports) {
 
-module.exports = "#version 300 es\r\nprecision highp float;\r\nprecision highp int;\r\n\r\nuniform samplerCube u_environment;\r\n\r\nin vec3 texcoord;\r\n\r\nout vec4 color;\r\n\r\nvoid main()\r\n{\r\n    color = texture(u_environment, texcoord);\r\n}"
+module.exports = "#version 300 es\nprecision highp float;\nprecision highp int;\n\nuniform samplerCube u_environment;\n\nin vec3 texcoord;\n\nout vec4 color;\n\nvoid main()\n{\n    color = texture(u_environment, texcoord);\n}"
 
 /***/ }),
 /* 21 */
 /***/ (function(module, exports) {
 
-module.exports = "#define POSITION_LOCATION 0\r\n#define NORMAL_LOCATION 1\r\n#define TEXCOORD_0_LOCATION 2\r\n#define JOINTS_0_LOCATION 3\r\n#define JOINTS_1_LOCATION 5\r\n#define WEIGHTS_0_LOCATION 4\r\n#define WEIGHTS_1_LOCATION 6\r\n#define TANGENT_LOCATION 7\r\n\r\nprecision highp float;\r\nprecision highp int;\r\n\r\nuniform mat4 u_MVP;\r\nuniform mat4 u_MV;\r\nuniform mat4 u_MVNormal;\r\n\r\n#ifdef HAS_SKIN\r\nuniform JointMatrix\r\n{\r\n    mat4 matrix[32];\r\n} u_jointMatrix;\r\n#endif\r\n\r\nlayout(location = POSITION_LOCATION) in vec3 position;\r\nlayout(location = NORMAL_LOCATION) in vec3 normal;\r\nlayout(location = TEXCOORD_0_LOCATION) in vec2 uv;\r\n\r\n#ifdef HAS_SKIN\r\nlayout(location = JOINTS_0_LOCATION) in vec4 joint0;\r\nlayout(location = WEIGHTS_0_LOCATION) in vec4 weight0;\r\n#ifdef SKIN_VEC8\r\nlayout(location = JOINTS_1_LOCATION) in vec4 joint1;\r\nlayout(location = WEIGHTS_1_LOCATION) in vec4 weight1;\r\n#endif\r\n#endif\r\n\r\n\r\n// #ifdef HAS_TANGENTS\r\n// layout(location = TANGENT_LOCATION) in vec4 tangent;\r\n\r\n// out vec3 v_tangentW;\r\n// out vec3 v_bitangentW;\r\n// #endif\r\n\r\n\r\nout vec3 v_position;\r\nout vec3 v_normal;\r\nout vec2 v_uv;\r\n\r\nvoid main()\r\n{\r\n\r\n#ifdef HAS_SKIN\r\n    mat4 skinMatrix = \r\n        weight0.x * u_jointMatrix.matrix[int(joint0.x)] +\r\n        weight0.y * u_jointMatrix.matrix[int(joint0.y)] +\r\n        weight0.z * u_jointMatrix.matrix[int(joint0.z)] +\r\n        weight0.w * u_jointMatrix.matrix[int(joint0.w)];\r\n#ifdef SKIN_VEC8\r\n    skinMatrix +=\r\n        weight1.x * u_jointMatrix.matrix[int(joint1.x)] +\r\n        weight1.y * u_jointMatrix.matrix[int(joint1.y)] +\r\n        weight1.z * u_jointMatrix.matrix[int(joint1.z)] +\r\n        weight1.w * u_jointMatrix.matrix[int(joint1.w)];\r\n#endif\r\n#endif\r\n\r\n    v_uv = uv;\r\n\r\n#ifdef HAS_SKIN\r\n    v_normal = normalize(( u_MVNormal * transpose(inverse(skinMatrix)) * vec4(normal, 0)).xyz);\r\n    vec4 pos = u_MV * skinMatrix * vec4(position, 1.0);\r\n    gl_Position = u_MVP * skinMatrix * vec4(position, 1.0);\r\n#else\r\n    v_normal = normalize((u_MVNormal * vec4(normal, 0)).xyz);\r\n    vec4 pos = u_MV * vec4(position, 1.0);\r\n    gl_Position = u_MVP * vec4(position, 1.0);\r\n#endif\r\n\r\n    v_position = vec3(pos.xyz) / pos.w;\r\n    \r\n    \r\n}"
+module.exports = "#define POSITION_LOCATION 0\r\n#define NORMAL_LOCATION 1\r\n#define TEXCOORD_0_LOCATION 2\r\n#define JOINTS_0_LOCATION 3\r\n#define JOINTS_1_LOCATION 5\r\n#define WEIGHTS_0_LOCATION 4\r\n#define WEIGHTS_1_LOCATION 6\r\n#define TANGENT_LOCATION 7\r\n\r\nprecision highp float;\r\nprecision highp int;\r\n\r\nuniform mat4 u_MVP;\r\nuniform mat4 u_MV;\r\nuniform mat4 u_MVNormal;\r\n\r\n#ifdef HAS_SKIN\r\nuniform JointMatrix\r\n{\r\n    mat4 matrix[65];\r\n} u_jointMatrix;\r\n#endif\r\n\r\nlayout(location = POSITION_LOCATION) in vec3 position;\r\nlayout(location = NORMAL_LOCATION) in vec3 normal;\r\nlayout(location = TEXCOORD_0_LOCATION) in vec2 uv;\r\n\r\n#ifdef HAS_SKIN\r\nlayout(location = JOINTS_0_LOCATION) in vec4 joint0;\r\nlayout(location = WEIGHTS_0_LOCATION) in vec4 weight0;\r\n#ifdef SKIN_VEC8\r\nlayout(location = JOINTS_1_LOCATION) in vec4 joint1;\r\nlayout(location = WEIGHTS_1_LOCATION) in vec4 weight1;\r\n#endif\r\n#endif\r\n\r\n\r\n// #ifdef HAS_TANGENTS\r\n// layout(location = TANGENT_LOCATION) in vec4 tangent;\r\n\r\n// out vec3 v_tangentW;\r\n// out vec3 v_bitangentW;\r\n// #endif\r\n\r\n\r\nout vec3 v_position;\r\nout vec3 v_normal;\r\nout vec2 v_uv;\r\n\r\nvoid main()\r\n{\r\n\r\n#ifdef HAS_SKIN\r\n    mat4 skinMatrix = \r\n        weight0.x * u_jointMatrix.matrix[int(joint0.x)] +\r\n        weight0.y * u_jointMatrix.matrix[int(joint0.y)] +\r\n        weight0.z * u_jointMatrix.matrix[int(joint0.z)] +\r\n        weight0.w * u_jointMatrix.matrix[int(joint0.w)];\r\n#ifdef SKIN_VEC8\r\n    skinMatrix +=\r\n        weight1.x * u_jointMatrix.matrix[int(joint1.x)] +\r\n        weight1.y * u_jointMatrix.matrix[int(joint1.y)] +\r\n        weight1.z * u_jointMatrix.matrix[int(joint1.z)] +\r\n        weight1.w * u_jointMatrix.matrix[int(joint1.w)];\r\n#endif\r\n#endif\r\n\r\n    v_uv = uv;\r\n\r\n#ifdef HAS_SKIN\r\n    v_normal = normalize(( u_MVNormal * transpose(inverse(skinMatrix)) * vec4(normal, 0)).xyz);\r\n    vec4 pos = u_MV * skinMatrix * vec4(position, 1.0);\r\n    gl_Position = u_MVP * skinMatrix * vec4(position, 1.0);\r\n#else\r\n    v_normal = normalize((u_MVNormal * vec4(normal, 0)).xyz);\r\n    vec4 pos = u_MV * vec4(position, 1.0);\r\n    gl_Position = u_MVP * vec4(position, 1.0);\r\n#endif\r\n\r\n    v_position = vec3(pos.xyz) / pos.w;\r\n    \r\n    \r\n}"
 
 /***/ }),
 /* 22 */
