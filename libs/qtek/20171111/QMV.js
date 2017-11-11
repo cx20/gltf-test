@@ -18958,6 +18958,9 @@ function () {
                 if (materialInfo != null) {
                     mesh.culling = !materialInfo.doubleSided;
                 }
+                if (!mesh.geometry.attributes.normal.value) {
+                    mesh.geometry.generateVertexNormals();
+                }
                 if (((material instanceof StandardMaterial) && material.normalMap)
                     || (material.shader && material.shader.isTextureEnabled('normalMap'))
                 ) {
@@ -22934,7 +22937,7 @@ var Pass = Base.extend(function () {
         if (this.blendWithPrevious) {
             // Blend with previous rendered scene in the final output
             // FIXME Configure blend.
-            // FIXME It will cause screen blink？
+            // FIXME It will cause screen blink�E�E
             _gl.enable(_gl.BLEND);
             this.material.transparent = true;
         }
@@ -29824,7 +29827,7 @@ var defaultSceneConfig = {
  * @module zrender/core/util
  */
 
-// 用于处理merge时无法遍历Date等对象的问题
+// 用于夁E��merge时无法遍厁Eate等对象皁E��颁E
 var BUILTIN_OBJECT = {
     '[object Function]': 1,
     '[object RegExp]': 1,
@@ -29934,12 +29937,12 @@ function merge(target, source, overwrite) {
                 && !isPrimitive(sourceProp)
                 && !isPrimitive(targetProp)
             ) {
-                // 如果需要递归覆盖，就递归调用merge
+                // 如果需要E��归要E���E�就递归谁E��merge
                 merge(targetProp, sourceProp, overwrite);
             }
             else if (overwrite || !(key in target)) {
-                // 否则只处理overwrite为true，或者在目标对象中没有此属性的情况
-                // NOTE，在 target[key] 不存在的时候也是直接覆盖
+                // 否则只夁E��overwrite为true�E��E老E��目栁E��象中没有此属性皁E��况
+                // NOTE�E�在 target[key] 不存在皁E��候也是直接要E��
                 target[key] = clone(source[key], true);
             }
         }
@@ -29975,13 +29978,13 @@ function merge(target, source, overwrite) {
 
 
 /**
- * 查询数组中元素的index
+ * 查询数绁E��允E��皁Endex
  * @memberOf module:zrender/core/util
  */
 
 
 /**
- * 构造类继承关系
+ * 极E��类继承关系
  *
  * @memberOf module:zrender/core/util
  * @param {Function} clazz 源类
@@ -30004,7 +30007,7 @@ function merge(target, source, overwrite) {
 
 
 /**
- * 数组或对象遍历
+ * 数绁E�E对象遍历
  * @memberOf module:zrender/core/util
  * @param {Object|Array} obj
  * @param {Function} cb
@@ -30013,7 +30016,7 @@ function merge(target, source, overwrite) {
 
 
 /**
- * 数组映射
+ * 数绁E��封E
  * @memberOf module:zrender/core/util
  * @param {Array} obj
  * @param {Function} cb
@@ -30033,7 +30036,7 @@ function merge(target, source, overwrite) {
 
 
 /**
- * 数组过滤
+ * 数绁E��E��
  * @memberOf module:zrender/core/util
  * @param {Array} obj
  * @param {Function} cb
@@ -30043,7 +30046,7 @@ function merge(target, source, overwrite) {
 
 
 /**
- * 数组项查找
+ * 数绁E��查找
  * @memberOf module:zrender/core/util
  * @param {Array} obj
  * @param {Function} cb

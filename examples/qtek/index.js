@@ -83,7 +83,7 @@ viewer.loadModel(url, {
             // Beta is rotation from left to right.
             beta: 45
         });
-        // Set ambient light options
+       // Set ambient light options
         viewer.setAmbientLight({
             // Ambient light intensity
             intensity: 0.8
