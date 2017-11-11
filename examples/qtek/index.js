@@ -88,7 +88,15 @@ viewer.loadModel(url, {
             // Ambient light intensity
             intensity: 0.8
         });
-
+/*
+        // Set ambient cubemap light options
+        viewer.setAmbientCubemapLight({
+            // Ambient cubemap light intensity
+            intensity: 0.8,
+            // Ambient Cubemap Texture
+            texture: '../../textures/hdr/pisa.hdr'
+        });
+*/
         viewer.start();
 /*
         // Load extra animation glTF
