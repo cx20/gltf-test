@@ -83,12 +83,13 @@ viewer.loadModel(url, {
             // Beta is rotation from left to right.
             beta: 45
         });
-       // Set ambient light options
+/*
+        // Set ambient light options
         viewer.setAmbientLight({
             // Ambient light intensity
             intensity: 0.8
         });
-/*
+*/
         // Set ambient cubemap light options
         viewer.setAmbientCubemapLight({
             // Ambient cubemap light intensity
@@ -96,7 +97,6 @@ viewer.loadModel(url, {
             // Ambient Cubemap Texture
             texture: '../../textures/hdr/pisa.hdr'
         });
-*/
         viewer.start();
 /*
         // Load extra animation glTF
