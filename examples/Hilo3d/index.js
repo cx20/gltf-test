@@ -18,6 +18,8 @@ if (!modelInfo) {
 
 var url = "../../" + modelInfo.category + "/" + modelInfo.path;
 var scale = modelInfo.scale;
+var modelName = modelInfo.name;
+
 var camera = new Hilo3d.PerspectiveCamera({
     aspect: innerWidth / innerHeight,
     fov:75,
@@ -32,13 +34,14 @@ var stage = new Hilo3d.Stage({
     clearColor: new Hilo3d.Color(0,0,0),
     width: innerWidth,
     height: innerHeight,
-    pixelRatio:1,
-    rotationY:20,
-    rotationX:10,
+    pixelRatio:1
+});
+
+var container = new Hilo3d.Node({
     onUpdate:function(){
         this.rotationY += 0.1;
     }
-});
+}).addTo(stage);
 
 var directionLight = new Hilo3d.DirectionalLight({
     color:new Hilo3d.Color(0.8, 0.8, 0.8),
@@ -91,13 +94,19 @@ var loadQueue = new Hilo3d.LoadQueue([{
     var model = window.model = result[3];
     var node = model.node;
 
-    switch(modelInfo.name){
+    switch(modelName){
         case 'VC':
             stage.camera = model.cameras[4];
+            break;
+        case 'Cameras':
+            // stage.camera = model.cameras[0];
             break;
         case 'GearboxAssy':
             scale = 0.1;
             node.setPosition(-159.20*scale, -17.02*scale, -3.21*scale);
+            break;
+        case 'AnimatedMorphSphere':
+            diffuseEnvMap = null;
             break;
     }
 
@@ -108,5 +117,6 @@ var loadQueue = new Hilo3d.LoadQueue([{
     });
 
     node.setScale(scale);
-    stage.addChild(node);
+    container.addChild(node);
+    container.addChild(new Hilo3d.AxisHelper());
 }).start();
