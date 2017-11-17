@@ -28,6 +28,9 @@ var engines = [{
 }, {
     name: 'qtek glTF Loader',
     path: 'examples/qtek/index.html?category={category}&model={model}&scale={scale}&type={type}'
+},{
+    name: 'Hilo3d',
+    path: 'examples/Hilo3d/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function getEngineByName(name) {
