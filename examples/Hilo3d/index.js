@@ -63,23 +63,23 @@ ticker.start(true);
 var loadQueue = new Hilo3d.LoadQueue([{
     type: 'CubeTexture',
     images: [
-        '//gw.alicdn.com/tfs/TB1bZT_RFXXXXXmaXXXXXXXXXXX-128-128.jpg',
-        '//gw.alicdn.com/tfs/TB1Ipz8RFXXXXbeaXXXXXXXXXXX-128-128.jpg',
-        '//gw.alicdn.com/tfs/TB1HRUrRFXXXXaWXFXXXXXXXXXX-128-128.jpg',
-        '//gw.alicdn.com/tfs/TB1FDYWRFXXXXX6aXXXXXXXXXXX-128-128.jpg',
-        '//gw.alicdn.com/tfs/TB1wUAHRFXXXXcKXXXXXXXXXXXX-128-128.jpg',
-        '//gw.alicdn.com/tfs/TB1mz3vRFXXXXXIXFXXXXXXXXXX-128-128.jpg'
+        '../../textures/cube/skybox/diffuse/bakedDiffuse_01.jpg',
+        '../../textures/cube/skybox/diffuse/bakedDiffuse_02.jpg',
+        '../../textures/cube/skybox/diffuse/bakedDiffuse_03.jpg',
+        '../../textures/cube/skybox/diffuse/bakedDiffuse_04.jpg',
+        '../../textures/cube/skybox/diffuse/bakedDiffuse_05.jpg',
+        '../../textures/cube/skybox/diffuse/bakedDiffuse_06.jpg'
     ]
 }, {
     type: 'CubeTexture',
-    right: '//gw.alicdn.com/tfs/TB1DqMoRFXXXXcdXFXXXXXXXXXX-512-512.jpg',
-    left: '//gw.alicdn.com/tfs/TB1KlAuOVXXXXb9apXXXXXXXXXX-512-512.jpg',
-    top: '//gw.alicdn.com/tfs/TB15asiRFXXXXXtXVXXXXXXXXXX-512-512.jpg',
-    bottom: '//gw.alicdn.com/tfs/TB1KQ.oRFXXXXciXFXXXXXXXXXX-512-512.jpg',
-    front: '//gw.alicdn.com/tfs/TB1w_7hRFXXXXaoXVXXXXXXXXXX-512-512.jpg',
-    back: '//gw.alicdn.com/tfs/TB1pzZbRFXXXXcNXVXXXXXXXXXX-512-512.jpg'
+    right: '../../textures/cube/skybox/px.jpg',
+    left: '../../textures/cube/skybox/nx.jpg',
+    top: '../../textures/cube/skybox/py.jpg',
+    bottom: '../../textures/cube/skybox/ny.jpg',
+    front: '../../textures/cube/skybox/pz.jpg',
+    back: '../../textures/cube/skybox/nz.jpg',
 },{
-    src:'//gw.alicdn.com/tfs/TB1EvwBRFXXXXbNXpXXXXXXXXXX-256-256.png',
+    src: '../../textures/brdfLUT.png',
     type:'Texture'
 },{
     src:url
