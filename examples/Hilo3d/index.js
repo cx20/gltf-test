@@ -59,6 +59,7 @@ ticker.addTick(Hilo3d.Tween);
 ticker.addTick(Hilo3d.Animation);
 ticker.start(true);
 
+var loadingElem = document.getElementById('loading');
 var loadQueue = new Hilo3d.LoadQueue([{
     type: 'CubeTexture',
     images: [
@@ -82,7 +83,15 @@ var loadQueue = new Hilo3d.LoadQueue([{
     type:'Texture'
 },{
     src:url
-}]).on('complete', function () {
+}]).on('load', function(e){
+    var progress = loadQueue.getLoaded()/loadQueue.getTotal();
+    if(progress >= 1){
+        loadingElem.parentNode.removeChild(loadingElem);
+    }
+    else{
+        loadingElem.innerHTML = 'loading ' + (progress*100).toFixed(2) + '% ...';
+    }
+}).on('complete', function () {
     var result = loadQueue.getAllContent();
     var diffuseEnvMap = result[0];
     var specularEnvMap = result[1];
