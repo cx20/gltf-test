@@ -53,16 +53,13 @@ var ambientLight = new Hilo3d.AmbientLight({
     amount: .5
 }).addTo(stage);
 
-var orbitControls = new OrbitControls(stage, {
-    isLockMove:true
-});
-
 var ticker = new Hilo3d.Ticker(60);
 ticker.addTick(stage);
 ticker.addTick(Hilo3d.Tween);
 ticker.addTick(Hilo3d.Animation);
 ticker.start(true);
 
+var loadingElem = document.getElementById('loading');
 var loadQueue = new Hilo3d.LoadQueue([{
     type: 'CubeTexture',
     images: [
@@ -86,7 +83,15 @@ var loadQueue = new Hilo3d.LoadQueue([{
     type:'Texture'
 },{
     src:url
-}]).on('complete', function () {
+}]).on('load', function(e){
+    var progress = loadQueue.getLoaded()/loadQueue.getTotal();
+    if(progress >= 1){
+        loadingElem.parentNode.removeChild(loadingElem);
+    }
+    else{
+        loadingElem.innerHTML = 'loading ' + (progress*100).toFixed(2) + '% ...';
+    }
+}).on('complete', function () {
     var result = loadQueue.getAllContent();
     var diffuseEnvMap = result[0];
     var specularEnvMap = result[1];
@@ -119,4 +124,19 @@ var loadQueue = new Hilo3d.LoadQueue([{
     node.setScale(scale);
     container.addChild(node);
     container.addChild(new Hilo3d.AxisHelper());
+
+    var skybox = new Hilo3d.Mesh({
+        geometry: new Hilo3d.BoxGeometry(),
+        material: new Hilo3d.BasicMaterial({
+            lightType: 'NONE',
+            side: Hilo3d.constants.BACK,
+            diffuse: specularEnvMap
+        })
+    }).addTo(container);
+    skybox.setScale(20);
+
+    var orbitControls = new OrbitControls(stage, {
+        isLockMove:true,
+        isLockZ:true,
+    });
 }).start();
