@@ -53,10 +53,6 @@ var ambientLight = new Hilo3d.AmbientLight({
     amount: .5
 }).addTo(stage);
 
-var orbitControls = new OrbitControls(stage, {
-    isLockMove:true
-});
-
 var ticker = new Hilo3d.Ticker(60);
 ticker.addTick(stage);
 ticker.addTick(Hilo3d.Tween);
@@ -119,4 +115,19 @@ var loadQueue = new Hilo3d.LoadQueue([{
     node.setScale(scale);
     container.addChild(node);
     container.addChild(new Hilo3d.AxisHelper());
+
+    var skybox = new Hilo3d.Mesh({
+        geometry: new Hilo3d.BoxGeometry(),
+        material: new Hilo3d.BasicMaterial({
+            lightType: 'NONE',
+            side: Hilo3d.constants.BACK,
+            diffuse: specularEnvMap
+        })
+    }).addTo(container);
+    skybox.setScale(20);
+
+    var orbitControls = new OrbitControls(stage, {
+        isLockMove:true,
+        isLockZ:true,
+    });
 }).start();
