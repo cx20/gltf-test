@@ -3,15 +3,6 @@ if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
-    modelInfo = TutorialPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialAgiPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
     document.getElementById('container').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }
@@ -61,27 +52,6 @@ ticker.start(true);
 
 var loadingElem = document.getElementById('loading');
 var loadQueue = new Hilo3d.LoadQueue([{
-    type: 'CubeTexture',
-    images: [
-        '../../textures/cube/skybox/diffuse/bakedDiffuse_01.jpg',
-        '../../textures/cube/skybox/diffuse/bakedDiffuse_02.jpg',
-        '../../textures/cube/skybox/diffuse/bakedDiffuse_03.jpg',
-        '../../textures/cube/skybox/diffuse/bakedDiffuse_04.jpg',
-        '../../textures/cube/skybox/diffuse/bakedDiffuse_05.jpg',
-        '../../textures/cube/skybox/diffuse/bakedDiffuse_06.jpg'
-    ]
-}, {
-    type: 'CubeTexture',
-    right: '../../textures/cube/skybox/px.jpg',
-    left: '../../textures/cube/skybox/nx.jpg',
-    top: '../../textures/cube/skybox/py.jpg',
-    bottom: '../../textures/cube/skybox/ny.jpg',
-    front: '../../textures/cube/skybox/pz.jpg',
-    back: '../../textures/cube/skybox/nz.jpg',
-},{
-    src: '../../textures/brdfLUT.png',
-    type:'Texture'
-},{
     src:url
 }]).on('load', function(e){
     var progress = loadQueue.getLoaded()/loadQueue.getTotal();
@@ -93,10 +63,7 @@ var loadQueue = new Hilo3d.LoadQueue([{
     }
 }).on('complete', function () {
     var result = loadQueue.getAllContent();
-    var diffuseEnvMap = result[0];
-    var specularEnvMap = result[1];
-    var brfdTexture = result[2];
-    var model = window.model = result[3];
+    var model = window.model = result[0];
     var node = model.node;
 
     switch(modelName){
@@ -111,14 +78,10 @@ var loadQueue = new Hilo3d.LoadQueue([{
             node.setPosition(-159.20*scale, -17.02*scale, -3.21*scale);
             break;
         case 'AnimatedMorphSphere':
-            diffuseEnvMap = null;
             break;
     }
 
     model.materials.forEach(function (material) {
-        material.brdfLUT = brfdTexture;
-        material.diffuseEnvMap = diffuseEnvMap;
-        material.specularEnvMap = specularEnvMap;
     });
 
     node.setScale(scale);
@@ -129,8 +92,7 @@ var loadQueue = new Hilo3d.LoadQueue([{
         geometry: new Hilo3d.BoxGeometry(),
         material: new Hilo3d.BasicMaterial({
             lightType: 'NONE',
-            side: Hilo3d.constants.BACK,
-            diffuse: specularEnvMap
+            side: Hilo3d.constants.BACK
         })
     }).addTo(container);
     skybox.setScale(20);
