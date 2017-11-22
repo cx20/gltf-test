@@ -22,6 +22,9 @@ var engines = [{
 }, {
     name: 'minimal-gltf-loader',
     path: 'examples/minimal-gltf-loader/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'Hilo3d',
+    path: 'examples/Hilo3d/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function getEngineByName(name) {
