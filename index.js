@@ -251,8 +251,8 @@ function makeTutorialAgiPbrModelLinks() {
             var td = document.createElement('td');
             td.setAttribute('width', '100');
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
-            //td.appendChild(document.createElement('br'));
-            //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+            td.appendChild(document.createElement('br'));
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
             //td.appendChild(document.createElement('br'));
             //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
             td.appendChild(document.createElement('br'));
