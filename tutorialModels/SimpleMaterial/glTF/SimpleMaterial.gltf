@@ -1,11 +1,4 @@
 {
-  "extensionsUsed": [
-    "KHR_technique_webgl"
-  ],
-  "extensionsRequired": [
-    "KHR_technique_webgl"
-  ],
-
   "scenes" : [
     {
       "nodes" : [ 0 ]
@@ -24,7 +17,8 @@
         "attributes" : {
           "POSITION" : 1
         },
-        "indices" : 0
+        "indices" : 0,
+        "material" : 0
       } ]
     }
   ],
@@ -72,68 +66,13 @@
   
   "materials" : [
     {
-      "technique" : 0,
-      "values" : {
-        "emissionParameter" : [ 0.9, 0.5, 0.1, 1.0 ]
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [ 1.000, 0.766, 0.336, 1.0 ],
+        "metallicFactor": 0.5,
+        "roughnessFactor": 0.1
       }
     }
   ],
-  
-  "extensions" : {
-    "KHR_technique_webgl": {
-    
-      "techniques": [
-        {
-          "program": 0,
-          "attributes": {
-            "a_position": "POSITION"
-          },
-          "uniforms": {
-            "u_modelViewMatrix": "modelViewMatrixParameter",
-            "u_projectionMatrix": "projectionMatrixParameter",
-            "u_emission": "emissionParameter"
-          },
-          "parameters": {
-            "modelViewMatrixParameter": {
-              "type": 35676,
-              "semantic": "MODELVIEW"
-            },
-            "projectionMatrixParameter": {
-              "type": 35676,
-              "semantic": "PROJECTION"
-            },
-            "emissionParameter": {
-              "type": 35666,
-              "value": [ 0.5, 0.5, 0.5, 1.0 ]
-            }
-          }
-        }
-      ],
-      
-      "programs": [
-        {
-          "vertexShader": 0,
-          "fragmentShader": 1,
-          "attributes": [
-            "a_position"
-          ]
-        }
-      ],
-      
-      "shaders": [
-        {
-          "type": 35633,
-          "uri": "simple.vert"
-        },
-        {
-          "type": 35632,
-          "uri": "simple.frag"
-        }
-      ]
-      
-    }
-  },
-  
   "asset" : {
     "version" : "2.0"
   }
