@@ -10,8 +10,8 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'AnimatedMorphSphere', scale:1.0},
     {category:'tutorialModels', name:'SimpleMaterial', scale:1.0},
     {category:'tutorialModels', name:'SimpleMeshes', scale:1.0},
-    {category:'tutorialModels', name:'AdvancedMaterial', scale:1.0},
-    {category:'tutorialModels', name:'SimpleOpacity', scale:1.0},
+    //{category:'tutorialModels', name:'AdvancedMaterial', scale:1.0},
+    //{category:'tutorialModels', name:'SimpleOpacity', scale:1.0},
     {category:'tutorialModels', name:'SimpleTexture', scale:1.0},
     {category:'tutorialModels', name:'Cameras', scale:1.0},
     {category:'tutorialModels', name:'SimpleSkin', scale:1.0}
