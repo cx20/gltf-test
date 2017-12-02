@@ -94,7 +94,7 @@ function init() {
         scene.add(object);
     });
 
-    var axis = new THREE.AxisHelper(1000);   
+    var axis = new THREE.AxesHelper(1000);   
     scene.add(axis);
 
     renderer = new THREE.WebGLRenderer();
@@ -109,6 +109,8 @@ function init() {
     controls.autoRotateSpeed = -10.0;
 
     renderer.setSize( width, height );
+    renderer.gammaOutput = true; // if >r88, models are dark unless you activate gammaOutput
+
     document.body.appendChild( renderer.domElement );
 }
 
