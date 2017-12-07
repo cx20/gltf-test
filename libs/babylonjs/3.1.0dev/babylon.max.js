@@ -6106,19 +6106,19 @@ var BABYLON;
                 document.msCancelFullScreen();
             }
         };
-        Tools.SetCorsBehavior = function (url, img) {
+        Tools.SetCorsBehavior = function (url, element) {
+            if (url && url.indexOf("data:") === 0) {
+                return;
+            }
             if (Tools.CorsBehavior) {
-                switch (typeof (Tools.CorsBehavior)) {
-                    case "function":
-                        var result = Tools.CorsBehavior(url);
-                        if (result) {
-                            img.crossOrigin = result;
-                        }
-                        break;
-                    case "string":
-                    default:
-                        img.crossOrigin = Tools.CorsBehavior;
-                        break;
+                if (typeof (Tools.CorsBehavior) === 'string' || Tools.CorsBehavior instanceof String) {
+                    element.crossOrigin = Tools.CorsBehavior;
+                }
+                else {
+                    var result = Tools.CorsBehavior(url);
+                    if (result) {
+                        element.crossOrigin = result;
+                    }
                 }
             }
         };
@@ -6134,9 +6134,7 @@ var BABYLON;
             url = Tools.CleanUrl(url);
             url = Tools.PreprocessUrl(url);
             var img = new Image();
-            if (url.substr(0, 5) !== "data:") {
-                Tools.SetCorsBehavior(url, img);
-            }
+            Tools.SetCorsBehavior(url, img);
             img.onload = function () {
                 onLoad(img);
             };
@@ -6947,6 +6945,11 @@ var BABYLON;
             return hash;
         };
         Tools.BaseUrl = "";
+        /**
+         * Default behaviour for cors in the application.
+         * It can be a string if the expected behavior is identical in the entire app.
+         * Or a callback to be able to set it per url or on a group of them (in case of Video source for instance)
+         */
         Tools.CorsBehavior = "anonymous";
         Tools.UseFallbackTexture = true;
         /**
@@ -8585,7 +8588,7 @@ var BABYLON;
         });
         Object.defineProperty(Engine, "Version", {
             get: function () {
-                return "3.1-beta-6";
+                return "3.1-rc-0";
             },
             enumerable: true,
             configurable: true
@@ -12691,6 +12694,10 @@ var BABYLON;
                 serializationRanges.push(range);
             }
             return serializationRanges;
+        };
+        // override it in derived class
+        Node.prototype.computeWorldMatrix = function (force) {
+            return BABYLON.Matrix.Identity();
         };
         Node.prototype.dispose = function () {
             this.parent = null;
@@ -17152,6 +17159,9 @@ var BABYLON;
                     return function () { return new BABYLON.UniversalCamera(name, BABYLON.Vector3.Zero(), scene); };
             }
         };
+        Camera.prototype.computeWorldMatrix = function () {
+            return this.getWorldMatrix();
+        };
         Camera.Parse = function (parsedCamera, scene) {
             var type = parsedCamera.type;
             var construct = Camera.GetConstructorFromName(type, parsedCamera.name, scene, parsedCamera.interaxial_distance, parsedCamera.isStereoscopicSideBySide);
@@ -17893,6 +17903,7 @@ var BABYLON;
             this._forcePointsCloud = false;
             this.forceShowBoundingBoxes = false;
             this.animationsEnabled = true;
+            this.useConstantAnimationDeltaTime = false;
             this.constantlyUpdateMeshUnderPointer = false;
             this.hoverCursor = "pointer";
             this.defaultCursor = "";
@@ -19594,7 +19605,7 @@ var BABYLON;
                 }
                 this._animationTimeLast = now;
             }
-            var deltaTime = (now - this._animationTimeLast) * this.animationTimeScale;
+            var deltaTime = this.useConstantAnimationDeltaTime ? 16.0 : (now - this._animationTimeLast) * this.animationTimeScale;
             this._animationTime += deltaTime;
             this._animationTimeLast = now;
             for (var index = 0; index < this._activeAnimatables.length; index++) {
@@ -20666,7 +20677,7 @@ var BABYLON;
                 var defaultFPS = (60.0 / 1000.0);
                 var defaultFrameTime = 1000 / 60; // frame time in MS
                 if (this._physicsEngine) {
-                    defaultFrameTime = this._physicsEngine.getTimeStep() / 1000; //timestep in physics engine is in seconds
+                    defaultFrameTime = this._physicsEngine.getTimeStep() * 1000;
                 }
                 var stepsTaken = 0;
                 var maxSubSteps = this._engine.getLockstepMaxSteps();
@@ -20681,22 +20692,19 @@ var BABYLON;
                     // Physics
                     if (this._physicsEngine) {
                         this.onBeforePhysicsObservable.notifyObservers(this);
-                        this._physicsEngine._step(defaultFPS);
+                        this._physicsEngine._step(defaultFrameTime / 1000);
                         this.onAfterPhysicsObservable.notifyObservers(this);
                     }
                     this.onAfterStepObservable.notifyObservers(this);
                     this._currentStepId++;
-                    if ((internalSteps > 1) && (stepsTaken != internalSteps - 1)) {
-                        this._evaluateActiveMeshes();
-                    }
                     stepsTaken++;
                     deltaTime -= defaultFrameTime;
-                } while (deltaTime > 0 && stepsTaken < maxSubSteps);
-                this._timeAccumulator = deltaTime;
+                } while (deltaTime > 0 && stepsTaken < internalSteps);
+                this._timeAccumulator = deltaTime < 0 ? 0 : deltaTime;
             }
             else {
                 // Animations
-                var deltaTime = Math.max(Scene.MinDeltaTime, Math.min(this._engine.getDeltaTime(), Scene.MaxDeltaTime));
+                var deltaTime = this.useConstantAnimationDeltaTime ? 16 : Math.max(Scene.MinDeltaTime, Math.min(this._engine.getDeltaTime(), Scene.MaxDeltaTime));
                 this._animationRatio = deltaTime * (60.0 / 1000.0);
                 this._animate();
                 this.onAfterAnimationsObservable.notifyObservers(this);
@@ -21603,7 +21611,7 @@ var BABYLON;
             forEach = forEach || (function (item) { return; });
             for (var i in list) {
                 var item = list[i];
-                if (BABYLON.Tags.MatchesQuery(item, tagsQuery)) {
+                if (BABYLON.Tags && BABYLON.Tags.MatchesQuery(item, tagsQuery)) {
                     listByTags.push(item);
                     forEach(item);
                 }
@@ -22110,7 +22118,7 @@ var BABYLON;
                     proxy._swapAndDie(this);
                     return;
                 case InternalTexture.DATASOURCE_RAW:
-                    proxy = this._engine.createRawTexture(this._bufferView, this.baseWidth, this.baseHeight, this.format, this.generateMipMaps, this.invertY, this.samplingMode, this._compression);
+                    proxy = this._engine.createRawTexture(this._bufferView, this.baseWidth, this.baseHeight, this.format, this.generateMipMaps, this.invertY, this.samplingMode, this._compression, this.type);
                     proxy._swapAndDie(this);
                     this.isReady = true;
                     return;
@@ -23141,7 +23149,7 @@ var BABYLON;
                 // Deep copy
                 BABYLON.Tools.DeepCopy(source, _this, ["name", "material", "skeleton", "instances", "parent", "uniqueId", "source"], ["_poseMatrix", "_source"]);
                 // Tags
-                if (BABYLON.Tags.HasTags(source)) {
+                if (BABYLON.Tags && BABYLON.Tags.HasTags(source)) {
                     BABYLON.Tags.AddTagsTo(_this, BABYLON.Tags.GetTags(source, true));
                 }
                 _this.metadata = source.metadata;
@@ -29101,26 +29109,31 @@ var BABYLON;
             this.uvs4 = this._mergeElement(this.uvs4, other.uvs4, count * 2);
             this.uvs5 = this._mergeElement(this.uvs5, other.uvs5, count * 2);
             this.uvs6 = this._mergeElement(this.uvs6, other.uvs6, count * 2);
-            this.colors = this._mergeElement(this.colors, other.colors, count * 4);
+            this.colors = this._mergeElement(this.colors, other.colors, count * 4, 1);
             this.matricesIndices = this._mergeElement(this.matricesIndices, other.matricesIndices, count * 4);
             this.matricesWeights = this._mergeElement(this.matricesWeights, other.matricesWeights, count * 4);
             this.matricesIndicesExtra = this._mergeElement(this.matricesIndicesExtra, other.matricesIndicesExtra, count * 4);
             this.matricesWeightsExtra = this._mergeElement(this.matricesWeightsExtra, other.matricesWeightsExtra, count * 4);
             return this;
         };
-        VertexData.prototype._mergeElement = function (source, other, length) {
+        VertexData.prototype._mergeElement = function (source, other, length, defaultValue) {
             if (length === void 0) { length = 0; }
+            if (defaultValue === void 0) { defaultValue = 0; }
             if (!other && !source) {
                 return null;
             }
             if (!other) {
-                return this._mergeElement(source, new Float32Array(source.length), length);
+                var padding = new Float32Array(source.length);
+                padding.fill(defaultValue);
+                return this._mergeElement(source, padding, length);
             }
             if (!source) {
                 if (length === 0 || length === other.length) {
                     return other;
                 }
-                return this._mergeElement(new Float32Array(length - other.length), other, length);
+                var padding = new Float32Array(length - other.length);
+                padding.fill(defaultValue);
+                return this._mergeElement(padding, other, length);
             }
             var len = other.length + source.length;
             var isSrcTypedArray = source instanceof Float32Array;
@@ -36297,11 +36310,42 @@ var BABYLON;
             // Values that need to be evaluated on every frame
             BABYLON.MaterialHelper.PrepareDefinesForFrameBoundValues(scene, engine, defines, useInstances ? true : false, this._forceAlphaTest);
             // Attribs
-            if (BABYLON.MaterialHelper.PrepareDefinesForAttributes(mesh, defines, true, true, true, this._transparencyMode !== BABYLON.PBRMaterial.PBRMATERIAL_OPAQUE)) {
-                if (mesh) {
-                    if (!scene.getEngine().getCaps().standardDerivatives && !mesh.isVerticesDataPresent(BABYLON.VertexBuffer.NormalKind)) {
-                        mesh.createNormals(true);
-                        BABYLON.Tools.Warn("PBRMaterial: Normals have been created for the mesh: " + mesh.name);
+            if (BABYLON.MaterialHelper.PrepareDefinesForAttributes(mesh, defines, true, true, true, this._transparencyMode !== BABYLON.PBRMaterial.PBRMATERIAL_OPAQUE) && mesh) {
+                var bufferMesh = null;
+                if (mesh instanceof BABYLON.InstancedMesh) {
+                    bufferMesh = mesh.sourceMesh;
+                }
+                else if (mesh instanceof BABYLON.Mesh) {
+                    bufferMesh = mesh;
+                }
+                if (bufferMesh) {
+                    if (bufferMesh.isVerticesDataPresent(BABYLON.VertexBuffer.NormalKind)) {
+                        // If the first normal's components is the zero vector in one of the submeshes, we have invalid normals
+                        var normalVertexBuffer = bufferMesh.getVertexBuffer(BABYLON.VertexBuffer.NormalKind);
+                        var normals = normalVertexBuffer.getData();
+                        var vertexBufferOffset = normalVertexBuffer.getOffset();
+                        var strideSize = normalVertexBuffer.getStrideSize();
+                        var offset = vertexBufferOffset + subMesh.indexStart * strideSize;
+                        if (normals[offset] === 0 && normals[offset + 1] === 0 && normals[offset + 2] === 0) {
+                            defines.NORMAL = false;
+                        }
+                        if (bufferMesh.isVerticesDataPresent(BABYLON.VertexBuffer.TangentKind)) {
+                            // If the first tangent's components is the zero vector in one of the submeshes, we have invalid tangents
+                            var tangentVertexBuffer = bufferMesh.getVertexBuffer(BABYLON.VertexBuffer.TangentKind);
+                            var tangents = tangentVertexBuffer.getData();
+                            var vertexBufferOffset_1 = tangentVertexBuffer.getOffset();
+                            var strideSize_1 = tangentVertexBuffer.getStrideSize();
+                            var offset_1 = vertexBufferOffset_1 + subMesh.indexStart * strideSize_1;
+                            if (tangents[offset_1] === 0 && tangents[offset_1 + 1] === 0 && tangents[offset_1 + 2] === 0) {
+                                defines.TANGENT = false;
+                            }
+                        }
+                    }
+                    else {
+                        if (!scene.getEngine().getCaps().standardDerivatives) {
+                            bufferMesh.createNormals(true);
+                            BABYLON.Tools.Warn("PBRMaterial: Normals have been created for the mesh: " + bufferMesh.name);
+                        }
                     }
                 }
             }
@@ -38379,7 +38423,7 @@ var BABYLON;
             _this._cameraTransformMatrix = BABYLON.Matrix.Zero();
             _this._cameraRotationMatrix = BABYLON.Matrix.Zero();
             _this._referencePoint = new BABYLON.Vector3(0, 0, 1);
-            _this._defaultUpVector = new BABYLON.Vector3(0, 1, 0);
+            _this._currentUpVector = new BABYLON.Vector3(0, 1, 0);
             _this._transformedReferencePoint = BABYLON.Vector3.Zero();
             _this._lookAtTemp = BABYLON.Matrix.Zero();
             _this._tempMatrix = BABYLON.Matrix.Zero();
@@ -38468,7 +38512,7 @@ var BABYLON;
         // Target
         TargetCamera.prototype.setTarget = function (target) {
             this.upVector.normalize();
-            BABYLON.Matrix.LookAtLHToRef(this.position, target, this._defaultUpVector, this._camMatrix);
+            BABYLON.Matrix.LookAtLHToRef(this.position, target, this.upVector, this._camMatrix);
             this._camMatrix.invert();
             this.rotation.x = Math.atan(this._camMatrix.m[6] / this._camMatrix.m[10]);
             var vDir = target.subtract(this.position);
@@ -38568,27 +38612,22 @@ var BABYLON;
                 BABYLON.Matrix.RotationYawPitchRollToRef(this.rotation.y, this.rotation.x, this.rotation.z, this._cameraRotationMatrix);
             }
             //update the up vector!
-            BABYLON.Vector3.TransformNormalToRef(this._defaultUpVector, this._cameraRotationMatrix, this.upVector);
+            BABYLON.Vector3.TransformNormalToRef(this.upVector, this._cameraRotationMatrix, this._currentUpVector);
         };
         TargetCamera.prototype._getViewMatrix = function () {
-            if (!this.lockedTarget) {
-                // Compute
-                this._updateCameraRotationMatrix();
-                BABYLON.Vector3.TransformCoordinatesToRef(this._referencePoint, this._cameraRotationMatrix, this._transformedReferencePoint);
-                // Computing target and final matrix
-                this.position.addToRef(this._transformedReferencePoint, this._currentTarget);
+            if (this.lockedTarget) {
+                this.setTarget(this._getLockedTargetPosition());
             }
-            else {
-                var targetPosition = this._getLockedTargetPosition();
-                if (targetPosition) {
-                    this._currentTarget.copyFrom(targetPosition);
-                }
-            }
+            // Compute
+            this._updateCameraRotationMatrix();
+            BABYLON.Vector3.TransformCoordinatesToRef(this._referencePoint, this._cameraRotationMatrix, this._transformedReferencePoint);
+            // Computing target and final matrix
+            this.position.addToRef(this._transformedReferencePoint, this._currentTarget);
             if (this.getScene().useRightHandedSystem) {
-                BABYLON.Matrix.LookAtRHToRef(this.position, this._currentTarget, this.upVector, this._viewMatrix);
+                BABYLON.Matrix.LookAtRHToRef(this.position, this._currentTarget, this._currentUpVector, this._viewMatrix);
             }
             else {
-                BABYLON.Matrix.LookAtLHToRef(this.position, this._currentTarget, this.upVector, this._viewMatrix);
+                BABYLON.Matrix.LookAtLHToRef(this.position, this._currentTarget, this._currentUpVector, this._viewMatrix);
             }
             return this._viewMatrix;
         };
@@ -49663,7 +49702,7 @@ var BABYLON;
                                         this._htmlAudioElement = new Audio(url);
                                         this._htmlAudioElement.controls = false;
                                         this._htmlAudioElement.loop = this.loop;
-                                        this._htmlAudioElement.crossOrigin = "anonymous";
+                                        BABYLON.Tools.SetCorsBehavior(url, this._htmlAudioElement);
                                         this._htmlAudioElement.preload = "auto";
                                         this._htmlAudioElement.addEventListener("canplaythrough", function () {
                                             _this._isReadyToPlay = true;
@@ -51687,6 +51726,7 @@ var BABYLON;
                 _this.video = document.createElement("video");
                 _this.video.autoplay = false;
                 _this.video.loop = true;
+                BABYLON.Tools.SetCorsBehavior(urls, _this.video);
             }
             _this._engine = _this.getScene().getEngine();
             _this._generateMipMaps = generateMipMaps;
@@ -51811,7 +51851,7 @@ var BABYLON;
             return _this;
         }
         RawTexture.prototype.update = function (data) {
-            this._engine.updateRawTexture(this._texture, data, this.format, this._invertY);
+            this._engine.updateRawTexture(this._texture, data, this._texture.format, this._texture.invertY, undefined, this._texture.type);
         };
         // Statics
         RawTexture.CreateLuminanceTexture = function (data, width, height, scene, generateMipMaps, invertY, samplingMode) {
@@ -55533,7 +55573,9 @@ var BABYLON;
             var serializationObject = {};
             serializationObject.name = this.name;
             serializationObject.id = this.id;
-            serializationObject.tags = BABYLON.Tags.GetTags(this);
+            if (BABYLON.Tags) {
+                serializationObject.tags = BABYLON.Tags.GetTags(this);
+            }
             serializationObject.materials = [];
             for (var matIndex = 0; matIndex < this.subMaterials.length; matIndex++) {
                 var subMat = this.subMaterials[matIndex];
@@ -57022,14 +57064,20 @@ var BABYLON;
         __extends(PoseEnabledController, _super);
         function PoseEnabledController(browserGamepad) {
             var _this = _super.call(this, browserGamepad.id, browserGamepad.index, browserGamepad) || this;
+            // Represents device position and rotation in room space. Should only be used to help calculate babylon space values
+            _this._deviceRoomPosition = BABYLON.Vector3.Zero();
+            _this._deviceRoomRotationQuaternion = new BABYLON.Quaternion();
+            // Represents device position and rotation in babylon space
+            _this.devicePosition = BABYLON.Vector3.Zero();
+            _this.deviceRotationQuaternion = new BABYLON.Quaternion();
             _this.deviceScaleFactor = 1;
             _this._leftHandSystemQuaternion = new BABYLON.Quaternion();
+            _this._deviceToWorld = BABYLON.Matrix.Identity();
+            _this._workingMatrix = BABYLON.Matrix.Identity();
             _this.type = BABYLON.Gamepad.POSE_ENABLED;
             _this.controllerType = PoseEnabledControllerType.GENERIC;
             _this.position = BABYLON.Vector3.Zero();
             _this.rotationQuaternion = new BABYLON.Quaternion();
-            _this.devicePosition = BABYLON.Vector3.Zero();
-            _this.deviceRotationQuaternion = new BABYLON.Quaternion();
             _this._calculatedPosition = BABYLON.Vector3.Zero();
             _this._calculatedRotation = new BABYLON.Quaternion();
             BABYLON.Quaternion.RotationYawPitchRollToRef(Math.PI, 0, 0, _this._leftHandSystemQuaternion);
@@ -57039,10 +57087,13 @@ var BABYLON;
             _super.prototype.update.call(this);
             var pose = this.browserGamepad.pose;
             this.updateFromDevice(pose);
+            BABYLON.Vector3.TransformCoordinatesToRef(this._calculatedPosition, this._deviceToWorld, this.devicePosition);
+            this._deviceToWorld.getRotationMatrixToRef(this._workingMatrix);
+            BABYLON.Quaternion.FromRotationMatrixToRef(this._workingMatrix, this.deviceRotationQuaternion);
             if (this._mesh) {
-                this._mesh.position.copyFrom(this._calculatedPosition);
+                this._mesh.position.copyFrom(this.devicePosition);
                 if (this._mesh.rotationQuaternion) {
-                    this._mesh.rotationQuaternion.copyFrom(this._calculatedRotation);
+                    this._mesh.rotationQuaternion.copyFrom(this.deviceRotationQuaternion.multiplyInPlace(this._calculatedRotation));
                 }
             }
         };
@@ -57050,27 +57101,27 @@ var BABYLON;
             if (poseData) {
                 this.rawPose = poseData;
                 if (poseData.position) {
-                    this.devicePosition.copyFromFloats(poseData.position[0], poseData.position[1], -poseData.position[2]);
+                    this._deviceRoomPosition.copyFromFloats(poseData.position[0], poseData.position[1], -poseData.position[2]);
                     if (this._mesh && this._mesh.getScene().useRightHandedSystem) {
-                        this.devicePosition.z *= -1;
+                        this._deviceRoomPosition.z *= -1;
                     }
-                    this.devicePosition.scaleToRef(this.deviceScaleFactor, this._calculatedPosition);
+                    this._deviceRoomPosition.scaleToRef(this.deviceScaleFactor, this._calculatedPosition);
                     this._calculatedPosition.addInPlace(this.position);
                 }
                 var pose = this.rawPose;
                 if (poseData.orientation && pose.orientation) {
-                    this.deviceRotationQuaternion.copyFromFloats(pose.orientation[0], pose.orientation[1], -pose.orientation[2], -pose.orientation[3]);
+                    this._deviceRoomRotationQuaternion.copyFromFloats(pose.orientation[0], pose.orientation[1], -pose.orientation[2], -pose.orientation[3]);
                     if (this._mesh) {
                         if (this._mesh.getScene().useRightHandedSystem) {
-                            this.deviceRotationQuaternion.z *= -1;
-                            this.deviceRotationQuaternion.w *= -1;
+                            this._deviceRoomRotationQuaternion.z *= -1;
+                            this._deviceRoomRotationQuaternion.w *= -1;
                         }
                         else {
-                            this.deviceRotationQuaternion.multiplyToRef(this._leftHandSystemQuaternion, this.deviceRotationQuaternion);
+                            this._deviceRoomRotationQuaternion.multiplyToRef(this._leftHandSystemQuaternion, this._deviceRoomRotationQuaternion);
                         }
                     }
                     // if the camera is set, rotate to the camera's rotation
-                    this.deviceRotationQuaternion.multiplyToRef(this.rotationQuaternion, this._calculatedRotation);
+                    this._deviceRoomRotationQuaternion.multiplyToRef(this.rotationQuaternion, this._calculatedRotation);
                 }
             }
         };
@@ -57549,6 +57600,8 @@ var BABYLON;
                 pointingPoseMeshName: 'POINTING_POSE'
             };
             _this.onTrackpadChangedObservable = new BABYLON.Observable();
+            _this.onTrackpadValuesChangedObservable = new BABYLON.Observable();
+            _this.trackpad = { x: 0, y: 0 };
             _this.controllerType = BABYLON.PoseEnabledControllerType.WINDOWS;
             _this._loadedMeshInfo = null;
             return _this;
@@ -57588,6 +57641,13 @@ var BABYLON;
             enumerable: true,
             configurable: true
         });
+        Object.defineProperty(WindowsMotionController.prototype, "onTouchpadValuesChangedObservable", {
+            get: function () {
+                return this.onTrackpadValuesChangedObservable;
+            },
+            enumerable: true,
+            configurable: true
+        });
         /**
          * Called once per frame by the engine.
          */
@@ -57596,6 +57656,11 @@ var BABYLON;
             // Only need to animate axes if there is a loaded mesh
             if (this._loadedMeshInfo) {
                 if (this.browserGamepad.axes) {
+                    if (this.browserGamepad.axes[2] != this.trackpad.x || this.browserGamepad.axes[3] != this.trackpad.y) {
+                        this.trackpad.x = this.browserGamepad["axes"][2];
+                        this.trackpad.y = this.browserGamepad["axes"][3];
+                        this.onTrackpadValuesChangedObservable.notifyObservers(this.trackpad);
+                    }
                     for (var axis = 0; axis < this._mapping.axisMeshNames.length; axis++) {
                         this.lerpAxisTransform(axis, this.browserGamepad.axes[axis]);
                     }
@@ -71448,12 +71513,23 @@ var BABYLON;
             _this._specsVersion = "1.1";
             _this._attached = false;
             _this._descendants = [];
+            // Represents device position and rotation in room space. Should only be used to help calculate babylon space values
+            _this._deviceRoomPosition = BABYLON.Vector3.Zero();
+            _this._deviceRoomRotationQuaternion = BABYLON.Quaternion.Identity();
+            // Represents device position and rotation in babylon space
             _this.devicePosition = BABYLON.Vector3.Zero();
+            _this.deviceRotationQuaternion = BABYLON.Quaternion.Identity();
             _this.deviceScaleFactor = 1;
+            _this._deviceToWorld = BABYLON.Matrix.Identity();
+            _this._worldToDevice = BABYLON.Matrix.Identity();
             _this.controllers = [];
             _this.onControllersAttachedObservable = new BABYLON.Observable();
             _this.onControllerMeshLoadedObservable = new BABYLON.Observable();
             _this.rigParenting = true; // should the rig cameras be used as parent instead of this camera.
+            _this._workingVector = BABYLON.Vector3.Zero();
+            _this._oneVector = BABYLON.Vector3.One();
+            _this._workingMatrix = BABYLON.Matrix.Identity();
+            _this._cache.position = BABYLON.Vector3.Zero();
             if (webVROptions.defaultHeight) {
                 _this.position.y = webVROptions.defaultHeight;
             }
@@ -71473,7 +71549,6 @@ var BABYLON;
                 _this.webVROptions.defaultLightingOnControllers = true;
             }
             _this.rotationQuaternion = new BABYLON.Quaternion();
-            _this.deviceRotationQuaternion = new BABYLON.Quaternion();
             if (_this.webVROptions && _this.webVROptions.positionScale) {
                 _this.deviceScaleFactor = _this.webVROptions.positionScale;
             }
@@ -71584,15 +71659,15 @@ var BABYLON;
         WebVRFreeCamera.prototype.updateFromDevice = function (poseData) {
             if (poseData && poseData.orientation) {
                 this.rawPose = poseData;
-                this.deviceRotationQuaternion.copyFromFloats(poseData.orientation[0], poseData.orientation[1], -poseData.orientation[2], -poseData.orientation[3]);
+                this._deviceRoomRotationQuaternion.copyFromFloats(poseData.orientation[0], poseData.orientation[1], -poseData.orientation[2], -poseData.orientation[3]);
                 if (this.getScene().useRightHandedSystem) {
-                    this.deviceRotationQuaternion.z *= -1;
-                    this.deviceRotationQuaternion.w *= -1;
+                    this._deviceRoomRotationQuaternion.z *= -1;
+                    this._deviceRoomRotationQuaternion.w *= -1;
                 }
                 if (this.webVROptions.trackPosition && this.rawPose.position) {
-                    this.devicePosition.copyFromFloats(this.rawPose.position[0], this.rawPose.position[1], -this.rawPose.position[2]);
+                    this._deviceRoomPosition.copyFromFloats(this.rawPose.position[0], this.rawPose.position[1], -this.rawPose.position[2]);
                     if (this.getScene().useRightHandedSystem) {
-                        this.devicePosition.z *= -1;
+                        this._deviceRoomPosition.z *= -1;
                     }
                 }
             }
@@ -71634,10 +71709,49 @@ var BABYLON;
         WebVRFreeCamera.prototype._updateRigCameras = function () {
             var camLeft = this._rigCameras[0];
             var camRight = this._rigCameras[1];
-            camLeft.rotationQuaternion.copyFrom(this.deviceRotationQuaternion);
-            camRight.rotationQuaternion.copyFrom(this.deviceRotationQuaternion);
-            camLeft.position.copyFrom(this.devicePosition);
-            camRight.position.copyFrom(this.devicePosition);
+            camLeft.rotationQuaternion.copyFrom(this._deviceRoomRotationQuaternion);
+            camRight.rotationQuaternion.copyFrom(this._deviceRoomRotationQuaternion);
+            camLeft.position.copyFrom(this._deviceRoomPosition);
+            camRight.position.copyFrom(this._deviceRoomPosition);
+        };
+        WebVRFreeCamera.prototype._updateCache = function (ignoreParentClass) {
+            var _this = this;
+            if (!this.rotationQuaternion.equals(this._cache.rotationQuaternion) || !this.position.equals(this._cache.position)) {
+                // Set working vector to the device position in room space rotated by the new rotation
+                this.rotationQuaternion.toRotationMatrix(this._workingMatrix);
+                BABYLON.Vector3.TransformCoordinatesToRef(this._deviceRoomPosition, this._workingMatrix, this._workingVector);
+                // Subtract this vector from the current device position in world to get the translation for the device world matrix
+                this.devicePosition.subtractToRef(this._workingVector, this._workingVector);
+                BABYLON.Matrix.ComposeToRef(this._oneVector, this.rotationQuaternion, this._workingVector, this._deviceToWorld);
+                // Add translation from anchor position
+                this._deviceToWorld.getTranslationToRef(this._workingVector);
+                this._workingVector.addInPlace(this.position);
+                this._workingVector.subtractInPlace(this._cache.position);
+                this._deviceToWorld.setTranslation(this._workingVector);
+                // Set an inverted matrix to be used when updating the camera
+                this._deviceToWorld.invertToRef(this._worldToDevice);
+                // Update the gamepad to ensure the mesh is updated on the same frame as camera
+                this.controllers.forEach(function (controller) {
+                    controller._deviceToWorld = _this._deviceToWorld;
+                    controller.update();
+                });
+                this.update();
+            }
+            if (!ignoreParentClass) {
+                _super.prototype._updateCache.call(this);
+            }
+        };
+        WebVRFreeCamera.prototype.update = function () {
+            // Get current device position in babylon world
+            BABYLON.Vector3.TransformCoordinatesToRef(this._deviceRoomPosition, this._deviceToWorld, this.devicePosition);
+            // Get current device rotation in babylon world
+            BABYLON.Matrix.FromQuaternionToRef(this._deviceRoomRotationQuaternion, this._workingMatrix);
+            this._deviceToWorld.multiplyToRef(this._workingMatrix, this._workingMatrix);
+            BABYLON.Quaternion.FromRotationMatrixToRef(this._workingMatrix, this.deviceRotationQuaternion);
+            _super.prototype.update.call(this);
+        };
+        WebVRFreeCamera.prototype._getViewMatrix = function () {
+            return BABYLON.Matrix.Identity();
         };
         /**
          * This function is called by the two RIG cameras.
@@ -71670,6 +71784,7 @@ var BABYLON;
                 }
                 this._webvrViewMatrix.invert();
             }
+            parentCamera._worldToDevice.multiplyToRef(this._webvrViewMatrix, this._webvrViewMatrix);
             return this._webvrViewMatrix;
         };
         WebVRFreeCamera.prototype._getWebVRProjectionMatrix = function () {
@@ -71697,11 +71812,22 @@ var BABYLON;
                     if (webVrController.defaultModel) {
                         webVrController.defaultModel.setEnabled(false);
                     }
+                    if (webVrController.hand === "right") {
+                        _this._rightController = null;
+                    }
+                    if (webVrController.hand === "left") {
+                        _this._rightController = null;
+                    }
+                    var controllerIndex = _this.controllers.indexOf(webVrController);
+                    if (controllerIndex !== -1) {
+                        _this.controllers.splice(controllerIndex, 1);
+                    }
                 }
             });
             this._onGamepadConnectedObserver = manager.onGamepadConnectedObservable.add(function (gamepad) {
                 if (gamepad.type === BABYLON.Gamepad.POSE_ENABLED) {
                     var webVrController_1 = gamepad;
+                    webVrController_1._deviceToWorld = _this._deviceToWorld;
                     if (_this.webVROptions.controllerMeshes) {
                         if (webVrController_1.defaultModel) {
                             webVrController_1.defaultModel.setEnabled(true);
@@ -72043,32 +72169,44 @@ var BABYLON;
             this._displayLaserPointer = true;
             this._workingVector = BABYLON.Vector3.Zero();
             this._scene = scene;
+            this._canvas = scene.getEngine().getRenderingCanvas();
             this._defaultHeight = webVROptions.defaultHeight || 1.7;
-            if (!this._scene.activeCamera || isNaN(this._scene.activeCamera.position.x)) {
-                this._position = new BABYLON.Vector3(0, this._defaultHeight, 0);
-                this._deviceOrientationCamera = new BABYLON.DeviceOrientationCamera("deviceOrientationVRHelper", this._position.clone(), scene);
+            if (webVROptions.createFallbackVRDeviceOrientationFreeCamera === undefined) {
+                webVROptions.createFallbackVRDeviceOrientationFreeCamera = true;
             }
-            else {
-                this._position = this._scene.activeCamera.position.clone();
-                this._deviceOrientationCamera = new BABYLON.DeviceOrientationCamera("deviceOrientationVRHelper", this._position.clone(), scene);
-                this._deviceOrientationCamera.minZ = this._scene.activeCamera.minZ;
-                this._deviceOrientationCamera.maxZ = this._scene.activeCamera.maxZ;
-                // Set rotation from previous camera
-                if (this._scene.activeCamera instanceof BABYLON.TargetCamera && this._scene.activeCamera.rotation) {
-                    var targetCamera = this._scene.activeCamera;
-                    if (targetCamera.rotationQuaternion) {
-                        this._deviceOrientationCamera.rotationQuaternion.copyFrom(targetCamera.rotationQuaternion);
+            if (webVROptions.createDeviceOrientationCamera === undefined) {
+                webVROptions.createDeviceOrientationCamera = true;
+            }
+            if (!this._scene.activeCamera || webVROptions.createDeviceOrientationCamera) {
+                if (!this._scene.activeCamera || isNaN(this._scene.activeCamera.position.x)) {
+                    this._position = new BABYLON.Vector3(0, this._defaultHeight, 0);
+                    this._deviceOrientationCamera = new BABYLON.DeviceOrientationCamera("deviceOrientationVRHelper", this._position.clone(), scene);
+                }
+                else {
+                    this._position = this._scene.activeCamera.position.clone();
+                    this._deviceOrientationCamera = new BABYLON.DeviceOrientationCamera("deviceOrientationVRHelper", this._position.clone(), scene);
+                    this._deviceOrientationCamera.minZ = this._scene.activeCamera.minZ;
+                    this._deviceOrientationCamera.maxZ = this._scene.activeCamera.maxZ;
+                    // Set rotation from previous camera
+                    if (this._scene.activeCamera instanceof BABYLON.TargetCamera && this._scene.activeCamera.rotation) {
+                        var targetCamera = this._scene.activeCamera;
+                        if (targetCamera.rotationQuaternion) {
+                            this._deviceOrientationCamera.rotationQuaternion.copyFrom(targetCamera.rotationQuaternion);
+                        }
+                        else {
+                            this._deviceOrientationCamera.rotationQuaternion.copyFrom(BABYLON.Quaternion.RotationYawPitchRoll(targetCamera.rotation.y, targetCamera.rotation.x, targetCamera.rotation.z));
+                        }
+                        this._deviceOrientationCamera.rotation = targetCamera.rotation.clone();
                     }
-                    else {
-                        this._deviceOrientationCamera.rotationQuaternion.copyFrom(BABYLON.Quaternion.RotationYawPitchRoll(targetCamera.rotation.y, targetCamera.rotation.x, targetCamera.rotation.z));
-                    }
-                    this._deviceOrientationCamera.rotation = targetCamera.rotation.clone();
+                }
+                this._scene.activeCamera = this._deviceOrientationCamera;
+                if (this._canvas) {
+                    this._scene.activeCamera.attachControl(this._canvas);
                 }
             }
-            this._scene.activeCamera = this._deviceOrientationCamera;
-            this._canvas = scene.getEngine().getRenderingCanvas();
-            if (this._canvas) {
-                this._scene.activeCamera.attachControl(this._canvas);
+            else {
+                this._existingCamera = this._scene.activeCamera;
+                this._position = this._scene.activeCamera.position.clone();
             }
             if (webVROptions) {
                 if (webVROptions.useCustomVRButton) {
@@ -72103,7 +72241,12 @@ var BABYLON;
                 }
                 if (this._btnVR) {
                     this._btnVR.addEventListener("click", function () {
-                        _this.enterVR();
+                        if (!_this.isInVRMode) {
+                            _this.enterVR();
+                        }
+                        else {
+                            _this.exitVR();
+                        }
                     });
                 }
                 window.addEventListener("resize", function () {
@@ -72120,19 +72263,26 @@ var BABYLON;
             document.addEventListener("mozfullscreenchange", function () { _this._onFullscreenChange(); }, false);
             document.addEventListener("webkitfullscreenchange", function () { _this._onFullscreenChange(); }, false);
             document.addEventListener("msfullscreenchange", function () { _this._onFullscreenChange(); }, false);
-            if (!this._useCustomVRButton) {
+            this._scene.getEngine().onVRDisplayChangedObservable.add(function (e) {
+                if (!_this._useCustomVRButton && !_this._btnVRDisplayed && e.vrDisplay) {
+                    document.body.appendChild(_this._btnVR);
+                    _this._btnVRDisplayed = true;
+                }
+            });
+            if (!this._useCustomVRButton && !this._btnVRDisplayed && webVROptions.createFallbackVRDeviceOrientationFreeCamera) {
                 document.body.appendChild(this._btnVR);
+                this._btnVRDisplayed = true;
             }
             // Exiting VR mode using 'ESC' key on desktop
             this._onKeyDown = function (event) {
-                if (event.keyCode === 27 && _this.isInVRMode()) {
+                if (event.keyCode === 27 && _this.isInVRMode) {
                     _this.exitVR();
                 }
             };
             document.addEventListener("keydown", this._onKeyDown);
             // Exiting VR mode double tapping the touch screen
             this._scene.onPrePointerObservable.add(function (pointerInfo, eventState) {
-                if (_this.isInVRMode()) {
+                if (_this.isInVRMode) {
                     _this.exitVR();
                     if (_this._fullscreenVRpresenting) {
                         _this._scene.getEngine().switchFullscreen(true);
@@ -72155,10 +72305,13 @@ var BABYLON;
             scene.getEngine().onVRRequestPresentComplete.add(this._onVRRequestPresentComplete);
             window.addEventListener('vrdisplaypresentchange', this._onVrDisplayPresentChange);
             // Create the cameras
-            this._vrDeviceOrientationCamera = new BABYLON.VRDeviceOrientationFreeCamera("VRDeviceOrientationVRHelper", this._position, this._scene);
+            if (webVROptions.createFallbackVRDeviceOrientationFreeCamera) {
+                this._vrDeviceOrientationCamera = new BABYLON.VRDeviceOrientationFreeCamera("VRDeviceOrientationVRHelper", this._position, this._scene);
+            }
             this._webVRCamera = new BABYLON.WebVRFreeCamera("WebVRHelper", this._position, this._scene, webVROptions);
             this._webVRCamera.onControllerMeshLoadedObservable.add(function (webVRController) { return _this._onDefaultMeshLoaded(webVRController); });
             this._scene.gamepadManager.onGamepadConnectedObservable.add(function (pad) { return _this._onNewGamepadConnected(pad); });
+            this._scene.gamepadManager.onGamepadDisconnectedObservable.add(function (pad) { return _this._onNewGamepadDisconnected(pad); });
             this.updateButtonVisibility();
             //create easing functions
             this._circleEase = new BABYLON.CircleEase();
@@ -72209,7 +72362,7 @@ var BABYLON;
                     return this._webVRCamera;
                 }
                 else {
-                    return this._vrDeviceOrientationCamera;
+                    return this._scene.activeCamera;
                 }
             },
             enumerable: true,
@@ -72277,9 +72430,16 @@ var BABYLON;
                 }
             }
         };
-        VRExperienceHelper.prototype.isInVRMode = function () {
-            return this._webVRpresenting || this._fullscreenVRpresenting;
-        };
+        Object.defineProperty(VRExperienceHelper.prototype, "isInVRMode", {
+            /**
+             * Gets a value indicating if we are currently in VR mode.
+             */
+            get: function () {
+                return this._webVRpresenting || this._fullscreenVRpresenting;
+            },
+            enumerable: true,
+            configurable: true
+        });
         VRExperienceHelper.prototype.onVrDisplayPresentChange = function () {
             var vrDisplay = this._scene.getEngine().getVRDevice();
             if (vrDisplay) {
@@ -72301,11 +72461,11 @@ var BABYLON;
             this.updateButtonVisibility();
         };
         VRExperienceHelper.prototype.updateButtonVisibility = function () {
-            if (!this._btnVR) {
+            if (!this._btnVR || this._useCustomVRButton) {
                 return;
             }
             this._btnVR.className = "babylonVRicon";
-            if (this.isInVRMode()) {
+            if (this.isInVRMode) {
                 this._btnVR.className += " vrdisplaypresenting";
             }
             else {
@@ -72327,7 +72487,7 @@ var BABYLON;
             }
             if (this.onEnteringVR) {
                 try {
-                    this.onEnteringVR.notifyObservers({});
+                    this.onEnteringVR.notifyObservers(this);
                 }
                 catch (err) {
                     BABYLON.Tools.Warn("Error in your custom logic onEnteringVR: " + err);
@@ -72342,7 +72502,7 @@ var BABYLON;
                     this._scene.activeCamera = this._webVRCamera;
                 }
             }
-            else {
+            else if (this._vrDeviceOrientationCamera) {
                 this._vrDeviceOrientationCamera.position = this._position;
                 this._scene.activeCamera = this._vrDeviceOrientationCamera;
                 this._scene.getEngine().switchFullscreen(true);
@@ -72358,7 +72518,7 @@ var BABYLON;
         VRExperienceHelper.prototype.exitVR = function () {
             if (this.onExitingVR) {
                 try {
-                    this.onExitingVR.notifyObservers({});
+                    this.onExitingVR.notifyObservers(this);
                 }
                 catch (err) {
                     BABYLON.Tools.Warn("Error in your custom logic onExitingVR: " + err);
@@ -72370,10 +72530,16 @@ var BABYLON;
             if (this._scene.activeCamera) {
                 this._position = this._scene.activeCamera.position.clone();
             }
-            this._deviceOrientationCamera.position = this._position;
-            this._scene.activeCamera = this._deviceOrientationCamera;
-            if (this._canvas) {
-                this._scene.activeCamera.attachControl(this._canvas);
+            if (this._deviceOrientationCamera) {
+                this._deviceOrientationCamera.position = this._position;
+                this._scene.activeCamera = this._deviceOrientationCamera;
+                if (this._canvas) {
+                    this._scene.activeCamera.attachControl(this._canvas);
+                }
+            }
+            else if (this._existingCamera) {
+                this._existingCamera.position = this._position;
+                this._scene.activeCamera = this._existingCamera;
             }
             this.updateButtonVisibility();
         };
@@ -72428,10 +72594,28 @@ var BABYLON;
                     return true;
                 }
             }
-            if (this._floorMeshName && mesh.name.indexOf(this._floorMeshName) !== -1) {
+            if (this._floorMeshName && mesh.name === this._floorMeshName) {
                 return true;
             }
             return false;
+        };
+        VRExperienceHelper.prototype.addFloorMesh = function (floorMesh) {
+            if (!this._floorMeshesCollection) {
+                return;
+            }
+            if (this._floorMeshesCollection.indexOf(floorMesh) > -1) {
+                return;
+            }
+            this._floorMeshesCollection.push(floorMesh);
+        };
+        VRExperienceHelper.prototype.removeFloorMesh = function (floorMesh) {
+            if (!this._floorMeshesCollection) {
+                return;
+            }
+            var meshIndex = this._floorMeshesCollection.indexOf(floorMesh);
+            if (meshIndex !== -1) {
+                this._floorMeshesCollection.splice(meshIndex, 1);
+            }
         };
         VRExperienceHelper.prototype.enableTeleportation = function (vrTeleportationOptions) {
             if (vrTeleportationOptions === void 0) { vrTeleportationOptions = {}; }
@@ -72541,6 +72725,26 @@ var BABYLON;
                             _this._pointerDownOnMeshAsked = false;
                         }
                     });
+                }
+            }
+        };
+        VRExperienceHelper.prototype._onNewGamepadDisconnected = function (gamepad) {
+            if (gamepad instanceof BABYLON.WebVRController) {
+                if (gamepad.hand === "left") {
+                    this._interactionsEnabledOnLeftController = false;
+                    this._teleportationEnabledOnLeftController = false;
+                    this._leftControllerReady = false;
+                    if (this._leftLaserPointer) {
+                        this._leftLaserPointer.dispose();
+                    }
+                }
+                if (gamepad.hand === "right") {
+                    this._interactionsEnabledOnRightController = false;
+                    this._teleportationEnabledOnRightController = false;
+                    this._rightControllerReady = false;
+                    if (this._rightLaserPointer) {
+                        this._rightLaserPointer.dispose();
+                    }
                 }
             }
         };
@@ -72755,6 +72959,9 @@ var BABYLON;
         };
         VRExperienceHelper.prototype._rotateCamera = function (right) {
             var _this = this;
+            if (!(this.currentVRCamera instanceof BABYLON.FreeCamera)) {
+                return;
+            }
             if (right) {
                 this._rotationAngle++;
             }
@@ -72830,7 +73037,7 @@ var BABYLON;
                 }
                 this._haloCenter.copyFrom(hit.pickedPoint);
                 this._teleportationCircle.position.copyFrom(hit.pickedPoint);
-                var pickNormal = hit.getNormal();
+                var pickNormal = hit.getNormal(true, false);
                 if (pickNormal) {
                     var axis1 = BABYLON.Vector3.Cross(BABYLON.Axis.Y, pickNormal);
                     var axis2 = BABYLON.Vector3.Cross(pickNormal, axis1);
@@ -72841,10 +73048,19 @@ var BABYLON;
         };
         VRExperienceHelper.prototype._teleportCamera = function () {
             var _this = this;
+            if (!(this.currentVRCamera instanceof BABYLON.FreeCamera)) {
+                return;
+            }
             // Teleport the hmd to where the user is looking by moving the anchor to where they are looking minus the
             // offset of the headset from the anchor. Then add the helper's position to account for user's height offset
-            this.webVRCamera.leftCamera.globalPosition.subtractToRef(this.webVRCamera.position, this._workingVector);
-            this._haloCenter.subtractToRef(this._workingVector, this._workingVector);
+            if (this.webVRCamera.leftCamera) {
+                this._workingVector.copyFrom(this.webVRCamera.leftCamera.globalPosition);
+                this._workingVector.subtractInPlace(this.webVRCamera.position);
+                this._haloCenter.subtractToRef(this._workingVector, this._workingVector);
+            }
+            else {
+                this._workingVector.copyFrom(this._haloCenter);
+            }
             this._workingVector.y += this._defaultHeight;
             // Create animation from the camera's position to the new location
             this.currentVRCamera.animations = [];
@@ -72894,8 +73110,8 @@ var BABYLON;
             });
             animationPP2.setKeys(vignetteStretchKeys);
             this._postProcessMove.animations.push(animationPP2);
-            this._postProcessMove.imageProcessingConfiguration.vignetteWeight = 8;
-            this._postProcessMove.imageProcessingConfiguration.vignetteStretch = 10;
+            this._postProcessMove.imageProcessingConfiguration.vignetteWeight = 0;
+            this._postProcessMove.imageProcessingConfiguration.vignetteStretch = 0;
             this._webVRCamera.attachPostProcess(this._postProcessMove);
             this._scene.beginAnimation(this._postProcessMove, 0, 11, false, 1, function () {
                 _this._webVRCamera.detachPostProcess(_this._postProcessMove);
@@ -72903,20 +73119,18 @@ var BABYLON;
             this._scene.beginAnimation(this.currentVRCamera, 0, 11, false, 1);
         };
         VRExperienceHelper.prototype._castRayAndSelectObject = function () {
+            if (!(this.currentVRCamera instanceof BABYLON.FreeCamera)) {
+                return;
+            }
             var ray;
-            if ((!this.currentVRCamera.rightController && !this.currentVRCamera.leftController) ||
-                (this._leftLaserPointer && !this._leftLaserPointer.isVisible && !this._rightLaserPointer) ||
-                (this._rightLaserPointer && !this._rightLaserPointer.isVisible && !this._leftLaserPointer) ||
-                (this._rightLaserPointer && this._leftLaserPointer && !this._rightLaserPointer.isVisible && !this._leftLaserPointer.isVisible)) {
-                ray = this.currentVRCamera.getForwardRay(this._rayLength);
+            if (this._leftLaserPointer && this._leftLaserPointer.isVisible && this.currentVRCamera.leftController) {
+                ray = this.currentVRCamera.leftController.getForwardRay(this._rayLength);
+            }
+            else if (this._rightLaserPointer && this._rightLaserPointer.isVisible && this.currentVRCamera.rightController) {
+                ray = this.currentVRCamera.rightController.getForwardRay(this._rayLength);
             }
             else {
-                if (this._leftLaserPointer && this._leftLaserPointer.isVisible) {
-                    ray = this.currentVRCamera.leftController.getForwardRay(this._rayLength);
-                }
-                else {
-                    ray = this.currentVRCamera.rightController.getForwardRay(this._rayLength);
-                }
+                ray = this.currentVRCamera.getForwardRay(this._rayLength);
             }
             var hit = this._scene.pickWithRay(ray, this._raySelectionPredicate);
             // Moving the gazeTracker on the mesh face targetted
@@ -73035,10 +73249,12 @@ var BABYLON;
             }
         };
         VRExperienceHelper.prototype.dispose = function () {
-            if (this.isInVRMode()) {
+            if (this.isInVRMode) {
                 this.exitVR();
             }
-            this._deviceOrientationCamera.dispose();
+            if (this._deviceOrientationCamera) {
+                this._deviceOrientationCamera.dispose();
+            }
             if (this._passProcessMove) {
                 this._passProcessMove.dispose();
             }
@@ -73054,6 +73270,7 @@ var BABYLON;
             if (!this._useCustomVRButton) {
                 document.body.removeChild(this._btnVR);
             }
+            this._floorMeshesCollection = [];
             document.removeEventListener("keydown", this._onKeyDown);
             window.removeEventListener('vrdisplaypresentchange', this._onVrDisplayPresentChange);
         };
