@@ -16,11 +16,14 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+var gui = new dat.GUI();
+var ROTATE = true;
+var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
 
 gr.registerComponent('Rotate', {
   attributes: {
     speed: {
-      default: '1',
+      default: '0.2',
       converter: 'Number',
     },
   },
@@ -28,7 +31,7 @@ gr.registerComponent('Rotate', {
     this.phi = 0;
   },
   $update: function () {
-    this.phi += this.getAttribute('speed');
+    this.phi += ROTATE ? this.getAttribute('speed') : 0;
     this.node.setAttribute('rotation',0 + ',' + this.phi + ',' + 0);
   },
 });
