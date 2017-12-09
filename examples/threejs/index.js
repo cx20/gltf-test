@@ -19,6 +19,10 @@ if (!modelInfo) {
 var gltf = null;
 var mixer = null;
 var clock = new THREE.Clock();
+var axis;
+var gui;
+var ROTATE = true;
+var AXIS = true;
 
 init();
 animate();
@@ -48,7 +52,7 @@ function init() {
     manager.onProgress = function ( item, loaded, total ) {
         console.log( item, loaded, total );
     };
-    
+
     // monkeypatch 
     // https://github.com/mrdoob/three.js/pull/11498#issuecomment-308136310
     THREE.PropertyBinding.sanitizeNodeName = (n) => n;
@@ -94,7 +98,7 @@ function init() {
         scene.add(object);
     });
 
-    var axis = new THREE.AxesHelper(1000);   
+    axis = new THREE.AxesHelper(1000);   
     scene.add(axis);
 
     renderer = new THREE.WebGLRenderer();
@@ -106,7 +110,19 @@ function init() {
     controls.maxDistance = 5000.0;
     controls.maxPolarAngle = Math.PI * 0.495;
     controls.autoRotate = true;
-    controls.autoRotateSpeed = -10.0;
+    controls.autoRotateSpeed = -3.0;
+
+    // GUI
+    gui = new dat.GUI();
+    var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
+    var mapAxis = gui.add(window, 'AXIS').name('Axis');
+    
+    mapRotate.onChange(function (value) {
+        controls.autoRotate = value;
+    });
+    mapAxis.onChange(function (value) {
+        axis.visible = value;
+    });
 
     renderer.setSize( width, height );
     renderer.gammaOutput = true; // if >r88, models are dark unless you activate gammaOutput
