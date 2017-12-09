@@ -16,6 +16,10 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+var gui;
+var ROTATE = true;
+var BOUNDING_BOX = false;
+
 var createScene = function(engine) {
 
     var scene = new BABYLON.Scene(engine);
@@ -47,6 +51,11 @@ var createScene = function(engine) {
         parentMesh = findParentForMesh(parentMesh);
         return parentMesh;
     }
+
+    // GUI
+    gui = new dat.GUI();
+    var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
+    var mapBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
 
     BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
@@ -87,8 +96,12 @@ var createScene = function(engine) {
         //scene.forceShowBoundingBoxes = true;
         //scene.debugLayer.show(true, camera);
 
+        mapBoundingBox.onChange(function (value) {
+            scene.forceShowBoundingBoxes = value;
+        });
+
         engine.runRenderLoop(function() {
-            scene.activeCamera.alpha += 0.01;
+            scene.activeCamera.alpha += ROTATE ? 0.01 : 0;
             scene.render();
         });
     });
