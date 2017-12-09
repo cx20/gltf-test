@@ -101,7 +101,7 @@ var createScene = function(engine) {
         });
 
         engine.runRenderLoop(function() {
-            scene.activeCamera.alpha += ROTATE ? 0.01 : 0;
+            scene.activeCamera.alpha += ROTATE ? 0.005 : 0;
             scene.render();
         });
     });
