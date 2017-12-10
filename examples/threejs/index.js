@@ -114,13 +114,13 @@ function init() {
 
     // GUI
     gui = new dat.GUI();
-    var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
-    var mapAxis = gui.add(window, 'AXIS').name('Axis');
+    var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+    var guiAxis = gui.add(window, 'AXIS').name('Axis');
     
-    mapRotate.onChange(function (value) {
+    guiRotate.onChange(function (value) {
         controls.autoRotate = value;
     });
-    mapAxis.onChange(function (value) {
+    guiAxis.onChange(function (value) {
         axis.visible = value;
     });
 
