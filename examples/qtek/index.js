@@ -18,6 +18,10 @@ if (!modelInfo) {
 
 var url = "../../" + modelInfo.category + "/" + modelInfo.path;
 
+var ROTATE = true;
+var gui = new dat.GUI();
+var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
+
 var viewer = new QMV.Viewer(document.getElementById('container'), {
     // Full config at
     // https://github.com/pissang/qtek-model-viewer/blob/master/src/defaultSceneConfig.js
@@ -60,10 +64,11 @@ viewer.loadModel(url, {
             center: [0, 0, 0],
 
             // If auto rotate.
-            autoRotate: true,
+            //autoRotate: true,
+            autoRotate: ROTATE,
 
             // Degree per second.
-            autoRotateSpeed: 60,
+            autoRotateSpeed: 20,
 
             // Direction of autoRotate. cw or ccw when looking top down.
             autoRotateDirection: 'cw',
@@ -116,3 +121,7 @@ viewer.loadModel(url, {
     .on('error', function () {
         console.log('Model load error');
     });
+
+mapRotate.onChange(function (value) {
+    viewer.setCameraControl({autoRotate: value});
+});
