@@ -16,9 +16,9 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var gui;
 var ROTATE = true;
 var BOUNDING_BOX = false;
+var DEBUG = false;
 
 var createScene = function(engine) {
 
@@ -53,9 +53,10 @@ var createScene = function(engine) {
     }
 
     // GUI
-    gui = new dat.GUI();
-    var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
-    var mapBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
+    var gui = new dat.GUI();
+    var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+    var guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
+    var guiDebug = gui.add(window, 'DEBUG').name('Debug');
 
     BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
@@ -93,11 +94,16 @@ var createScene = function(engine) {
         skyboxMaterial.disableLighting = true;
         skybox.material = skyboxMaterial;
 
-        //scene.forceShowBoundingBoxes = true;
         //scene.debugLayer.show(true, camera);
 
-        mapBoundingBox.onChange(function (value) {
+        guiBoundingBox.onChange(function (value) {
             scene.forceShowBoundingBoxes = value;
+        });
+
+        guiDebug.onChange(function (value) {
+            if ( value ) {
+                scene.debugLayer.show({popup: true});
+            }
         });
 
         engine.runRenderLoop(function() {
