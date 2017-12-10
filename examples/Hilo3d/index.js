@@ -19,6 +19,13 @@ if (!modelInfo) {
 var url = "../../" + modelInfo.category + "/" + modelInfo.path;
 var scale = modelInfo.scale;
 var modelName = modelInfo.name;
+var axis;
+
+var ROTATE = true;
+var AXIS = true;
+var gui = new dat.GUI();
+var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+var guiAxis = gui.add(window, 'AXIS').name('Axis');
 
 var camera = new Hilo3d.PerspectiveCamera({
     aspect: innerWidth / innerHeight,
@@ -39,7 +46,7 @@ var stage = new Hilo3d.Stage({
 
 var container = new Hilo3d.Node({
     onUpdate:function(){
-        this.rotationY += 0.1;
+        this.rotationY -= ROTATE ? 0.2 : 0;
     }
 }).addTo(stage);
 
@@ -123,7 +130,8 @@ var loadQueue = new Hilo3d.LoadQueue([{
 
     node.setScale(scale);
     container.addChild(node);
-    container.addChild(new Hilo3d.AxisHelper());
+    axis = new Hilo3d.AxisHelper();
+    container.addChild(axis);
 
     var skybox = new Hilo3d.Mesh({
         geometry: new Hilo3d.BoxGeometry(),
@@ -140,3 +148,7 @@ var loadQueue = new Hilo3d.LoadQueue([{
         isLockZ:true,
     });
 }).start();
+
+guiAxis.onChange(function (value) {
+    axis.visible = value;
+});
