@@ -20,7 +20,7 @@ var url = "../../" + modelInfo.category + "/" + modelInfo.path;
 
 var ROTATE = true;
 var gui = new dat.GUI();
-var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
+var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 
 var viewer = new QMV.Viewer(document.getElementById('container'), {
     // Full config at
@@ -122,6 +122,6 @@ viewer.loadModel(url, {
         console.log('Model load error');
     });
 
-mapRotate.onChange(function (value) {
+guiRotate.onChange(function (value) {
     viewer.setCameraControl({autoRotate: value});
 });
