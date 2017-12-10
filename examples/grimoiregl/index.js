@@ -18,7 +18,7 @@ if (!modelInfo) {
 
 var gui = new dat.GUI();
 var ROTATE = true;
-var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
+var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 
 gr.registerComponent('Rotate', {
   attributes: {
@@ -32,7 +32,7 @@ gr.registerComponent('Rotate', {
   },
   $update: function () {
     this.phi += ROTATE ? this.getAttribute('speed') : 0;
-    this.node.setAttribute('rotation',0 + ',' + this.phi + ',' + 0);
+    this.node.setAttribute('rotation', 0 + ',' + this.phi + ',' + 0);
   },
 });
 
