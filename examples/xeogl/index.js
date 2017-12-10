@@ -17,6 +17,9 @@ if (!modelInfo) {
 }
 
 var scale = modelInfo.scale;
+var ROTATE = true;
+var gui = new dat.GUI();
+var mapRotate = gui.add(window, 'ROTATE').name('Rotate');
 
 // Load glTF
 var model = new xeogl.GLTFModel({
@@ -73,9 +76,10 @@ var lights = xeogl.scene.lights;
 lights.lights = dirLights;
 
  
+
 new xeogl.CameraControl();
 model.scene.on("tick",
     function () {
-        view.rotateEyeY(1.0);
-        //view.rotateEyeX(1.0);
+        //view.rotateEyeY(1.0);
+        view.rotateEyeY(ROTATE ? 0.3 : 0);
     });
