@@ -58,7 +58,7 @@ var createScene = function(engine) {
     var guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
     var guiDebug = gui.add(window, 'DEBUG').name('Debug');
 
-    BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
+    var loader = BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
         scene = newScene;
         var parentMesh = findParentForMeshes(scene.meshes);
@@ -111,6 +111,9 @@ var createScene = function(engine) {
             scene.render();
         });
     });
+    
+    loader.animationStartMode = BABYLON.GLTFLoaderAnimationStartMode.ALL;
+    
     return scene;
 }
 
