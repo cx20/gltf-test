@@ -3503,8 +3503,8 @@ var Utils = Utils || {};
         var scale = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["vec3"].create();
         
         var r = 0.0;
-        var rotationSpeedY= 0.01;
-        // var rotationSpeedY= 0.0;
+        //var rotationSpeedY= 0.01;
+        var rotationSpeedY= -0.01;
 
         var perspective = __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["mat4"].create();
         __WEBPACK_IMPORTED_MODULE_0_gl_matrix__["mat4"].perspective(perspective, 0.785, canvas.width / canvas.height, 0.01, 100);
