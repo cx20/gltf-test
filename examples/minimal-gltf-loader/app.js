@@ -1,3 +1,10 @@
+// GUI
+var isDisplayRotation = true;
+var drawBoundingBox = false;
+var gui = new dat.GUI();
+var guiRotate = gui.add(window, 'isDisplayRotation').name('Rotate');
+var guiBounding = gui.add(window, 'drawBoundingBox').name('Bounding Box');
+
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -2632,7 +2639,7 @@ var Utils = Utils || {};
 	}
 
 
-    var drawBoundingBox = true;
+    //var drawBoundingBox = true;
     var boundingBoxType = 'obb';
     var curAnimationId = 0;
     var playAllAnimationTogether = true;
@@ -3172,7 +3179,7 @@ var Utils = Utils || {};
     var WEIGHTS_1_LOCATION = 6; // set with GLSL layout qualifier
     
     // -- Mouse Behaviour
-    var isDisplayRotation = true;
+    //var isDisplayRotation = true;
     var s = 1;
     var eulerX = 0;
     var eulerY = 0;
