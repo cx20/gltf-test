@@ -113,7 +113,7 @@ var createScene = function(engine) {
     });
     
     // http://www.html5gamedevs.com/topic/34476-gltfs-animation-does-not-work-properly-with-the-latest-version-of-babylonjs/
-    loader.animationStartMode = BABYLON.GLTFLoaderAnimationStartMode.ALL;
+    //loader.animationStartMode = BABYLON.GLTFLoaderAnimationStartMode.ALL;
     
     return scene;
 }
