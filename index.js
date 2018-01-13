@@ -31,6 +31,9 @@ var engines = [{
 },{
     name: 'Hilo3d',
     path: 'examples/Hilo3d/index.html?category={category}&model={model}&scale={scale}&type={type}'
+},{
+    name: 'PlayCanvas',
+    path: 'examples/playcanvas/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function getEngineByName(name) {
