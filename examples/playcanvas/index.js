@@ -33,15 +33,12 @@ window.addEventListener('resize', function() {
 });
 // create camera entity
 var camera = new pc.Entity('camera');
-camera.addComponent('camera', {
-    nearClip: 0.01,
-    farClip: 1000
-});
+camera.addComponent('camera');
 camera.addComponent('script');
 app.root.addChild(camera);
 camera.setLocalPosition(0, 0, 1);
-// make the camera interactive
 
+// make the camera interactive
 app.assets.loadFromUrl('../../libs/playcanvas/v0.221.0-dev/orbit-camera.js', 'script', function (err, asset) {
     camera.script.create('orbitCamera', {
         attributes: {
@@ -92,7 +89,11 @@ light.addComponent('light');
 light.setEulerAngles(45, 0, 0);
 app.root.addChild(light);
 
-var root;
+// root entity for loaded gltf scenes which can have more than one root entity
+var gltfRoot = new pc.Entity('gltf');
+app.root.addChild(gltfRoot);
+ 
+var roots;
 function init(){
     // .gltf File Test
     var req = new XMLHttpRequest();
@@ -105,12 +106,18 @@ function init(){
 
     req.onload = function(){
         if ( isGlb ) {
-            root = loadGlb(req.response, app.graphicsDevice);
+            roots = loadGlb(req.response, app.graphicsDevice);
         } else {
-            root = loadGltf(JSON.parse(req.responseText), app.graphicsDevice);
+            roots = loadGltf(JSON.parse(req.responseText), app.graphicsDevice, null);
         }
-        app.root.addChild(root);
-        camera.script.orbitCamera.focusEntity = root;
+        if (roots) {
+           // add the loaded scene to the hierarchy
+           roots.forEach(function (root) {
+               gltfRoot.addChild(root);
+           });
+           // focus the camera
+           camera.script.orbitCamera.focusEntity = gltfRoot;
+        }
     }
 }
 
@@ -119,9 +126,7 @@ var timer = 0;
 app.on("update", function (deltaTime) {
     timer += deltaTime;
     // code executed on every frame
-    if ( root != undefined ) {
-        root.rotate(0, -0.2, 0);
-    }
+    gltfRoot.rotate(0, -0.2, 0);
 });
 
 init();
