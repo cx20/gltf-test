@@ -57,21 +57,13 @@ var app = clay.application.create('#main', {
                 // Use the cubemap as environment
                 environmentMap: cubemap
             });
-
-            // Load specified model. return a load promise to make sure the look will be start after model loaded.
-            return app.loadModel(url).then((function (result) {
-                this._gltfModel = result.rootNode;
-                this._gltfModel.scale.set(scale, scale, scale);
-
-                // Cube can use cubemap to show the reflection.
-                this._gltfModel.material.set('environmentMap', cubemap);
-                // Reflectivity depends on the fresnel term
-                // which is calculated from the metnalness and view angle in standard PBR material
-                // And basically if metalness is 1, Reflectivity is high in each view angle.
-                this._gltfModel.material.set('metalness', 1);
-
-            }).bind(this));
         });
+
+        // Load specified model. return a load promise to make sure the look will be start after model loaded.
+        return app.loadModel(url).then((function (result) {
+            this._gltfModel = result.rootNode;
+            this._gltfModel.scale.set(scale, scale, scale);
+        }).bind(this));
     },
     loop: function (app) {
         this._control.autoRotate = ROTATE;
