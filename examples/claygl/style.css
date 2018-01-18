@@ -1,0 +1,29 @@
+html {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+}
+
+body {
+  background: #000;
+  font: 30px sans-serif;
+}
+
+#main {
+    position: absolute;
+    top: 0px;
+    width:100%;
+    height:100%;
+    z-index: -1;
+}
+
+#rendercontainer {
+    position: absolute;
+    top: 0px;
+    width:100%;
+    height:100%;
+    z-index: -1;
+    background-color:Red;
+}
+
