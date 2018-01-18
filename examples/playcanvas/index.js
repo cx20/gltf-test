@@ -39,7 +39,7 @@ app.root.addChild(camera);
 camera.setLocalPosition(0, 0, 1);
 
 // make the camera interactive
-app.assets.loadFromUrl('../../libs/playcanvas/v0.221.0-dev/orbit-camera.js', 'script', function (err, asset) {
+app.assets.loadFromUrl('../../libs/playcanvas/v0.222.0-dev/orbit-camera.js', 'script', function (err, asset) {
     camera.script.create('orbitCamera', {
         attributes: {
             inertiaFactor: 0,
