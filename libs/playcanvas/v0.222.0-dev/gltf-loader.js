@@ -95,6 +95,31 @@
         return pcWrap;
     }
 
+    function nearestPow2(n) {
+      return Math.pow(2, Math.round(Math.log(n) / Math.log(2))); 
+    }
+
+    function isPowerOf2(n) {
+        return n && (n & (n - 1)) === 0;
+    }
+
+    function resampleImage(image) {
+        var srcW = image.width;
+        var srcH = image.height;
+
+        var dstW = nearestPow2(srcW);
+        var dstH = nearestPow2(srcH);
+
+        var canvas = document.createElement('canvas');
+        canvas.width = dstW;
+        canvas.height = dstH;
+
+        var context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, srcW, srcH, 0, 0, dstW, dstH);
+
+        return canvas.toDataURL();
+    };
+
     function translateImage(data, resources) {
         var image = new Image();
         image.addEventListener('load', function () {
@@ -105,7 +130,20 @@
                 var t = gltf.textures[i];
                 if (t.hasOwnProperty('source')) {
                     if (t.source === imageIndex) {
-                        resources.textures[i].setSource(image);
+                        var texture = resources.textures[i];
+                        if ((!isPowerOf2(image.width) || !isPowerOf2(image.width)) &&
+                            ((texture.addressU === pc.ADDRESS_REPEAT) || (texture.addressU === pc.ADDRESS_MIRRORED_REPEAT) ||
+                             (texture.addressV === pc.ADDRESS_REPEAT) || (texture.addressV === pc.ADDRESS_MIRRORED_REPEAT) ||
+                             (texture.minFilter === pc.FILTER_LINEAR_MIPMAP_LINEAR) || (texture.minFilter === pc.FILTER_NEAREST_MIPMAP_LINEAR) ||
+                             (texturet.minFilter === pc.FILTER_LINEAR_MIPMAP_NEAREST) || (texture.minFilter === pc.FILTER_NEAREST_MIPMAP_NEAREST))) {
+                            var potImage = new Image();
+                            potImage.addEventListener('load', function () {
+                                texture.setSource(potImage);
+                            });
+                            potImage.src = resampleImage(image);
+                        } else {
+                            texture.setSource(image);
+                        }
                     }
                 }
             }
@@ -597,7 +635,12 @@
             gltf.nodes.forEach(function (node, idx) {
                 if (node.hasOwnProperty('children')) {
                     node.children.forEach(function (childIdx) {
-                        entities[idx].addChild(entities[childIdx]);
+                        var child = entities[childIdx];
+                        if (!child.parent) {
+                            entities[idx].addChild(child);
+                        } else {
+                            console.warn('Child node ' + child.name + ' has more than one parent.');
+                        }
                     });
                 }
             });
