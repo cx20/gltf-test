@@ -93,7 +93,6 @@ app.root.addChild(light);
 var gltfRoot = new pc.Entity('gltf');
 app.root.addChild(gltfRoot);
  
-var roots;
 function init(){
     // .gltf File Test
     var req = new XMLHttpRequest();
@@ -106,19 +105,28 @@ function init(){
 
     req.onload = function(){
         if ( isGlb ) {
-            roots = loadGlb(req.response, app.graphicsDevice);
+            var arrayBuffer = req.response;
+            loadGlb(arrayBuffer, app.graphicsDevice, function (roots) {
+                initScene(roots);
+            });
         } else {
-            roots = loadGltf(JSON.parse(req.responseText), app.graphicsDevice, null);
-        }
-        if (roots) {
-           // add the loaded scene to the hierarchy
-           roots.forEach(function (root) {
-               gltfRoot.addChild(root);
-           });
-           // focus the camera
-           camera.script.orbitCamera.focusEntity = gltfRoot;
+            var json = req.responseText;
+            var gltf = JSON.parse(json);
+            loadGltf(gltf, app.graphicsDevice, null, null, function (roots) {
+                initScene(roots);
+            });
         }
     }
+    var initScene = function (roots) {
+        // add the loaded scene to the hierarchy
+        roots.forEach(function (root) {
+            gltfRoot.addChild(root);
+        });
+
+        // focus the camera on the newly loaded scene
+        camera.script.orbitCamera.focusEntity = gltfRoot;
+    };
+
 }
 
 

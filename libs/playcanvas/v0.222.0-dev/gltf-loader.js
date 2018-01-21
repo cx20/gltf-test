@@ -1,21 +1,11 @@
 (function () {
-    function dataURItoArrayBuffer(dataURI) {
-        // convert base64 to raw binary data held in a string
-        // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
-        var byteString = atob(dataURI.split(',')[1]);
+    // Math utility functions
+    function nearestPow2(n) {
+      return Math.pow(2, Math.round(Math.log(n) / Math.log(2))); 
+    }
 
-        // write the bytes of the string to an ArrayBuffer
-        var arrayBuffer = new ArrayBuffer(byteString.length);
-
-        // create a view into the buffer
-        var uint8Array = new Uint8Array(arrayBuffer);
-
-        // set the bytes of the buffer to the correct values
-        for (var i = 0; i < byteString.length; i++) {
-            uint8Array[i] = byteString.charCodeAt(i);
-        }
-
-        return arrayBuffer;
+    function isPowerOf2(n) {
+        return n && (n & (n - 1)) === 0;
     }
 
     function getPrimitiveType(primitive) {
@@ -95,12 +85,9 @@
         return pcWrap;
     }
 
-    function nearestPow2(n) {
-      return Math.pow(2, Math.round(Math.log(n) / Math.log(2))); 
-    }
-
-    function isPowerOf2(n) {
-        return n && (n & (n - 1)) === 0;
+    function isDataURI(s) {
+        var regex = /^data:.+\/(.+);base64,(.*)$/;
+        return !!s.match(regex);
     }
 
     function resampleImage(image) {
@@ -154,9 +141,9 @@
         }
         if (data.hasOwnProperty('bufferView')) {
             var gltf = resources.gltf;
-            var arrayBuffers = resources.arrayBuffers;
+            var buffers = resources.buffers;
             var bufferView = gltf.bufferViews[data.bufferView];
-            var arrayBuffer = arrayBuffers[bufferView.buffer];
+            var arrayBuffer = buffers[bufferView.buffer];
             var byteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
             var imageBuffer = arrayBuffer.slice(byteOffset, byteOffset + bufferView.byteLength);
             var blob = new Blob([ imageBuffer ], { type: data.mimeType });
@@ -198,9 +185,28 @@
 
     function translateMaterial(data, resources) {
         var material = new pc.StandardMaterial();
-        material.chunks.glossTexPS = pc.shaderChunks.glossTexGltfPS;
-        material.chunks.glossTexConstPS = pc.shaderChunks.glossTexConstGltfPS;
-        material.occludeSpecular = false; // GLTF dooesn't define how to occlude specular
+
+        // Customize the material to adhere to the glTF spec
+        material.chunks.glossTexPS = [
+            'uniform sampler2D texture_glossMap;',
+            '',
+            'void getGlossiness() {',
+            '    dGlossiness = 1.0 - texture2D(texture_glossMap, $UV).$CH;',
+            '}',
+            ''
+        ].join('\n');
+        material.chunks.glossTexConstPS = [
+            'uniform sampler2D texture_glossMap;',
+            'uniform float material_shininess;',
+            '',
+            'void getGlossiness() {',
+            '    dGlossiness = 1.0 - material_shininess * texture2D(texture_glossMap, $UV).$CH;',
+            '}',
+            ''
+        ].join('\n');
+
+        // glTF dooesn't define how to occlude specular
+        material.occludeSpecular = false;
         var roughnessFloat;
         var color;
 
@@ -378,9 +384,9 @@
         return animation;
     }
 
-    function getAccessorData(gltf, accessor, arrayBuffers) {
+    function getAccessorData(gltf, accessor, buffers) {
         var bufferView = gltf.bufferViews[accessor.bufferView];
-        var arrayBuffer = arrayBuffers[bufferView.buffer];
+        var arrayBuffer = buffers[bufferView.buffer];
         var accessorByteOffset = accessor.hasOwnProperty('byteOffset') ? accessor.byteOffset : 0;
         var bufferViewByteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
         var byteOffset = accessorByteOffset + bufferViewByteOffset;
@@ -400,7 +406,8 @@
         return data;
     }
 
-    function loadMeshes(gltf, resources) {
+    function loadMeshes(resources) {
+        var gltf = resources.gltf;
         var i, j;
         var mesh, meshes, numMeshes;
         var primitive, primitives, numPrimitives;
@@ -415,6 +422,7 @@
         var accessorByteOffset, bufferViewByteOffset;
 
         var pcMeshGroups = [];
+        resources.meshGroups = pcMeshGroups;
         var pcMeshes;
 
         meshes = gltf.meshes;
@@ -442,12 +450,13 @@
                 var tangents = null;
                 var texCoord0 = null;
                 var texCoord1 = null;
+                var colors = null;
                 var indices = null;
 
                 // Grab typed arrays for all vertex data
                 if (attributes.hasOwnProperty('POSITION')) {
                     accessor = gltf.accessors[primitive.attributes.POSITION];
-                    positions = getAccessorData(gltf, accessor, resources.arrayBuffers);
+                    positions = getAccessorData(gltf, accessor, resources.buffers);
                     numVertices = accessor.count;
                     min = new pc.Vec3(accessor.min);
                     max = new pc.Vec3(accessor.max);
@@ -458,25 +467,30 @@
                 }
                 if (attributes.hasOwnProperty('NORMAL')) {
                     accessor = gltf.accessors[primitive.attributes.NORMAL];
-                    normals = getAccessorData(gltf, accessor, resources.arrayBuffers);
+                    normals = getAccessorData(gltf, accessor, resources.buffers);
                 }
                 if (attributes.hasOwnProperty('TANGENT')) {
                     accessor = gltf.accessors[primitive.attributes.TANGENT];
-                    tangents = getAccessorData(gltf, accessor, resources.arrayBuffers);
+                    tangents = getAccessorData(gltf, accessor, resources.buffers);
                 }
                 if (attributes.hasOwnProperty('TEXCOORD_0')) {
                     accessor = gltf.accessors[primitive.attributes.TEXCOORD_0];
-                    texCoord0 = getAccessorData(gltf, accessor, resources.arrayBuffers);
+                    texCoord0 = getAccessorData(gltf, accessor, resources.buffers);
                     vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD0, components: 2, type: pc.TYPE_FLOAT32 });
                 }
                 if (attributes.hasOwnProperty('TEXCOORD_1')) {
                     accessor = gltf.accessors[primitive.attributes.TEXCOORD_1];
-                    texCoord1 = getAccessorData(gltf, accessor, resources.arrayBuffers);
+                    texCoord1 = getAccessorData(gltf, accessor, resources.buffers);
                     vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD1, components: 2, type: pc.TYPE_FLOAT32 });
+                }
+                if (attributes.hasOwnProperty('COLOR_0')) {
+                    accessor = gltf.accessors[primitive.attributes.COLOR_0];
+                    colors = getAccessorData(gltf, accessor, resources.buffers);
+                    vertexDesc.push({ semantic: pc.SEMANTIC_COLOR, components: 4, type: pc.TYPE_FLOAT32 });
                 }
                 if (primitive.hasOwnProperty('indices')) {
                     accessor = gltf.accessors[primitive.indices];
-                    indices = getAccessorData(gltf, accessor, resources.arrayBuffers);
+                    indices = getAccessorData(gltf, accessor, resources.buffers);
                 }
 
                 if (positions !== null && indices !== null && normals === null) {
@@ -533,6 +547,8 @@
                         dataView.setFloat32(offset + 0, texCoord0[k * 2 + 0], true);
                         dataView.setFloat32(offset + 4, texCoord0[k * 2 + 1], true);
                     }
+
+                    o += 8;
                 }
 
                 if (texCoord1 !== null) {
@@ -541,6 +557,20 @@
                         dataView.setFloat32(offset + 0, texCoord1[k * 2 + 0], true);
                         dataView.setFloat32(offset + 4, texCoord1[k * 2 + 1], true);
                     }
+
+                    o += 8;
+                }
+
+                if (colors !== null) {
+                    for (k = 0; k < numVertices; k++) {
+                        offset = k * vertexFormat.size + o;
+                        dataView.setFloat32(offset + 0,  colors[k * 4 + 0], true);
+                        dataView.setFloat32(offset + 4,  colors[k * 4 + 1], true);
+                        dataView.setFloat32(offset + 8,  colors[k * 4 + 2], true);
+                        dataView.setFloat32(offset + 12, colors[k * 4 + 3], true);
+                    }
+
+                    o += 16;
                 }
 
                 vertexBuffer.unlock();
@@ -570,74 +600,107 @@
 
             pcMeshGroups.push(pcMeshes);
         }
-
-        return pcMeshGroups;
     }
 
-    function loadBuffers(gltf, resources) {
-        var arrayBuffers = [];
+    function loadBuffers(resources, success) {
+        // buffers already loaded so early out
+        if (resources.buffers) success();
+
+        var gltf = resources.gltf;
+        resources.buffers = [];
 
         if (gltf.hasOwnProperty('buffers')) {
-            gltf.buffers.forEach(function (buffer) {
-                arrayBuffers.push(dataURItoArrayBuffer(buffer.uri));
+            var numLoaded = 0;
+            gltf.buffers.forEach(function (buffer, idx) {
+                if (buffer.hasOwnProperty('uri')) {
+                    if (isDataURI(buffer.uri)) {
+                        // convert base64 to raw binary data held in a string
+                        // doesn't handle URLEncoded DataURIs - see SO answer #6850276 for code that does this
+                        var byteString = atob(buffer.uri.split(',')[1]);
+
+                        // write the bytes of the string to an ArrayBuffer
+                        resources.buffers[idx] = new ArrayBuffer(byteString.length);
+
+                        // create a view into the buffer
+                        var uint8Array = new Uint8Array(resources.buffers[idx]);
+
+                        // set the bytes of the buffer to the correct values
+                        for (var i = 0; i < byteString.length; i++) {
+                            uint8Array[i] = byteString.charCodeAt(i);
+                        }
+
+                        if (gltf.buffers.length === ++numLoaded) {
+                            success();
+                        }
+                    } else {
+                        for (filename in resources.files) {
+                            if (filename.endsWith(buffer.uri)) {
+                                var fr = new FileReader();
+                                fr.onload = function() {
+                                    resources.buffers[idx] = fr.result;
+                                    if (gltf.buffers.length === ++numLoaded) {
+                                        success();
+                                    }
+                                };
+                                fr.readAsArrayBuffer(resources.files[filename]);
+                            }
+                        }
+                    }
+                }
             });
         }
-
-        return arrayBuffers;
     }
 
-    function loadTextures(gltf, resources) {
-        var textures = [];
+    function loadTextures(resources) {
+        var gltf = resources.gltf;
+        resources.textures = [];
 
         if (gltf.hasOwnProperty('textures')) {
             gltf.textures.forEach(function (texture) {
-                textures.push(translateTexture(texture, resources));
+                resources.textures.push(translateTexture(texture, resources));
             });
         }
-
-        return textures;
     }
 
-    function loadImages(gltf, resources) {
-        var textures = [];
+    function loadImages(resources) {
+        var gltf = resources.gltf;
+        resources.images = [];
 
         if (gltf.hasOwnProperty('images')) {
             gltf.images.forEach(function (image) {
-                textures.push(translateImage(image, resources));
+                resources.images.push(translateImage(image, resources));
             });
         }
-
-        return textures;
     }
 
-    function loadMaterials(gltf, resources) {
-        var materials = [];
+    function loadMaterials(resources) {
+        var gltf = resources.gltf;
+        resources.materials = [];
 
         if (gltf.hasOwnProperty('materials')) {
-            gltf.materials.forEach(function (data) {
-                materials.push(translateMaterial(data, resources));
+            gltf.materials.forEach(function (material) {
+                resources.materials.push(translateMaterial(material, resources));
             });
         }
-
-        return materials;
     }
 
-    function loadNodes(gltf, resources) {
-        // Create entities
-        var entities = [];
+    function loadNodes(resources) {
+        var gltf = resources.gltf;
+        resources.entities = [];
 
         if (gltf.hasOwnProperty('nodes')) {
             gltf.nodes.forEach(function (node) {
-                entities.push(translateNode(node, resources));
+                resources.entities.push(translateNode(node, resources));
             });
 
             // Build hierarchy
             gltf.nodes.forEach(function (node, idx) {
                 if (node.hasOwnProperty('children')) {
                     node.children.forEach(function (childIdx) {
-                        var child = entities[childIdx];
+                        var child = resources.entities[childIdx];
                         if (!child.parent) {
-                            entities[idx].addChild(child);
+                            var parent = resources.entities[idx];
+                            parent.addChild(child);
                         } else {
                             console.warn('Child node ' + child.name + ' has more than one parent.');
                         }
@@ -645,8 +708,6 @@
                 }
             });
         }
-
-        return entities;
     }
 
     function loadAnimations(gltf, resources) {
@@ -662,54 +723,43 @@
         return animations;
     }
 
-    function loadGltf(gltf, device, buffers, availableFiles) {
-
-        // Add GLTF shaders, if needed (roughness -> glossiness remap)
-        if (!pc.shaderChunks.glossTexGltfPS) {
-            pc.shaderChunks.glossTexGltfPS = "uniform sampler2D texture_glossMap;\
-                void getGlossiness() {\
-                dGlossiness = 1.0 - texture2D(texture_glossMap, $UV).$CH;\
-            }\n";
-
-            pc.shaderChunks.glossTexConstGltfPS = "uniform sampler2D texture_glossMap;\
-            uniform float material_shininess;\
-            void getGlossiness() {\
-                dGlossiness = 1.0 - material_shininess * texture2D(texture_glossMap, $UV).$CH;\
-            }\n";
-        }
-
+    function loadGltf(gltf, device, buffers, availableFiles, success) {
         var resources = {
+            buffers: buffers,
+            files: availableFiles,
             counter: 0,
             gltf: gltf,
             device: device,
             defaultMaterial: translateMaterial({})
         };
-        resources.arrayBuffers = buffers ? buffers : loadBuffers(gltf, resources);
-        resources.textures = loadTextures(gltf, resources);
-        resources.images = loadImages(gltf, resources);
-        resources.materials = loadMaterials(gltf, resources);
-        resources.meshGroups = loadMeshes(gltf, resources);
-        resources.entities = loadNodes(gltf, resources);
-        resources.animations = loadAnimations(gltf, resources);
 
-        var rootNodes = [];
-        if (gltf.hasOwnProperty('scenes')) {
-            var sceneIndex = 0;
-            if (gltf.hasOwnProperty('scene')) {
-                sceneIndex = gltf.scene;
-            }
-            var nodes = gltf.scenes[sceneIndex].nodes;
-            for (var i = 0; i < nodes.length; i++) {
-                rootNodes.push(resources.entities[nodes[i]]);
-            }
-        } else {
-            rootNodes.push(resources.entities[0]);
-        }
+        loadBuffers(resources, function () {
+            loadTextures(resources);
+            loadImages(resources);
+            loadMaterials(resources);
+            loadMeshes(resources);
+            loadNodes(resources);
+            loadAnimations(resources);
 
-        return rootNodes;
+            var rootNodes = [];
+            if (gltf.hasOwnProperty('scenes')) {
+                var sceneIndex = 0;
+                if (gltf.hasOwnProperty('scene')) {
+                    sceneIndex = gltf.scene;
+                }
+                var nodes = gltf.scenes[sceneIndex].nodes;
+                for (var i = 0; i < nodes.length; i++) {
+                    rootNodes.push(resources.entities[nodes[i]]);
+                }
+            } else {
+                rootNodes.push(resources.entities[0]);
+            }
+
+            success(rootNodes);
+        });
     }
 
-    function loadGlb(glb, device) {
+    function loadGlb(glb, device, success) {
         var dataView = new DataView(glb);
 
         // Read header
@@ -749,7 +799,10 @@
         var decoder = new TextDecoder('utf-8');
         var json = decoder.decode(jsonData);
         json = JSON.parse(json);
-        return loadGltf(json, device, buffers);
+        
+        loadGltf(json, device, buffers, null, function (rootNodes) {
+            success(rootNodes);
+        });
     }
 
     window.loadGltf = loadGltf;
