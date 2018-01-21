@@ -137,7 +137,19 @@
         }, false);
 
         if (data.hasOwnProperty('uri')) {
-            image.src = data.uri;
+            if (isDataURI(data.uri)) {
+                image.src = data.uri;
+            } else {
+                for (filename in resources.files) {
+                    if (filename.endsWith(data.uri)) {
+                        var fr = new FileReader();
+                        fr.onload = function() {
+                            image.src = fr.result;
+                        };
+                        fr.readAsDataURL(resources.files[filename]);
+                    }
+                }
+            }
         }
         if (data.hasOwnProperty('bufferView')) {
             var gltf = resources.gltf;
