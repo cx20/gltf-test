@@ -94,29 +94,35 @@ var gltfRoot = new pc.Entity('gltf');
 app.root.addChild(gltfRoot);
  
 function init(){
-    // .gltf File Test
-    var req = new XMLHttpRequest();
     var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    var basePath = url.substring(0, url.lastIndexOf("/")) + "/";
     var ext = url.split(".").pop();
     var isGlb = ext == "glb" ? true : false;
-    req.open("get", url, true);
-    req.responseType = isGlb ? "arraybuffer" : "";
-    req.send(null);
 
-    req.onload = function(){
-        if ( isGlb ) {
+    if ( isGlb ) {
+        var req = new XMLHttpRequest();
+        req.open("get", url, true);
+        req.responseType = isGlb ? "arraybuffer" : "";
+        req.send(null);
+
+        req.onload = function(){
             var arrayBuffer = req.response;
             loadGlb(arrayBuffer, app.graphicsDevice, function (roots) {
                 initScene(roots);
             });
-        } else {
-            var json = req.responseText;
-            var gltf = JSON.parse(json);
-            loadGltf(gltf, app.graphicsDevice, null, null, function (roots) {
-                initScene(roots);
-            });
         }
+    } else {
+        app.assets.loadFromUrl(url, 'json', function (err, asset) {
+            var json = asset.resource;
+            var gltf = JSON.parse(json);
+            loadGltf(gltf, app.graphicsDevice, function (roots) {
+                initScene(roots);
+            }, {
+                basePath: basePath
+            });
+        });
     }
+
     var initScene = function (roots) {
         // add the loaded scene to the hierarchy
         roots.forEach(function (root) {
@@ -126,7 +132,6 @@ function init(){
         // focus the camera on the newly loaded scene
         camera.script.orbitCamera.focusEntity = gltfRoot;
     };
-
 }
 
 
