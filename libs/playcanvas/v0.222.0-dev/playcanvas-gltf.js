@@ -614,7 +614,21 @@
             var indexBuffer = null;
             mesh.primitive[0].indexed = (indices !== null);
             if (indices !== null) {
-                indexBuffer = new pc.IndexBuffer(resources.device, pc.INDEXFORMAT_UINT16, accessor.count, pc.USAGE_STATIC, indices);
+                accessor = gltf.accessors[primitive.indices];
+                var indexFormat;
+                switch (accessor.componentType) {
+                    case 5121:
+                        indexFormat = pc.INDEXFORMAT_UINT8;
+                        break;
+                    default:
+                    case 5123:
+                        indexFormat = pc.INDEXFORMAT_UINT16;
+                        break;
+                    case 5125:
+                        indexFormat = pc.INDEXFORMAT_UINT32;
+                        break;
+                }
+                indexBuffer = new pc.IndexBuffer(resources.device, indexFormat, accessor.count, pc.USAGE_STATIC, indices);
                 mesh.indexBuffer[0] = indexBuffer;
                 mesh.primitive[0].count = indices.length;
             } else {
