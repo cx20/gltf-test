@@ -1,4 +1,72 @@
 (function () {
+    function AnimKey(time, value) {
+        this.time = time;
+        this.value = value;
+    }
+
+    function AnimCurve() {
+        this.keys = [];
+    }
+
+    AnimCurve.prototype.addKey = function (key) {
+        this.keys.push(key);
+        this.keys.sort(function (a, b) {
+            return a.time - b.time;
+        });
+    }
+
+    AnimCurve.prototype.evaluate = function (time) {
+        var keys = this.keys;
+        for (var i = 0; i < keys.length - 1; i++) {
+            var k0 = keys[i];
+            var k1 = keys[i + 1];
+
+            if (time > k0.time && time < k1.time) {
+                var interval = k1.time - k0.time;
+                var delta = time - k0.time;
+                var value = pc.math.lerp(k0.value, k1.value, delta / interval);
+                return value;
+            }
+        }
+
+        return 0;
+    };
+
+    var Anim;
+
+    function initAnim() {
+        if (Anim) return;
+
+        Anim = pc.createScript('anim');
+
+        Anim.prototype.initialize = function () {
+            this.time = 0;
+        };
+
+        Anim.prototype.update = function (dt) {
+            this.time += dt;
+            var numKeys = this.curves[0].keys.length;
+            var duration = (this.curves[0].keys[numKeys - 1]).time;
+            if (this.time > duration) {
+                this.time = 0;
+            }
+
+            if (this.entity.model) {
+                var meshInstances = this.entity.model.meshInstances;
+                for (var i = 0; i < meshInstances.length; i++) {
+                    var morphInstance = meshInstances[i].morphInstance;
+                    if (morphInstance) {
+                        for (var j = 0; j < this.curves.length; j++) {
+                            var curve = this.curves[j];
+                            var value = curve.evaluate(this.time);
+                            morphInstance.setWeight(j, value);
+                        }
+                    }
+                }
+            }
+        };
+    }
+
     // Math utility functions
     function nearestPow2(n) {
       return Math.pow(2, Math.round(Math.log(n) / Math.log(2))); 
@@ -90,6 +158,28 @@
         return !!s.match(regex);
     }
 
+    function getAccessorData(gltf, accessor, buffers) {
+        var bufferView = gltf.bufferViews[accessor.bufferView];
+        var arrayBuffer = buffers[bufferView.buffer];
+        var accessorByteOffset = accessor.hasOwnProperty('byteOffset') ? accessor.byteOffset : 0;
+        var bufferViewByteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
+        var byteOffset = accessorByteOffset + bufferViewByteOffset;
+        var length = accessor.count * getAccessorTypeSize(accessor.type);
+
+        var data = null;
+
+        switch (accessor.componentType) {
+            case 5120: data = new Int8Array(arrayBuffer, byteOffset, length); break;
+            case 5121: data = new Uint8Array(arrayBuffer, byteOffset, length); break;
+            case 5122: data = new Int16Array(arrayBuffer, byteOffset, length); break;
+            case 5123: data = new Uint16Array(arrayBuffer, byteOffset, length); break;
+            case 5125: data = new Uint32Array(arrayBuffer, byteOffset, length); break;
+            case 5126: data = new Float32Array(arrayBuffer, byteOffset, length); break;
+        }
+
+        return data;
+    }
+
     function resampleImage(image) {
         var srcW = image.width;
         var srcH = image.height;
@@ -105,7 +195,7 @@
         context.drawImage(image, 0, 0, srcW, srcH, 0, 0, dstW, dstH);
 
         return canvas.toDataURL();
-    };
+    }
 
     function translateImage(data, resources) {
         var image = new Image();
@@ -113,27 +203,26 @@
             var gltf = resources.gltf;
 
             var imageIndex = resources.images.indexOf(image);
-            for (var i = 0; i < gltf.textures.length; i++) {
-                var t = gltf.textures[i];
-                if (t.hasOwnProperty('source')) {
-                    if (t.source === imageIndex) {
-                        var texture = resources.textures[i];
+            gltf.textures.forEach(function (texture, idx) {
+                if (texture.hasOwnProperty('source')) {
+                    if (texture.source === imageIndex) {
+                        var t = resources.textures[idx];
                         if ((!isPowerOf2(image.width) || !isPowerOf2(image.width)) &&
-                            ((texture.addressU === pc.ADDRESS_REPEAT) || (texture.addressU === pc.ADDRESS_MIRRORED_REPEAT) ||
-                             (texture.addressV === pc.ADDRESS_REPEAT) || (texture.addressV === pc.ADDRESS_MIRRORED_REPEAT) ||
-                             (texture.minFilter === pc.FILTER_LINEAR_MIPMAP_LINEAR) || (texture.minFilter === pc.FILTER_NEAREST_MIPMAP_LINEAR) ||
-                             (texturet.minFilter === pc.FILTER_LINEAR_MIPMAP_NEAREST) || (texture.minFilter === pc.FILTER_NEAREST_MIPMAP_NEAREST))) {
+                            ((t.addressU === pc.ADDRESS_REPEAT) || (t.addressU === pc.ADDRESS_MIRRORED_REPEAT) ||
+                             (t.addressV === pc.ADDRESS_REPEAT) || (t.addressV === pc.ADDRESS_MIRRORED_REPEAT) ||
+                             (t.minFilter === pc.FILTER_LINEAR_MIPMAP_LINEAR) || (t.minFilter === pc.FILTER_NEAREST_MIPMAP_LINEAR) ||
+                             (t.minFilter === pc.FILTER_LINEAR_MIPMAP_NEAREST) || (t.minFilter === pc.FILTER_NEAREST_MIPMAP_NEAREST))) {
                             var potImage = new Image();
                             potImage.addEventListener('load', function () {
-                                texture.setSource(potImage);
+                                t.setSource(potImage);
                             });
                             potImage.src = resampleImage(image);
                         } else {
-                            texture.setSource(image);
+                            t.setSource(image);
                         }
                     }
                 }
-            }
+            });
         }, false);
 
         if (data.hasOwnProperty('uri')) {
@@ -237,7 +326,11 @@
                 material.opacity = 1;
             }
             if (pbrData.hasOwnProperty('baseColorTexture')) {
-                material.diffuseMap = resources.textures[pbrData.baseColorTexture.index];
+                var baseColorTexture = pbrData.baseColorTexture;
+                material.diffuseMap = resources.textures[baseColorTexture.index];
+                if (baseColorTexture.hasOwnProperty('texCoord')) {
+                    material.diffuseMapUv = baseColorTexture.texCoord;
+                }
             }
             material.useMetalness = true;
             if (pbrData.hasOwnProperty('metallicFactor')) {
@@ -253,18 +346,35 @@
                 roughnessFloat = false;
             }
             if (pbrData.hasOwnProperty('metallicRoughnessTexture')) {
-                material.metalnessMap = resources.textures[pbrData.metallicRoughnessTexture.index];
+                var metallicRoughnessTexture = pbrData.metallicRoughnessTexture;
+                material.metalnessMap = resources.textures[metallicRoughnessTexture.index];
                 material.metalnessMapChannel = 'b';
-                material.glossMap = resources.textures[pbrData.metallicRoughnessTexture.index];
+                material.glossMap = resources.textures[metallicRoughnessTexture.index];
                 material.glossMapChannel = 'g';
                 if (!roughnessFloat) material.shininess = 100;
+                if (metallicRoughnessTexture.hasOwnProperty('texCoord')) {
+                    material.glossMapUv = metallicRoughnessTexture.texCoord;
+                    material.metalnessMapUv = metallicRoughnessTexture.texCoord;
+                }
             }
         }
         if (data.hasOwnProperty('normalTexture')) {
-            material.normalMap = resources.textures[data.normalTexture.index];
+            var normalTexture = data.normalTexture;
+            material.normalMap = resources.textures[normalTexture.index];
+            if (normalTexture.hasOwnProperty('texCoord')) {
+                material.normalMapUv = normalTexture.texCoord;
+            }
+            if (normalTexture.hasOwnProperty('scale')) {
+                material.bumpiness = normalTexture.scale;
+            }
         }
         if (data.hasOwnProperty('occlusionTexture')) {
-            material.aoMap = resources.textures[data.occlusionTexture.index];
+            var occlusionTexture = data.occlusionTexture;
+            material.aoMap = resources.textures[occlusionTexture.index];
+            if (occlusionTexture.hasOwnProperty('texCoord')) {
+                material.aoMapUv = occlusionTexture.texCoord;
+            }
+            // TODO: support 'strength'
         }
         if (data.hasOwnProperty('emissiveFactor')) {
             color = data.emissiveFactor;
@@ -376,7 +486,7 @@
                     options.farClip = orthographic.zfar;
                     options.nearClip = orthographic.znear;
                 }
-            };
+            }
 
             entity.addComponent('camera', options);
 
@@ -396,7 +506,15 @@
                     } else {
                         material = resources.materials[meshGroup[i].materialIndex];
                     }
-                    model.meshInstances.push(new pc.MeshInstance(model.graph, meshGroup[i], material));
+                    var meshInstance = new pc.MeshInstance(model.graph, meshGroup[i], material);
+                    if (meshGroup[i].morph) {
+                        meshInstance.morphInstance = new pc.MorphInstance(meshGroup[i].morph);
+
+                        // HACK: need to force calculation of the morph's AABB due to a bug
+                        // in the engine. This is a private function and will be rmoved!
+                        meshInstance.morphInstance.updateBounds(meshInstance.mesh);
+                    }
+                    model.meshInstances.push(meshInstance);
                 }
 
                 entity.addComponent('model');
@@ -408,73 +526,57 @@
     }
 
     function translateAnimation(data, resources) {
+        var gltf = resources.gltf;
         var animation = new pc.Animation();
 
         if (data.hasOwnProperty('name')) {
             animation.name = data.name;
         }
 
-        // Handle channels
+        // parse animation data
         var channels = data.channels;
         var samplers = data.samplers;
 
-        var nodes = [];
         for (var i = 0; i < channels.length; i++) {
             var channel = channels[i];
+            var sampler = samplers[channel.sampler];
+
+            var times = getAccessorData(gltf, gltf.accessors[sampler.input], resources.buffers);
+            var values = getAccessorData(gltf, gltf.accessors[sampler.output], resources.buffers);
+
             var target = channel.target;
+            var path = target.path;
 
-            var node = resources.entities[i];
+            var curves = [];
 
+            if (path === 'weights') {
+                var numCurves = values.length / times.length;
+                for (var j = 0; j < numCurves; j++) {
+                    curves[j] = new AnimCurve();
+                    for (var k = 0; k < times.length; k++) {
+                        var time = times[k];
+                        var value = values[numCurves * k + j];
+                        var key = new AnimKey(time, value);
+                        curves[j].addKey(key);
+                    }
+                }
+            }
+
+            var entity = resources.nodes[target.node];
+            entity.addComponent('script');
+            entity.script.create('anim');
+            entity.script.anim.curves = curves;
         }
-
-        // Handle samplers
-
 
         return animation;
     }
 
-    function getAccessorData(gltf, accessor, buffers) {
-        var bufferView = gltf.bufferViews[accessor.bufferView];
-        var arrayBuffer = buffers[bufferView.buffer];
-        var accessorByteOffset = accessor.hasOwnProperty('byteOffset') ? accessor.byteOffset : 0;
-        var bufferViewByteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
-        var byteOffset = accessorByteOffset + bufferViewByteOffset;
-        var length = accessor.count * getAccessorTypeSize(accessor.type);
-
-        var data = null;
-
-        switch (accessor.componentType) {
-            case 5120: data = new Int8Array(arrayBuffer, byteOffset, length); break;
-            case 5121: data = new Uint8Array(arrayBuffer, byteOffset, length); break;
-            case 5122: data = new Int16Array(arrayBuffer, byteOffset, length); break;
-            case 5123: data = new Uint16Array(arrayBuffer, byteOffset, length); break;
-            case 5125: data = new Uint32Array(arrayBuffer, byteOffset, length); break;
-            case 5126: data = new Float32Array(arrayBuffer, byteOffset, length); break;
-        }
-
-        return data;
-    }
-
     function translateMesh(data, resources) {
         var gltf = resources.gltf;
-        var numVertices;
-        var aabb;
-        var vertexBuffer, vertexFormat;
-        var vertexData, vertexDataF32;
-        var bufferView, bufferViewIndex;
-        var accessorByteOffset, bufferViewByteOffset;
         var meshes = [];
-        var primitives = data.primitives;
 
-        for (var i = 0; i < primitives.length; i++) {
-            var primitive = primitives[i];
+        data.primitives.forEach(function (primitive) {
             var attributes = primitive.attributes;
-
-            var vertexDesc = [];
-            vertexDesc.push({ semantic: pc.SEMANTIC_POSITION, components: 3, type: pc.TYPE_FLOAT32 });
-            vertexDesc.push({ semantic: pc.SEMANTIC_NORMAL, components: 3, type: pc.TYPE_FLOAT32 });
-            vertexDesc.push({ semantic: pc.SEMANTIC_TANGENT, components: 4, type: pc.TYPE_FLOAT32 });
-
             var positions = null;
             var normals = null;
             var tangents = null;
@@ -482,6 +584,14 @@
             var texCoord1 = null;
             var colors = null;
             var indices = null;
+            var numVertices;
+            var aabb;
+
+            var vertexDesc = [
+                { semantic: pc.SEMANTIC_POSITION, components: 3, type: pc.TYPE_FLOAT32 },
+                { semantic: pc.SEMANTIC_NORMAL, components: 3, type: pc.TYPE_FLOAT32 },
+                { semantic: pc.SEMANTIC_TANGENT, components: 4, type: pc.TYPE_FLOAT32 }
+            ];
 
             // Grab typed arrays for all vertex data
             if (attributes.hasOwnProperty('POSITION')) {
@@ -530,9 +640,9 @@
                 tangents = pc.calculateTangents(positions, normals, texCoord0, indices);
             }
 
-            vertexFormat = new pc.VertexFormat(resources.device, vertexDesc);
-            vertexBuffer = new pc.VertexBuffer(resources.device, vertexFormat, numVertices, pc.BUFFER_STATIC);
-            vertexData = vertexBuffer.lock();
+            var vertexFormat = new pc.VertexFormat(resources.device, vertexDesc);
+            var vertexBuffer = new pc.VertexBuffer(resources.device, vertexFormat, numVertices, pc.BUFFER_STATIC);
+            var vertexData = vertexBuffer.lock();
 
             var dataView = new DataView(vertexData);
             var o = 0;
@@ -639,8 +749,31 @@
 
             mesh.aabb = aabb;
 
+            if (primitive.hasOwnProperty('targets')) {
+                var targets = [];
+                primitive.targets.forEach(function (target) {
+                    var options = {};
+                    if (target.hasOwnProperty('POSITION')) {
+                        accessor = gltf.accessors[target.POSITION];
+                        options.deltaPositions = getAccessorData(gltf, accessor, resources.buffers);
+                    }
+                    if (target.hasOwnProperty('NORMAL')) {
+                        accessor = gltf.accessors[target.NORMAL];
+                        options.deltaNormals = getAccessorData(gltf, accessor, resources.buffers);
+                    }
+                    if (target.hasOwnProperty('TANGENT')) {
+                        accessor = gltf.accessors[target.TANGENT];
+                        options.deltaTangents = getAccessorData(gltf, accessor, resources.buffers);
+                    }
+
+                    targets.push(new pc.MorphTarget(options));
+                });
+
+                mesh.morph = new pc.Morph(targets);
+            }
+
             meshes.push(mesh);
-        }
+        });
 
         return meshes;
     }
@@ -729,6 +862,8 @@
     }
 
     function loadGltf(gltf, device, success, options) {
+        initAnim();
+
         var buffers = options ? options.buffers : undefined;
         var basePath = options ? options.basePath : undefined;
         var processUri = options ? options.processUri : undefined;
