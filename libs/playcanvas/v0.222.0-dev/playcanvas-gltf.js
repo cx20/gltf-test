@@ -284,27 +284,39 @@
     function translateMaterial(data, resources) {
         var material = new pc.StandardMaterial();
 
-        // Customize the material to adhere to the glTF spec
-        material.chunks.glossTexPS = [
-            'uniform sampler2D texture_glossMap;',
-            '',
-            'void getGlossiness() {',
-            '    dGlossiness = 1.0 - texture2D(texture_glossMap, $UV).$CH;',
-            '}',
-            ''
-        ].join('\n');
-        material.chunks.glossTexConstPS = [
-            'uniform sampler2D texture_glossMap;',
-            'uniform float material_shininess;',
-            '',
-            'void getGlossiness() {',
-            '    dGlossiness = 1.0 - material_shininess * texture2D(texture_glossMap, $UV).$CH;',
-            '}',
-            ''
+        material.chunks.glossMapPS = [
+            "#ifdef MAPFLOAT",
+            "uniform float material_shininess;",
+            "#endif",
+            "",
+            "#ifdef MAPTEXTURE",
+            "uniform sampler2D texture_glossMap;",
+            "#endif",
+            "",
+            "void getGlossiness() {",
+            "    dGlossiness = 1.0;",
+            "",
+            "    #ifdef MAPFLOAT",
+            "        dGlossiness *= material_shininess;",
+            "    #endif",
+            "",
+            "    #ifdef MAPTEXTURE",
+            "        dGlossiness *= 1.0 - texture2D(texture_glossMap, $UV).$CH;",
+            "    #endif",
+            "",
+            "    #ifdef MAPVERTEX",
+            "        dGlossiness *= 1.0 - saturate(vVertexColor.$VC);",
+            "    #endif",
+            "",
+            "    dGlossiness += 0.0000001;",
+            "}"
         ].join('\n');
 
         // glTF dooesn't define how to occlude specular
         material.occludeSpecular = false;
+        material.diffuseMapTint = true;
+        material.diffuseMapVertexColor = true;
+
         var roughnessFloat;
         var color;
 
@@ -527,19 +539,14 @@
 
     function translateAnimation(data, resources) {
         var gltf = resources.gltf;
-        var animation = new pc.Animation();
 
         if (data.hasOwnProperty('name')) {
-            animation.name = data.name;
+
         }
 
         // parse animation data
-        var channels = data.channels;
-        var samplers = data.samplers;
-
-        for (var i = 0; i < channels.length; i++) {
-            var channel = channels[i];
-            var sampler = samplers[channel.sampler];
+        data.channels.forEach(function (channel) {
+            var sampler = data.samplers[channel.sampler];
 
             var times = getAccessorData(gltf, gltf.accessors[sampler.input], resources.buffers);
             var values = getAccessorData(gltf, gltf.accessors[sampler.output], resources.buffers);
@@ -551,13 +558,13 @@
 
             if (path === 'weights') {
                 var numCurves = values.length / times.length;
-                for (var j = 0; j < numCurves; j++) {
-                    curves[j] = new AnimCurve();
-                    for (var k = 0; k < times.length; k++) {
-                        var time = times[k];
-                        var value = values[numCurves * k + j];
+                for (var i = 0; i < numCurves; i++) {
+                    curves[i] = new AnimCurve();
+                    for (var j = 0; j < times.length; j++) {
+                        var time = times[j];
+                        var value = values[numCurves * j + i];
                         var key = new AnimKey(time, value);
-                        curves[j].addKey(key);
+                        curves[i].addKey(key);
                     }
                 }
             }
@@ -566,9 +573,7 @@
             entity.addComponent('script');
             entity.script.create('anim');
             entity.script.anim.curves = curves;
-        }
-
-        return animation;
+        });
     }
 
     function translateMesh(data, resources) {
@@ -751,6 +756,7 @@
 
             if (primitive.hasOwnProperty('targets')) {
                 var targets = [];
+
                 primitive.targets.forEach(function (target) {
                     var options = {};
                     if (target.hasOwnProperty('POSITION')) {

@@ -1,9 +1,9 @@
 /*
- PlayCanvas Engine v0.222.0-dev revision edce334
+ PlayCanvas Engine v0.222.0-dev revision c15f98f
  http://playcanvas.com
  Copyright 2011-2017 PlayCanvas Ltd. All rights reserved.
 */
-var pc = {version:"0.222.0-dev", revision:"edce334", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"0.222.0-dev", revision:"c15f98f", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.");
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -6416,15 +6416,14 @@ pc.shaderChunks.TBNPS = "void getTBN() {\n    dTBN = mat3(normalize(dTangentW), 
 pc.shaderChunks.TBNfastPS = "void getTBN() {\n    dTBN = mat3(dTangentW, dBinormalW, dVertexNormalW);\n}\n";
 pc.shaderChunks.alphaTestPS = "uniform float alpha_ref;\nvoid alphaTest(float a) {\n    if (a < alpha_ref) discard;\n}\n";
 pc.shaderChunks.ambientConstantPS = "\nvoid addAmbient() {\n    dDiffuseLight += light_globalAmbient;\n}\n";
-pc.shaderChunks.ambientPrefilteredCubePS = "void addAmbient() {\n    vec3 fixedReflDir = fixSeamsStatic(dNormalW, 1.0 - 1.0 / 4.0);\n    fixedReflDir.x *= -1.0;\n    dDiffuseLight += processEnvironment($DECODE(textureCube(texture_prefilteredCubeMap4, fixedReflDir)).rgb);\n}\n";
-pc.shaderChunks.ambientPrefilteredCubeLodPS = "void addAmbient() {\n    vec3 fixedReflDir = fixSeamsStatic(dNormalW, 1.0 - 1.0 / 4.0);\n    fixedReflDir.x *= -1.0;\n    dDiffuseLight += processEnvironment($DECODE( textureCubeLodEXT(texture_prefilteredCubeMap128, fixedReflDir, 5.0) ).rgb);\n}\n";
+pc.shaderChunks.ambientPrefilteredCubePS = "#ifndef PMREM4\n#define PMREM4\nuniform samplerCube texture_prefilteredCubeMap4;\n#endif\nvoid addAmbient() {\n    vec3 fixedReflDir = fixSeamsStatic(dNormalW, 1.0 - 1.0 / 4.0);\n    fixedReflDir.x *= -1.0;\n    dDiffuseLight += processEnvironment($DECODE(textureCube(texture_prefilteredCubeMap4, fixedReflDir)).rgb);\n}\n";
+pc.shaderChunks.ambientPrefilteredCubeLodPS = "#ifndef PMREM4\n#define PMREM4\nuniform samplerCube texture_prefilteredCubeMap128;\n#endif\nvoid addAmbient() {\n    vec3 fixedReflDir = fixSeamsStatic(dNormalW, 1.0 - 1.0 / 4.0);\n    fixedReflDir.x *= -1.0;\n    dDiffuseLight += processEnvironment($DECODE( textureCubeLodEXT(texture_prefilteredCubeMap128, fixedReflDir, 5.0) ).rgb);\n}\n";
 pc.shaderChunks.ambientSHPS = "uniform vec3 ambientSH[9];\nvoid addAmbient() {\n    vec3 n = dNormalW;\n    vec3 color =\n                        ambientSH[0] +\n                        ambientSH[1] * n.x +\n                        ambientSH[2] * n.y +\n                        ambientSH[3] * n.z +\n                        ambientSH[4] * n.x * n.z +\n                        ambientSH[5] * n.z * n.y +\n                        ambientSH[6] * n.y * n.x +\n                        ambientSH[7] * (3.0 * n.z * n.z - 1.0) +\n                        ambientSH[8] * (n.x * n.x - n.y * n.y);\n    dDiffuseLight += processEnvironment(max(color, vec3(0.0)));\n}\n";
+pc.shaderChunks.aoPS = "#ifdef MAPTEXTURE\nuniform sampler2D texture_aoMap;\n#endif\nvoid applyAO() {\n    dAo = 1.0;\n    #ifdef MAPTEXTURE\n        dAo *= texture2D(texture_aoMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        dAo *= saturate(vVertexColor.$VC);\n    #endif\n    dDiffuseLight *= dAo;\n}\n";
 pc.shaderChunks.aoSpecOccPS = "uniform float material_occludeSpecularIntensity;\nvoid occludeSpecular() {\n    // approximated specular occlusion from AO\n    float specPow = exp2(dGlossiness * 11.0);\n    // http://research.tri-ace.com/Data/cedec2011_RealtimePBR_Implementation_e.pptx\n    float specOcc = saturate(pow(dot(dNormalW, dViewDirW) + dAo, 0.01*specPow) - 1.0 + dAo);\n    specOcc = mix(1.0, specOcc, material_occludeSpecularIntensity);\n    dSpecularLight *= specOcc;\n    dReflection *= specOcc;\n}\n";
 pc.shaderChunks.aoSpecOccConstPS = "void occludeSpecular() {\n    // approximated specular occlusion from AO\n    float specPow = exp2(dGlossiness * 11.0);\n    // http://research.tri-ace.com/Data/cedec2011_RealtimePBR_Implementation_e.pptx\n    float specOcc = saturate(pow(dot(dNormalW, dViewDirW) + dAo, 0.01*specPow) - 1.0 + dAo);\n    dSpecularLight *= specOcc;\n    dReflection *= specOcc;\n}\n";
 pc.shaderChunks.aoSpecOccConstSimplePS = "void occludeSpecular() {\n    float specOcc = dAo;\n    dSpecularLight *= specOcc;\n    dReflection *= specOcc;\n}\n";
 pc.shaderChunks.aoSpecOccSimplePS = "uniform float material_occludeSpecularIntensity;\nvoid occludeSpecular() {\n    float specOcc = mix(1.0, dAo, material_occludeSpecularIntensity);\n    dSpecularLight *= specOcc;\n    dReflection *= specOcc;\n}\n";
-pc.shaderChunks.aoTexPS = "uniform sampler2D texture_aoMap;\nvoid applyAO() {\n    dAo = texture2D(texture_aoMap, $UV).$CH;\n    dDiffuseLight *= dAo;\n}\n";
-pc.shaderChunks.aoVertPS = "void applyAO() {\n    dAo = saturate(vVertexColor.$CH);\n    dDiffuseLight *= dAo;\n}\n";
 pc.shaderChunks.bakeDirLmEndPS = "\n    vec4 dirLm = texture2D(texture_dirLightMap, vUv1);\n    if (bakeDir > 0.5) {\n        if (dAtten > 0.00001) {\n            dirLm.xyz = dirLm.xyz * 2.0 - vec3(1.0);\n            dAtten = saturate(dAtten);\n            gl_FragColor.rgb = normalize(dLightDirNormW.xyz*dAtten + dirLm.xyz*dirLm.w) * 0.5 + vec3(0.5);\n            gl_FragColor.a = dirLm.w + dAtten;\n            gl_FragColor.a = max(gl_FragColor.a, 1.0 / 255.0);\n        } else {\n            gl_FragColor = dirLm;\n        }\n    } else {\n        gl_FragColor.rgb = dirLm.xyz;\n        gl_FragColor.a = max(dirLm.w, dAtten > 0.00001? (1.0/255.0) : 0.0);\n    }\n";
 pc.shaderChunks.bakeLmEndPS = "\ngl_FragColor.rgb = dDiffuseLight;\ngl_FragColor.rgb = pow(gl_FragColor.rgb, vec3(0.5));\ngl_FragColor.rgb /= 8.0;\ngl_FragColor.a = clamp( max( max( gl_FragColor.r, gl_FragColor.g ), max( gl_FragColor.b, 1.0 / 255.0 ) ), 0.0,1.0 );\ngl_FragColor.a = ceil(gl_FragColor.a * 255.0) / 255.0;\ngl_FragColor.rgb /= gl_FragColor.a;\n";
 pc.shaderChunks.basePS = "\nuniform vec3 view_position;\nuniform vec3 light_globalAmbient;\nfloat square(float x) {\n    return x*x;\n}\nfloat saturate(float x) {\n    return clamp(x, 0.0, 1.0);\n}\nvec3 saturate(vec3 x) {\n    return clamp(x, vec3(0.0), vec3(1.0));\n}\n";
@@ -6440,20 +6439,10 @@ pc.shaderChunks.combineDiffuseSpecularOldPS = "vec3 combineColor() {\n    return
 pc.shaderChunks.cookiePS = "vec4 getCookie2D(sampler2D tex, mat4 transform, float intensity) {\n    vec4 projPos = transform * vec4(vPositionW, 1.0);\n    projPos.xy /= projPos.w;\n    return mix(vec4(1.0), texture2D(tex, projPos.xy), intensity);\n}\nvec4 getCookie2DClip(sampler2D tex, mat4 transform, float intensity) {\n    vec4 projPos = transform * vec4(vPositionW, 1.0);\n    projPos.xy /= projPos.w;\n    if (projPos.x < 0.0 || projPos.x > 1.0 || projPos.y < 0.0 || projPos.y > 1.0 || projPos.z < 0.0) return vec4(0.0);\n    return mix(vec4(1.0), texture2D(tex, projPos.xy), intensity);\n}\nvec4 getCookie2DXform(sampler2D tex, mat4 transform, float intensity, vec4 cookieMatrix, vec2 cookieOffset) {\n    vec4 projPos = transform * vec4(vPositionW, 1.0);\n    projPos.xy /= projPos.w;\n    projPos.xy += cookieOffset;\n    vec2 uv = mat2(cookieMatrix) * (projPos.xy-vec2(0.5)) + vec2(0.5);\n    return mix(vec4(1.0), texture2D(tex, uv), intensity);\n}\nvec4 getCookie2DClipXform(sampler2D tex, mat4 transform, float intensity, vec4 cookieMatrix, vec2 cookieOffset) {\n    vec4 projPos = transform * vec4(vPositionW, 1.0);\n    projPos.xy /= projPos.w;\n    projPos.xy += cookieOffset;\n    if (projPos.x < 0.0 || projPos.x > 1.0 || projPos.y < 0.0 || projPos.y > 1.0 || projPos.z < 0.0) return vec4(0.0);\n    vec2 uv = mat2(cookieMatrix) * (projPos.xy-vec2(0.5)) + vec2(0.5);\n    return mix(vec4(1.0), texture2D(tex, uv), intensity);\n}\nvec4 getCookieCube(samplerCube tex, mat4 transform, float intensity) {\n    return mix(vec4(1.0), textureCube(tex, dLightDirNormW * mat3(transform)), intensity);\n}\n";
 pc.shaderChunks.cubeMapProjectBoxPS = "uniform vec3 envBoxMin, envBoxMax;\nvec3 cubeMapProject(vec3 nrdir) {\n    vec3 rbmax = (envBoxMax - vPositionW) / nrdir;\n    vec3 rbmin = (envBoxMin - vPositionW) / nrdir;\n    vec3 rbminmax;\n    rbminmax.x = nrdir.x>0.0? rbmax.x : rbmin.x;\n    rbminmax.y = nrdir.y>0.0? rbmax.y : rbmin.y;\n    rbminmax.z = nrdir.z>0.0? rbmax.z : rbmin.z;\n    float fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);\n    vec3 posonbox = vPositionW + nrdir * fa;\n    vec3 envBoxPos = (envBoxMin + envBoxMax) * 0.5;\n    return posonbox - envBoxPos;\n}\n";
 pc.shaderChunks.cubeMapProjectNonePS = "vec3 cubeMapProject(vec3 dir) {\n    return dir;\n}\n";
-pc.shaderChunks.diffuseConstPS = "uniform vec3 material_diffuse;\nvoid getAlbedo() {\n    dAlbedo = material_diffuse.rgb;\n}\n";
-pc.shaderChunks.diffuseTexPS = "uniform sampler2D texture_diffuseMap;\nvoid getAlbedo() {\n    dAlbedo = texture2DSRGB(texture_diffuseMap, $UV).$CH;\n}\n";
-pc.shaderChunks.diffuseTexConstPS = "uniform sampler2D texture_diffuseMap;\nuniform vec3 material_diffuse;\nvoid getAlbedo() {\n    dAlbedo = texture2DSRGB(texture_diffuseMap, $UV).$CH * material_diffuse;\n}\n";
-pc.shaderChunks.diffuseVertPS = "void getAlbedo() {\n    dAlbedo = gammaCorrectInput(saturate(vVertexColor.$CH));\n}\n";
-pc.shaderChunks.diffuseVertConstPS = "uniform vec3 material_diffuse;\nvoid getAlbedo() {\n    dAlbedo = gammaCorrectInput(saturate(vVertexColor.$CH)) * material_diffuse;\n}\n";
+pc.shaderChunks.diffusePS = "#ifdef MAPCOLOR\nuniform vec3 material_diffuse;\n#endif\n#ifdef MAPTEXTURE\nuniform sampler2D texture_diffuseMap;\n#endif\nvoid getAlbedo() {\n    dAlbedo = vec3(1.0);\n    #ifdef MAPCOLOR\n        dAlbedo *= material_diffuse.rgb;\n    #endif\n    #ifdef MAPTEXTURE\n        dAlbedo *= texture2DSRGB(texture_diffuseMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        dAlbedo *= gammaCorrectInput(saturate(vVertexColor.$VC));\n    #endif\n}\n";
 pc.shaderChunks.dilatePS = "varying vec2 vUv0;\nuniform sampler2D source;\nuniform vec2 pixelOffset;\nvoid main(void) {\n    vec4 c = texture2D(source, vUv0);\n    c = c.a>0.0? c : texture2D(source, vUv0 - pixelOffset);\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(0, -pixelOffset.y));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(pixelOffset.x, -pixelOffset.y));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(-pixelOffset.x, 0));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(pixelOffset.x, 0));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(-pixelOffset.x, pixelOffset.y));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(0, pixelOffset.y));\n    c = c.a>0.0? c : texture2D(source, vUv0 + pixelOffset);\n    gl_FragColor = c;\n}\n";
 pc.shaderChunks.dpAtlasQuadPS = "varying vec2 vUv0;\nuniform sampler2D source;\nuniform vec4 params;\nvoid main(void) {\n    vec2 uv = vUv0;\n    uv = uv * 2.0 - vec2(1.0);\n    uv *= params.xy;\n    uv = uv * 0.5 + 0.5;\n    gl_FragColor = texture2D(source, uv);\n}\n";
-pc.shaderChunks.emissiveConstPS = "uniform vec3 material_emissive;\nvec3 getEmission() {\n    return material_emissive;\n}\n";
-pc.shaderChunks.emissiveTexPS = "uniform sampler2D texture_emissiveMap;\nvec3 getEmission() {\n    return $texture2DSAMPLE(texture_emissiveMap, $UV).$CH;\n}\n";
-pc.shaderChunks.emissiveTexConstPS = "uniform sampler2D texture_emissiveMap;\nuniform vec3 material_emissive;\nvec3 getEmission() {\n    return $texture2DSAMPLE(texture_emissiveMap, $UV).$CH * material_emissive;\n}\n";
-pc.shaderChunks.emissiveTexConstFloatPS = "uniform sampler2D texture_emissiveMap;\nuniform float material_emissiveIntensity;\nvec3 getEmission() {\n    return $texture2DSAMPLE(texture_emissiveMap, $UV).$CH * material_emissiveIntensity;\n}\n";
-pc.shaderChunks.emissiveVertPS = "vec3 getEmission() {\n    return gammaCorrectInput(saturate(vVertexColor.$CH));\n}\n";
-pc.shaderChunks.emissiveVertConstPS = "uniform vec3 material_emissive;\nvec3 getEmission() {\n    return gammaCorrectInput(saturate(vVertexColor.$CH)) * material_emissive;\n}\n";
-pc.shaderChunks.emissiveVertConstFloatPS = "uniform float material_emissiveIntensity;\nvec3 getEmission() {\n    return gammaCorrectInput(saturate(vVertexColor.$CH)) * material_emissiveIntensity;\n}\n";
+pc.shaderChunks.emissivePS = "#ifdef MAPCOLOR\nuniform vec3 material_emissive;\n#endif\n#ifdef MAPFLOAT\nuniform float material_emissiveIntensity;\n#endif\n#ifdef MAPTEXTURE\nuniform sampler2D texture_emissiveMap;\n#endif\nvec3 getEmission() {\n    vec3 emission = vec3(1.0);\n    #ifdef MAPFLOAT\n        emission *= material_emissiveIntensity;\n    #endif\n    #ifdef MAPCOLOR\n        emission *= material_emissive;\n    #endif\n    #ifdef MAPTEXTURE\n        emission *= $texture2DSAMPLE(texture_emissiveMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        emission *= gammaCorrectInput(saturate(vVertexColor.$VC));\n    #endif\n    return emission;\n}\n";
 pc.shaderChunks.endPS = "   gl_FragColor.rgb = combineColor();\n   gl_FragColor.rgb += getEmission();\n   gl_FragColor.rgb = addFog(gl_FragColor.rgb);\n   #ifndef HDR\n    gl_FragColor.rgb = toneMap(gl_FragColor.rgb);\n    gl_FragColor.rgb = gammaCorrectOutput(gl_FragColor.rgb);\n   #endif\n";
 pc.shaderChunks.envConstPS = "vec3 processEnvironment(vec3 color) {\n    return color;\n}\n";
 pc.shaderChunks.envMultiplyPS = "uniform float skyboxIntensity;\nvec3 processEnvironment(vec3 color) {\n    return color * skyboxIntensity;\n}\n";
@@ -6475,25 +6464,16 @@ pc.shaderChunks.gamma2_2PS = "vec3 gammaCorrectInput(vec3 color) {\n    return p
 pc.shaderChunks.genParaboloidPS = "varying vec2 vUv0;\nuniform samplerCube source;\nuniform vec4 params; // x = mip\nvoid main(void) {\n    vec2 uv = vUv0;\n    float side = uv.x < 0.5? 1.0 : -1.0;\n    vec2 tc;\n    tc.x = fract(uv.x * 2.0) * 2.0 - 1.0;\n    tc.y = uv.y * 2.0 - 1.0;\n    // scale projection a bit to have a little overlap for filtering\n    const float scale = 1.1;\n    tc *= scale;\n    vec3 dir;\n    dir.y = (dot(tc, tc) - 1.0) * side; // from 1.0 center to 0.0 borders quadratically\n    dir.xz = tc * -2.0;\n    dir.x *= -side * params.y; // flip original cubemap x instead of doing it at runtime\n    dir = fixSeams(dir, params.x);\n    vec4 color = textureCube(source, dir, -100.0);\n    gl_FragColor = color;\n}\n";
 pc.shaderChunks.gles3PS = "#define varying in\nout highp vec4 pc_fragColor;\n#define gl_FragColor pc_fragColor\n#define texture2D texture\n#define textureCube texture\n#define texture2DProj textureProj\n#define texture2DLodEXT textureLod\n#define texture2DProjLodEXT textureProjLod\n#define textureCubeLodEXT textureLod\n#define texture2DGradEXT textureGrad\n#define texture2DProjGradEXT textureProjGrad\n#define textureCubeGradEXT textureGrad\n#define GL2\n";
 pc.shaderChunks.gles3VS = "#define attribute in\n#define varying out\n#define texture2D texture\n#define GL2\n";
-pc.shaderChunks.glossConstPS = "uniform float material_shininess;\nvoid getGlossiness() {\n    dGlossiness = material_shininess + 0.0000001;\n}\n";
-pc.shaderChunks.glossTexPS = "uniform sampler2D texture_glossMap;\nvoid getGlossiness() {\n    dGlossiness = texture2D(texture_glossMap, $UV).$CH + 0.0000001;\n}\n";
-pc.shaderChunks.glossTexConstPS = "uniform sampler2D texture_glossMap;\nuniform float material_shininess;\nvoid getGlossiness() {\n    dGlossiness = material_shininess * texture2D(texture_glossMap, $UV).$CH + 0.0000001;\n}\n";
-pc.shaderChunks.glossVertPS = "void getGlossiness() {\n    dGlossiness = saturate(vVertexColor.$CH) + 0.0000001;\n}\n";
-pc.shaderChunks.glossVertConstPS = "uniform float material_shininess;\nvoid getGlossiness() {\n    dGlossiness = material_shininess * saturate(vVertexColor.$CH) + 0.0000001;\n}\n";
+pc.shaderChunks.glossPS = "#ifdef MAPFLOAT\nuniform float material_shininess;\n#endif\n#ifdef MAPTEXTURE\nuniform sampler2D texture_glossMap;\n#endif\nvoid getGlossiness() {\n    dGlossiness = 1.0;\n    #ifdef MAPFLOAT\n        dGlossiness *= material_shininess;\n    #endif\n    #ifdef MAPTEXTURE\n        dGlossiness *= texture2D(texture_glossMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        dGlossiness *= saturate(vVertexColor.$VC);\n    #endif\n    dGlossiness += 0.0000001;\n}\n";
 pc.shaderChunks.instancingVS = "\nattribute vec4 instance_line1;\nattribute vec4 instance_line2;\nattribute vec4 instance_line3;\nattribute vec4 instance_line4;\n";
 pc.shaderChunks.lightDiffuseLambertPS = "float getLightDiffuse() {\n    return max(dot(dNormalW, -dLightDirNormW), 0.0);\n}\n";
 pc.shaderChunks.lightDirPointPS = "void getLightDirPoint(vec3 lightPosW) {\n    dLightDirW = vPositionW - lightPosW;\n    dLightDirNormW = normalize(dLightDirW);\n    dLightPosW = lightPosW;\n}\n";
 pc.shaderChunks.lightSpecularBlinnPS = "// Energy-conserving (hopefully) Blinn-Phong\nfloat getLightSpecular() {\n    vec3 h = normalize( -dLightDirNormW + dViewDirW );\n    float nh = max( dot( h, dNormalW ), 0.0 );\n    float specPow = exp2(dGlossiness * 11.0); // glossiness is linear, power is not; 0 - 2048\n    specPow = antiAliasGlossiness(specPow);\n    // Hack: On Mac OS X, calling pow with zero for the exponent generates hideous artifacts so bias up a little\n    specPow = max(specPow, 0.0001);\n    return pow(nh, specPow) * (specPow + 2.0) / 8.0;\n}\n";
 pc.shaderChunks.lightSpecularPhongPS = "float getLightSpecular() {\n    float specPow = dGlossiness;\n    specPow = antiAliasGlossiness(specPow);\n    // Hack: On Mac OS X, calling pow with zero for the exponent generates hideous artifacts so bias up a little\n    return pow(max(dot(dReflDirW, -dLightDirNormW), 0.0), specPow + 0.0001);\n}\n";
 pc.shaderChunks.lightmapDirPS = "uniform sampler2D texture_lightMap;\nuniform sampler2D texture_dirLightMap;\nvoid addLightMap() {\n    vec3 color = $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n    vec4 dir = texture2D(texture_dirLightMap, $UV);\n    if (dot(dir.xyz,vec3(1.0)) < 0.00001) {\n        dDiffuseLight += color;\n        return;\n    }\n    dLightDirNormW = normalize(dir.xyz * 2.0 - vec3(1.0));\n    float vlight = saturate(dot(dLightDirNormW, -dVertexNormalW));\n    float flight = saturate(dot(dLightDirNormW, -dNormalW));\n    float nlight = (flight / max(vlight,0.01)) * 0.5;\n    dDiffuseLight += color * nlight * 2.0;\n}\nvoid addDirLightMap() {\n    vec4 dir = texture2D(texture_dirLightMap, $UV);\n    if (dot(dir.xyz,vec3(1.0)) < 0.00001) return;\n    vec3 color = $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n    dLightDirNormW = normalize(dir.xyz * 2.0 - vec3(1.0));\n    dSpecularLight += vec3(getLightSpecular()) * color;\n}\n";
-pc.shaderChunks.lightmapSinglePS = "uniform sampler2D texture_lightMap;\nvoid addLightMap() {\n    dDiffuseLight += $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n}\n";
+pc.shaderChunks.lightmapSinglePS = "#ifdef MAPTEXTURE\nuniform sampler2D texture_lightMap;\n#endif\nvoid addLightMap() {\n    vec3 lm = vec3(1.0);\n    #ifdef MAPTEXTURE\n        lm *= $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        lm *= saturate(vVertexColor.$VC);\n    #endif\n    \n    dDiffuseLight += lm;\n}\n";
 pc.shaderChunks.lightmapSingleVertPS = "void addLightMap() {\n    dDiffuseLight += saturate(vVertexColor.$CH);\n}\n";
-pc.shaderChunks.metalnessPS = "void processMetalness(float metalness) {\n    const float dielectricF0 = 0.04;\n    dSpecularity = mix(vec3(dielectricF0), dAlbedo, metalness);\n    dAlbedo *= 1.0 - metalness;\n}\n";
-pc.shaderChunks.metalnessConstPS = "uniform float material_metalness;\nvoid getSpecularity() {\n    processMetalness(material_metalness);\n}\n";
-pc.shaderChunks.metalnessTexPS = "uniform sampler2D texture_metalnessMap;\nvoid getSpecularity() {\n    processMetalness(texture2D(texture_metalnessMap, $UV).$CH);\n}\n";
-pc.shaderChunks.metalnessTexConstPS = "uniform sampler2D texture_metalnessMap;\nuniform float material_metalness;\nvoid getSpecularity() {\n    processMetalness(texture2D(texture_metalnessMap, $UV).$CH * material_metalness);\n}\n";
-pc.shaderChunks.metalnessVertPS = "void getSpecularity() {\n    processMetalness(saturate(vVertexColor.$CH));\n}\n";
-pc.shaderChunks.metalnessVertConstPS = "uniform float material_metalness;\nvoid getSpecularity() {\n    processMetalness(saturate(vVertexColor.$CH) * material_metalness);\n}\n";
+pc.shaderChunks.metalnessPS = "void processMetalness(float metalness) {\n    const float dielectricF0 = 0.04;\n    dSpecularity = mix(vec3(dielectricF0), dAlbedo, metalness);\n    dAlbedo *= 1.0 - metalness;\n}\n#ifdef MAPFLOAT\nuniform float material_metalness;\n#endif\n#ifdef MAPTEXTURE\nuniform sampler2D texture_metalnessMap;\n#endif\nvoid getSpecularity() {\n    float metalness = 1.0;\n    #ifdef MAPFLOAT\n        metalness *= material_metalness;\n    #endif\n    #ifdef MAPTEXTURE\n        metalness *= texture2D(texture_metalnessMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        metalness *= saturate(vVertexColor.$VC);\n    #endif\n    processMetalness(metalness);\n}\n";
 pc.shaderChunks.msdfPS = "uniform sampler2D texture_msdfMap;\n#ifdef GL_OES_standard_derivatives\n#define USE_FWIDTH\n#endif\n#ifdef GL2\n#define USE_FWIDTH\n#endif\nfloat median(float r, float g, float b) {\n    return max(min(r, g), min(max(r, g), b));\n}\nfloat map (float min, float max, float v) {\n    return (v - min) / (max - min);\n}\n// msdf way\n// vec4 applyMsdf(vec4 color) {\n//     vec3 tsample = texture(texture_msdfMap, vUv0).rgb;\n   \n//     // separate\n//     vec2 msdfUnit = 4.0 / vec2(512.0, 256.0);\n//     float sigDist = median(tsample.r, tsample.g, tsample.b) - 0.5;\n//     sigDist *= dot(msdfUnit, 0.5/fwidth(vUv0));\n//     float distance = clamp(sigDist + 0.5, 0.0, 1.0);\n//     return mix(vec4(0.0), color, distance);\n// }\nuniform float font_sdfIntensity; // intensity is used to boost the value read from the SDF, 0 is no boost, 1.0 is max boost\nuniform float font_pxrange;      // the number of pixels between inside and outside the font in SDF\nuniform float font_textureWidth; // the width of the texture atlas\nvec4 applyMsdf(vec4 color) {\n    float font_size = 16.0; // TODO fix this\n    // sample the field\n    vec3 tsample = texture2D(texture_msdfMap, vUv0).rgb;\n    // get the signed distance value\n    float sigDist = median(tsample.r, tsample.g, tsample.b);\n    #ifdef USE_FWIDTH\n        // smoothing depends on size of texture on screen\n        vec2 w = fwidth(vUv0);\n        float smoothing = clamp(map(0.0, 2.0 * font_pxrange / font_textureWidth, w.x), 0.0, 0.5);\n    #else\n        // smoothing gets smaller as the font size gets bigger\n        // don't have fwidth we can approximate from font size, this doesn't account for scaling\n        // so a big font scaled down will be wrong...\n        float smoothing = clamp(2.0 * font_pxrange / font_size, 0.0, 0.5);\n        // for small fonts we remap the distance field to intensify it\n        // float mapMin = 0.05;\n        // float mapMax = clamp(((font_size * 0.4 / 40.0) + 0.52), mapMin, 1.0);\n    #endif\n    float mapMin = 0.05;\n    float mapMax = clamp(1.0 - font_sdfIntensity, mapMin, 1.0);\n    \n    // remap to a smaller range (used on smaller font sizes)\n    sigDist = map(mapMin, mapMax, sigDist);\n    float center = 0.5;\n    // calculate smoothing and use to generate opacity\n    // float smoothing = clamp(font_smoothing * (1.0-roy), 0.0, center);\n    float opacity = smoothstep(center-smoothing, center+smoothing, sigDist);\n    // return final color\n    return mix(vec4(0.0), color, opacity);\n}";
 pc.shaderChunks.normalVS = "vec3 getNormal() {\n    dNormalMatrix = matrix_normal;\n    return normalize(dNormalMatrix * vertex_normal);\n}\n";
 pc.shaderChunks.normalInstancedVS = "vec3 getNormal() {\n    dNormalMatrix = mat3(instance_line1.xyz, instance_line2.xyz, instance_line3.xyz);\n    return normalize(dNormalMatrix * vertex_normal);\n}\n";
@@ -6504,11 +6484,7 @@ pc.shaderChunks.normalSkinnedVS = "vec3 getNormal() {\n    dNormalMatrix = mat3(
 pc.shaderChunks.normalVertexPS = "void getNormal() {\n    dNormalW = normalize(dVertexNormalW);\n}\n";
 pc.shaderChunks.normalXYPS = "vec3 unpackNormal(vec4 nmap) {\n    vec3 normal;\n    normal.xy = nmap.wy * 2.0 - 1.0;\n    normal.z = sqrt(1.0 - saturate(dot(normal.xy, normal.xy)));\n    return normal;\n}\n";
 pc.shaderChunks.normalXYZPS = "vec3 unpackNormal(vec4 nmap) {\n    return nmap.xyz * 2.0 - 1.0;\n}\n";
-pc.shaderChunks.opacityConstPS = "uniform float material_opacity;\nvoid getOpacity() {\n    dAlpha = material_opacity;\n}\n";
-pc.shaderChunks.opacityTexPS = "uniform sampler2D texture_opacityMap;\nvoid getOpacity() {\n    dAlpha = texture2D(texture_opacityMap, $UV).$CH;\n}\n";
-pc.shaderChunks.opacityTexConstPS = "uniform sampler2D texture_opacityMap;\nuniform float material_opacity;\nvoid getOpacity() {\n    dAlpha = texture2D(texture_opacityMap, $UV).$CH * material_opacity;\n}\n";
-pc.shaderChunks.opacityVertPS = "void getOpacity() {\n    dAlpha = saturate(vVertexColor.$CH);\n}\n";
-pc.shaderChunks.opacityVertConstPS = "uniform float material_opacity;\nvoid getOpacity() {\n    dAlpha = saturate(vVertexColor.$CH) * material_opacity;\n}\n";
+pc.shaderChunks.opacityPS = "#ifdef MAPFLOAT\nuniform float material_opacity;\n#endif\n#ifdef MAPTEXTURE\nuniform sampler2D texture_opacityMap;\n#endif\nvoid getOpacity() {\n    dAlpha = 1.0;\n    #ifdef MAPFLOAT\n        dAlpha *= material_opacity;\n    #endif\n    #ifdef MAPTEXTURE\n        dAlpha *= texture2D(texture_opacityMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        dAlpha *= saturate(vVertexColor.$VC);\n    #endif\n}\n";
 pc.shaderChunks.outputAlphaPS = "gl_FragColor.a = dAlpha;\n";
 pc.shaderChunks.outputAlphaOpaquePS = "gl_FragColor.a = 1.0;\n";
 pc.shaderChunks.outputAlphaPremulPS = "gl_FragColor.rgb *= dAlpha;\ngl_FragColor.a = dAlpha;\n";
@@ -6562,8 +6538,8 @@ pc.shaderChunks.prefilterCubemapPS = "varying vec2 vUv0;\nuniform samplerCube so
 pc.shaderChunks.reflDirPS = "void getReflDir() {\n    dReflDirW = normalize(-reflect(dViewDirW, dNormalW));\n}\n";
 pc.shaderChunks.reflectionCubePS = "uniform samplerCube texture_cubeMap;\nuniform float material_reflectivity;\nvoid addReflection() {\n    vec3 lookupVec = fixSeams(cubeMapProject(dReflDirW));\n    lookupVec.x *= -1.0;\n    dReflection += vec4($textureCubeSAMPLE(texture_cubeMap, lookupVec).rgb, material_reflectivity);\n}\n";
 pc.shaderChunks.reflectionDpAtlasPS = "uniform sampler2D texture_sphereMap;\nuniform float material_reflectivity;\nvec2 getDpAtlasUv(vec2 uv, float mip) {\n    vec4 rect;\n    float sx = saturate(mip - 2.0);\n    rect.x = sx * 0.5;\n    float t = mip - rect.x * 6.0;\n    float i = 1.0 - rect.x;\n    rect.y = min(t * 0.5, 0.75) * i + rect.x;\n    float st = saturate(t);\n    rect.z = (1.0 - st * 0.5) * i;\n    rect.w = rect.z * 0.5;\n    float rcRectZ = 1.0 / rect.z;\n    float scaleFactor = 0.00390625 * rcRectZ; // 0.0078125 = (256 + 2) / 256 - 1, 0.00390625 same for 512\n    vec2 scale = vec2(scaleFactor, scaleFactor * 2.0);\n    uv = uv * (vec2(1.0) - scale) + scale * 0.5;\n    uv = uv * rect.zw + rect.xy;\n    return uv;\n}\nvoid addReflection() {\n    vec3 reflDir = normalize(cubeMapProject(dReflDirW));\n    // Convert vector to DP coords\n    bool up = reflDir.y > 0.0;\n    float scale = 0.90909090909090909090909090909091;// 1.0 / 1.1;\n    vec3 reflDirWarp = reflDir.xzx * vec3(-0.25, 0.5, 0.25);\n    float reflDirVer = abs(reflDir.y) + 1.0;\n    reflDirWarp /= reflDirVer;\n    reflDirWarp *= scale;\n    reflDirWarp = vec3(0.75, 0.5, 0.25) - reflDirWarp;\n    vec2 tc = up? reflDirWarp.xy : reflDirWarp.zy;\n    float bias = saturate(1.0 - dGlossiness) * 5.0; // multiply by max mip level\n    float mip = floor(bias);\n    vec3 tex1 = $texture2DSAMPLE(texture_sphereMap, getDpAtlasUv(tc, mip)).rgb;\n    mip = min(mip + 1.0, 5.0);\n    vec3 tex2 = $texture2DSAMPLE(texture_sphereMap, getDpAtlasUv(tc, mip)).rgb;\n    tex1 = mix(tex1, tex2, fract(bias));\n    tex1 = processEnvironment(tex1);\n    dReflection += vec4(tex1, material_reflectivity);\n}\n";
-pc.shaderChunks.reflectionPrefilteredCubePS = "uniform samplerCube texture_prefilteredCubeMap128;\nuniform samplerCube texture_prefilteredCubeMap64;\nuniform samplerCube texture_prefilteredCubeMap32;\nuniform samplerCube texture_prefilteredCubeMap16;\nuniform samplerCube texture_prefilteredCubeMap8;\nuniform samplerCube texture_prefilteredCubeMap4;\nuniform float material_reflectivity;\nvoid addReflection() {\n    // Unfortunately, WebGL doesn't allow us using textureCubeLod. Therefore bunch of nasty workarounds is required.\n    // We fix mip0 to 128x128, so code is rather static.\n    // Mips smaller than 4x4 aren't great even for diffuse. Don't forget that we don't have bilinear filtering between different faces.\n    float bias = saturate(1.0 - dGlossiness) * 5.0; // multiply by max mip level\n    int index1 = int(bias);\n    int index2 = int(min(bias + 1.0, 7.0));\n    vec3 fixedReflDir = fixSeams(cubeMapProject(dReflDirW), bias);\n    fixedReflDir.x *= -1.0;\n    vec4 cubes[6];\n    cubes[0] = textureCube(texture_prefilteredCubeMap128, fixedReflDir);\n    cubes[1] = textureCube(texture_prefilteredCubeMap64, fixedReflDir);\n    cubes[2] = textureCube(texture_prefilteredCubeMap32, fixedReflDir);\n    cubes[3] = textureCube(texture_prefilteredCubeMap16, fixedReflDir);\n    cubes[4] = textureCube(texture_prefilteredCubeMap8, fixedReflDir);\n    cubes[5] = textureCube(texture_prefilteredCubeMap4, fixedReflDir);\n    // Also we don't have dynamic indexing in PS, so...\n    vec4 cube[2];\n    for(int i = 0; i < 6; i++) {\n        if (i == index1) {\n            cube[0] = cubes[i];\n        }\n        if (i == index2) {\n            cube[1] = cubes[i];\n        }\n    }\n    // another variant\n    /*if (index1==0){ cube[0]=cubes[0];\n    }else if (index1==1){ cube[0]=cubes[1];\n    }else if (index1==2){ cube[0]=cubes[2];\n    }else if (index1==3){ cube[0]=cubes[3];\n    }else if (index1==4){ cube[0]=cubes[4];\n    }else if (index1==5){ cube[0]=cubes[5];}\n    if (index2==0){ cube[1]=cubes[0];\n    }else if (index2==1){ cube[1]=cubes[1];\n    }else if (index2==2){ cube[1]=cubes[2];\n    }else if (index2==3){ cube[1]=cubes[3];\n    }else if (index2==4){ cube[1]=cubes[4];\n    }else if (index2==5){ cube[1]=cubes[5];}*/\n    vec4 cubeFinal = mix(cube[0], cube[1], fract(bias));\n    vec3 refl = processEnvironment($DECODE(cubeFinal).rgb);\n    dReflection += vec4(refl, material_reflectivity);\n}\n";
-pc.shaderChunks.reflectionPrefilteredCubeLodPS = "#extension GL_EXT_shader_texture_lod : enable\nuniform samplerCube texture_prefilteredCubeMap128;\nuniform float material_reflectivity;\nvoid addReflection() {\n    float bias = saturate(1.0 - dGlossiness) * 5.0; // multiply by max mip level\n    vec3 fixedReflDir = fixSeams(cubeMapProject(dReflDirW), bias);\n    fixedReflDir.x *= -1.0;\n    vec3 refl = processEnvironment($DECODE( textureCubeLodEXT(texture_prefilteredCubeMap128, fixedReflDir, bias) ).rgb);\n    dReflection += vec4(refl, material_reflectivity);\n}\n";
+pc.shaderChunks.reflectionPrefilteredCubePS = "uniform samplerCube texture_prefilteredCubeMap128;\nuniform samplerCube texture_prefilteredCubeMap64;\nuniform samplerCube texture_prefilteredCubeMap32;\nuniform samplerCube texture_prefilteredCubeMap16;\nuniform samplerCube texture_prefilteredCubeMap8;\n#ifndef PMREM4\n#define PMREM4\nuniform samplerCube texture_prefilteredCubeMap4;\n#endif\nuniform float material_reflectivity;\nvoid addReflection() {\n    // Unfortunately, WebGL doesn't allow us using textureCubeLod. Therefore bunch of nasty workarounds is required.\n    // We fix mip0 to 128x128, so code is rather static.\n    // Mips smaller than 4x4 aren't great even for diffuse. Don't forget that we don't have bilinear filtering between different faces.\n    float bias = saturate(1.0 - dGlossiness) * 5.0; // multiply by max mip level\n    int index1 = int(bias);\n    int index2 = int(min(bias + 1.0, 7.0));\n    vec3 fixedReflDir = fixSeams(cubeMapProject(dReflDirW), bias);\n    fixedReflDir.x *= -1.0;\n    vec4 cubes[6];\n    cubes[0] = textureCube(texture_prefilteredCubeMap128, fixedReflDir);\n    cubes[1] = textureCube(texture_prefilteredCubeMap64, fixedReflDir);\n    cubes[2] = textureCube(texture_prefilteredCubeMap32, fixedReflDir);\n    cubes[3] = textureCube(texture_prefilteredCubeMap16, fixedReflDir);\n    cubes[4] = textureCube(texture_prefilteredCubeMap8, fixedReflDir);\n    cubes[5] = textureCube(texture_prefilteredCubeMap4, fixedReflDir);\n    // Also we don't have dynamic indexing in PS, so...\n    vec4 cube[2];\n    for(int i = 0; i < 6; i++) {\n        if (i == index1) {\n            cube[0] = cubes[i];\n        }\n        if (i == index2) {\n            cube[1] = cubes[i];\n        }\n    }\n    // another variant\n    /*if (index1==0){ cube[0]=cubes[0];\n    }else if (index1==1){ cube[0]=cubes[1];\n    }else if (index1==2){ cube[0]=cubes[2];\n    }else if (index1==3){ cube[0]=cubes[3];\n    }else if (index1==4){ cube[0]=cubes[4];\n    }else if (index1==5){ cube[0]=cubes[5];}\n    if (index2==0){ cube[1]=cubes[0];\n    }else if (index2==1){ cube[1]=cubes[1];\n    }else if (index2==2){ cube[1]=cubes[2];\n    }else if (index2==3){ cube[1]=cubes[3];\n    }else if (index2==4){ cube[1]=cubes[4];\n    }else if (index2==5){ cube[1]=cubes[5];}*/\n    vec4 cubeFinal = mix(cube[0], cube[1], fract(bias));\n    vec3 refl = processEnvironment($DECODE(cubeFinal).rgb);\n    dReflection += vec4(refl, material_reflectivity);\n}\n";
+pc.shaderChunks.reflectionPrefilteredCubeLodPS = "#extension GL_EXT_shader_texture_lod : enable\n#ifndef PMREM4\n#define PMREM4\nuniform samplerCube texture_prefilteredCubeMap128;\n#endif\nuniform float material_reflectivity;\nvoid addReflection() {\n    float bias = saturate(1.0 - dGlossiness) * 5.0; // multiply by max mip level\n    vec3 fixedReflDir = fixSeams(cubeMapProject(dReflDirW), bias);\n    fixedReflDir.x *= -1.0;\n    vec3 refl = processEnvironment($DECODE( textureCubeLodEXT(texture_prefilteredCubeMap128, fixedReflDir, bias) ).rgb);\n    dReflection += vec4(refl, material_reflectivity);\n}\n";
 pc.shaderChunks.reflectionSpherePS = "uniform mat4 matrix_view;\nuniform sampler2D texture_sphereMap;\nuniform float material_reflectivity;\nvoid addReflection() {\n    vec3 reflDirV = (mat3(matrix_view) * dReflDirW).xyz;\n    float m = 2.0 * sqrt( dot(reflDirV.xy, reflDirV.xy) + (reflDirV.z+1.0)*(reflDirV.z+1.0) );\n    vec2 sphereMapUv = reflDirV.xy / m + 0.5;\n    dReflection += vec4($texture2DSAMPLE(texture_sphereMap, sphereMapUv).rgb, material_reflectivity);\n}\n";
 pc.shaderChunks.reflectionSphereLowPS = "uniform sampler2D texture_sphereMap;\nuniform float material_reflectivity;\nvoid addReflection() {\n    vec3 reflDirV = vNormalV;\n    vec2 sphereMapUv = reflDirV.xy * 0.5 + 0.5;\n    dReflection += vec4($texture2DSAMPLE(texture_sphereMap, sphereMapUv).rgb, material_reflectivity);\n}\n";
 pc.shaderChunks.refractionPS = "uniform float material_refraction, material_refractionIndex;\nvec3 refract2(vec3 viewVec, vec3 Normal, float IOR) {\n    float vn = dot(viewVec, Normal);\n    float k = 1.0 - IOR * IOR * (1.0 - vn * vn);\n    vec3 refrVec = IOR * viewVec - (IOR * vn + sqrt(k)) * Normal;\n    return refrVec;\n}\nvoid addRefraction() {\n    // use same reflection code with refraction vector\n    vec3 tmp = dReflDirW;\n    vec4 tmp2 = dReflection;\n    dReflection = vec4(0.0);\n    dReflDirW = refract2(-dViewDirW, dNormalW, material_refractionIndex);\n    addReflection();\n    dDiffuseLight = mix(dDiffuseLight, dReflection.rgb * dAlbedo, material_refraction);\n    dReflDirW = tmp;\n    dReflection = tmp2;\n}\n";
@@ -6589,14 +6565,10 @@ pc.shaderChunks.skyboxPS = "varying vec3 vViewDir;\nuniform samplerCube texture_
 pc.shaderChunks.skyboxVS = "attribute vec3 aPosition;\nuniform mat4 matrix_view;\nuniform mat4 matrix_projection;\nvarying vec3 vViewDir;\nvoid main(void)\n{\n    mat4 view = matrix_view;\n    view[3][0] = view[3][1] = view[3][2] = 0.0;\n    gl_Position = matrix_projection * view * vec4(aPosition, 1.0);\n    // Force skybox to far Z, regardless of the clip planes on the camera\n    // Subtract a tiny fudge factor to ensure floating point errors don't\n    // still push pixels beyond far Z. See:\n    // http://www.opengl.org/discussion_boards/showthread.php/171867-skybox-problem\n    gl_Position.z = gl_Position.w - 0.00001;\n    vViewDir = aPosition;\n    vViewDir.x *= -1.0;\n}\n";
 pc.shaderChunks.skyboxHDRPS = "varying vec3 vViewDir;\nuniform samplerCube texture_cubeMap;\nvoid main(void) {\n    vec3 color = processEnvironment($textureCubeSAMPLE(texture_cubeMap, fixSeamsStatic(vViewDir, $FIXCONST)).rgb);\n    color = toneMap(color);\n    color = gammaCorrectOutput(color);\n    gl_FragColor = vec4(color, 1.0);\n}\n";
 pc.shaderChunks.skyboxPrefilteredCubePS = "varying vec3 vViewDir;\nuniform samplerCube texture_cubeMap;\nvec3 fixSeamsStretch(vec3 vec, float mipmapIndex, float cubemapSize) {\n    float scale = 1.0 - exp2(mipmapIndex) / cubemapSize;\n    float M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n    if (abs(vec.x) != M) vec.x *= scale;\n    if (abs(vec.y) != M) vec.y *= scale;\n    if (abs(vec.z) != M) vec.z *= scale;\n    return vec;\n}\nvoid main(void) {\n    vec3 color = textureCubeRGBM(texture_cubeMap, fixSeamsStretch(vViewDir, 0.0, 128.0));\n    color = toneMap(color);\n    color = gammaCorrectOutput(color);\n    gl_FragColor = vec4(color, 1.0);\n}\n";
+pc.shaderChunks.specularPS = "#ifdef MAPCOLOR\nuniform vec3 material_specular;\n#endif\n#ifdef MAPTEXTURE\nuniform sampler2D texture_specularMap;\n#endif\nvoid getSpecularity() {\n    dSpecularity = vec3(1.0);\n    #ifdef MAPCOLOR\n        dSpecularity *= material_specular;\n    #endif\n    #ifdef MAPTEXTURE\n        dSpecularity *= texture2D(texture_specularMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        dSpecularity *= saturate(vVertexColor.$VC);\n    #endif\n}\n";
 pc.shaderChunks.specularAaNonePS = "float antiAliasGlossiness(float power) {\n    return power;\n}\n";
 pc.shaderChunks.specularAaToksvigPS = "float antiAliasGlossiness(float power) {\n    float rlen = 1.0 / saturate(length(dNormalMap));\n    float toksvig = 1.0 / (1.0 + power * (rlen - 1.0));\n    return power * toksvig;\n}\n";
 pc.shaderChunks.specularAaToksvigFloatPS = "float antiAliasGlossiness(float power) {\n    float rlen = 1.0 / saturate(length(dNormalMap));\n    float toksvig = 1.0 / (1.0 + power * (rlen - 1.0));\n    return power * mix(1.0, toksvig, material_bumpiness);\n}\n";
-pc.shaderChunks.specularConstPS = "uniform vec3 material_specular;\nvoid getSpecularity() {\n    dSpecularity = material_specular;\n}\n";
-pc.shaderChunks.specularTexPS = "uniform sampler2D texture_specularMap;\nvoid getSpecularity() {\n    dSpecularity = texture2D(texture_specularMap, $UV).$CH;\n}\n";
-pc.shaderChunks.specularTexConstPS = "uniform sampler2D texture_specularMap;\nuniform vec3 material_specular;\nvoid getSpecularity() {\n    dSpecularity = texture2D(texture_specularMap, $UV).$CH * material_specular;\n}\n";
-pc.shaderChunks.specularVertPS = "void getSpecularity() {\n    dSpecularity = saturate(vVertexColor.$CH);\n}\n";
-pc.shaderChunks.specularVertConstPS = "uniform vec3 material_specular;\nvoid getSpecularity() {\n    dSpecularity = saturate(vVertexColor.$CH) * material_specular;\n}\n";
 pc.shaderChunks.spotPS = "float getSpotEffect(vec3 lightSpotDirW, float lightInnerConeAngle, float lightOuterConeAngle) {\n    float cosAngle = dot(dLightDirNormW, lightSpotDirW);\n    return smoothstep(lightOuterConeAngle, lightInnerConeAngle, cosAngle);\n}\n";
 pc.shaderChunks.startPS = "\nvoid main(void) {\n    dDiffuseLight = vec3(0);\n    dSpecularLight = vec3(0);\n    dReflection = vec4(0);\n    dSpecularity = vec3(0);\n";
 pc.shaderChunks.startVS = "\nvoid main(void) {\n    gl_Position = getPosition();\n";
@@ -6612,6 +6584,7 @@ pc.shaderChunks.transformVS = "mat4 getModelMatrix() {\n    return matrix_model;
 pc.shaderChunks.transformBatchSkinnedVS = "mat4 getModelMatrix() {\n    return getBoneMatrix(vertex_boneIndices);\n}\nvec4 getPosition() {\n    dModelMatrix = getModelMatrix();\n    vec4 posW = dModelMatrix * vec4(vertex_position, 1.0);\n    dPositionW = posW.xyz;\n    return matrix_viewProjection * posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
 pc.shaderChunks.transformDeclVS = "attribute vec3 vertex_position;\nuniform mat4 matrix_model;\nuniform mat4 matrix_viewProjection;\nvec3 dPositionW;\nmat4 dModelMatrix;\n";
 pc.shaderChunks.transformInstancedVS = "mat4 getModelMatrix() {\n    return mat4(instance_line1, instance_line2, instance_line3, instance_line4);\n}\nvec4 getPosition() {\n    dModelMatrix = getModelMatrix();\n    vec4 posW = dModelMatrix * vec4(vertex_position, 1.0);\n    dPositionW = posW.xyz;\n    return matrix_viewProjection * posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
+pc.shaderChunks.transformPixelSnapVS = "uniform vec4 uScreenSize;\nmat4 getModelMatrix() {\n    return matrix_model;\n}\nvec4 getPosition() {\n    dModelMatrix = getModelMatrix();\n    vec4 posW = dModelMatrix * vec4(vertex_position, 1.0);\n    dPositionW = posW.xyz;\n    vec4 o = matrix_viewProjection * posW;\n    // snap vertex to a pixel boundary\n    o.xy = (o.xy * 0.5) + 0.5;\n    o.xy *= uScreenSize.xy;\n    o.xy = floor(o.xy);\n    o.xy *= uScreenSize.zw;\n    o.xy = (o.xy * 2.0) - 1.0;\n    return o;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
 pc.shaderChunks.transformScreenSpaceVS = "mat4 getModelMatrix() {\n    return matrix_model;\n}\nvec4 getPosition() {\n    vec4 posW = vec4((getModelMatrix() * vec4(vertex_position, 1.0)).xy, 0.0, 1.0);\n    dPositionW = posW.xyz;\n    return posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
 pc.shaderChunks.transformScreenSpaceBatchSkinnedVS = "mat4 getModelMatrix() {\n    return getBoneMatrix(vertex_boneIndices);\n}\nvec4 getPosition() {\n    vec4 posW = vec4((getModelMatrix() * vec4(vertex_position, 1.0)).xy, 0.0, 1.0);\n    dPositionW = posW.xyz;\n    return posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
 pc.shaderChunks.transformSkinnedVS = "mat4 getModelMatrix() {\n    return getBoneMatrix(vertex_boneIndices.x) * vertex_boneWeights.x +\n           getBoneMatrix(vertex_boneIndices.y) * vertex_boneWeights.y +\n           getBoneMatrix(vertex_boneIndices.z) * vertex_boneWeights.z +\n           getBoneMatrix(vertex_boneIndices.w) * vertex_boneWeights.w;\n}\nvec4 getPosition() {\n    dModelMatrix = getModelMatrix();\n    vec4 posW = dModelMatrix * vec4(vertex_position, 1.0);\n    //posW.xyz /= posW.w;\n    posW.xyz += skinPosOffset;\n    dPositionW = posW.xyz;// / posW.w;\n    return matrix_viewProjection * posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
@@ -7217,7 +7190,44 @@ pc.programlib.particle = {generateKey:function(device, options) {
   var attributes = pc.shaderChunks.collectAttribs(vshader);
   return {attributes:attributes, vshader:vshader, fshader:fshader};
 }};
-pc.programlib.standard = {hashCode:function(str) {
+var _oldChunkWarn = function(oldName, newName) {
+};
+var _oldChunkFloat = function(s, o, p) {
+  _oldChunkWarn(p, o);
+  return "\n#ifdef MAPFLOAT\n" + s + "\n#else\n" + pc.shaderChunks[o] + "\n#endif\n";
+};
+var _oldChunkColor = function(s, o, p) {
+  _oldChunkWarn(p, o);
+  return "\n#ifdef MAPCOLOR\n" + s + "\n#else\n" + pc.shaderChunks[o] + "\n#endif\n";
+};
+var _oldChunkTex = function(s, o, p) {
+  _oldChunkWarn(p, o);
+  return "\n#ifdef MAPTEXTURE\n" + s + "\n#else\n" + pc.shaderChunks[o] + "\n#endif\n";
+};
+var _oldChunkTexColor = function(s, o, p) {
+  _oldChunkWarn(p, o);
+  return "#undef MAPTEXTURECOLOR\n#ifdef MAPTEXTURE\n#ifdef MAPCOLOR\n#define MAPTEXTURECOLOR\n#endif\n#endif\n" + "#ifdef MAPTEXTURECOLOR\n" + s + "\n#else\n" + pc.shaderChunks[o] + "\n#endif\n";
+};
+var _oldChunkTexFloat = function(s, o, p) {
+  _oldChunkWarn(p, o);
+  return "#undef MAPTEXTUREFLOAT\n#ifdef MAPTEXTURE\n#ifdef MAPFLOAT\n#define MAPTEXTUREFLOAT\n#endif\n#endif\n" + "#ifdef MAPTEXTUREFLOAT\n" + s + "\n#else\n" + pc.shaderChunks[o] + "\n#endif\n";
+};
+var _oldChunkVert = function(s, o, p) {
+  _oldChunkWarn(p, o);
+  return "\n#ifdef MAPVERTEX\n" + s + "\n#else\n" + pc.shaderChunks[o] + "\n#endif\n";
+};
+var _oldChunkVertColor = function(s, o, p) {
+  _oldChunkWarn(p, o);
+  return "#undef MAPVERTEXCOLOR\n#ifdef MAPVERTEX\n#ifdef MAPCOLOR\n#define MAPVERTEXCOLOR\n#endif\n#endif\n" + "#ifdef MAPVERTEXCOLOR\n" + s + "\n#else\n" + pc.shaderChunks[o] + "\n#endif\n";
+};
+var _oldChunkVertFloat = function(s, o, p) {
+  _oldChunkWarn(p, o);
+  return "#undef MAPVERTEXFLOAT\n#ifdef MAPVERTEX\n#ifdef MAPFLOAT\n#define MAPVERTEXFLOAT\n#endif\n#endif\n" + "#ifdef MAPVERTEXFLOAT\n" + s + "\n#else\n" + pc.shaderChunks[o] + "\n#endif\n";
+};
+pc.programlib.standard = {_oldChunkToNew:{aoTexPS:{n:"aoPS", f:_oldChunkTex}, aoVertPS:{n:"aoPS", f:_oldChunkVert}, diffuseConstPS:{n:"diffusePS", f:_oldChunkColor}, diffuseTexPS:{n:"diffusePS", f:_oldChunkTex}, diffuseTexConstPS:{n:"diffusePS", f:_oldChunkTexColor}, diffuseVertPS:{n:"diffusePS", f:_oldChunkVert}, diffuseVertConstPS:{n:"diffusePS", f:_oldChunkVertColor}, emissiveConstPS:{n:"emissivePS", f:_oldChunkColor}, emissiveTexPS:{n:"emissivePS", f:_oldChunkTex}, emissiveTexConstPS:{n:"emissivePS", 
+f:_oldChunkTexColor}, emissiveTexConstFloatPS:{n:"emissivePS", f:_oldChunkTexFloat}, emissiveVertPS:{n:"emissivePS", f:_oldChunkVert}, emissiveVertConstPS:{n:"emissivePS", f:_oldChunkVertColor}, emissiveVertConstFloatPS:{n:"emissivePS", f:_oldChunkVertFloat}, glossConstPS:{n:"glossPS", f:_oldChunkFloat}, glossTexPS:{n:"glossPS", f:_oldChunkTex}, glossTexConstPS:{n:"glossPS", f:_oldChunkTexFloat}, glossVertPS:{n:"glossPS", f:_oldChunkVert}, glossVertConstPS:{n:"glossPS", f:_oldChunkVertFloat}, metalnessConstPS:{n:"metalnessPS", 
+f:_oldChunkFloat}, metalnessTexPS:{n:"metalnessPS", f:_oldChunkTex}, metalnessTexConstPS:{n:"metalnessPS", f:_oldChunkTexFloat}, metalnessVertPS:{n:"metalnessPS", f:_oldChunkVert}, metalnessVertConstPS:{n:"metalnessPS", f:_oldChunkVertFloat}, opacityConstPS:{n:"opacityPS", f:_oldChunkFloat}, opacityTexPS:{n:"opacityPS", f:_oldChunkTex}, opacityTexConstPS:{n:"opacityPS", f:_oldChunkTexFloat}, opacityVertPS:{n:"opacityPS", f:_oldChunkVert}, opacityVertConstPS:{n:"opacityPS", f:_oldChunkVertFloat}, 
+specularConstPS:{n:"specularPS", f:_oldChunkColor}, specularTexPS:{n:"specularPS", f:_oldChunkTex}, specularTexConstPS:{n:"specularPS", f:_oldChunkTexColor}, specularVertPS:{n:"specularPS", f:_oldChunkVert}, specularVertConstPS:{n:"specularPS", f:_oldChunkVertColor}}, hashCode:function(str) {
   var hash = 0;
   if (str.length === 0) {
     return hash;
@@ -7288,52 +7298,44 @@ pc.programlib.standard = {hashCode:function(str) {
   return codes;
 }, _uvSource:function(id, uv) {
   return id === 0 ? "vUv" + uv : "vUV" + uv + "_" + id;
+}, _addMapDef:function(name, enabled) {
+  var s = "\n#undef " + name + "\n";
+  if (enabled) {
+    s += " #define " + name + "\n";
+  }
+  return s;
+}, _addMapDefs:function(float, color, vertex, map) {
+  var s = "";
+  s += this._addMapDef("MAPFLOAT", float);
+  s += this._addMapDef("MAPCOLOR", color);
+  s += this._addMapDef("MAPVERTEX", vertex);
+  s += this._addMapDef("MAPTEXTURE", map);
+  return s;
 }, _addMap:function(p, options, chunks, uvOffset, subCode, format) {
-  var cname, tname, uname;
   var mname = p + "Map";
-  var tint;
-  if (options[mname + "VertexColor"]) {
-    cname = mname + "Channel";
-    if (!subCode) {
-      tint = options[p + "Tint"];
-      if (tint) {
-        if (tint === 1) {
-          subCode = chunks[p + "VertConstFloatPS"];
-        } else {
-          subCode = chunks[p + "VertConstPS"];
-        }
-      } else {
-        subCode = chunks[p + "VertPS"];
-      }
-    }
-    return subCode.replace(/\$CH/g, options[cname]);
-  } else {
-    if (options[mname]) {
-      tname = mname + "Transform";
-      cname = mname + "Channel";
-      uname = mname + "Uv";
-      var uv = this._uvSource(options[tname], options[uname]) + uvOffset;
-      if (!subCode) {
-        tint = options[p + "Tint"];
-        if (tint) {
-          if (tint === 1) {
-            subCode = chunks[p + "TexConstFloatPS"];
-          } else {
-            subCode = chunks[p + "TexConstPS"];
-          }
-        } else {
-          subCode = chunks[p + "TexPS"];
-        }
-      }
-      if (format !== undefined) {
-        var fmt = format === 0 ? "texture2DSRGB" : format === 1 ? "texture2DRGBM" : "texture2D";
-        subCode = subCode.replace(/\$texture2DSAMPLE/g, fmt);
-      }
-      return subCode.replace(/\$UV/g, uv).replace(/\$CH/g, options[cname]);
-    } else {
-      return chunks[p + "ConstPS"];
+  var tint = options[p + "Tint"];
+  var vert = options[p + "VertexColor"];
+  var tex = options[mname];
+  if (!subCode) {
+    subCode = chunks[p + "PS"];
+  }
+  if (tex) {
+    var uname = mname + "Uv";
+    var tname = mname + "Transform";
+    var cname = mname + "Channel";
+    var uv = this._uvSource(options[tname], options[uname]) + uvOffset;
+    subCode = subCode.replace(/\$UV/g, uv).replace(/\$CH/g, options[cname]);
+    if (format !== undefined) {
+      var fmt = format === 0 ? "texture2DSRGB" : format === 1 ? "texture2DRGBM" : "texture2D";
+      subCode = subCode.replace(/\$texture2DSAMPLE/g, fmt);
     }
   }
+  if (vert) {
+    var vcname = p + "VertexColorChannel";
+    subCode = subCode.replace(/\$VC/g, options[vcname]);
+  }
+  subCode = this._addMapDefs(tint === 1, tint === 3, vert, tex) + subCode;
+  return subCode.replace(/\$/g, "");
 }, _nonPointShadowMapProjection:function(device, light, shadowCoordArgs) {
   if (!light._normalOffsetBias || light._isVsm) {
     if (light._type === pc.LIGHTTYPE_SPOT) {
@@ -7374,15 +7376,15 @@ pc.programlib.standard = {hashCode:function(str) {
   } else {
     options.fresnelModel = options.fresnelModel === 0 ? pc.FRESNEL_SCHLICK : options.fresnelModel;
   }
-  var cubemapReflection = options.cubeMap || options.prefilteredCubemap && options.useSpecular;
+  var cubemapReflection = options.cubeMap || options.prefilteredCubemap && options.useSpecular && (!options.sphereMap && !options.dpAtlas);
   var reflections = options.sphereMap || cubemapReflection || options.dpAtlas;
   var useTangents = pc.precalculatedTangents;
   var useTexCubeLod = options.useTexCubeLod;
-  if (options.cubeMap || options.prefilteredCubemap) {
+  if (options.cubeMap) {
     options.sphereMap = null;
   }
   if (options.dpAtlas) {
-    options.sphereMap = options.cubeMap = options.prefilteredCubemap = cubemapReflection = null;
+    options.prefilteredCubemap = null;
   }
   if (!options.useSpecular) {
     options.specularMap = options.glossMap = null;
@@ -7396,7 +7398,8 @@ pc.programlib.standard = {hashCode:function(str) {
   var lightType;
   var shadowCoordArgs;
   if (options.chunks) {
-    var customChunks = [];
+    var customChunks = {};
+    var newP;
     for (p in chunks) {
       if (chunks.hasOwnProperty(p)) {
         if (!options.chunks[p]) {
@@ -7407,6 +7410,12 @@ pc.programlib.standard = {hashCode:function(str) {
             customChunks[p] = customChunks[p].replace(/vertex_normal/g, "vec3(0)").replace(/vertex_tangent/g, "vec4(0)");
           }
         }
+      }
+    }
+    for (p in options.chunks) {
+      newP = this._oldChunkToNew[p];
+      if (newP) {
+        customChunks[newP.n] = newP.f(options.chunks[p], newP.n, p);
       }
     }
     chunks = customChunks;
@@ -7469,20 +7478,19 @@ pc.programlib.standard = {hashCode:function(str) {
   var cname, mname, tname, uname;
   for (p in pc._matTex2D) {
     mname = p + "Map";
-    if (options[mname + "VertexColor"]) {
-      cname = mname + "Channel";
+    if (options[p + "VertexColor"]) {
+      cname = p + "VertexColorChannel";
       options[cname] = this._correctChannel(p, options[cname]);
-    } else {
-      if (options[mname]) {
-        cname = mname + "Channel";
-        tname = mname + "Transform";
-        uname = mname + "Uv";
-        options[uname] = Math.min(options[uname], maxUvSets - 1);
-        options[cname] = this._correctChannel(p, options[cname]);
-        var uvSet = options[uname];
-        useUv[uvSet] = true;
-        useUnmodifiedUv[uvSet] = useUnmodifiedUv[uvSet] || options[mname] && !options[tname];
-      }
+    }
+    if (options[mname]) {
+      cname = mname + "Channel";
+      tname = mname + "Transform";
+      uname = mname + "Uv";
+      options[uname] = Math.min(options[uname], maxUvSets - 1);
+      options[cname] = this._correctChannel(p, options[cname]);
+      var uvSet = options[uname];
+      useUv[uvSet] = true;
+      useUnmodifiedUv[uvSet] = useUnmodifiedUv[uvSet] || options[mname] && !options[tname];
     }
   }
   if (options.forceUv1) {
@@ -7537,9 +7545,16 @@ pc.programlib.standard = {hashCode:function(str) {
           code += chunks.normalInstancedVS;
         }
       } else {
-        code += chunks.transformVS;
-        if (needsNormal) {
-          code += chunks.normalVS;
+        if (options.pixelSnap) {
+          code += chunks.transformPixelSnapVS;
+          if (needsNormal) {
+            code += chunks.normalVS;
+          }
+        } else {
+          code += chunks.transformVS;
+          if (needsNormal) {
+            code += chunks.normalVS;
+          }
         }
       }
     }
@@ -7723,9 +7738,6 @@ pc.programlib.standard = {hashCode:function(str) {
     } else {
       code += chunks.specularAaNonePS;
     }
-    if (options.useMetalness) {
-      code += chunks.metalnessPS;
-    }
     code += this._addMap(options.useMetalness ? "metalness" : "specular", options, chunks, uvOffset);
     code += this._addMap("gloss", options, chunks, uvOffset);
     if (options.fresnelModel > 0) {
@@ -7748,9 +7760,9 @@ pc.programlib.standard = {hashCode:function(str) {
     }
     code += this._addMap("height", options, chunks, "", chunks.parallaxPS);
   }
-  var useAo = options.aoMap || options.aoMapVertexColor;
+  var useAo = options.aoMap || options.aoVertexColor;
   if (useAo) {
-    code += this._addMap("ao", options, chunks, uvOffset, options.aoMapVertexColor ? chunks.aoVertPS : chunks.aoTexPS);
+    code += this._addMap("ao", options, chunks, uvOffset, options.aoVertexColor ? chunks.aoVertPS : chunks.aoTexPS);
     if (options.occludeSpecular) {
       if (options.occludeSpecular === pc.SPECOCC_AO) {
         code += options.occludeSpecularFloat ? chunks.aoSpecOccSimplePS : chunks.aoSpecOccConstSimplePS;
@@ -7760,7 +7772,7 @@ pc.programlib.standard = {hashCode:function(str) {
     }
   }
   var reflectionDecode = options.rgbmReflection ? "decodeRGBM" : options.hdrReflection ? "" : "gammaCorrectInput";
-  if (cubemapReflection || options.prefilteredCubemap) {
+  if (cubemapReflection) {
     if (options.prefilteredCubemap) {
       if (useTexCubeLod) {
         code += chunks.reflectionPrefilteredCubeLodPS.replace(/\$DECODE/g, reflectionDecode);
@@ -7859,19 +7871,20 @@ pc.programlib.standard = {hashCode:function(str) {
     code += chunks.combineDiffusePS;
   }
   var addAmbient = true;
-  if (options.lightMap || options.lightMapVertexColor) {
-    code += this._addMap("light", options, chunks, uvOffset, options.lightMapVertexColor ? chunks.lightmapSingleVertPS : options.dirLightMap ? chunks.lightmapDirPS : chunks.lightmapSinglePS, options.lightMapFormat);
+  if (options.lightMap || options.lightVertexColor) {
+    code += this._addMap("light", options, chunks, uvOffset, options.dirLightMap ? chunks.lightmapDirPS : chunks.lightmapSinglePS, options.lightMapFormat);
     addAmbient = options.lightMapWithoutAmbient;
   }
   if (addAmbient) {
+    var ambientDecode = options.rgbmAmbient ? "decodeRGBM" : options.hdrAmbient ? "" : "gammaCorrectInput";
     if (options.ambientSH) {
       code += chunks.ambientSHPS;
     } else {
       if (options.prefilteredCubemap) {
         if (useTexCubeLod) {
-          code += chunks.ambientPrefilteredCubeLodPS.replace(/\$DECODE/g, reflectionDecode);
+          code += chunks.ambientPrefilteredCubeLodPS.replace(/\$DECODE/g, ambientDecode);
         } else {
-          code += chunks.ambientPrefilteredCubePS.replace(/\$DECODE/g, reflectionDecode);
+          code += chunks.ambientPrefilteredCubePS.replace(/\$DECODE/g, ambientDecode);
         }
       } else {
         code += chunks.ambientConstantPS;
@@ -7965,7 +7978,7 @@ pc.programlib.standard = {hashCode:function(str) {
   if (useAo && !options.occludeDirect) {
     code += "    applyAO();\n";
   }
-  if (options.lightMap || options.lightMapVertexColor) {
+  if (options.lightMap || options.lightVertexColor) {
     code += "   addLightMap();\n";
   }
   if (lighting || reflections) {
@@ -12606,7 +12619,8 @@ pc.extend(pc, function() {
     var mapTransform = privMap.substring(1) + "Transform";
     var privMapUv = privMap + "Uv";
     var privMapChannel = privMap + "Channel";
-    var privMapVertexColor = privMap + "VertexColor";
+    var privMapVertexColor = "_" + name + "VertexColor";
+    var privMapVertexColorChannel = "_" + name + "VertexColorChannel";
     obj[privMap] = null;
     obj[privMapTiling] = new pc.Vec2(1, 1);
     obj[privMapOffset] = new pc.Vec2(0, 0);
@@ -12614,6 +12628,7 @@ pc.extend(pc, function() {
     obj[privMapUv] = uv;
     if (channels > 0) {
       obj[privMapChannel] = channels > 1 ? "rgb" : "g";
+      obj[privMapVertexColorChannel] = channels > 1 ? "rgb" : "g";
     }
     obj[privMapVertexColor] = false;
     if (!pc._matTex2D) {
@@ -12678,12 +12693,21 @@ pc.extend(pc, function() {
       this.dirtyShader = true;
       this[privMapVertexColor] = value;
     }});
+    Object.defineProperty(StandardMaterial.prototype, privMapVertexColorChannel.substring(1), {get:function() {
+      return this[privMapVertexColorChannel];
+    }, set:function(value) {
+      if (this[privMapVertexColorChannel] !== value) {
+        this.dirtyShader = true;
+      }
+      this[privMapVertexColorChannel] = value;
+    }});
     _propsSerial.push(privMap.substring(1));
     _propsSerial.push(privMapTiling.substring(1));
     _propsSerial.push(privMapOffset.substring(1));
     _propsSerial.push(privMapUv.substring(1));
     _propsSerial.push(privMapChannel.substring(1));
     _propsSerial.push(privMapVertexColor.substring(1));
+    _propsSerial.push(privMapVertexColorChannel.substring(1));
     _propsInternalNull.push(mapTransform);
   };
   var _propsColor = [];
@@ -12797,6 +12821,13 @@ pc.extend(pc, function() {
     }});
     _propsSerial.push(name);
     _prop2Uniform[name] = func;
+  };
+  var _defineAlias = function(obj, newName, oldName) {
+    Object.defineProperty(StandardMaterial.prototype, oldName, {get:function() {
+      return this[newName];
+    }, set:function(value) {
+      this[newName] = value;
+    }});
   };
   var _defineChunks = function(obj) {
     this._chunks = null;
@@ -12966,11 +12997,11 @@ pc.extend(pc, function() {
   }, update:function() {
     this._clearParameters();
     this._setParameter("material_ambient", this.ambientUniform);
-    if (!this.diffuseMap || this.diffuseMapTint) {
+    if (!this.diffuseMap || this.diffuseTint) {
       this._setParameter("material_diffuse", this.diffuseUniform);
     }
     if (!this.useMetalness) {
-      if (!this.specularMap || this.specularMapTint) {
+      if (!this.specularMap || this.specularTint) {
         this._setParameter("material_specular", this.specularUniform);
       }
     } else {
@@ -12979,7 +13010,7 @@ pc.extend(pc, function() {
       }
     }
     this._setParameter(this.getUniform("shininess", this.shininess, true));
-    if (!this.emissiveMap || this.emissiveMapTint) {
+    if (!this.emissiveMap || this.emissiveTint) {
       this._setParameter("material_emissive", this.emissiveUniform);
     }
     if (this.emissiveMap) {
@@ -13179,23 +13210,29 @@ pc.extend(pc, function() {
         }
       }
     }
+    var diffuseTint = (this.diffuse.data[0] !== 1 || this.diffuse.data[1] !== 1 || this.diffuse.data[2] !== 1) && (this.diffuseTint || !this.diffuseMap && !this.diffuseVertexColor) ? 3 : 0;
     var specularTint = false;
     var useSpecular = (this.useMetalness ? true : !!this.specularMap) || !!this.sphereMap || !!this.cubeMap || !!this.dpAtlas;
     useSpecular = useSpecular || (this.useMetalness ? true : !(this.specular.data[0] === 0 && this.specular.data[1] === 0 && this.specular.data[2] === 0));
     if (useSpecular) {
-      if (this.specularMapTint && !this.useMetalness) {
+      if ((this.specularTint || !this.specularMap && !this.specularVertexColor) && !this.useMetalness) {
         specularTint = this.specular.data[0] !== 1 || this.specular.data[1] !== 1 || this.specular.data[2] !== 1;
       }
     }
-    var rgbmReflection = (prefilteredCubeMap128 ? prefilteredCubeMap128.rgbm : false) || (this.cubeMap ? this.cubeMap.rgbm : false) || (this.sphereMap ? this.sphereMap.rgbm : false) || (this.dpAtlas ? this.dpAtlas.rgbm : false);
-    var hdrReflection = (prefilteredCubeMap128 ? prefilteredCubeMap128.rgbm || prefilteredCubeMap128.format === pc.PIXELFORMAT_RGBA32F : false) || (this.cubeMap ? this.cubeMap.rgbm || this.cubeMap.format === pc.PIXELFORMAT_RGBA32F : false) || (this.sphereMap ? this.sphereMap.rgbm || this.sphereMap.format === pc.PIXELFORMAT_RGBA32F : false) || (this.dpAtlas ? this.dpAtlas.rgbm || this.dpAtlas.format === pc.PIXELFORMAT_RGBA32F : false);
-    var emissiveTint = (this.emissive.data[0] !== 1 || this.emissive.data[1] !== 1 || this.emissive.data[2] !== 1 || this.emissiveIntensity !== 1) && this.emissiveMapTint;
-    emissiveTint = emissiveTint ? 3 : this.emissiveIntensity !== 1 ? 1 : 0;
-    var options = {fog:this.useFog ? scene.fog : "none", gamma:this.useGammaTonemap ? scene.gammaCorrection : pc.GAMMA_NONE, toneMap:this.useGammaTonemap ? scene.toneMapping : -1, blendMapsWithColors:true, modulateAmbient:this.ambientTint, diffuseTint:(this.diffuse.data[0] !== 1 || this.diffuse.data[1] !== 1 || this.diffuse.data[2] !== 1) && this.diffuseMapTint, specularTint:specularTint, metalnessTint:this.useMetalness && this.metalness < 1, glossTint:true, emissiveTint:emissiveTint, opacityTint:this.opacity !== 
-    1 && this.blendType !== pc.BLEND_NONE, alphaTest:this.alphaTest > 0, alphaToCoverage:this.alphaToCoverage, needsNormalFloat:this.normalizeNormalMap, sphereMap:!!this.sphereMap, cubeMap:!!this.cubeMap, dpAtlas:!!this.dpAtlas, ambientSH:!!this.ambientSH, useSpecular:useSpecular, rgbmReflection:rgbmReflection, hdrReflection:hdrReflection, fixSeams:prefilteredCubeMap128 ? prefilteredCubeMap128.fixCubemapSeams : this.cubeMap ? this.cubeMap.fixCubemapSeams : false, prefilteredCubemap:!!prefilteredCubeMap128, 
-    emissiveFormat:this.emissiveMap ? this.emissiveMap.rgbm ? 1 : this.emissiveMap.format === pc.PIXELFORMAT_RGBA32F ? 2 : 0 : null, lightMapFormat:this.lightMap ? this.lightMap.rgbm ? 1 : this.lightMap.format === pc.PIXELFORMAT_RGBA32F ? 2 : 0 : null, useRgbm:rgbmReflection || (this.emissiveMap ? this.emissiveMap.rgbm : 0) || (this.lightMap ? this.lightMap.rgbm : 0), specularAA:this.specularAntialias, conserveEnergy:this.conserveEnergy, occludeSpecular:this.occludeSpecular, occludeSpecularFloat:this.occludeSpecularIntensity !== 
+    var rgbmAmbient = (prefilteredCubeMap128 ? prefilteredCubeMap128.rgbm : false) || (this.cubeMap ? this.cubeMap.rgbm : false) || (this.dpAtlas ? this.dpAtlas.rgbm : false);
+    var hdrAmbient = (prefilteredCubeMap128 ? prefilteredCubeMap128.rgbm || prefilteredCubeMap128.format === pc.PIXELFORMAT_RGBA32F : false) || (this.cubeMap ? this.cubeMap.rgbm || this.cubeMap.format === pc.PIXELFORMAT_RGBA32F : false) || (this.dpAtlas ? this.dpAtlas.rgbm || this.dpAtlas.format === pc.PIXELFORMAT_RGBA32F : false);
+    var rgbmReflection = (prefilteredCubeMap128 && !this.cubeMap && !this.sphereMap && !this.dpAtlas ? prefilteredCubeMap128.rgbm : false) || (this.cubeMap ? this.cubeMap.rgbm : false) || (this.sphereMap ? this.sphereMap.rgbm : false) || (this.dpAtlas ? this.dpAtlas.rgbm : false);
+    var hdrReflection = (prefilteredCubeMap128 && !this.cubeMap && !this.sphereMap && !this.dpAtlas ? prefilteredCubeMap128.rgbm || prefilteredCubeMap128.format === pc.PIXELFORMAT_RGBA32F : false) || (this.cubeMap ? this.cubeMap.rgbm || this.cubeMap.format === pc.PIXELFORMAT_RGBA32F : false) || (this.sphereMap ? this.sphereMap.rgbm || this.sphereMap.format === pc.PIXELFORMAT_RGBA32F : false) || (this.dpAtlas ? this.dpAtlas.rgbm || this.dpAtlas.format === pc.PIXELFORMAT_RGBA32F : false);
+    var emissiveTint = this.emissiveMap ? 0 : 3;
+    if (!emissiveTint) {
+      emissiveTint = (this.emissive.data[0] !== 1 || this.emissive.data[1] !== 1 || this.emissive.data[2] !== 1 || this.emissiveIntensity !== 1) && this.emissiveTint;
+      emissiveTint = emissiveTint ? 3 : this.emissiveIntensity !== 1 ? 1 : 0;
+    }
+    var options = {fog:this.useFog ? scene.fog : "none", gamma:this.useGammaTonemap ? scene.gammaCorrection : pc.GAMMA_NONE, toneMap:this.useGammaTonemap ? scene.toneMapping : -1, blendMapsWithColors:true, modulateAmbient:this.ambientTint, diffuseTint:diffuseTint, specularTint:specularTint ? 3 : 0, metalnessTint:this.useMetalness && this.metalness < 1 ? 1 : 0, glossTint:1, emissiveTint:emissiveTint, opacityTint:this.opacity !== 1 && this.blendType !== pc.BLEND_NONE ? 1 : 0, alphaTest:this.alphaTest > 
+    0, alphaToCoverage:this.alphaToCoverage, needsNormalFloat:this.normalizeNormalMap, sphereMap:!!this.sphereMap, cubeMap:!!this.cubeMap, dpAtlas:!!this.dpAtlas, ambientSH:!!this.ambientSH, useSpecular:useSpecular, rgbmAmbient:rgbmAmbient, rgbmReflection:rgbmReflection, hdrAmbient:hdrAmbient, hdrReflection:hdrReflection, fixSeams:prefilteredCubeMap128 ? prefilteredCubeMap128.fixCubemapSeams : this.cubeMap ? this.cubeMap.fixCubemapSeams : false, prefilteredCubemap:!!prefilteredCubeMap128, emissiveFormat:this.emissiveMap ? 
+    this.emissiveMap.rgbm ? 1 : this.emissiveMap.format === pc.PIXELFORMAT_RGBA32F ? 2 : 0 : null, lightMapFormat:this.lightMap ? this.lightMap.rgbm ? 1 : this.lightMap.format === pc.PIXELFORMAT_RGBA32F ? 2 : 0 : null, useRgbm:rgbmReflection || rgbmAmbient || (this.emissiveMap ? this.emissiveMap.rgbm : 0) || (this.lightMap ? this.lightMap.rgbm : 0), specularAA:this.specularAntialias, conserveEnergy:this.conserveEnergy, occludeSpecular:this.occludeSpecular, occludeSpecularFloat:this.occludeSpecularIntensity !== 
     1, occludeDirect:this.occludeDirect, shadingModel:this.shadingModel, fresnelModel:this.fresnelModel, packedNormal:this.normalMap ? this.normalMap.format === pc.PIXELFORMAT_DXT5 : false, forceFragmentPrecision:this.forceFragmentPrecision, fastTbn:this.fastTbn, cubeMapProjection:this.cubeMapProjection, chunks:this.chunks, customFragmentShader:this.customFragmentShader, refraction:!!this.refraction, useMetalness:this.useMetalness, blendType:this.blendType, skyboxIntensity:prefilteredCubeMap128 === 
-    globalSky128 && prefilteredCubeMap128 && scene.skyboxIntensity !== 1, forceUv1:this.forceUv1, useTexCubeLod:useTexCubeLod, msdf:!!this.msdfMap, twoSidedLighting:this.twoSidedLighting};
+    globalSky128 && prefilteredCubeMap128 && scene.skyboxIntensity !== 1, forceUv1:this.forceUv1, useTexCubeLod:useTexCubeLod, msdf:!!this.msdfMap, pixelSnap:this.pixelSnap, twoSidedLighting:this.twoSidedLighting};
     if (pass === pc.SHADER_FORWARDHDR) {
       if (options.gamma) {
         options.gamma = pc.GAMMA_SRGBHDR;
@@ -13232,32 +13269,31 @@ pc.extend(pc, function() {
       }
       var cname;
       var mname = p + "Map";
-      var vname = mname + "VertexColor";
+      var vname = p + "VertexColor";
       if (p !== "height" && this[vname]) {
         if (hasVcolor) {
-          cname = mname + "Channel";
+          cname = p + "VertexColorChannel";
           options[vname] = this[vname];
           options[cname] = this[cname];
           options.vertexColors = true;
         }
-      } else {
-        if (this[mname]) {
-          var uname = mname + "Uv";
-          var allow = true;
-          if (this[uname] === 0 && !hasUv0) {
-            allow = false;
-          }
-          if (this[uname] === 1 && !hasUv1) {
-            allow = false;
-          }
-          if (allow) {
-            options[mname] = !!this[mname];
-            var tname = mname + "Transform";
-            cname = mname + "Channel";
-            options[tname] = this._getMapTransformID(this[tname], this[uname]);
-            options[cname] = this[cname];
-            options[uname] = this[uname];
-          }
+      }
+      if (this[mname]) {
+        var uname = mname + "Uv";
+        var allow = true;
+        if (this[uname] === 0 && !hasUv0) {
+          allow = false;
+        }
+        if (this[uname] === 1 && !hasUv1) {
+          allow = false;
+        }
+        if (allow) {
+          options[mname] = !!this[mname];
+          var tname = mname + "Transform";
+          cname = mname + "Channel";
+          options[tname] = this._getMapTransformID(this[tname], this[uname]);
+          options[cname] = this[cname];
+          options[uname] = this[uname];
         }
       }
     }
@@ -13329,9 +13365,9 @@ pc.extend(pc, function() {
     });
     _defineChunks(obj);
     _defineFlag(obj, "ambientTint", false);
-    _defineFlag(obj, "diffuseMapTint", false);
-    _defineFlag(obj, "specularMapTint", false);
-    _defineFlag(obj, "emissiveMapTint", false);
+    _defineFlag(obj, "diffuseTint", false);
+    _defineFlag(obj, "specularTint", false);
+    _defineFlag(obj, "emissiveTint", false);
     _defineFlag(obj, "fastTbn", false);
     _defineFlag(obj, "specularAntialias", false);
     _defineFlag(obj, "useMetalness", false);
@@ -13349,6 +13385,7 @@ pc.extend(pc, function() {
     _defineFlag(obj, "useGammaTonemap", true);
     _defineFlag(obj, "useSkybox", true);
     _defineFlag(obj, "forceUv1", false);
+    _defineFlag(obj, "pixelSnap", false);
     _defineFlag(obj, "twoSidedLighting", false);
     _defineTex2D(obj, "diffuse", 0, 3);
     _defineTex2D(obj, "specular", 0, 3);
@@ -13370,6 +13407,17 @@ pc.extend(pc, function() {
     _defineObject(obj, "prefilteredCubeMap16");
     _defineObject(obj, "prefilteredCubeMap8");
     _defineObject(obj, "prefilteredCubeMap4");
+    _defineAlias(obj, "diffuseTint", "diffuseMapTint");
+    _defineAlias(obj, "specularTint", "specularMapTint");
+    _defineAlias(obj, "emissiveTint", "emissiveMapTint");
+    _defineAlias(obj, "aoVertexColor", "aoMapVertexColor");
+    _defineAlias(obj, "diffuseVertexColor", "diffuseMapVertexColor");
+    _defineAlias(obj, "specularVertexColor", "specularMapVertexColor");
+    _defineAlias(obj, "emissiveVertexColor", "emissiveMapVertexColor");
+    _defineAlias(obj, "metalnessVertexColor", "metalnessMapVertexColor");
+    _defineAlias(obj, "glossVertexColor", "glossMapVertexColor");
+    _defineAlias(obj, "opacityVertexColor", "opacityMapVertexColor");
+    _defineAlias(obj, "lightVertexColor", "lightMapVertexColor");
     for (var i = 0;i < _propsSerial.length;i++) {
       _propsSerialDefaultVal[i] = obj[_propsSerial[i]];
     }
@@ -15688,7 +15736,7 @@ pc.extend(pc, function() {
         for (i = 0;i < this.numParticles;i++) {
           var src = this.vbToSort[i][0] * this.numParticleVerts * 4;
           var dest = i * this.numParticleVerts * 4;
-          for (var j = 0;j < this.numParticleVerts * 4;j++) {
+          for (j = 0;j < this.numParticleVerts * 4;j++) {
             this.vbCPU[dest + j] = this.vbOld[src + j];
           }
         }
@@ -16509,6 +16557,87 @@ pc.createBox = function(device, opts) {
 };
 pc.Scene.defaultMaterial = new pc.StandardMaterial;
 pc.Scene.defaultMaterial.shadingModel = pc.SPECULAR_BLINN;
+pc.extend(pc, function() {
+  var normals = [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1];
+  var indices = [0, 1, 3, 2, 3, 1];
+  var Sprite = function(device) {
+    this._device = device;
+    this._pixelsPerUnit = 1;
+    this._atlas = null;
+    this._meshes = [];
+    this._frameKeys = null;
+    pc.events.attach(this);
+  };
+  Sprite.prototype._createMeshes = function() {
+    var i, len;
+    for (i = 0, len = this._meshes.length;i < len;i++) {
+      this._meshes[i].vertexBuffer.destroy();
+      for (var j = 0, len2 = this._meshes[i].indexBuffer.length;j < len2;j++) {
+        this._meshes[i].indexBuffer[j].destroy();
+      }
+    }
+    this._meshes.length = 0;
+    var count = this._frameKeys.length;
+    for (i = 0;i < count;i++) {
+      var mesh = null;
+      var frame = this._atlas.frames[this._frameKeys[i]];
+      if (frame) {
+        var rect = frame.rect;
+        var w = this._atlas.texture.width * rect.data[2] / this._pixelsPerUnit;
+        var h = this._atlas.texture.height * rect.data[3] / this._pixelsPerUnit;
+        var hp = frame.pivot.x;
+        var vp = frame.pivot.y;
+        var positions = [-hp * w, -vp * h, 0, (1 - hp) * w, -vp * h, 0, (1 - hp) * w, (1 - vp) * h, 0, -hp * w, (1 - vp) * h, 0];
+        var uvs = [rect.data[0], rect.data[1], rect.data[0] + rect.data[2], rect.data[1], rect.data[0] + rect.data[2], rect.data[1] + rect.data[3], rect.data[0], rect.data[1] + rect.data[3]];
+        mesh = pc.createMesh(this._device, positions, {uvs:uvs, normals:normals, indices:indices});
+        mesh.aabb.compute(positions);
+      }
+      this._meshes.push(mesh);
+    }
+    this.fire("set:meshes");
+  };
+  Object.defineProperty(Sprite.prototype, "frameKeys", {get:function() {
+    return this._frameKeys;
+  }, set:function(value) {
+    this._frameKeys = value;
+    if (this._atlas && this._frameKeys) {
+      this._createMeshes();
+    }
+  }});
+  Object.defineProperty(Sprite.prototype, "atlas", {get:function() {
+    return this._atlas;
+  }, set:function(value) {
+    if (value === this._atlas) {
+      return;
+    }
+    this._atlas = value;
+    if (this._atlas && this._frameKeys) {
+      this._createMeshes();
+    }
+  }});
+  Object.defineProperty(Sprite.prototype, "pixelsPerUnit", {get:function() {
+    return this._pixelsPerUnit;
+  }, set:function(value) {
+    if (this._pixelsPerUnit === value) {
+      return;
+    }
+    this._pixelsPerUnit = value;
+    if (this._atlas && this._frameKeys) {
+      this._createMeshes();
+    }
+  }});
+  Object.defineProperty(Sprite.prototype, "meshes", {get:function() {
+    return this._meshes;
+  }});
+  return {Sprite:Sprite};
+}());
+pc.extend(pc, function() {
+  var TextureAtlas = function() {
+    this.texture = null;
+    this.frames = null;
+  };
+  return {TextureAtlas:TextureAtlas};
+}());
 pc.extend(pc, function() {
   var Key = function Key(time, position, rotation, scale) {
     this.time = time;
@@ -18260,6 +18389,9 @@ pc.extend(pc, function() {
   };
   Keyboard.prototype._handleKeyDown = function(event) {
     var code = event.keyCode || event.charCode;
+    if (code === undefined) {
+      return;
+    }
     var id = this.toKeyIdentifier(code);
     this._keymap[id] = true;
     this.fire("keydown", makeKeyboardEvent(event));
@@ -20147,6 +20279,8 @@ pc.extend(pc, function() {
     this.loader.addHandler("folder", new pc.FolderHandler);
     this.loader.addHandler("font", new pc.FontHandler(this.loader));
     this.loader.addHandler("binary", new pc.BinaryHandler);
+    this.loader.addHandler("textureatlas", new pc.TextureAtlasHandler(this.loader));
+    this.loader.addHandler("sprite", new pc.SpriteHandler(this.assets, this.graphicsDevice));
     var rigidbodysys = new pc.RigidBodyComponentSystem(this);
     var collisionsys = new pc.CollisionComponentSystem(this);
     var animationsys = new pc.AnimationComponentSystem(this);
@@ -20164,6 +20298,7 @@ pc.extend(pc, function() {
     var particlesystemsys = new pc.ParticleSystemComponentSystem(this);
     var screensys = new pc.ScreenComponentSystem(this);
     var elementsys = new pc.ElementComponentSystem(this);
+    var spritesys = new pc.SpriteComponentSystem(this);
     var zonesys = new pc.ZoneComponentSystem(this);
     this._visibilityChangeHandler = this.onVisibilityChange.bind(this);
     if (document.hidden !== undefined) {
@@ -26616,6 +26751,703 @@ pc.extend(pc, function() {
   return {ParticleSystemComponentData:ParticleSystemComponentData};
 }());
 pc.extend(pc, function() {
+  var SpriteAnimationClip = function(component, data) {
+    this._component = component;
+    this._frame = 0;
+    this._sprite = null;
+    this._spriteAsset = null;
+    this.spriteAsset = data.spriteAsset;
+    this.name = data.name;
+    this.fps = data.fps || 0;
+    this.loop = data.loop || false;
+    this._playing = false;
+    this._paused = false;
+    this._time = 0;
+    pc.events.attach(this);
+  };
+  SpriteAnimationClip.prototype = {_onSpriteAssetAdded:function(asset) {
+    this._component.system.app.assets.off("add:" + asset.id, this._onSpriteAssetAdded, this);
+    if (this._spriteAsset === asset.id) {
+      this._bindSpriteAsset(asset);
+    }
+  }, _bindSpriteAsset:function(asset) {
+    asset.on("load", this._onSpriteAssetLoad, this);
+    asset.on("change", this._onSpriteAssetChange, this);
+    asset.on("remove", this._onSpriteAssetRemove, this);
+    if (asset.resource) {
+      this._onSpriteAssetLoad(asset);
+    } else {
+      this._component.system.app.assets.load(asset);
+    }
+  }, _onSpriteAssetLoad:function(asset) {
+    if (!asset.resource) {
+      this.sprite = null;
+    } else {
+      if (!asset.resource.atlas) {
+        var atlasAssetId = asset.data.textureAtlasAsset;
+        var assets = this._component.system.app.assets;
+        assets.off("load:" + atlasAssetId, this._onTextureAtlasLoad, this);
+        assets.once("load:" + atlasAssetId, this._onTextureAtlasLoad, this);
+      } else {
+        this.sprite = asset.resource;
+      }
+    }
+  }, _onTextureAtlasLoad:function(atlasAsset) {
+    var spriteAsset = this._spriteAsset;
+    if (spriteAsset instanceof pc.Asset) {
+      this._onSpriteAssetLoad(spriteAsset);
+    } else {
+      this._onSpriteAssetLoad(this._component.system.app.assets.get(spriteAsset));
+    }
+  }, _onSpriteAssetChange:function(asset) {
+    this._onSpriteAssetLoad(asset);
+  }, _onSpriteAssetRemove:function(asset) {
+  }, _onSpriteMeshesChange:function() {
+    if (this._component.currentClip === this) {
+      this._component._showFrame(this.frame);
+    }
+  }, _update:function(dt) {
+    if (this.fps === 0) {
+      return;
+    }
+    if (!this._playing || this._paused || !this._sprite) {
+      return;
+    }
+    var dir = this.fps < 0 ? -1 : 1;
+    var time = this._time + dt * this._component.speed * dir;
+    var duration = this.duration;
+    var end = time > duration || time < 0;
+    this._setTime(time);
+    var frame = this.frame;
+    if (this._sprite) {
+      frame = Math.floor(this._sprite.frameKeys.length * this._time / duration);
+    } else {
+      frame = 0;
+    }
+    if (frame !== this._frame) {
+      this._setFrame(frame);
+    }
+    if (end) {
+      if (this.loop) {
+        this.fire("loop");
+        this._component.fire("loop", this);
+      } else {
+        this._playing = false;
+        this._paused = false;
+        this.fire("end");
+        this._component.fire("end", this);
+      }
+    }
+  }, _setTime:function(value) {
+    this._time = value;
+    var duration = this.duration;
+    if (this._time < 0) {
+      if (this.loop) {
+        this._time = this._time % duration + duration;
+      } else {
+        this._time = 0;
+      }
+    } else {
+      if (this._time > duration) {
+        if (this.loop) {
+          this._time = this._time % duration;
+        } else {
+          this._time = duration;
+        }
+      }
+    }
+  }, _setFrame:function(value) {
+    if (this._sprite) {
+      this._frame = pc.math.clamp(value, 0, this._sprite.frameKeys.length);
+    } else {
+      this._frame = value;
+    }
+    if (this._component.currentClip === this) {
+      this._component._showFrame(value);
+    }
+  }, _destroy:function() {
+    if (this._sprite) {
+      this._sprite = null;
+    }
+    if (this._spriteAsset) {
+      this._spriteAsset = null;
+    }
+  }, play:function() {
+    if (this._playing) {
+      return;
+    }
+    this._playing = true;
+    this._paused = false;
+    this.frame = 0;
+    this.fire("play");
+    this._component.fire("play", this);
+  }, pause:function() {
+    if (!this._playing || this._paused) {
+      return;
+    }
+    this._paused = true;
+    this.fire("pause");
+    this._component.fire("pause", this);
+  }, resume:function() {
+    if (!this._paused) {
+      return;
+    }
+    this._paused = false;
+    this.fire("resume");
+    this._component.fire("resume", this);
+  }, stop:function() {
+    if (!this._playing) {
+      return;
+    }
+    this._playing = false;
+    this._paused = false;
+    this._time = 0;
+    this.frame = 0;
+    this.fire("stop");
+    this._component.fire("stop", this);
+  }};
+  Object.defineProperty(SpriteAnimationClip.prototype, "spriteAsset", {get:function() {
+    return this._spriteAsset;
+  }, set:function(value) {
+    var assets = this._component.system.app.assets;
+    var id = value;
+    if (value instanceof pc.Asset) {
+      id = value.id;
+    }
+    if (this._spriteAsset !== id) {
+      if (this._spriteAsset) {
+        var prev = assets.get(this._spriteAsset);
+        if (prev) {
+          prev.off("load", this._onSpriteAssetLoad, this);
+          prev.off("change", this._onSpriteAssetChange, this);
+          prev.off("remove", this._onSpriteAssetRemove, this);
+          var atlasAssetId = prev.data && prev.data.textureAtlasAsset;
+          if (atlasAssetId) {
+            assets.off("load:" + atlasAssetId, this._onTextureAtlasLoad, this);
+          }
+        }
+      }
+      this._spriteAsset = id;
+      if (this._spriteAsset) {
+        var asset = assets.get(this._spriteAsset);
+        if (!asset) {
+          this.sprite = null;
+          assets.on("add:" + this._spriteAsset, this._onSpriteAssetAdded, this);
+        } else {
+          this._bindSpriteAsset(asset);
+        }
+      } else {
+        this.sprite = null;
+      }
+    }
+  }});
+  Object.defineProperty(SpriteAnimationClip.prototype, "sprite", {get:function() {
+    return this._sprite;
+  }, set:function(value) {
+    if (this._sprite) {
+      this._sprite.off("set:meshes", this._onSpriteMeshesChange, this);
+    }
+    this._sprite = value;
+    if (this._sprite) {
+      this._sprite.on("set:meshes", this._onSpriteMeshesChange, this);
+    }
+    if (this._component.currentClip === this) {
+      if (!value || !value.atlas) {
+        var mi = this._component._meshInstance;
+        if (mi) {
+          mi.deleteParameter("texture_emissiveMap");
+          mi.deleteParameter("texture_opacityMap");
+        }
+        this._component._hideModel();
+      } else {
+        if (value.atlas.texture) {
+          var mi = this._component._meshInstance;
+          if (mi) {
+            mi.setParameter("texture_emissiveMap", value.atlas.texture);
+            mi.setParameter("texture_opacityMap", value.atlas.texture);
+          }
+          this._component._showModel();
+        }
+        if (this.time && this.fps) {
+          this.time = this.time;
+        } else {
+          this.frame = this.frame;
+        }
+      }
+    }
+  }});
+  Object.defineProperty(SpriteAnimationClip.prototype, "frame", {get:function() {
+    return this._frame;
+  }, set:function(value) {
+    this._setFrame(value);
+    var fps = this.fps || Number.MIN_VALUE;
+    this._setTime(this._frame / fps);
+  }});
+  Object.defineProperty(SpriteAnimationClip.prototype, "isPlaying", {get:function() {
+    return this._playing;
+  }});
+  Object.defineProperty(SpriteAnimationClip.prototype, "isPaused", {get:function() {
+    return this._paused;
+  }});
+  Object.defineProperty(SpriteAnimationClip.prototype, "duration", {get:function() {
+    if (this._sprite) {
+      var fps = this.fps || Number.MIN_VALUE;
+      return this._sprite.frameKeys.length / Math.abs(fps);
+    } else {
+      return 0;
+    }
+  }});
+  Object.defineProperty(SpriteAnimationClip.prototype, "time", {get:function() {
+    return this._time;
+  }, set:function(value) {
+    this._setTime(value);
+    if (this._sprite) {
+      this.frame = Math.floor(this._time * Math.abs(this.fps));
+    } else {
+      this.frame = 0;
+    }
+  }});
+  return {SpriteAnimationClip:SpriteAnimationClip};
+}());
+pc.extend(pc, function() {
+  pc.SPRITETYPE_SIMPLE = "simple";
+  pc.SPRITETYPE_ANIMATED = "animated";
+  var SpriteComponent = function SpriteComponent(system, entity) {
+    this._type = pc.SPRITETYPE_SIMPLE;
+    this._material = system.defaultMaterial;
+    this._color = new pc.Color(1, 1, 1, 1);
+    this._speed = 1;
+    this._flipX = false;
+    this._flipY = false;
+    this._batchGroupId = -1;
+    this._batchGroup = null;
+    this._autoPlayClip = null;
+    this._node = new pc.GraphNode;
+    this._model = new pc.Model;
+    this._model.graph = this._node;
+    this._meshInstance = null;
+    entity.addChild(this._model.graph);
+    this._model._entity = entity;
+    this._clips = {};
+    this._defaultClip = new pc.SpriteAnimationClip(this, {name:this.entity.name, fps:0, loop:false, spriteAsset:null});
+    this._currentClip = this._defaultClip;
+  };
+  SpriteComponent = pc.inherits(SpriteComponent, pc.Component);
+  pc.extend(SpriteComponent.prototype, {onEnable:function() {
+    SpriteComponent._super.onEnable.call(this);
+    this._showModel();
+    if (this._autoPlayClip) {
+      this._tryAutoPlay();
+    }
+  }, onDisable:function() {
+    SpriteComponent._super.onDisable.call(this);
+    this.stop();
+    this._hideModel();
+  }, onDestroy:function() {
+    this._currentClip = null;
+    if (this._defaultClip) {
+      this._defaultClip._destroy();
+      this._defaultClip = null;
+    }
+    for (var key in this._clips) {
+      this._clips[key]._destroy();
+    }
+    this._clips = null;
+    this._hideModel();
+    this._model = null;
+    if (this._node) {
+      if (this._node.parent) {
+        this._node.parent.removeChild(this._node);
+      }
+      this._node = null;
+    }
+    if (this._meshInstance) {
+      this._meshInstance = null;
+    }
+  }, _showModel:function() {
+    if (this._model && this._meshInstance && !this.system.app.scene.containsModel(this._model)) {
+      this.system.app.scene.addModel(this._model);
+    }
+  }, _hideModel:function() {
+    if (this._model) {
+      this.system.app.scene.removeModel(this._model);
+    }
+  }, _showFrame:function(frame) {
+    if (!this.sprite) {
+      return;
+    }
+    var mesh = this.sprite.meshes[frame];
+    if (!mesh) {
+      return;
+    }
+    if (!this._meshInstance) {
+      this._meshInstance = new pc.MeshInstance(this._node, mesh, this._material);
+      this._meshInstance.castShadow = false;
+      this._meshInstance.receiveShadow = false;
+      this._model.meshInstances.push(this._meshInstance);
+      this._meshInstance.setParameter("material_emissive", this._color.data3);
+      this._meshInstance.setParameter("material_opacity", this._color.data[3]);
+      if (this.sprite.atlas.texture) {
+        this._meshInstance.setParameter("texture_emissiveMap", this.sprite.atlas.texture);
+        this._meshInstance.setParameter("texture_opacityMap", this.sprite.atlas.texture);
+      }
+      if (this.enabled && this.entity.enabled) {
+        this._showModel();
+      }
+    }
+    if (this._meshInstance.mesh !== mesh) {
+      this._meshInstance.mesh = mesh;
+      this._meshInstance._aabbVer = -1;
+    }
+  }, _flipMeshes:function() {
+    this._node.setLocalScale(this.flipX ? -1 : 1, this.flipY ? -1 : 1, 1);
+  }, _tryAutoPlay:function() {
+    if (!this._autoPlayClip) {
+      return;
+    }
+    if (this.type !== pc.SPRITETYPE_ANIMATED) {
+      return;
+    }
+    var clip = this._clips[this._autoPlayClip];
+    if (clip && !clip.isPlaying && (!this._currentClip || !this._currentClip.isPlaying)) {
+      if (this.enabled && this.entity.enabled) {
+        this.play(clip.name);
+      }
+    }
+  }, addClip:function(data) {
+    var clip = new pc.SpriteAnimationClip(this, {name:data.name, fps:data.fps, loop:data.loop, spriteAsset:data.spriteAsset});
+    this._clips[data.name] = clip;
+    if (clip.name && clip.name === this._autoPlayClip) {
+      this._tryAutoPlay();
+    }
+    return clip;
+  }, removeClip:function(name) {
+    delete this._clips[name];
+  }, clip:function(name) {
+    return this._clips[name];
+  }, play:function(name) {
+    var clip = this._clips[name];
+    var current = this._currentClip;
+    if (current && current !== clip) {
+      current._playing = false;
+    }
+    this._currentClip = clip;
+    if (this._currentClip) {
+      this._currentClip = clip;
+      this._currentClip.play();
+    } else {
+      logWARNING("Trying to play sprite animation " + name + " which does not exist.");
+    }
+    return clip;
+  }, pause:function() {
+    if (this._currentClip === this._defaultClip) {
+      return;
+    }
+    if (this._currentClip.isPlaying) {
+      this._currentClip.pause();
+    }
+  }, resume:function() {
+    if (this._currentClip === this._defaultClip) {
+      return;
+    }
+    if (this._currentClip.isPaused) {
+      this._currentClip.resume();
+    }
+  }, stop:function() {
+    if (this._currentClip === this._defaultClip) {
+      return;
+    }
+    this._currentClip.stop();
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "type", {get:function() {
+    return this._type;
+  }, set:function(value) {
+    if (this._type === value) {
+      return;
+    }
+    this._type = value;
+    if (this._type === pc.SPRITETYPE_SIMPLE) {
+      this.stop();
+      this._currentClip = this._defaultClip;
+      if (this.enabled && this.entity.enabled) {
+        this._currentClip.frame = this.frame;
+        if (this._currentClip.sprite) {
+          this._showModel();
+        } else {
+          this._hideModel();
+        }
+      }
+    } else {
+      if (this._type === pc.SPRITETYPE_ANIMATED) {
+        this.stop();
+        if (this._autoPlayClip) {
+          this._tryAutoPlay();
+        }
+        if (this._currentClip && this._currentClip.isPlaying) {
+          this._showModel();
+        } else {
+          this._hideModel();
+        }
+      }
+    }
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "frame", {get:function() {
+    return this._currentClip.frame;
+  }, set:function(value) {
+    this._currentClip.frame = value;
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "spriteAsset", {get:function() {
+    return this._defaultClip._spriteAsset;
+  }, set:function(value) {
+    this._defaultClip.spriteAsset = value;
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "sprite", {get:function() {
+    return this._currentClip.sprite;
+  }, set:function(value) {
+    this._currentClip.sprite = value;
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "material", {get:function() {
+    return this._material;
+  }, set:function(value) {
+    this._material = value;
+    if (this._meshInstance) {
+      this._meshInstance.material = value;
+    }
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "color", {get:function() {
+    return this._color;
+  }, set:function(value) {
+    this._color.data[0] = value.data[0];
+    this._color.data[1] = value.data[1];
+    this._color.data[2] = value.data[2];
+    if (this._meshInstance) {
+      this._meshInstance.setParameter("material_emissive", this._color.data3);
+    }
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "opacity", {get:function() {
+    return this._color.data[3];
+  }, set:function(value) {
+    this._color.data[3] = value;
+    if (this._meshInstance) {
+      this._meshInstance.setParameter("material_opacity", value);
+    }
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "clips", {get:function() {
+    return this._clips;
+  }, set:function(value) {
+    var name, key;
+    if (!value) {
+      for (name in this._clips) {
+        this.removeClip(name);
+      }
+      return;
+    }
+    for (name in this._clips) {
+      var found = false;
+      for (key in value) {
+        if (value[key].name === name) {
+          found = true;
+          this._clips[name].fps = value[key].fps;
+          this._clips[name].loop = value[key].loop;
+          if (value[key].hasOwnProperty("sprite")) {
+            this._clips[name].sprite = value[key].sprite;
+          } else {
+            if (value[key].hasOwnProperty("spriteAsset")) {
+              this._clips[name].spriteAsset = value[key].spriteAsset;
+            }
+          }
+          break;
+        }
+      }
+      if (!found) {
+        this.removeClip(name);
+      }
+    }
+    for (key in value) {
+      if (this._clips[value[key].name]) {
+        continue;
+      }
+      this.addClip(value[key]);
+    }
+    if (this._autoPlayClip) {
+      this._tryAutoPlay();
+    }
+    if (!this._currentClip || !this._currentClip.sprite) {
+      this._hideModel();
+    }
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "currentClip", {get:function() {
+    return this._currentClip;
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "speed", {get:function() {
+    return this._speed;
+  }, set:function(value) {
+    this._speed = value;
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "flipX", {get:function() {
+    return this._flipX;
+  }, set:function(value) {
+    if (this._flipX !== value) {
+      this._flipX = value;
+      this._flipMeshes();
+    }
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "flipY", {get:function() {
+    return this._flipY;
+  }, set:function(value) {
+    if (this._flipY !== value) {
+      this._flipY = value;
+      this._flipMeshes();
+    }
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "batchGroupId", {get:function() {
+    return this._batchGroupId;
+  }, set:function(value) {
+    if (this._batchGroupId === value) {
+      return;
+    }
+    var prev = this._batchGroupId;
+    this._batchGroupId = value;
+    if (prev >= 0) {
+      this.system.app.batcher._markGroupDirty(prev);
+    }
+    if (this._batchGroupId >= 0) {
+      this.system.app.batcher._markGroupDirty(this._batchGroupId);
+    } else {
+      if (prev >= 0) {
+        if (this._currentClip && this._currentClip.sprite) {
+          this._showModel();
+        }
+      }
+    }
+  }});
+  Object.defineProperty(SpriteComponent.prototype, "autoPlayClip", {get:function() {
+    return this._autoPlayClip;
+  }, set:function(value) {
+    this._autoPlayClip = value instanceof pc.SpriteAnimationClip ? value.name : value;
+    this._tryAutoPlay();
+  }});
+  return {SpriteComponent:SpriteComponent};
+}());
+pc.extend(pc, function() {
+  var _schema = ["enabled"];
+  var warningShown = false;
+  var SpriteComponentSystem = function SpriteComponentSystem(app) {
+    this.id = "sprite";
+    this.app = app;
+    app.systems.add(this.id, this);
+    this.ComponentType = pc.SpriteComponent;
+    this.DataType = pc.SpriteComponentData;
+    this.schema = _schema;
+    this._defaultTexture = new pc.Texture(app.graphicsDevice, {width:1, height:1, format:pc.PIXELFORMAT_R8_G8_B8_A8});
+    var pixels = this._defaultTexture.lock();
+    var pixelData = new Uint8Array(4);
+    pixelData[0] = 255;
+    pixelData[1] = 255;
+    pixelData[2] = 255;
+    pixelData[3] = 255;
+    pixels.set(pixelData);
+    this._defaultTexture.unlock();
+    this.defaultMaterial = new pc.StandardMaterial;
+    this.defaultMaterial.diffuse = new pc.Color(0, 0, 0, 1);
+    this.defaultMaterial.emissive = new pc.Color(.5, .5, .5, 1);
+    this.defaultMaterial.emissiveMap = this._defaultTexture;
+    this.defaultMaterial.emissiveMapTint = true;
+    this.defaultMaterial.opacityMap = this._defaultTexture;
+    this.defaultMaterial.opacityMapChannel = "a";
+    this.defaultMaterial.opacityTint = true;
+    this.defaultMaterial.opacity = 0;
+    this.defaultMaterial.useLighting = false;
+    this.defaultMaterial.useGammaTonemap = false;
+    this.defaultMaterial.useFog = false;
+    this.defaultMaterial.useSkybox = false;
+    this.defaultMaterial.blendType = pc.BLEND_PREMULTIPLIED;
+    this.defaultMaterial.depthWrite = false;
+    this.defaultMaterial.pixelSnap = false;
+    this.defaultMaterial.cull = pc.CULLFACE_NONE;
+    this.defaultMaterial.update();
+    pc.ComponentSystem.on("update", this.onUpdate, this);
+    this.on("beforeremove", this.onBeforeRemove, this);
+  };
+  SpriteComponentSystem = pc.inherits(SpriteComponentSystem, pc.ComponentSystem);
+  pc.Component._buildAccessors(pc.SpriteComponent.prototype, _schema);
+  pc.extend(SpriteComponentSystem.prototype, {initializeComponentData:function(component, data, properties) {
+    if (data.enabled !== undefined) {
+      component.enabled = data.enabled;
+    }
+    component.type = data.type;
+    if (data.color !== undefined) {
+      if (data.color instanceof pc.Color) {
+        component.color.set(data.color.data[0], data.color.data[1], data.color.data[2], data.opacity !== undefined ? data.opacity : 1);
+      } else {
+        component.color.set(data.color[0], data.color[1], data.color[2], data.opacity !== undefined ? data.opacity : 1);
+      }
+      component.color = component.color;
+    }
+    if (data.opacity !== undefined) {
+      component.opacity = data.opacity;
+    }
+    if (data.flipX !== undefined) {
+      component.flipX = data.flipX;
+    }
+    if (data.flipY !== undefined) {
+      component.flipY = data.flipY;
+    }
+    if (data.spriteAsset !== undefined) {
+      component.spriteAsset = data.spriteAsset;
+    }
+    if (data.sprite) {
+      component.sprite = data.sprite;
+    }
+    if (data.frame !== undefined) {
+      component.frame = data.frame;
+    }
+    if (data.clips) {
+      for (var name in data.clips) {
+        component.addClip(data.clips[name]);
+      }
+    }
+    if (data.speed !== undefined) {
+      component.speed = data.speed;
+    }
+    if (data.autoPlayClip) {
+      component.autoPlayClip = data.autoPlayClip;
+    }
+    component.batchGroupId = data.batchGroupId === undefined || data.batchGroupId === null ? -1 : data.batchGroupId;
+    SpriteComponentSystem._super.initializeComponentData.call(this, component, data, properties);
+    if (!warningShown) {
+      console.warn("The Sprite component is in beta and might change without notice.");
+      warningShown = true;
+    }
+  }, cloneComponent:function(entity, clone) {
+    var source = entity.sprite;
+    return this.addComponent(clone, {enabled:source.enabled, type:source.type, spriteAsset:source.spriteAsset, sprite:source.sprite, frame:source.frame, color:source.color.clone(), opacity:source.opacity, flipX:source.flipX, flipY:source.flipY, speed:source.speed, clips:source.clips, batchGroupId:source.batchGroupId});
+  }, onUpdate:function(dt) {
+    var components = this.store;
+    for (var id in components) {
+      if (components.hasOwnProperty(id)) {
+        var component = components[id];
+        if (component.data.enabled && component.entity.enabled) {
+          var sprite = component.entity.sprite;
+          if (sprite._currentClip) {
+            sprite._currentClip._update(dt);
+          }
+        }
+      }
+    }
+  }, onBeforeRemove:function(entity, component) {
+    component.onDestroy();
+  }});
+  return {SpriteComponentSystem:SpriteComponentSystem};
+}());
+pc.extend(pc, function() {
+  var SpriteComponentData = function() {
+    this.enabled = true;
+  };
+  SpriteComponentData = pc.inherits(SpriteComponentData, pc.ComponentData);
+  return {SpriteComponentData:SpriteComponentData};
+}());
+pc.extend(pc, function() {
   pc.SCALEMODE_NONE = "none";
   pc.SCALEMODE_BLEND = "blend";
   var ScreenComponent = function ScreenComponent(system, entity) {
@@ -27445,6 +28277,9 @@ pc.extend(pc, function() {
   _define("textureAsset");
   _define("material");
   _define("materialAsset");
+  _define("sprite");
+  _define("spriteAsset");
+  _define("frame");
   _define("opacity");
   _define("rect");
   return {ElementComponent:ElementComponent};
@@ -27471,7 +28306,7 @@ pc.extend(pc, function() {
     this.defaultImageMaterial.diffuse = new pc.Color(0, 0, 0, 1);
     this.defaultImageMaterial.emissive = new pc.Color(.5, .5, .5, 1);
     this.defaultImageMaterial.emissiveMap = this._defaultTexture;
-    this.defaultImageMaterial.emissiveMapTint = true;
+    this.defaultImageMaterial.emissiveTint = true;
     this.defaultImageMaterial.opacityMap = this._defaultTexture;
     this.defaultImageMaterial.opacityMapChannel = "a";
     this.defaultImageMaterial.opacityTint = true;
@@ -27487,7 +28322,7 @@ pc.extend(pc, function() {
     this.defaultScreenSpaceImageMaterial.diffuse = new pc.Color(0, 0, 0, 1);
     this.defaultScreenSpaceImageMaterial.emissive = new pc.Color(.5, .5, .5, 1);
     this.defaultScreenSpaceImageMaterial.emissiveMap = this._defaultTexture;
-    this.defaultScreenSpaceImageMaterial.emissiveMapTint = true;
+    this.defaultScreenSpaceImageMaterial.emissiveTint = true;
     this.defaultScreenSpaceImageMaterial.opacityMap = this._defaultTexture;
     this.defaultScreenSpaceImageMaterial.opacityMapChannel = "a";
     this.defaultScreenSpaceImageMaterial.opacityTint = true;
@@ -27613,6 +28448,15 @@ pc.extend(pc, function() {
       if (data.texture) {
         component.texture = data.texture;
       }
+      if (data.spriteAsset !== undefined) {
+        component.spriteAsset = data.spriteAsset;
+      }
+      if (data.sprite) {
+        component.sprite = data.sprite;
+      }
+      if (data.frame !== undefined) {
+        component.frame = data.frame;
+      }
       if (data.materialAsset !== undefined) {
         component.materialAsset = data.materialAsset;
       }
@@ -27675,7 +28519,7 @@ pc.extend(pc, function() {
   }, cloneComponent:function(entity, clone) {
     var source = entity.element;
     return this.addComponent(clone, {enabled:source.enabled, width:source.width, height:source.height, anchor:source.anchor.clone(), pivot:source.pivot.clone(), margin:source.margin.clone(), alignment:source.alignment && source.alignment.clone() || source.alignment, autoWidth:source.autoWidth, autoHeight:source.autoHeight, type:source.type, rect:source.rect && source.rect.clone() || source.rect, materialAsset:source.materialAsset, material:source.material, color:source.color && source.color.clone() || 
-    source.color, opacity:source.opacity, textureAsset:source.textureAsset, texture:source.texture, text:source.text, spacing:source.spacing, lineHeight:source.lineHeight, fontSize:source.fontSize, fontAsset:source.fontAsset, font:source.font, useInput:source.useInput, batchGroupId:source.batchGroupId});
+    source.color, opacity:source.opacity, textureAsset:source.textureAsset, texture:source.texture, spriteAsset:source.spriteAsset, sprite:source.sprite, frame:source.frame, text:source.text, spacing:source.spacing, lineHeight:source.lineHeight, fontSize:source.fontSize, fontAsset:source.fontAsset, font:source.font, useInput:source.useInput, batchGroupId:source.batchGroupId});
   }});
   return {ElementComponentSystem:ElementComponentSystem};
 }());
@@ -27695,6 +28539,9 @@ pc.extend(pc, function() {
     this._texture = null;
     this._materialAsset = null;
     this._material = null;
+    this._spriteAsset = null;
+    this._sprite = null;
+    this._frame = 0;
     this._rect = new pc.Vec4(0, 0, 1, 1);
     this._color = new pc.Color(1, 1, 1, 1);
     this._positions = [];
@@ -27834,14 +28681,21 @@ pc.extend(pc, function() {
       this._positions[i] -= hp * w;
       this._positions[i + 1] -= vp * h;
     }
-    this._uvs[0] = this._rect.data[0];
-    this._uvs[1] = this._rect.data[1];
-    this._uvs[2] = this._rect.data[0] + this._rect.data[2];
-    this._uvs[3] = this._rect.data[1];
-    this._uvs[4] = this._rect.data[0] + this._rect.data[2];
-    this._uvs[5] = this._rect.data[1] + this._rect.data[3];
-    this._uvs[6] = this._rect.data[0];
-    this._uvs[7] = this._rect.data[1] + this._rect.data[3];
+    var rect = this._rect;
+    if (this._sprite && this._sprite.frameKeys[this._frame] && this._sprite.atlas) {
+      var frame = this._sprite.atlas.frames[this._sprite.frameKeys[this._frame]];
+      if (frame) {
+        rect = frame.rect;
+      }
+    }
+    this._uvs[0] = rect.data[0];
+    this._uvs[1] = rect.data[1];
+    this._uvs[2] = rect.data[0] + rect.data[2];
+    this._uvs[3] = rect.data[1];
+    this._uvs[4] = rect.data[0] + rect.data[2];
+    this._uvs[5] = rect.data[1] + rect.data[3];
+    this._uvs[6] = rect.data[0];
+    this._uvs[7] = rect.data[1] + rect.data[3];
     var vb = mesh.vertexBuffer;
     var it = new pc.VertexIterator(vb);
     var numVertices = 4;
@@ -27892,6 +28746,43 @@ pc.extend(pc, function() {
     this.texture = asset.resource;
   }, _onTextureChange:function(asset) {
   }, _onTextureRemove:function(asset) {
+  }, _onSpriteAssetAdded:function(asset) {
+    this._system.app.assets.off("add:" + asset.id, this._onSpriteAssetAdded, this);
+    if (this._spriteAsset === asset.id) {
+      this._bindSpriteAsset(asset);
+    }
+  }, _bindSpriteAsset:function(asset) {
+    asset.on("load", this._onSpriteAssetLoad, this);
+    asset.on("change", this._onSpriteAssetChange, this);
+    asset.on("remove", this._onSpriteAssetRemove, this);
+    if (asset.resource) {
+      this._onSpriteAssetLoad(asset);
+    } else {
+      this._system.app.assets.load(asset);
+    }
+  }, _onSpriteAssetLoad:function(asset) {
+    if (!asset.resource) {
+      this.sprite = null;
+    } else {
+      if (!asset.resource.atlas) {
+        var atlasAssetId = asset.data.textureAtlasAsset;
+        var assets = this._system.app.assets;
+        assets.off("load:" + atlasAssetId, this._onTextureAtlasLoad, this);
+        assets.once("load:" + atlasAssetId, this._onTextureAtlasLoad, this);
+      } else {
+        this.sprite = asset.resource;
+      }
+    }
+  }, _onTextureAtlasLoad:function(atlasAsset) {
+    var spriteAsset = this._spriteAsset;
+    if (spriteAsset instanceof pc.Asset) {
+      this._onSpriteAssetLoad(spriteAsset);
+    } else {
+      this._onSpriteAssetLoad(this._system.app.assets.get(spriteAsset));
+    }
+  }, _onSpriteAssetChange:function(asset) {
+    this._onSpriteAssetLoad(asset);
+  }, _onSpriteAssetRemove:function(asset) {
   }, onEnable:function() {
     if (this._model && !this._system.app.scene.containsModel(this._model)) {
       this._system.app.scene.addModel(this._model);
@@ -28022,6 +28913,83 @@ pc.extend(pc, function() {
       } else {
         this.texture = null;
       }
+    }
+  }});
+  Object.defineProperty(ImageElement.prototype, "spriteAsset", {get:function() {
+    return this._spriteAsset;
+  }, set:function(value) {
+    var assets = this._system.app.assets;
+    var _id = value;
+    if (value instanceof pc.Asset) {
+      _id = value.id;
+    }
+    if (this._spriteAsset !== _id) {
+      if (this._spriteAsset) {
+        var _prev = assets.get(this._spriteAsset);
+        if (_prev) {
+          _prev.off("load", this._onSpriteAssetLoad, this);
+          _prev.off("change", this._onSpriteAssetChange, this);
+          _prev.off("remove", this._onSpriteAssetRemove, this);
+        }
+      }
+      this._spriteAsset = _id;
+      if (this._spriteAsset) {
+        var asset = assets.get(this._spriteAsset);
+        if (!asset) {
+          this.sprite = null;
+          assets.on("add:" + this._spriteAsset, this._onSpriteAssetAdded, this);
+        } else {
+          this._bindSpriteAsset(asset);
+        }
+      } else {
+        this.sprite = null;
+      }
+    }
+  }});
+  Object.defineProperty(ImageElement.prototype, "sprite", {get:function() {
+    return this._sprite;
+  }, set:function(value) {
+    this._sprite = value;
+    if (this._sprite && this._sprite.atlas && this._sprite.atlas.texture) {
+      this._meshInstance.setParameter("texture_emissiveMap", this._sprite.atlas.texture);
+      this._meshInstance.setParameter("texture_opacityMap", this._sprite.atlas.texture);
+      this.frame = this.frame;
+    } else {
+      this._meshInstance.deleteParameter("texture_emissiveMap");
+      this._meshInstance.deleteParameter("texture_opacityMap");
+    }
+  }});
+  Object.defineProperty(ImageElement.prototype, "frame", {get:function() {
+    return this._frame;
+  }, set:function(value) {
+    this._frame = value;
+    if (this._sprite && this._sprite.atlas) {
+      if (value < 0 || value >= this._sprite.frameKeys.length) {
+        return;
+      }
+      var frame = this._sprite.atlas.frames[this._sprite.frameKeys[value]];
+      if (!frame) {
+        return;
+      }
+      if (!this._sprite) {
+        return;
+      }
+      this._uvs[0] = frame.rect.data[0];
+      this._uvs[1] = frame.rect.data[1];
+      this._uvs[2] = frame.rect.data[0] + frame.rect.data[2];
+      this._uvs[3] = frame.rect.data[1];
+      this._uvs[4] = frame.rect.data[0] + frame.rect.data[2];
+      this._uvs[5] = frame.rect.data[1] + frame.rect.data[3];
+      this._uvs[6] = frame.rect.data[0];
+      this._uvs[7] = frame.rect.data[1] + frame.rect.data[3];
+      var vb = this._mesh.vertexBuffer;
+      var it = new pc.VertexIterator(vb);
+      var numVertices = 4;
+      for (var i = 0;i < numVertices;i++) {
+        it.element[pc.SEMANTIC_TEXCOORD0].set(this._uvs[i * 2 + 0], this._uvs[i * 2 + 1]);
+        it.next();
+      }
+      it.end();
     }
   }});
   return {ImageElement:ImageElement};
@@ -29257,11 +30225,11 @@ pc.extend(pc, function() {
   return {JsonHandler:JsonHandler};
 }());
 pc.extend(pc, function() {
-  var PARAMETER_TYPES = {ambient:"vec3", ambientTnumber:"boolean", aoMap:"texture", aoMapVertexColor:"boolean", aoMapChannel:"string", aoMapUv:"number", aoMapTiling:"vec2", aoMapOffset:"vec2", occludeSpecular:"boolean", diffuse:"vec3", diffuseMap:"texture", diffuseMapVertexColor:"boolean", diffuseMapChannel:"string", diffuseMapUv:"number", diffuseMapTiling:"vec2", diffuseMapOffset:"vec2", diffuseMapTnumber:"boolean", specular:"vec3", specularMapVertexColor:"boolean", specularMapChannel:"string", 
-  specularMapUv:"number", specularMap:"texture", specularMapTiling:"vec2", specularMapOffset:"vec2", specularMapTnumber:"boolean", specularAntialias:"boolean", useMetalness:"boolean", metalnessMap:"texture", metalnessMapVertexColor:"boolean", metalnessMapChannel:"string", metalnessMapUv:"number", metalnessMapTiling:"vec2", metalnessMapOffset:"vec2", metalnessMapTnumber:"boolean", metalness:"number", conserveEnergy:"boolean", shininess:"number", glossMap:"texture", glossMapVertexColor:"boolean", glossMapChannel:"string", 
-  glossMapUv:"number", glossMapTiling:"vec2", glossMapOffset:"vec2", fresnelModel:"number", fresnelFactor:"float", emissive:"vec3", emissiveMap:"texture", emissiveMapVertexColor:"boolean", emissiveMapChannel:"string", emissiveMapUv:"number", emissiveMapTiling:"vec2", emissiveMapOffset:"vec2", emissiveMapTint:"boolean", emissiveIntensity:"number", normalMap:"texture", normalMapTiling:"vec2", normalMapOffset:"vec2", normalMapUv:"number", bumpMapFactor:"number", heightMap:"texture", heightMapChannel:"string", 
-  heightMapUv:"number", heightMapTiling:"vec2", heightMapOffset:"vec2", heightMapFactor:"number", alphaTest:"number", opacity:"number", opacityMap:"texture", opacityMapVertexColor:"boolean", opacityMapChannel:"string", opacityMapUv:"number", opacityMapTiling:"vec2", opacityMapOffset:"vec2", reflectivity:"number", refraction:"number", refractionIndex:"number", sphereMap:"texture", cubeMap:"cubemap", cubeMapProjection:"number", cubeMapProjectionBox:"boundingbox", lightMap:"texture", lightMapVertexColor:"boolean", 
-  lightMapChannel:"string", lightMapUv:"number", lightMapTiling:"vec2", lightMapOffset:"vec2", depthTest:"boolean", depthWrite:"boolean", cull:"number", blendType:"number", shadingModel:"number"};
+  var PARAMETER_TYPES = {ambient:"vec3", ambientTnumber:"boolean", aoMap:"texture", aoVertexColor:"boolean", aoVertexColorChannel:"string", aoMapChannel:"string", aoMapUv:"number", aoMapTiling:"vec2", aoMapOffset:"vec2", occludeSpecular:"boolean", diffuse:"vec3", diffuseMap:"texture", diffuseTint:"boolean", diffuseVertexColor:"boolean", diffuseVertexColorChannel:"string", diffuseMapChannel:"string", diffuseMapUv:"number", diffuseMapTiling:"vec2", diffuseMapOffset:"vec2", diffuseMapTnumber:"boolean", 
+  specular:"vec3", specularVertexColor:"boolean", specularVertexColorChannel:"string", specularMapChannel:"string", specularMapUv:"number", specularMap:"texture", specularTint:"boolean", specularMapTiling:"vec2", specularMapOffset:"vec2", specularMapTnumber:"boolean", specularAntialias:"boolean", useMetalness:"boolean", metalnessMap:"texture", metalnessVertexColor:"boolean", metalnessVertexColorChannel:"string", metalnessMapChannel:"string", metalnessMapUv:"number", metalnessMapTiling:"vec2", metalnessMapOffset:"vec2", 
+  metalnessMapTnumber:"boolean", metalness:"number", conserveEnergy:"boolean", shininess:"number", glossMap:"texture", glossVertexColor:"boolean", glossVertexColorChannel:"string", glossMapChannel:"string", glossMapUv:"number", glossMapTiling:"vec2", glossMapOffset:"vec2", fresnelModel:"number", fresnelFactor:"float", emissive:"vec3", emissiveMap:"texture", emissiveVertexColor:"boolean", emissiveVertexColorChannel:"string", emissiveMapChannel:"string", emissiveMapUv:"number", emissiveMapTiling:"vec2", 
+  emissiveMapOffset:"vec2", emissiveTint:"boolean", emissiveIntensity:"number", normalMap:"texture", normalMapTiling:"vec2", normalMapOffset:"vec2", normalMapUv:"number", bumpMapFactor:"number", heightMap:"texture", heightMapChannel:"string", heightMapUv:"number", heightMapTiling:"vec2", heightMapOffset:"vec2", heightMapFactor:"number", alphaTest:"number", opacity:"number", opacityMap:"texture", opacityVertexColor:"boolean", opacityVertexColorChannel:"string", opacityMapChannel:"string", opacityMapUv:"number", 
+  opacityMapTiling:"vec2", opacityMapOffset:"vec2", reflectivity:"number", refraction:"number", refractionIndex:"number", sphereMap:"texture", cubeMap:"cubemap", cubeMapProjection:"number", cubeMapProjectionBox:"boundingbox", lightMap:"texture", lightVertexColor:"boolean", lightVertexColorChannel:"string", lightMapChannel:"string", lightMapUv:"number", lightMapTiling:"vec2", lightMapOffset:"vec2", depthTest:"boolean", depthWrite:"boolean", cull:"number", blendType:"number", shadingModel:"number"};
   var placeholders = {};
   var placeholdersMapping = {aoMap:"white", diffuseMap:"gray", specularMap:"gray", metalnessMap:"black", glossMap:"gray", emissiveMap:"gray", normalMap:"normal", heightMap:"gray", opacityMap:"gray", sphereMap:"gray", lightMap:"white"};
   var onCubemapAssetLoad = function(asset, attribute, newValue, oldValue) {
@@ -30139,6 +31107,173 @@ pc.extend(pc, function() {
   return {FontHandler:FontHandler};
 }());
 pc.extend(pc, function() {
+  var JSON_ADDRESS_MODE = {"repeat":pc.ADDRESS_REPEAT, "clamp":pc.ADDRESS_CLAMP_TO_EDGE, "mirror":pc.ADDRESS_MIRRORED_REPEAT};
+  var JSON_FILTER_MODE = {"nearest":pc.FILTER_NEAREST, "linear":pc.FILTER_LINEAR, "nearest_mip_nearest":pc.FILTER_NEAREST_MIPMAP_NEAREST, "linear_mip_nearest":pc.FILTER_LINEAR_MIPMAP_NEAREST, "nearest_mip_linear":pc.FILTER_NEAREST_MIPMAP_LINEAR, "linear_mip_linear":pc.FILTER_LINEAR_MIPMAP_LINEAR};
+  var TextureAtlasHandler = function(loader) {
+    this._loader = loader;
+  };
+  TextureAtlasHandler.prototype = {load:function(url, callback) {
+    var self = this;
+    var handler = this._loader.getHandler("texture");
+    if (pc.path.getExtension(url) === ".json") {
+      pc.http.get(url, function(err, response) {
+        if (!err) {
+          var textureUrl = url.replace(".json", ".png");
+          self._loader.load(textureUrl, "texture", function(err, texture) {
+            if (err) {
+              callback(err);
+            } else {
+              callback(null, {data:response, texture:texture});
+            }
+          });
+        } else {
+          callback(err);
+        }
+      });
+    } else {
+      return handler.load(url, callback);
+    }
+  }, open:function(url, data) {
+    var resource = new pc.TextureAtlas;
+    if (data.texture && data.data) {
+      resource.texture = data.texture;
+      resource.__data = data.data;
+    } else {
+      var handler = this._loader.getHandler("texture");
+      var texture = handler.open(url, data);
+      if (!texture) {
+        return null;
+      }
+      resource.texture = texture;
+    }
+    return resource;
+  }, patch:function(asset, assets) {
+    if (asset.resource.__data) {
+      if (asset.resource.__data.minfilter !== undefined) {
+        asset.data.minfilter = asset.resource.__data.minfilter;
+      }
+      if (asset.resource.__data.magfilter !== undefined) {
+        asset.data.magfilter = asset.resource.__data.magfilter;
+      }
+      if (asset.resource.__data.addressu !== undefined) {
+        asset.data.addressu = asset.resource.__data.addressu;
+      }
+      if (asset.resource.__data.addressv !== undefined) {
+        asset.data.addressv = asset.resource.__data.addressv;
+      }
+      if (asset.resource.__data.mipmaps !== undefined) {
+        asset.data.mipmaps = asset.resource.__data.mipmaps;
+      }
+      if (asset.resource.__data.anisotropy !== undefined) {
+        asset.data.anisotropy = asset.resource.__data.anisotropy;
+      }
+      if (asset.resource.__data.rgbm !== undefined) {
+        asset.data.rgbm = !!asset.resource.__data.rgbm;
+      }
+      asset.data.frames = asset.resource.__data.frames;
+      delete asset.resource.__data;
+    }
+    var texture = asset.resource.texture;
+    if (texture) {
+      texture.name = asset.name;
+      if (asset.data.hasOwnProperty("minfilter") && texture.minFilter !== JSON_FILTER_MODE[asset.data.minfilter]) {
+        texture.minFilter = JSON_FILTER_MODE[asset.data.minfilter];
+      }
+      if (asset.data.hasOwnProperty("magfilter") && texture.magFilter !== JSON_FILTER_MODE[asset.data.magfilter]) {
+        texture.magFilter = JSON_FILTER_MODE[asset.data.magfilter];
+      }
+      if (asset.data.hasOwnProperty("addressu") && texture.addressU !== JSON_ADDRESS_MODE[asset.data.addressu]) {
+        texture.addressU = JSON_ADDRESS_MODE[asset.data.addressu];
+      }
+      if (asset.data.hasOwnProperty("addressv") && texture.addressV !== JSON_ADDRESS_MODE[asset.data.addressv]) {
+        texture.addressV = JSON_ADDRESS_MODE[asset.data.addressv];
+      }
+      if (asset.data.hasOwnProperty("mipmaps") && texture.mipmaps !== asset.data.mipmaps) {
+        texture.mipmaps = asset.data.mipmaps;
+      }
+      if (asset.data.hasOwnProperty("anisotropy") && texture.anisotropy !== asset.data.anisotropy) {
+        texture.anisotropy = asset.data.anisotropy;
+      }
+      var rgbm = !!asset.data.rgbm;
+      if (asset.data.hasOwnProperty("rgbm") && texture.rgbm !== rgbm) {
+        texture.rgbm = rgbm;
+      }
+    }
+    asset.resource.frames = {};
+    for (var key in asset.data.frames) {
+      asset.resource.frames[key] = {rect:new pc.Vec4(asset.data.frames[key].rect), pivot:new pc.Vec2(asset.data.frames[key].pivot)};
+    }
+    asset.on("change", function(asset, attribute, value) {
+      if (attribute === "data") {
+        asset.resource.frames = value.frames;
+      }
+    });
+  }};
+  return {TextureAtlasHandler:TextureAtlasHandler};
+}());
+pc.extend(pc, function() {
+  var SpriteHandler = function(assets, device) {
+    this._assets = assets;
+    this._device = device;
+  };
+  SpriteHandler.prototype = {load:function(url, callback) {
+    if (pc.path.getExtension(url) === ".json") {
+      pc.http.get(url, function(err, response) {
+        if (!err) {
+          callback(null, response);
+        } else {
+          callback(err);
+        }
+      });
+    }
+  }, open:function(url, data) {
+    var sprite = new pc.Sprite(this._device);
+    if (data) {
+      sprite.__data = data;
+    }
+    return sprite;
+  }, patch:function(asset, assets) {
+    var sprite = asset.resource;
+    if (sprite.__data) {
+      asset.data.pixelsPerUnit = sprite.__data.pixelsPerUnit;
+      asset.data.frameKeys = sprite.__data.frameKeys;
+      var atlas = assets.getByUrl(sprite.__data.textureAtlasAsset);
+      if (atlas) {
+        asset.data.textureAtlasAsset = atlas.id;
+      }
+      delete sprite.__data;
+    }
+    sprite.pixelsPerUnit = asset.data.pixelsPerUnit;
+    sprite.frameKeys = asset.data.frameKeys;
+    this._updateAtlas(asset);
+    asset.on("change", function(asset, attribute, value) {
+      if (attribute === "data") {
+        sprite.pixelsPerUnit = value.pixelsPerUnit;
+        sprite.frameKeys = value.frameKeys;
+        this._updateAtlas(asset);
+      }
+    }, this);
+  }, _updateAtlas:function(asset) {
+    var sprite = asset.resource;
+    var atlasAsset = this._assets.get(asset.data.textureAtlasAsset);
+    if (atlasAsset && atlasAsset.resource) {
+      sprite.atlas = atlasAsset.resource;
+    } else {
+      this._assets.once("load:" + asset.data.textureAtlasAsset, function(atlasAsset) {
+        sprite.atlas = atlasAsset.resource;
+      }, this);
+      if (!atlasAsset) {
+        this._assets.once("add:" + asset.data.textureAtlasAsset, function(atlasAsset) {
+          this._assets.load(atlasAsset);
+        }, this);
+      } else {
+        this._assets.load(atlasAsset);
+      }
+    }
+  }};
+  return {SpriteHandler:SpriteHandler};
+}());
+pc.extend(pc, function() {
   var JSON_PRIMITIVE_TYPE = {"points":pc.PRIMITIVE_POINTS, "lines":pc.PRIMITIVE_LINES, "lineloop":pc.PRIMITIVE_LINELOOP, "linestrip":pc.PRIMITIVE_LINESTRIP, "triangles":pc.PRIMITIVE_TRIANGLES, "trianglestrip":pc.PRIMITIVE_TRISTRIP, "trianglefan":pc.PRIMITIVE_TRIFAN};
   var JSON_VERTEX_ELEMENT_TYPE = {"int8":pc.TYPE_INT8, "uint8":pc.TYPE_UINT8, "int16":pc.TYPE_INT16, "uint16":pc.TYPE_UINT16, "int32":pc.TYPE_INT32, "uint32":pc.TYPE_UINT32, "float32":pc.TYPE_FLOAT32};
   var JsonModelParser = function(device) {
@@ -30748,7 +31883,7 @@ pc.extend(pc, function() {
     if (!this.file) {
       return null;
     }
-    if (this.type === "texture") {
+    if (this.type === "texture" || this.type === "textureatlas") {
       var device = this.registry._loader.getHandler("texture")._device;
       if (this.variants.pvr && device.extCompressedTexturePVRTC) {
         return this.variants.pvr;
@@ -32116,6 +33251,9 @@ pc.extend(pc, function() {
     if (node.element && node.element.batchGroupId === id) {
       node.element.batchGroupId = -1;
     }
+    if (node.sprite && node.sprite.batchGroupId === id) {
+      node.sprite.batchGroupId = -1;
+    }
     for (var i = 0;i < node._children.length;i++) {
       this._removeModelsFromBatchGroup(node._children[i], id);
     }
@@ -32171,6 +33309,19 @@ pc.extend(pc, function() {
             this.scene.removeModel(node.element._image._model);
             valid = true;
           }
+        }
+      }
+    }
+    if (node.sprite && node.sprite.batchGroupId >= 0 && node.sprite.enabled) {
+      if (!groupIds || groupIds && groupIds.indexOf(node.sprite.batchGroupId) >= 0) {
+        var arr = groupMeshInstances[node.sprite.batchGroupId];
+        if (!arr) {
+          arr = groupMeshInstances[node.sprite.batchGroupId] = [];
+        }
+        if (node.sprite._meshInstance) {
+          groupMeshInstances[node.sprite.batchGroupId].push(node.sprite._meshInstance);
+          this.scene.removeModel(node.sprite._model);
+          node.sprite._batchGroup = this._batchGroups[node.sprite.batchGroupId];
         }
       }
     }
