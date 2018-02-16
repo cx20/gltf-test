@@ -1,438 +1,439 @@
 {
-  "accessors": {
-    "accessor_29": {
-      "bufferView": "bufferView_2",
-      "byteOffset": 0,
-      "byteStride": 0,
-      "componentType": 5123,
-      "count": 384,
-      "type": "SCALAR"
+    "asset": {
+        "premultipliedAlpha": true,
+        "profile": {
+            "api": "WebGL",
+            "version": "1.0.2"
+        },
+        "generator": "COLLADA2GLTF",
+        "version": "1.0"
     },
-    "accessor_31": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 0,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 224,
-      "max": [
-        0.5,
-        0.5,
-        0.5
-      ],
-      "min": [
-        -0.5,
-        -0.5,
-        -0.5
-      ],
-      "type": "VEC3"
-    },
-    "accessor_33": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 2688,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 224,
-      "max": [
-        1,
-        1,
-        1
-      ],
-      "min": [
-        -1,
-        -1,
-        -1
-      ],
-      "type": "VEC3"
-    },
-    "accessor_56": {
-      "bufferView": "bufferView_2",
-      "byteOffset": 768,
-      "byteStride": 0,
-      "componentType": 5123,
-      "count": 132,
-      "type": "SCALAR"
-    },
-    "accessor_58": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 5376,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 96,
-      "max": [
-        0.33504000306129456,
-        0.5,
-        0.33504000306129456
-      ],
-      "min": [
-        -0.33504000306129456,
-        -0.5,
-        -0.33504000306129456
-      ],
-      "type": "VEC3"
-    },
-    "accessor_60": {
-      "bufferView": "bufferView_0",
-      "byteOffset": 6528,
-      "byteStride": 0,
-      "componentType": 5126,
-      "count": 96,
-      "max": [
-        1,
-        1,
-        1
-      ],
-      "min": [
-        -1,
-        -1,
-        -1
-      ],
-      "type": "VEC3"
-    },
-    "animAccessor_0": {
-      "bufferView": "bufferView_1",
-      "byteOffset": 0,
-      "componentType": 5126,
-      "count": 2,
-      "type": "SCALAR",
-      "byteStride": 0
-    },
-    "animAccessor_1": {
-      "bufferView": "bufferView_1",
-      "byteOffset": 8,
-      "componentType": 5126,
-      "count": 2,
-      "type": "VEC4",
-      "byteStride": 0
-    },
-    "animAccessor_2": {
-      "bufferView": "bufferView_1",
-      "byteOffset": 40,
-      "componentType": 5126,
-      "count": 4,
-      "type": "SCALAR",
-      "byteStride": 0
-    },
-    "animAccessor_3": {
-      "bufferView": "bufferView_1",
-      "byteOffset": 56,
-      "componentType": 5126,
-      "count": 4,
-      "type": "VEC3",
-      "byteStride": 0
-    }
-  },
-  "animations": {
-    "animation_0": {
-      "channels": [
-        {
-          "sampler": "animation_0_rotation_sampler",
-          "target": {
-            "id": "Geometry-mesh020Node",
-            "path": "rotation"
-          }
+    "scenes": {
+        "scene_0": {
+            "nodes": [
+                "node_0"
+            ]
         }
-      ],
-      "parameters": {
-        "TIME": "animAccessor_0",
-        "rotation": "animAccessor_1"
-      },
-      "samplers": {
-        "animation_0_rotation_sampler": {
-          "input": "TIME",
-          "interpolation": "LINEAR",
-          "output": "rotation"
-        }
-      }
     },
-    "animation_1": {
-      "channels": [
-        {
-          "sampler": "animation_1_translation_sampler",
-          "target": {
-            "id": "Geometry-mesh020Node",
-            "path": "translation"
-          }
-        }
-      ],
-      "parameters": {
-        "TIME": "animAccessor_2",
-        "translation": "animAccessor_3"
-      },
-      "samplers": {
-        "animation_1_translation_sampler": {
-          "input": "TIME",
-          "interpolation": "LINEAR",
-          "output": "translation"
-        }
-      }
-    }
-  },
-  "asset": {
-    "generator": "collada2gltf@774bd4fe67703fbf60f9c02f3ba79632f246e9b6",
-    "premultipliedAlpha": true,
-    "profile": {
-      "api": "WebGL",
-      "version": "1.0.2"
-    },
-    "version": "1.0"
-  },
-  "bufferViews": {
-    "bufferView_0": {
-      "buffer": "BoxAnimated",
-      "byteLength": 7680,
-      "byteOffset": 0,
-      "target": 34962
-    },
-    "bufferView_1": {
-      "buffer": "BoxAnimated",
-      "byteLength": 104,
-      "byteOffset": 7680
-    },
-    "bufferView_2": {
-      "buffer": "BoxAnimated",
-      "byteLength": 1032,
-      "byteOffset": 7784,
-      "target": 34963
-    }
-  },
-  "buffers": {
-    "BoxAnimated": {
-      "type": "arraybuffer",
-      "byteLength": 8816,
-      "uri": "BoxAnimated.bin"
-    }
-  },
-  "materials": {
-    "Effect-inner": {
-      "name": "inner",
-      "extensions": {
-        "KHR_materials_common": {
-          "doubleSided": false,
-          "technique": "PHONG",
-          "values": {
-            "diffuse": [
-              0.800000011920929,
-              0.4159420132637024,
-              0.7952920198440552,
-              1
+    "scene": "scene_0",
+    "nodes": {
+        "node_0": {
+            "children": [
+                "Geometry-mesh019Node",
+                "node_2",
+                "Light-sunLight011Node"
             ],
-            "shininess": 256,
-            "specular": [
-              0.20000000298023224,
-              0.20000000298023224,
-              0.20000000298023224,
-              1
-            ]
-          }
-        }
-      }
-    },
-    "Effect-outer": {
-      "name": "outer",
-      "extensions": {
-        "KHR_materials_common": {
-          "doubleSided": false,
-          "technique": "PHONG",
-          "values": {
-            "diffuse": [
-              0.3016040027141571,
-              0.5335419774055481,
-              0.800000011920929,
-              1
+            "name": "Y_UP"
+        },
+        "Light-sunLight011Node": {
+            "extensions": {
+                "KHR_materials_common": {
+                    "light": "Light-sunLight011"
+                }
+            },
+            "matrix": [
+                0.7071067690849304,
+                0.0,
+                0.7071067690849304,
+                0.0,
+                0.3535533845424652,
+                0.8660253882408142,
+                -0.3535533845424652,
+                0.0,
+                -0.6123724579811096,
+                0.5,
+                0.6123724579811096,
+                0.0,
+                -2.0,
+                2.0,
+                2.0,
+                1.0
             ],
-            "shininess": 256,
-            "specular": [
-              0.20000000298023224,
-              0.20000000298023224,
-              0.20000000298023224,
-              1
+            "name": "Directional_Light"
+        },
+        "node_2": {
+            "children": [
+                "node_3"
+            ],
+            "rotation": [
+                -0.0,
+                -0.0,
+                -0.0,
+                -1.0
             ]
-          }
+        },
+        "node_3": {
+            "children": [
+                "Geometry-mesh020Node"
+            ]
+        },
+        "Geometry-mesh020Node": {
+            "meshes": [
+                "Geometry-mesh020"
+            ],
+            "rotation": [
+                -0.0,
+                -0.0,
+                -0.0,
+                -1.0
+            ],
+            "name": "inner_box"
+        },
+        "Geometry-mesh019Node": {
+            "meshes": [
+                "Geometry-mesh019"
+            ],
+            "name": "outer_box"
         }
-      }
-    }
-  },
-  "meshes": {
-    "Geometry-mesh019": {
-      "name": "outer_box",
-      "primitives": [
-        {
-          "attributes": {
-            "NORMAL": "accessor_33",
-            "POSITION": "accessor_31"
-          },
-          "indices": "accessor_29",
-          "material": "Effect-outer",
-          "mode": 4
+    },
+    "meshes": {
+        "Geometry-mesh020": {
+            "primitives": [
+                {
+                    "attributes": {
+                        "NORMAL": "accessor_1",
+                        "POSITION": "accessor_2"
+                    },
+                    "indices": "accessor_0",
+                    "mode": 4,
+                    "material": "Effect-inner"
+                }
+            ],
+            "name": "inner_box"
+        },
+        "Geometry-mesh019": {
+            "primitives": [
+                {
+                    "attributes": {
+                        "NORMAL": "accessor_4",
+                        "POSITION": "accessor_5"
+                    },
+                    "indices": "accessor_3",
+                    "mode": 4,
+                    "material": "Effect-outer"
+                }
+            ],
+            "name": "outer_box"
         }
-      ]
     },
-    "Geometry-mesh020": {
-      "name": "inner_box",
-      "primitives": [
-        {
-          "attributes": {
-            "NORMAL": "accessor_60",
-            "POSITION": "accessor_58"
-          },
-          "indices": "accessor_56",
-          "material": "Effect-inner",
-          "mode": 4
+    "animations": {
+        "animation_0": {
+            "channels": [
+                {
+                    "sampler": "sampler_0",
+                    "target": {
+                        "id": "Geometry-mesh020Node",
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": "sampler_1",
+                    "target": {
+                        "id": "node_2",
+                        "path": "translation"
+                    }
+                }
+            ],
+            "parameters": {
+                "TIME": "accessor_6",
+                "rotation": "accessor_7",
+                "TIME_1": "accessor_8",
+                "translation": "accessor_9"
+            },
+            "samplers": {
+                "sampler_0": {
+                    "input": "TIME",
+                    "interpolation": "LINEAR",
+                    "output": "rotation"
+                },
+                "sampler_1": {
+                    "input": "TIME_1",
+                    "interpolation": "LINEAR",
+                    "output": "translation"
+                }
+            }
         }
-      ]
-    }
-  },
-  "nodes": {
-    "Camera-camera002Node": {
-      "children": [],
-      "matrix": [
-        1,
-        0,
-        0,
-        0,
-        0,
-        0.9961947202682495,
-        -0.08715574443340302,
-        0,
-        0,
-        0.08715574443340302,
-        0.9961947202682495,
-        0,
-        0,
-        0.75,
-        4,
-        1
-      ],
-      "name": "Camera"
     },
-    "Geometry-mesh019Node": {
-      "children": [],
-      "matrix": [
-        1,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1
-      ],
-      "meshes": [
-        "Geometry-mesh019"
-      ],
-      "name": "outer_box"
+    "accessors": {
+        "accessor_0": {
+            "bufferView": "bufferView_0",
+            "byteOffset": 0,
+            "componentType": 5123,
+            "count": 186,
+            "max": [
+                95
+            ],
+            "min": [
+                0
+            ],
+            "type": "SCALAR"
+        },
+        "accessor_1": {
+            "bufferView": "bufferView_1",
+            "byteOffset": 0,
+            "byteStride": 12,
+            "componentType": 5126,
+            "count": 96,
+            "max": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "min": [
+                -1.0,
+                -1.0,
+                -1.0
+            ],
+            "type": "VEC3"
+        },
+        "accessor_2": {
+            "bufferView": "bufferView_1",
+            "byteOffset": 1152,
+            "byteStride": 12,
+            "componentType": 5126,
+            "count": 96,
+            "max": [
+                0.33504000306129458,
+                0.5,
+                0.33504000306129458
+            ],
+            "min": [
+                -0.33504000306129458,
+                -0.5,
+                -0.33504000306129458
+            ],
+            "type": "VEC3"
+        },
+        "accessor_3": {
+            "bufferView": "bufferView_0",
+            "byteOffset": 372,
+            "componentType": 5123,
+            "count": 576,
+            "max": [
+                223
+            ],
+            "min": [
+                0
+            ],
+            "type": "SCALAR"
+        },
+        "accessor_4": {
+            "bufferView": "bufferView_1",
+            "byteOffset": 2304,
+            "byteStride": 12,
+            "componentType": 5126,
+            "count": 224,
+            "max": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "min": [
+                -1.0,
+                -1.0,
+                -1.0
+            ],
+            "type": "VEC3"
+        },
+        "accessor_5": {
+            "bufferView": "bufferView_1",
+            "byteOffset": 4992,
+            "byteStride": 12,
+            "componentType": 5126,
+            "count": 224,
+            "max": [
+                0.5,
+                0.5,
+                0.5
+            ],
+            "min": [
+                -0.5,
+                -0.5,
+                -0.5
+            ],
+            "type": "VEC3"
+        },
+        "accessor_6": {
+            "bufferView": "bufferView_2",
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 2,
+            "max": [
+                2.5
+            ],
+            "min": [
+                1.25
+            ],
+            "type": "SCALAR"
+        },
+        "accessor_7": {
+            "bufferView": "bufferView_3",
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 2,
+            "max": [
+                1.0,
+                0.0,
+                0.0,
+                4.4896593387466768e-11
+            ],
+            "min": [
+                -0.0,
+                0.0,
+                0.0,
+                -1.0
+            ],
+            "type": "VEC4"
+        },
+        "accessor_8": {
+            "bufferView": "bufferView_2",
+            "byteOffset": 8,
+            "componentType": 5126,
+            "count": 4,
+            "max": [
+                3.708329916000366
+            ],
+            "min": [
+                0.0
+            ],
+            "type": "SCALAR"
+        },
+        "accessor_9": {
+            "bufferView": "bufferView_4",
+            "byteOffset": 0,
+            "componentType": 5126,
+            "count": 4,
+            "max": [
+                0.0,
+                2.5199999809265138,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "type": "VEC3"
+        }
     },
-    "Geometry-mesh020Node": {
-      "children": [],
-      "meshes": [
-        "Geometry-mesh020"
-      ],
-      "name": "inner_box",
-      "rotation": [
-        0,
-        0,
-        0,
-        1
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ],
-      "translation": [
-        0,
-        0,
-        0
-      ]
+    "materials": {
+        "Effect-inner": {
+            "extensions": {
+                "KHR_materials_common": {
+                    "doubleSided": false,
+                    "technique": "PHONG",
+                    "transparent": false,
+                    "values": {
+                        "diffuse": [
+                            0.800000011920929,
+                            0.4159420132637024,
+                            0.7952920198440552,
+                            1.0
+                        ],
+                        "specular": [
+                            0.20000000298023225,
+                            0.20000000298023225,
+                            0.20000000298023225,
+                            1.0
+                        ],
+                        "shininess": 256.0,
+                        "transparency": 1.0
+                    },
+                    "name": "inner"
+                }
+            },
+            "name": "inner"
+        },
+        "Effect-outer": {
+            "extensions": {
+                "KHR_materials_common": {
+                    "doubleSided": false,
+                    "technique": "PHONG",
+                    "transparent": false,
+                    "values": {
+                        "diffuse": [
+                            0.3016040027141571,
+                            0.5335419774055481,
+                            0.800000011920929,
+                            1.0
+                        ],
+                        "specular": [
+                            0.20000000298023225,
+                            0.20000000298023225,
+                            0.20000000298023225,
+                            1.0
+                        ],
+                        "shininess": 256.0,
+                        "transparency": 1.0
+                    },
+                    "name": "outer"
+                }
+            },
+            "name": "outer"
+        }
     },
-    "Light-sunLight011Node": {
-      "children": [],
-      "matrix": [
-        0.7071067690849304,
-        0,
-        0.7071067690849304,
-        0,
-        0.3535533845424652,
-        0.8660253882408142,
-        -0.3535533845424652,
-        0,
-        -0.6123724579811096,
-        0.5,
-        0.6123724579811096,
-        0,
-        -2,
-        2,
-        2,
-        1
-      ],
-      "name": "Directional_Light",
-      "extensions": {
+    "extensions": {
         "KHR_materials_common": {
-          "light": "light1"
+            "Light-polyRender005": {
+                "type": "ambient",
+                "ambient": {
+                    "color": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                }
+            },
+            "Light-sunLight011": {
+                "type": "directional",
+                "directional": {
+                    "color": [
+                        1.0,
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
         }
-      }
     },
-    "polyRender005": {
-      "children": [],
-      "matrix": [
-        1,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1,
-        0,
-        0,
-        0,
-        0,
-        1
-      ],
-      "name": "Render"
-    }
-  },
-  "scene": "defaultScene",
-  "scenes": {
-    "defaultScene": {
-      "nodes": [
-        "polyRender005",
-        "Geometry-mesh019Node",
-        "Geometry-mesh020Node",
-        "Camera-camera002Node",
-        "Light-sunLight011Node"
-      ]
-    }
-  },
-  "extensionsUsed": [
-    "KHR_materials_common"
-  ],
-  "extensions": {
-    "KHR_materials_common": {
-      "lights": {
-        "light1": {
-          "name": "light1",
-          "type": "directional",
-          "directional": {
-            "color": [
-              1,
-              1,
-              1
-            ]
-          }
+    "bufferViews": {
+        "bufferView_0": {
+            "buffer": "buffer_0",
+            "byteOffset": 7784,
+            "byteLength": 1524,
+            "target": 34963
+        },
+        "bufferView_1": {
+            "buffer": "buffer_0",
+            "byteOffset": 80,
+            "byteLength": 7680,
+            "target": 34962
+        },
+        "bufferView_2": {
+            "buffer": "buffer_0",
+            "byteOffset": 7760,
+            "byteLength": 24
+        },
+        "bufferView_3": {
+            "buffer": "buffer_0",
+            "byteOffset": 0,
+            "byteLength": 32
+        },
+        "bufferView_4": {
+            "buffer": "buffer_0",
+            "byteOffset": 32,
+            "byteLength": 48
         }
-      }
-    }
-  }
+    },
+    "buffers": {
+        "buffer_0": {
+            "byteLength": 9308,
+            "uri": "BoxAnimated0.bin"
+        }
+    },
+    "extensionsUsed": [
+        "KHR_materials_common"
+    ]
 }
