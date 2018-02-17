@@ -633,8 +633,93 @@
             var texCoord1 = null;
             var colors = null;
             var indices = null;
+            var joints = null;
+            var weights = null;
             var numVertices;
             var aabb;
+            var i;
+
+            if (primitive.hasOwnProperty('extensions')) {
+                var extensions = primitive.extensions;
+                if (extensions.hasOwnProperty('KHR_draco_mesh_compression')) {
+                    var extDraco = extensions.KHR_draco_mesh_compression;
+
+                    var bufferView = gltf.bufferViews[extDraco.bufferView];
+                    var arrayBuffer = resources.buffers[bufferView.buffer];
+
+                    var decoderModule = DracoDecoderModule();
+                    var buffer = new decoderModule.DecoderBuffer();
+                    buffer.Init(new Int8Array(arrayBuffer), arrayBuffer.byteLength);
+
+                    var decoder = new decoderModule.Decoder();
+                    var geometryType = decoder.GetEncodedGeometryType(buffer);
+
+                    var outputGeometry, status;
+                    switch (geometryType) {
+                        case decoderModule.INVALID_GEOMETRY_TYPE:
+                            console.error('Invalid geometry type');
+                            break;
+                        case decoderModule.POINT_CLOUD:
+                            outputGeometry = new decoderModule.PointCloud();
+                            status = decoder.DecodeBufferToPointCloud(buffer, outputGeometry);
+                            break;
+                        case decoderModule.TRIANGULAR_MESH:
+                            outputGeometry = new decoderModule.Mesh();
+                            status = decoder.DecodeBufferToMesh(buffer, outputGeometry);
+                            break;
+                    }
+
+                    if (!status.ok() || outputGeometry.ptr == 0) {
+                        var errorMsg = status.error_msg();
+                        console.error(errorMsg);
+                    }
+
+                    var numPoints = outputGeometry.num_points();
+                    var numAttributes = outputGeometry.num_attributes();
+                    var numFaces = outputGeometry.num_faces();
+                    var attribute, attributeId;
+
+                    // POSITIONS
+                    var extractAttribute = function (attributeType) {
+                        var attributeId = decoder.GetAttributeId(outputGeometry, attributeType);
+                        if (attributeId !== -1) {
+                            var attribute = decoder.GetAttribute(outputGeometry, attributeId);
+                            var attributeData = new decoderModule.DracoFloat32Array();
+                            decoder.GetAttributeFloatForAllPoints(outputGeometry, attribute, attributeData);
+                            var numValues = numPoints * attribute.num_components();
+
+                            var values = new Float32Array(numValues);
+                            for (i = 0; i < numValues; i++) {
+                                values[i] = attributeData.GetValue(i);
+                            }
+
+                            decoderModule.destroy(attributeData);
+                            return values;
+                        }
+                        return null;
+                    };
+
+                    positions = extractAttribute(decoderModule.POSITION);
+                    normals   = extractAttribute(decoderModule.NORMAL);
+                    texCoord0 = extractAttribute(decoderModule.TEX_COORD);
+
+                    if (geometryType == decoderModule.TRIANGULAR_MESH) {
+                        var face = new decoderModule.DracoInt32Array();
+                        indices = new Uint16Array(numFaces * 3);
+                        for (i = 0; i < numFaces; ++i) {
+                            decoder.GetFaceFromMesh(outputGeometry, i, face);
+                            indices[i * 3]     = face.GetValue(0);
+                            indices[i * 3 + 1] = face.GetValue(1);
+                            indices[i * 3 + 2] = face.GetValue(2);
+                        }
+                        decoderModule.destroy(face);
+                    }
+
+                    decoderModule.destroy(outputGeometry);
+                    decoderModule.destroy(decoder);
+                    decoderModule.destroy(buffer);
+                }
+            }
 
             var vertexDesc = [
                 { semantic: pc.SEMANTIC_POSITION, components: 3, type: pc.TYPE_FLOAT32 },
@@ -644,9 +729,13 @@
 
             // Grab typed arrays for all vertex data
             if (attributes.hasOwnProperty('POSITION')) {
+                if (positions === null) {
+                    accessor = gltf.accessors[primitive.attributes.POSITION];
+                    positions = getAccessorData(gltf, accessor, resources.buffers);
+                }
+
+                numVertices = positions.length / 3;
                 accessor = gltf.accessors[primitive.attributes.POSITION];
-                positions = getAccessorData(gltf, accessor, resources.buffers);
-                numVertices = accessor.count;
                 var min = accessor.min;
                 var max = accessor.max;
                 aabb = new pc.BoundingBox(
@@ -654,7 +743,8 @@
                     new pc.Vec3((max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2)
                 );
             }
-            if (attributes.hasOwnProperty('NORMAL')) {
+
+            if (attributes.hasOwnProperty('NORMAL') && normals === null) {
                 accessor = gltf.accessors[primitive.attributes.NORMAL];
                 normals = getAccessorData(gltf, accessor, resources.buffers);
             }
@@ -663,10 +753,13 @@
                 tangents = getAccessorData(gltf, accessor, resources.buffers);
             }
             if (attributes.hasOwnProperty('TEXCOORD_0')) {
-                accessor = gltf.accessors[primitive.attributes.TEXCOORD_0];
-                texCoord0 = getAccessorData(gltf, accessor, resources.buffers);
+                if (texCoord0 === null) {
+                    accessor = gltf.accessors[primitive.attributes.TEXCOORD_0];
+                    texCoord0 = getAccessorData(gltf, accessor, resources.buffers);
+                }
                 vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD0, components: 2, type: pc.TYPE_FLOAT32 });
             }
+
             if (attributes.hasOwnProperty('TEXCOORD_1')) {
                 accessor = gltf.accessors[primitive.attributes.TEXCOORD_1];
                 texCoord1 = getAccessorData(gltf, accessor, resources.buffers);
@@ -677,7 +770,17 @@
                 colors = getAccessorData(gltf, accessor, resources.buffers);
                 vertexDesc.push({ semantic: pc.SEMANTIC_COLOR, components: 4, type: pc.TYPE_FLOAT32 });
             }
-            if (primitive.hasOwnProperty('indices')) {
+            if (attributes.hasOwnProperty('JOINTS_0')) {
+                accessor = gltf.accessors[primitive.attributes.JOINTS_0];
+                joints = getAccessorData(gltf, accessor, resources.buffers);
+                vertexDesc.push({ semantic: pc.SEMANTIC_BLENDINDICES, components: 4, type: pc.TYPE_UINT8 });
+            }
+            if (attributes.hasOwnProperty('WEIGHTS_0')) {
+                accessor = gltf.accessors[primitive.attributes.WEIGHTS_0];
+                weights = getAccessorData(gltf, accessor, resources.buffers);
+                vertexDesc.push({ semantic: pc.SEMANTIC_BLENDWEIGHT, components: 4, type: pc.TYPE_FLOAT32 });
+            }
+            if (primitive.hasOwnProperty('indices') && indices === null) {
                 accessor = gltf.accessors[primitive.indices];
                 indices = getAccessorData(gltf, accessor, resources.buffers);
             }
@@ -762,6 +865,30 @@
                 o += 16;
             }
 
+            if (joints !== null) {
+                for (k = 0; k < numVertices; k++) {
+                    offset = k * vertexFormat.size + o;
+                    dataView.setUint8(offset + 0,  joints[k + 0], true);
+                    dataView.setUint8(offset + 1,  joints[k + 1], true);
+                    dataView.setUint8(offset + 2,  joints[k + 2], true);
+                    dataView.setUint8(offset + 3, joints[k + 3], true);
+                }
+
+                o += 4;
+            }
+
+            if (weights !== null) {
+                for (k = 0; k < numVertices; k++) {
+                    offset = k * vertexFormat.size + o;
+                    dataView.setFloat32(offset + 0,  weights[k * 4 + 0], true);
+                    dataView.setFloat32(offset + 4,  weights[k * 4 + 1], true);
+                    dataView.setFloat32(offset + 8,  weights[k * 4 + 2], true);
+                    dataView.setFloat32(offset + 12, weights[k * 4 + 3], true);
+                }
+
+                o += 16;
+            }
+
             vertexBuffer.unlock();
 
             var mesh = new pc.Mesh();
@@ -787,7 +914,7 @@
                         indexFormat = pc.INDEXFORMAT_UINT32;
                         break;
                 }
-                indexBuffer = new pc.IndexBuffer(resources.device, indexFormat, accessor.count, pc.USAGE_STATIC, indices);
+                indexBuffer = new pc.IndexBuffer(resources.device, indexFormat, accessor.count, pc.BUFFER_STATIC, indices);
                 mesh.indexBuffer[0] = indexBuffer;
                 mesh.primitive[0].count = indices.length;
             } else {
@@ -826,6 +953,26 @@
         });
 
         return meshes;
+    }
+
+    function translateSkin(data, resources) {
+        var gltf = resources.gltf;
+
+        var inverseBindMatrices = data.inverseBindMatrices;
+        var joints = data.joints;
+        var skeleton = data.skeleton;
+
+        var ibp = [];
+        var boneNames = [];
+        var ibmData = getAccessorData(gltf, gltf.accessors[inverseBindMatrices], resources.buffers);
+
+        for (var i = 0; i < joints.length; i++) {
+            var bindMatrix = new pc.Mat4(ibmData.slice(i * 16, i * 16 + 16));
+            ibp.push(bindMatrix);
+            boneNames.push(""); // resources.nodes[joints[i]].name
+        }
+
+        return new pc.Skin(resources.device, ibp, boneNames);
     }
 
     function loadBuffers(resources, success) {
@@ -933,6 +1080,7 @@
             parse('images', translateImage, resources);
             parse('materials', translateMaterial, resources);
             parse('meshes', translateMesh, resources);
+            parse('skins', translateSkin, resources);
             parse('nodes', translateNode, resources);
             parse('animations', translateAnimation, resources);
 
