@@ -646,10 +646,12 @@
 
                     var bufferView = gltf.bufferViews[extDraco.bufferView];
                     var arrayBuffer = resources.buffers[bufferView.buffer];
+                    var byteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
+                    var uint8Buffer = new Int8Array(arrayBuffer, byteOffset, bufferView.byteLength);
 
                     var decoderModule = DracoDecoderModule();
                     var buffer = new decoderModule.DecoderBuffer();
-                    buffer.Init(new Int8Array(arrayBuffer), arrayBuffer.byteLength);
+                    buffer.Init(uint8Buffer, uint8Buffer.length);
 
                     var decoder = new decoderModule.Decoder();
                     var geometryType = decoder.GetEncodedGeometryType(buffer);
@@ -679,32 +681,40 @@
                     var numFaces = outputGeometry.num_faces();
                     var attribute, attributeId;
 
-                    // POSITIONS
-                    var extractAttribute = function (attributeType) {
-                        var attribute = decoder.GetAttributeByUniqueId(outputGeometry, attributeType);
-                        var attributeData = new decoderModule.DracoFloat32Array();
-                        decoder.GetAttributeFloatForAllPoints(outputGeometry, attribute, attributeData);
-                        var numValues = numPoints * attribute.num_components();
+                    if (extDraco.hasOwnProperty('attributes')) {
+                        var extractAttribute = function (uniqueId) {
+                            var attribute = decoder.GetAttributeByUniqueId(outputGeometry, uniqueId);
+                            var attributeData = new decoderModule.DracoFloat32Array();
+                            decoder.GetAttributeFloatForAllPoints(outputGeometry, attribute, attributeData);
+                            var numValues = numPoints * attribute.num_components();
+                            var values = new Float32Array(numValues);
 
-                        var values = new Float32Array(numValues);
-                        for (i = 0; i < numValues; i++) {
-                            values[i] = attributeData.GetValue(i);
-                        }
+                            for (i = 0; i < numValues; i++) {
+                                values[i] = attributeData.GetValue(i);
+                            }
 
-                        decoderModule.destroy(attributeData);
-                        return values;
-                    };
+                            decoderModule.destroy(attributeData);
+                            return values;
+                        };
 
-                    if (extDraco.attributes.hasOwnProperty('POSITION'))
-                        positions = extractAttribute(extDraco.attributes.POSITION);
-                    if (extDraco.attributes.hasOwnProperty('NORMAL'))
-                        normals   = extractAttribute(extDraco.attributes.NORMAL);
-                    if (extDraco.attributes.hasOwnProperty('TANGENT'))
-                        tangents  = extractAttribute(extDraco.attributes.TANGENT);
-                    if (extDraco.attributes.hasOwnProperty('COLOR'))
-                        colors    = extractAttribute(extDraco.attributes.COLOR);
-                    if (extDraco.attributes.hasOwnProperty('TEXCOORD_0'))
-                        texCoord0 = extractAttribute(extDraco.attributes.TEXCOORD_0);
+                        var attributes = extDraco.attributes;
+                        if (attributes.hasOwnProperty('POSITION'))
+                            positions = extractAttribute(attributes.POSITION);
+                        if (attributes.hasOwnProperty('NORMAL'))
+                            normals   = extractAttribute(attributes.NORMAL);
+                        if (attributes.hasOwnProperty('TANGENT'))
+                            tangents  = extractAttribute(attributes.TANGENT);
+                        if (attributes.hasOwnProperty('COLOR'))
+                            colors    = extractAttribute(attributes.COLOR);
+                        if (attributes.hasOwnProperty('TEXCOORD_0'))
+                            texCoord0 = extractAttribute(attributes.TEXCOORD_0);
+                        if (attributes.hasOwnProperty('TEXCOORD_1'))
+                            texCoord1 = extractAttribute(attributes.TEXCOORD_1);
+                        if (attributes.hasOwnProperty('JOINTS_0'))
+                            joints = extractAttribute(attributes.JOINTS_0);
+                        if (attributes.hasOwnProperty('WEIGHTS_0'))
+                            weights = extractAttribute(attributes.WEIGHTS_0);
+                    }
 
                     if (geometryType == decoderModule.TRIANGULAR_MESH) {
                         var face = new decoderModule.DracoInt32Array();
@@ -762,10 +772,11 @@
                 }
                 vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD0, components: 2, type: pc.TYPE_FLOAT32 });
             }
-
             if (attributes.hasOwnProperty('TEXCOORD_1')) {
-                accessor = gltf.accessors[primitive.attributes.TEXCOORD_1];
-                texCoord1 = getAccessorData(gltf, accessor, resources.buffers);
+                if (texCoord1 === null) {
+                    accessor = gltf.accessors[primitive.attributes.TEXCOORD_1];
+                    texCoord1 = getAccessorData(gltf, accessor, resources.buffers);
+                }
                 vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD1, components: 2, type: pc.TYPE_FLOAT32 });
             }
             if (attributes.hasOwnProperty('COLOR_0')) {
