@@ -681,27 +681,30 @@
 
                     // POSITIONS
                     var extractAttribute = function (attributeType) {
-                        var attributeId = decoder.GetAttributeId(outputGeometry, attributeType);
-                        if (attributeId !== -1) {
-                            var attribute = decoder.GetAttribute(outputGeometry, attributeId);
-                            var attributeData = new decoderModule.DracoFloat32Array();
-                            decoder.GetAttributeFloatForAllPoints(outputGeometry, attribute, attributeData);
-                            var numValues = numPoints * attribute.num_components();
+                        var attribute = decoder.GetAttributeByUniqueId(outputGeometry, attributeType);
+                        var attributeData = new decoderModule.DracoFloat32Array();
+                        decoder.GetAttributeFloatForAllPoints(outputGeometry, attribute, attributeData);
+                        var numValues = numPoints * attribute.num_components();
 
-                            var values = new Float32Array(numValues);
-                            for (i = 0; i < numValues; i++) {
-                                values[i] = attributeData.GetValue(i);
-                            }
-
-                            decoderModule.destroy(attributeData);
-                            return values;
+                        var values = new Float32Array(numValues);
+                        for (i = 0; i < numValues; i++) {
+                            values[i] = attributeData.GetValue(i);
                         }
-                        return null;
+
+                        decoderModule.destroy(attributeData);
+                        return values;
                     };
 
-                    positions = extractAttribute(decoderModule.POSITION);
-                    normals   = extractAttribute(decoderModule.NORMAL);
-                    texCoord0 = extractAttribute(decoderModule.TEX_COORD);
+                    if (extDraco.attributes.hasOwnProperty('POSITION'))
+                        positions = extractAttribute(extDraco.attributes.POSITION);
+                    if (extDraco.attributes.hasOwnProperty('NORMAL'))
+                        normals   = extractAttribute(extDraco.attributes.NORMAL);
+                    if (extDraco.attributes.hasOwnProperty('TANGENT'))
+                        tangents  = extractAttribute(extDraco.attributes.TANGENT);
+                    if (extDraco.attributes.hasOwnProperty('COLOR'))
+                        colors    = extractAttribute(extDraco.attributes.COLOR);
+                    if (extDraco.attributes.hasOwnProperty('TEXCOORD_0'))
+                        texCoord0 = extractAttribute(extDraco.attributes.TEXCOORD_0);
 
                     if (geometryType == decoderModule.TRIANGULAR_MESH) {
                         var face = new decoderModule.DracoInt32Array();
@@ -748,7 +751,7 @@
                 accessor = gltf.accessors[primitive.attributes.NORMAL];
                 normals = getAccessorData(gltf, accessor, resources.buffers);
             }
-            if (attributes.hasOwnProperty('TANGENT')) {
+            if (attributes.hasOwnProperty('TANGENT') && tangents === null) {
                 accessor = gltf.accessors[primitive.attributes.TANGENT];
                 tangents = getAccessorData(gltf, accessor, resources.buffers);
             }
@@ -914,7 +917,8 @@
                         indexFormat = pc.INDEXFORMAT_UINT32;
                         break;
                 }
-                indexBuffer = new pc.IndexBuffer(resources.device, indexFormat, accessor.count, pc.BUFFER_STATIC, indices);
+                var numIndices = indices.length; // accessor.count
+                indexBuffer = new pc.IndexBuffer(resources.device, indexFormat, numIndices, pc.BUFFER_STATIC, indices);
                 mesh.indexBuffer[0] = indexBuffer;
                 mesh.primitive[0].count = indices.length;
             } else {
