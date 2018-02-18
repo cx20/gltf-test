@@ -1,0 +1,230 @@
+{
+    "asset": {
+        "premultipliedAlpha": true,
+        "profile": {
+            "api": "WebGL",
+            "version": "1.0.2"
+        },
+        "generator": "COLLADA2GLTF",
+        "version": "1.0"
+    },
+    "scenes": {
+        "scene_0": {
+            "nodes": [
+                "node_0"
+            ]
+        }
+    },
+    "scene": "scene_0",
+    "nodes": {
+        "node_0": {
+            "children": [
+                "polySurface168"
+            ],
+            "name": "Y_UP"
+        },
+        "polySurface168": {
+            "meshes": [
+                "meshId0"
+            ],
+            "name": "polySurface168"
+        }
+    },
+    "meshes": {
+        "meshId0": {
+            "primitives": [
+                {
+                    "attributes": {
+                        "COLOR_0": "accessor_1",
+                        "NORMAL": "accessor_2",
+                        "POSITION": "accessor_3",
+                        "TEXCOORD_0": "accessor_4"
+                    },
+                    "indices": "accessor_0",
+                    "mode": 4,
+                    "material": "m0smiling_face_DF-fx"
+                }
+            ],
+            "name": "meshId0_name"
+        }
+    },
+    "accessors": {
+        "accessor_0": {
+            "bufferView": "bufferView_0",
+            "byteOffset": 0,
+            "componentType": 5123,
+            "count": 14592,
+            "max": [
+                2550
+            ],
+            "min": [
+                0
+            ],
+            "type": "SCALAR"
+        },
+        "accessor_1": {
+            "bufferView": "bufferView_1",
+            "byteOffset": 0,
+            "byteStride": 12,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "min": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "type": "VEC3"
+        },
+        "accessor_2": {
+            "bufferView": "bufferView_1",
+            "byteOffset": 30612,
+            "byteStride": 12,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.9999155402183532,
+                0.9999614953994752,
+                0.999551236629486
+            ],
+            "min": [
+                -0.9999155402183532,
+                -0.9979230761528016,
+                -0.9998226761817932
+            ],
+            "type": "VEC3"
+        },
+        "accessor_3": {
+            "bufferView": "bufferView_1",
+            "byteOffset": 61224,
+            "byteStride": 12,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.8106791973114014,
+                0.8187642097473145,
+                0.7583367228507996
+            ],
+            "min": [
+                -0.8106791973114014,
+                -0.8187641501426697,
+                -0.8632782101631165
+            ],
+            "type": "VEC3"
+        },
+        "accessor_4": {
+            "bufferView": "bufferView_2",
+            "byteOffset": 0,
+            "byteStride": 8,
+            "componentType": 5126,
+            "count": 2551,
+            "max": [
+                0.991733968257904,
+                0.98796808719635
+            ],
+            "min": [
+                0.011699199676513672,
+                0.0060114264488220219
+            ],
+            "type": "VEC2"
+        }
+    },
+    "materials": {
+        "m0smiling_face_DF-fx": {
+            "extensions": {
+                "KHR_materials_common": {
+                    "doubleSided": false,
+                    "technique": "PHONG",
+                    "transparent": false,
+                    "values": {
+                        "ambient": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "diffuse": "texture_0",
+                        "emission": [
+                            0.0,
+                            0.0,
+                            0.0,
+                            1.0
+                        ],
+                        "specular": "texture_1",
+                        "shininess": 20.0,
+                        "transparency": 1.0
+                    },
+                    "name": "m0smiling_face_DF"
+                }
+            },
+            "name": "m0smiling_face_DF"
+        }
+    },
+    "textures": {
+        "texture_0": {
+            "format": 6408,
+            "internalFormat": 6408,
+            "target": 3553,
+            "type": 5121,
+            "sampler": "sampler_0",
+            "source": "m0smiling_face_DF-diffuse-image"
+        },
+        "texture_1": {
+            "format": 6408,
+            "internalFormat": 6408,
+            "target": 3553,
+            "type": 5121,
+            "sampler": "sampler_0",
+            "source": "m0smiling_face_DF-specular-image"
+        }
+    },
+    "images": {
+        "m0smiling_face_DF-diffuse-image": {
+            "uri": "SmilingFace_texture_0001.jpg"
+        },
+        "m0smiling_face_DF-specular-image": {
+            "uri": "SmilingFace_texture_0002.jpg"
+        }
+    },
+    "samplers": {
+        "sampler_0": {
+            "magFilter": 9729,
+            "minFilter": 9986,
+            "wrapS": 10497,
+            "wrapT": 10497
+        }
+    },
+    "bufferViews": {
+        "bufferView_0": {
+            "buffer": "buffer_0",
+            "byteOffset": 112244,
+            "byteLength": 29184,
+            "target": 34963
+        },
+        "bufferView_1": {
+            "buffer": "buffer_0",
+            "byteOffset": 0,
+            "byteLength": 91836,
+            "target": 34962
+        },
+        "bufferView_2": {
+            "buffer": "buffer_0",
+            "byteOffset": 91836,
+            "byteLength": 20408,
+            "target": 34962
+        }
+    },
+    "buffers": {
+        "buffer_0": {
+            "byteLength": 141428,
+            "uri": "SmilingFace0.bin"
+        }
+    },
+    "extensionsUsed": [
+        "KHR_materials_common"
+    ]
+}
