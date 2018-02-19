@@ -25,7 +25,7 @@ x3dom.glTF.glTFLoader.prototype._loadShaderSource = function(shaderNode)
             else
                 data = unescape (data);
 
-            //console.log(data);
+            console.log(data);
             return data;
         }
         x3dom.debug.logError('no shader found');
