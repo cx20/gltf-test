@@ -17,10 +17,16 @@
 
     AnimCurve.prototype.evaluate = function (time) {
         var keys = this.keys;
+
+        // If the current time is before the first keyframe, return the first key's value
+        if (time <= keys[0].time) return keys[0].value;
+
         for (var i = 0; i < keys.length - 1; i++) {
             var k0 = keys[i];
             var k1 = keys[i + 1];
 
+            if (time === k0.time) return k0.value;
+            if (time === k1.time) return k1.value;
             if (time > k0.time && time < k1.time) {
                 var interval = k1.time - k0.time;
                 var delta = time - k0.time;
@@ -75,11 +81,16 @@
             for (var j = 0; j < this.curves.length; j++) {
                 var curve = this.curves[j];
                 var value = curve.evaluate(this.time);
-                if (value instanceof pc.Quat) {
-                    this.entity.setLocalRotation(value);
-                }
-                if (value instanceof pc.Vec3) {
-                    this.entity.setLocalPosition(value);
+                switch (curve.target) {
+                    case 'translation':
+                        this.entity.setLocalPosition(value);
+                        break;
+                    case 'rotation':
+                        this.entity.setLocalRotation(value);
+                        break;
+                    case 'scale':
+                        this.entity.setLocalScale(value);
+                        break;
                 }
             }
         };
@@ -452,15 +463,11 @@
     }
 
     // Specification:
-    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#reference-node
+    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#node
     function translateNode(data, resources) {
         var entity = new pc.Entity();
 
-        if (data.hasOwnProperty('name')) {
-            entity.name = data.name;
-        } else {
-            entity.name = 'Entity' + resources.counter++;
-        }
+        entity.name = data.hasOwnProperty('name') ? data.name : "";
 
         // Parse transformation properties
         if (data.hasOwnProperty('matrix')) {
@@ -524,37 +531,56 @@
             entity.camera.enabled = false;
         }
 
-        if (data.hasOwnProperty('mesh')) {
-            var meshGroup = resources.meshes[data.mesh];
-            if (meshGroup.length > 0) {
-                var model = new pc.Model();
-                model.graph = new pc.Entity();
-                for (var i = 0; i < meshGroup.length; i++) {
-                    var material;
-                    if (meshGroup[i].materialIndex === undefined) {
-                        material = resources.defaultMaterial;
-                    } else {
-                        material = resources.materials[meshGroup[i].materialIndex];
-                    }
-                    var meshInstance = new pc.MeshInstance(model.graph, meshGroup[i], material);
-                    if (meshGroup[i].morph) {
-                        meshInstance.morphInstance = new pc.MorphInstance(meshGroup[i].morph);
-
-                        // HACK: need to force calculation of the morph's AABB due to a bug
-                        // in the engine. This is a private function and will be rmoved!
-                        meshInstance.morphInstance.updateBounds(meshInstance.mesh);
-                    }
-                    model.meshInstances.push(meshInstance);
-                }
-
-                entity.addComponent('model');
-                entity.model.model = model;
-            }
-        }
-
         return entity;
     }
 
+    function createModels(resources) {
+        resources.gltf.nodes.forEach(function (node, idx) {
+            if (node.hasOwnProperty('mesh')) {
+                var meshGroup = resources.meshes[node.mesh];
+                if (meshGroup.length > 0) {
+                    var model = new pc.Model();
+                    model.graph = new pc.Entity();
+                    for (var i = 0; i < meshGroup.length; i++) {
+                        var material;
+                        if (meshGroup[i].materialIndex === undefined) {
+                            material = resources.defaultMaterial;
+                        } else {
+                            material = resources.materials[meshGroup[i].materialIndex];
+                        }
+
+                        var meshInstance = new pc.MeshInstance(model.graph, meshGroup[i], material);
+                        if (meshGroup[i].morph) {
+                            meshInstance.morphInstance = new pc.MorphInstance(meshGroup[i].morph);
+
+                            // HACK: need to force calculation of the morph's AABB due to a bug
+                            // in the engine. This is a private function and will be removed!
+                            meshInstance.morphInstance.updateBounds(meshInstance.mesh);
+                        }
+                        model.meshInstances.push(meshInstance);
+
+                        if (node.hasOwnProperty('skin')) {
+                            var skin = resources.skins[node.skin];
+                            meshGroup[i].skin = skin;
+                            var skinInstance = new pc.SkinInstance(skin, skin.skeleton);
+                            skinInstance.bones = skin.bones;
+                            meshInstance.skinInstance = skinInstance;
+                            model.skinInstances = [ skinInstance ];
+                        }
+                    }
+
+                    model.getGraph().syncHierarchy();
+
+                    var entity = resources.nodes[idx];
+                    entity.addComponent('model');
+                    entity.model.model = model;
+                }
+            }
+        });
+    }
+
+    // Specification:
+    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#animation
     function translateAnimation(data, resources) {
         var gltf = resources.gltf;
 
@@ -590,6 +616,7 @@
                 var numCurves = values.length / times.length;
                 for (i = 0; i < numCurves; i++) {
                     curve = new AnimCurve();
+                    curve.target = path;
                     for (j = 0; j < times.length; j++) {
                         time = times[j];
                         value = values[numCurves * j + i];
@@ -601,9 +628,10 @@
                 }
             } else { // translation, rotation or scale
                 curve = new AnimCurve();
+                curve.target = path;
                 for (i = 0; i < times.length; i++) {
                     time = times[i];
-                    if (path === 'translation') {
+                    if ((path === 'translation') || (path === 'scale')) {
                         value = new pc.Vec3(values[3 * i + 0], values[3 * i + 1], values[3 * i + 2]);
                     } else if (path === 'rotation') {
                         value = new pc.Quat(values[4 * i + 0], values[4 * i + 1], values[4 * i + 2], values[4 * i + 3]);
@@ -620,12 +648,15 @@
         });
     }
 
+    // Specification:
+    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#mesh
     function translateMesh(data, resources) {
         var gltf = resources.gltf;
         var meshes = [];
 
         data.primitives.forEach(function (primitive) {
             var attributes = primitive.attributes;
+
             var positions = null;
             var normals = null;
             var tangents = null;
@@ -635,10 +666,10 @@
             var indices = null;
             var joints = null;
             var weights = null;
-            var numVertices;
-            var aabb;
+
             var i;
 
+            // Start by looking for compressed vertex data for this primitive
             if (primitive.hasOwnProperty('extensions')) {
                 var extensions = primitive.extensions;
                 if (extensions.hasOwnProperty('KHR_draco_mesh_compression')) {
@@ -649,7 +680,7 @@
                     var byteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
                     var uint8Buffer = new Int8Array(arrayBuffer, byteOffset, bufferView.byteLength);
 
-                    var decoderModule = DracoDecoderModule();
+                    var decoderModule = resources.decoderModule;
                     var buffer = new decoderModule.DecoderBuffer();
                     buffer.Init(uint8Buffer, uint8Buffer.length);
 
@@ -734,27 +765,12 @@
                 }
             }
 
-            var vertexDesc = [
-                { semantic: pc.SEMANTIC_POSITION, components: 3, type: pc.TYPE_FLOAT32 },
-                { semantic: pc.SEMANTIC_NORMAL, components: 3, type: pc.TYPE_FLOAT32 },
-                { semantic: pc.SEMANTIC_TANGENT, components: 4, type: pc.TYPE_FLOAT32 }
-            ];
-
             // Grab typed arrays for all vertex data
-            if (attributes.hasOwnProperty('POSITION')) {
-                if (positions === null) {
-                    accessor = gltf.accessors[primitive.attributes.POSITION];
-                    positions = getAccessorData(gltf, accessor, resources.buffers);
-                }
+            var accessor;
 
-                numVertices = positions.length / 3;
+            if (attributes.hasOwnProperty('POSITION') && positions === null) {
                 accessor = gltf.accessors[primitive.attributes.POSITION];
-                var min = accessor.min;
-                var max = accessor.max;
-                aabb = new pc.BoundingBox(
-                    new pc.Vec3((max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2),
-                    new pc.Vec3((max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2)
-                );
+                positions = getAccessorData(gltf, accessor, resources.buffers);
             }
 
             if (attributes.hasOwnProperty('NORMAL') && normals === null) {
@@ -765,34 +781,25 @@
                 accessor = gltf.accessors[primitive.attributes.TANGENT];
                 tangents = getAccessorData(gltf, accessor, resources.buffers);
             }
-            if (attributes.hasOwnProperty('TEXCOORD_0')) {
-                if (texCoord0 === null) {
-                    accessor = gltf.accessors[primitive.attributes.TEXCOORD_0];
-                    texCoord0 = getAccessorData(gltf, accessor, resources.buffers);
-                }
-                vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD0, components: 2, type: pc.TYPE_FLOAT32 });
+            if (attributes.hasOwnProperty('TEXCOORD_0') && texCoord0 === null) {
+                accessor = gltf.accessors[primitive.attributes.TEXCOORD_0];
+                texCoord0 = getAccessorData(gltf, accessor, resources.buffers);
             }
-            if (attributes.hasOwnProperty('TEXCOORD_1')) {
-                if (texCoord1 === null) {
-                    accessor = gltf.accessors[primitive.attributes.TEXCOORD_1];
-                    texCoord1 = getAccessorData(gltf, accessor, resources.buffers);
-                }
-                vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD1, components: 2, type: pc.TYPE_FLOAT32 });
+            if (attributes.hasOwnProperty('TEXCOORD_1') && texCoord1 === null) {
+                accessor = gltf.accessors[primitive.attributes.TEXCOORD_1];
+                texCoord1 = getAccessorData(gltf, accessor, resources.buffers);
             }
-            if (attributes.hasOwnProperty('COLOR_0')) {
+            if (attributes.hasOwnProperty('COLOR_0') && colors === null) {
                 accessor = gltf.accessors[primitive.attributes.COLOR_0];
                 colors = getAccessorData(gltf, accessor, resources.buffers);
-                vertexDesc.push({ semantic: pc.SEMANTIC_COLOR, components: 4, type: pc.TYPE_FLOAT32 });
             }
-            if (attributes.hasOwnProperty('JOINTS_0')) {
+            if (attributes.hasOwnProperty('JOINTS_0') && joints === null) {
                 accessor = gltf.accessors[primitive.attributes.JOINTS_0];
                 joints = getAccessorData(gltf, accessor, resources.buffers);
-                vertexDesc.push({ semantic: pc.SEMANTIC_BLENDINDICES, components: 4, type: pc.TYPE_UINT8 });
             }
-            if (attributes.hasOwnProperty('WEIGHTS_0')) {
+            if (attributes.hasOwnProperty('WEIGHTS_0') && weights === null) {
                 accessor = gltf.accessors[primitive.attributes.WEIGHTS_0];
                 weights = getAccessorData(gltf, accessor, resources.buffers);
-                vertexDesc.push({ semantic: pc.SEMANTIC_BLENDWEIGHT, components: 4, type: pc.TYPE_FLOAT32 });
             }
             if (primitive.hasOwnProperty('indices') && indices === null) {
                 accessor = gltf.accessors[primitive.indices];
@@ -806,6 +813,34 @@
                 tangents = pc.calculateTangents(positions, normals, texCoord0, indices);
             }
 
+            var vertexDesc = [];
+            if (positions) {
+                vertexDesc.push({ semantic: pc.SEMANTIC_POSITION, components: 3, type: pc.TYPE_FLOAT32 });
+            }
+            if (normals) {
+                vertexDesc.push({ semantic: pc.SEMANTIC_NORMAL, components: 3, type: pc.TYPE_FLOAT32 });
+            }
+            if (tangents) {
+                vertexDesc.push({ semantic: pc.SEMANTIC_TANGENT, components: 4, type: pc.TYPE_FLOAT32 });
+            }
+            if (texCoord0) {
+                vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD0, components: 2, type: pc.TYPE_FLOAT32 });
+            }
+            if (texCoord1) {
+                vertexDesc.push({ semantic: pc.SEMANTIC_TEXCOORD1, components: 2, type: pc.TYPE_FLOAT32 });
+            }
+            if (colors) {
+                vertexDesc.push({ semantic: pc.SEMANTIC_COLOR, components: 4, type: pc.TYPE_FLOAT32 });
+            }
+            if (joints) {
+                vertexDesc.push({ semantic: pc.SEMANTIC_BLENDINDICES, components: 4, type: pc.TYPE_UINT8 });
+            }
+            if (weights) {
+                vertexDesc.push({ semantic: pc.SEMANTIC_BLENDWEIGHT, components: 4, type: pc.TYPE_FLOAT32 });
+            }
+
+            var numVertices = positions.length / 3;
+
             var vertexFormat = new pc.VertexFormat(resources.device, vertexDesc);
             var vertexBuffer = new pc.VertexBuffer(resources.device, vertexFormat, numVertices, pc.BUFFER_STATIC);
             var vertexData = vertexBuffer.lock();
@@ -814,90 +849,90 @@
             var o = 0;
 
             if (positions !== null) {
-                for (k = 0; k < numVertices; k++) {
-                    offset = k * vertexFormat.size;
-                    dataView.setFloat32(offset + 0, positions[k * 3 + 0], true);
-                    dataView.setFloat32(offset + 4, positions[k * 3 + 1], true);
-                    dataView.setFloat32(offset + 8, positions[k * 3 + 2], true);
+                for (i = 0; i < numVertices; i++) {
+                    offset = i * vertexFormat.size;
+                    dataView.setFloat32(offset + 0, positions[i * 3 + 0], true);
+                    dataView.setFloat32(offset + 4, positions[i * 3 + 1], true);
+                    dataView.setFloat32(offset + 8, positions[i * 3 + 2], true);
                 }
 
                 o += 12;
             }
 
             if (normals !== null) {
-                for (k = 0; k < numVertices; k++) {
-                    offset = k * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0, normals[k * 3 + 0], true);
-                    dataView.setFloat32(offset + 4, normals[k * 3 + 1], true);
-                    dataView.setFloat32(offset + 8, normals[k * 3 + 2], true);
+                for (i = 0; i < numVertices; i++) {
+                    offset = i * vertexFormat.size + o;
+                    dataView.setFloat32(offset + 0, normals[i * 3 + 0], true);
+                    dataView.setFloat32(offset + 4, normals[i * 3 + 1], true);
+                    dataView.setFloat32(offset + 8, normals[i * 3 + 2], true);
                 }
 
                 o += 12;
             }
 
             if (tangents !== null) {
-                for (k = 0; k < numVertices; k++) {
-                    offset = k * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0,  tangents[k * 4 + 0], true);
-                    dataView.setFloat32(offset + 4,  tangents[k * 4 + 1], true);
-                    dataView.setFloat32(offset + 8,  tangents[k * 4 + 2], true);
-                    dataView.setFloat32(offset + 12, tangents[k * 4 + 3], true);
+                for (i = 0; i < numVertices; i++) {
+                    offset = i * vertexFormat.size + o;
+                    dataView.setFloat32(offset + 0,  tangents[i * 4 + 0], true);
+                    dataView.setFloat32(offset + 4,  tangents[i * 4 + 1], true);
+                    dataView.setFloat32(offset + 8,  tangents[i * 4 + 2], true);
+                    dataView.setFloat32(offset + 12, tangents[i * 4 + 3], true);
                 }
 
                 o += 16;
             }
 
             if (texCoord0 !== null) {
-                for (k = 0; k < numVertices; k++) {
-                    offset = k * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0, texCoord0[k * 2 + 0], true);
-                    dataView.setFloat32(offset + 4, texCoord0[k * 2 + 1], true);
+                for (i = 0; i < numVertices; i++) {
+                    offset = i * vertexFormat.size + o;
+                    dataView.setFloat32(offset + 0, texCoord0[i * 2 + 0], true);
+                    dataView.setFloat32(offset + 4, texCoord0[i * 2 + 1], true);
                 }
 
                 o += 8;
             }
 
             if (texCoord1 !== null) {
-                for (k = 0; k < numVertices; k++) {
-                    offset = k * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0, texCoord1[k * 2 + 0], true);
-                    dataView.setFloat32(offset + 4, texCoord1[k * 2 + 1], true);
+                for (i = 0; i < numVertices; i++) {
+                    offset = i * vertexFormat.size + o;
+                    dataView.setFloat32(offset + 0, texCoord1[i * 2 + 0], true);
+                    dataView.setFloat32(offset + 4, texCoord1[i * 2 + 1], true);
                 }
 
                 o += 8;
             }
 
             if (colors !== null) {
-                for (k = 0; k < numVertices; k++) {
-                    offset = k * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0,  colors[k * 4 + 0], true);
-                    dataView.setFloat32(offset + 4,  colors[k * 4 + 1], true);
-                    dataView.setFloat32(offset + 8,  colors[k * 4 + 2], true);
-                    dataView.setFloat32(offset + 12, colors[k * 4 + 3], true);
+                for (i = 0; i < numVertices; i++) {
+                    offset = i * vertexFormat.size + o;
+                    dataView.setFloat32(offset + 0,  colors[i * 4 + 0], true);
+                    dataView.setFloat32(offset + 4,  colors[i * 4 + 1], true);
+                    dataView.setFloat32(offset + 8,  colors[i * 4 + 2], true);
+                    dataView.setFloat32(offset + 12, colors[i * 4 + 3], true);
                 }
 
                 o += 16;
             }
 
             if (joints !== null) {
-                for (k = 0; k < numVertices; k++) {
-                    offset = k * vertexFormat.size + o;
-                    dataView.setUint8(offset + 0,  joints[k + 0], true);
-                    dataView.setUint8(offset + 1,  joints[k + 1], true);
-                    dataView.setUint8(offset + 2,  joints[k + 2], true);
-                    dataView.setUint8(offset + 3, joints[k + 3], true);
+                for (i = 0; i < numVertices; i++) {
+                    offset = i * vertexFormat.size + o;
+                    dataView.setUint8(offset + 0, joints[i * 4 + 0], true);
+                    dataView.setUint8(offset + 1, joints[i * 4 + 1], true);
+                    dataView.setUint8(offset + 2, joints[i * 4 + 2], true);
+                    dataView.setUint8(offset + 3, joints[i * 4 + 3], true);
                 }
 
                 o += 4;
             }
 
             if (weights !== null) {
-                for (k = 0; k < numVertices; k++) {
-                    offset = k * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0,  weights[k * 4 + 0], true);
-                    dataView.setFloat32(offset + 4,  weights[k * 4 + 1], true);
-                    dataView.setFloat32(offset + 8,  weights[k * 4 + 2], true);
-                    dataView.setFloat32(offset + 12, weights[k * 4 + 3], true);
+                for (i = 0; i < numVertices; i++) {
+                    offset = i * vertexFormat.size + o;
+                    dataView.setFloat32(offset + 0,  weights[i * 4 + 0], true);
+                    dataView.setFloat32(offset + 4,  weights[i * 4 + 1], true);
+                    dataView.setFloat32(offset + 8,  weights[i * 4 + 2], true);
+                    dataView.setFloat32(offset + 12, weights[i * 4 + 3], true);
                 }
 
                 o += 16;
@@ -938,6 +973,13 @@
 
             mesh.materialIndex = primitive.material;
 
+            accessor = gltf.accessors[primitive.attributes.POSITION];
+            var min = accessor.min;
+            var max = accessor.max;
+            var aabb = new pc.BoundingBox(
+                new pc.Vec3((max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2),
+                new pc.Vec3((max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2)
+            );
             mesh.aabb = aabb;
 
             if (primitive.hasOwnProperty('targets')) {
@@ -970,24 +1012,46 @@
         return meshes;
     }
 
+    // Specification:
+    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#skin
     function translateSkin(data, resources) {
         var gltf = resources.gltf;
 
-        var inverseBindMatrices = data.inverseBindMatrices;
+        var i, bindMatrix;
         var joints = data.joints;
-        var skeleton = data.skeleton;
-
+        var numJoints = joints.length;
         var ibp = [];
-        var boneNames = [];
-        var ibmData = getAccessorData(gltf, gltf.accessors[inverseBindMatrices], resources.buffers);
+        if (data.hasOwnProperty('inverseBindMatrices')) {
+            var inverseBindMatrices = data.inverseBindMatrices;
+            var ibmData = getAccessorData(gltf, gltf.accessors[inverseBindMatrices], resources.buffers);
 
-        for (var i = 0; i < joints.length; i++) {
-            var bindMatrix = new pc.Mat4(ibmData.slice(i * 16, i * 16 + 16));
-            ibp.push(bindMatrix);
-            boneNames.push(""); // resources.nodes[joints[i]].name
+            for (i = 0; i < numJoints; i++) {
+                bindMatrix = new pc.Mat4(ibmData.slice(i * 16, i * 16 + 16));
+                ibp.push(bindMatrix);
+            }
+        } else {
+            for (i = 0; i < numJoints; i++) {
+                bindMatrix = new pc.Mat4();
+                ibp.push(bindMatrix);
+            }
         }
 
-        return new pc.Skin(resources.device, ibp, boneNames);
+        var boneNames = [];
+        for (i = 0; i < numJoints; i++) {
+            boneNames[i] = resources.nodes[joints[i]].name;
+        }
+
+        var skeleton = data.skeleton;
+
+        var skin = new pc.Skin(resources.device, ibp, boneNames);
+        skin.skeleton = resources.nodes[skeleton];
+
+        skin.bones = [];
+        for (i = 0; i < joints.length; i++) {
+            skin.bones[i] = resources.nodes[joints[i]];
+        }
+
+        return skin;
     }
 
     function loadBuffers(resources, success) {
@@ -1031,7 +1095,7 @@
                         var xhr = new XMLHttpRequest();
                         xhr.open('GET', resources.basePath + buffer.uri, true);
                         xhr.responseType = 'arraybuffer';
-                         
+
                         xhr.onload = function(e) {
                             // response is unsigned 8 bit integer
                             resources.buffers[idx] = this.response;
@@ -1040,7 +1104,7 @@
                                 success();
                             }
                         };
-                         
+
                         xhr.send();
                     }
                 }
@@ -1090,16 +1154,24 @@
             defaultMaterial: translateMaterial({})
         };
 
+        if (gltf.hasOwnProperty('extensionsUsed')) {
+            var extensionsUsed = gltf.extensionsUsed;
+            if (extensionsUsed.indexOf('KHR_draco_mesh_compression') !== -1) {
+                resources.decoderModule = DracoDecoderModule();
+            }
+        }
+
         loadBuffers(resources, function () {
             parse('textures', translateTexture, resources);
             parse('images', translateImage, resources);
             parse('materials', translateMaterial, resources);
             parse('meshes', translateMesh, resources);
-            parse('skins', translateSkin, resources);
             parse('nodes', translateNode, resources);
+            parse('skins', translateSkin, resources);
             parse('animations', translateAnimation, resources);
 
             buildHierarchy(resources);
+            createModels(resources);
 
             var rootNodes = [];
             if (gltf.hasOwnProperty('scenes')) {
