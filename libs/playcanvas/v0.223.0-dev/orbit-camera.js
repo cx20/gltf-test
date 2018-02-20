@@ -400,7 +400,7 @@ OrbitCamera.prototype.focus = function (focusEntity) {
 
     if (this.entity.camera) {
         this.entity.camera.nearClip = distance * 0.002;
-        this.entity.camera.farClip = distance * 2;
+        this.entity.camera.farClip = distance * 5;
     }
 
     this._removeInertia();
