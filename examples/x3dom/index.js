@@ -1,37 +1,3 @@
-//patch x3dom
-x3dom.glTF.glTFLoader.prototype._loadShaderSource = function(shaderNode)
-{
-    if(shaderNode.extensions != null && shaderNode.extensions.KHR_binary_glTF != null)
-    {
-        var bufferView = this.scene.bufferViews[shaderNode.extensions.KHR_binary_glTF.bufferView];
-
-        var shaderBytes = new Uint8Array(this.body.buffer, this.header.bodyOffset+bufferView.byteOffset, bufferView.byteLength);
-        var src = new TextDecoder("ascii").decode(shaderBytes);
-        return src;
-    }
-    else
-    {
-        var dataURL       = /^data\:([^]*?)(?:;([^]*?))?(;base64)?,([^]*)$/;
-        var result = dataURL .exec (shaderNode.uri);
-
-        if (result)
-        {
-            //var mimeType = result [1];
-
-            var data = result [4];
-
-            if (result [2] === "base64")
-                data = atob (data);
-            else
-                data = unescape (data);
-
-            console.log(data);
-            return data;
-        }
-        x3dom.debug.logError('no shader found');
-    }
-};
-
 var modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
