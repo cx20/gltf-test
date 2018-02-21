@@ -1,9 +1,9 @@
 /*
- PlayCanvas Engine v0.223.0-dev revision 23cb46c
+ PlayCanvas Engine v0.223.0-dev revision 7392a3e
  http://playcanvas.com
  Copyright 2011-2017 PlayCanvas Ltd. All rights reserved.
 */
-var pc = {version:"0.223.0-dev", revision:"23cb46c", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"0.223.0-dev", revision:"7392a3e", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.");
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -6559,8 +6559,8 @@ pc.shaderChunks.shadowVSMVSPS = "float getShadowVSM$VS(sampler2D shadowMap, vec3
 pc.shaderChunks.shadowVSM_commonPS = "float linstep(float a, float b, float v) {\n    return saturate((v - a) / (b - a));\n}\nfloat reduceLightBleeding(float pMax, float amount) {\n  // Remove the [0, amount] tail and linearly rescale (amount, 1].\n   return linstep(amount, 1.0, pMax);\n}\nfloat chebyshevUpperBound(vec2 moments, float mean, float minVariance, float lightBleedingReduction) {\n    // Compute variance\n    float variance = moments.y - (moments.x * moments.x);\n    variance = max(variance, minVariance);\n    // Compute probabilistic upper bound\n    float d = mean - moments.x;\n    float pMax = variance / (variance + (d * d));\n    pMax = reduceLightBleeding(pMax, lightBleedingReduction);\n    // One-tailed Chebyshev\n    return (mean <= moments.x ? 1.0 : pMax);\n}\nfloat calculateEVSM(vec3 moments, float Z, float vsmBias, float exponent) {\n    Z = 2.0 * Z - 1.0;\n    float warpedDepth = exp(exponent * Z);\n    moments.xy += vec2(warpedDepth, warpedDepth*warpedDepth) * (1.0 - moments.z);\n    float VSMBias = vsmBias;//0.01 * 0.25;\n    float depthScale = VSMBias * exponent * warpedDepth;\n    float minVariance1 = depthScale * depthScale;\n    return chebyshevUpperBound(moments.xy, warpedDepth, minVariance1, 0.1);\n}\n";
 pc.shaderChunks.skinBatchConstVS = "attribute float vertex_boneIndices;\nuniform mat4 matrix_pose[BONE_LIMIT];\nmat4 getBoneMatrix(const in float i) {\n    mat4 bone = matrix_pose[int(i)];\n    return bone;\n}\n";
 pc.shaderChunks.skinBatchTexVS = "attribute float vertex_boneIndices;\nuniform sampler2D texture_poseMap;\nuniform vec2 texture_poseMapSize;\nmat4 getBoneMatrix(const in float i) {\n    float j = i * 4.0;\n    float x = mod(j, float(texture_poseMapSize.x));\n    float y = floor(j / float(texture_poseMapSize.x));\n    float dx = 1.0 / float(texture_poseMapSize.x);\n    float dy = 1.0 / float(texture_poseMapSize.y);\n    y = dy * (y + 0.5);\n    vec4 v1 = texture2D(texture_poseMap, vec2(dx * (x + 0.5), y));\n    vec4 v2 = texture2D(texture_poseMap, vec2(dx * (x + 1.5), y));\n    vec4 v3 = texture2D(texture_poseMap, vec2(dx * (x + 2.5), y));\n    vec4 v4 = texture2D(texture_poseMap, vec2(dx * (x + 3.5), y));\n    mat4 bone = mat4(v1, v2, v3, v4);\n    return bone;\n}\n";
-pc.shaderChunks.skinConstVS = "attribute vec4 vertex_boneWeights;\nattribute vec4 vertex_boneIndices;\nuniform mat4 matrix_pose[BONE_LIMIT];\nuniform vec3 skinPosOffset;\nmat4 getBoneMatrix(const in float i)\n{\n    mat4 bone = matrix_pose[int(i)];\n    return bone;\n}\n";
-pc.shaderChunks.skinTexVS = "attribute vec4 vertex_boneWeights;\nattribute vec4 vertex_boneIndices;\nuniform sampler2D texture_poseMap;\nuniform vec2 texture_poseMapSize;\nuniform vec3 skinPosOffset;\nmat4 getBoneMatrix(const in float i)\n{\n    float j = i * 4.0;\n    float x = mod(j, float(texture_poseMapSize.x));\n    float y = floor(j / float(texture_poseMapSize.x));\n    float dx = 1.0 / float(texture_poseMapSize.x);\n    float dy = 1.0 / float(texture_poseMapSize.y);\n    y = dy * (y + 0.5);\n    vec4 v1 = texture2D(texture_poseMap, vec2(dx * (x + 0.5), y));\n    vec4 v2 = texture2D(texture_poseMap, vec2(dx * (x + 1.5), y));\n    vec4 v3 = texture2D(texture_poseMap, vec2(dx * (x + 2.5), y));\n    vec4 v4 = texture2D(texture_poseMap, vec2(dx * (x + 3.5), y));\n    mat4 bone = mat4(v1, v2, v3, v4);\n    return bone;\n}\n";
+pc.shaderChunks.skinConstVS = "attribute vec4 vertex_boneWeights;\nattribute vec4 vertex_boneIndices;\nuniform mat4 matrix_pose[BONE_LIMIT];\nmat4 getBoneMatrix(const in float i)\n{\n    mat4 bone = matrix_pose[int(i)];\n    return bone;\n}\n";
+pc.shaderChunks.skinTexVS = "attribute vec4 vertex_boneWeights;\nattribute vec4 vertex_boneIndices;\nuniform sampler2D texture_poseMap;\nuniform vec2 texture_poseMapSize;\nmat4 getBoneMatrix(const in float i)\n{\n    float j = i * 4.0;\n    float x = mod(j, float(texture_poseMapSize.x));\n    float y = floor(j / float(texture_poseMapSize.x));\n    float dx = 1.0 / float(texture_poseMapSize.x);\n    float dy = 1.0 / float(texture_poseMapSize.y);\n    y = dy * (y + 0.5);\n    vec4 v1 = texture2D(texture_poseMap, vec2(dx * (x + 0.5), y));\n    vec4 v2 = texture2D(texture_poseMap, vec2(dx * (x + 1.5), y));\n    vec4 v3 = texture2D(texture_poseMap, vec2(dx * (x + 2.5), y));\n    vec4 v4 = texture2D(texture_poseMap, vec2(dx * (x + 3.5), y));\n    mat4 bone = mat4(v1, v2, v3, v4);\n    return bone;\n}\n";
 pc.shaderChunks.skyboxPS = "varying vec3 vViewDir;\nuniform samplerCube texture_cubeMap;\nvoid main(void) {\n    gl_FragColor = textureCube(texture_cubeMap, fixSeams(vViewDir));\n}\n";
 pc.shaderChunks.skyboxVS = "attribute vec3 aPosition;\nuniform mat4 matrix_view;\nuniform mat4 matrix_projection;\nvarying vec3 vViewDir;\nvoid main(void)\n{\n    mat4 view = matrix_view;\n    view[3][0] = view[3][1] = view[3][2] = 0.0;\n    gl_Position = matrix_projection * view * vec4(aPosition, 1.0);\n    // Force skybox to far Z, regardless of the clip planes on the camera\n    // Subtract a tiny fudge factor to ensure floating point errors don't\n    // still push pixels beyond far Z. See:\n    // http://www.opengl.org/discussion_boards/showthread.php/171867-skybox-problem\n    gl_Position.z = gl_Position.w - 0.00001;\n    vViewDir = aPosition;\n    vViewDir.x *= -1.0;\n}\n";
 pc.shaderChunks.skyboxHDRPS = "varying vec3 vViewDir;\nuniform samplerCube texture_cubeMap;\nvoid main(void) {\n    vec3 color = processEnvironment($textureCubeSAMPLE(texture_cubeMap, fixSeamsStatic(vViewDir, $FIXCONST)).rgb);\n    color = toneMap(color);\n    color = gammaCorrectOutput(color);\n    gl_FragColor = vec4(color, 1.0);\n}\n";
@@ -6587,7 +6587,7 @@ pc.shaderChunks.transformInstancedVS = "mat4 getModelMatrix() {\n    return mat4
 pc.shaderChunks.transformPixelSnapVS = "uniform vec4 uScreenSize;\nmat4 getModelMatrix() {\n    return matrix_model;\n}\nvec4 getPosition() {\n    dModelMatrix = getModelMatrix();\n    vec4 posW = dModelMatrix * vec4(vertex_position, 1.0);\n    dPositionW = posW.xyz;\n    vec4 o = matrix_viewProjection * posW;\n    // snap vertex to a pixel boundary\n    o.xy = (o.xy * 0.5) + 0.5;\n    o.xy *= uScreenSize.xy;\n    o.xy = floor(o.xy);\n    o.xy *= uScreenSize.zw;\n    o.xy = (o.xy * 2.0) - 1.0;\n    return o;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
 pc.shaderChunks.transformScreenSpaceVS = "mat4 getModelMatrix() {\n    return matrix_model;\n}\nvec4 getPosition() {\n    vec4 posW = vec4((getModelMatrix() * vec4(vertex_position, 1.0)).xy, 0.0, 1.0);\n    dPositionW = posW.xyz;\n    return posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
 pc.shaderChunks.transformScreenSpaceBatchSkinnedVS = "mat4 getModelMatrix() {\n    return getBoneMatrix(vertex_boneIndices);\n}\nvec4 getPosition() {\n    vec4 posW = vec4((getModelMatrix() * vec4(vertex_position, 1.0)).xy, 0.0, 1.0);\n    dPositionW = posW.xyz;\n    return posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
-pc.shaderChunks.transformSkinnedVS = "mat4 getModelMatrix() {\n    return getBoneMatrix(vertex_boneIndices.x) * vertex_boneWeights.x +\n           getBoneMatrix(vertex_boneIndices.y) * vertex_boneWeights.y +\n           getBoneMatrix(vertex_boneIndices.z) * vertex_boneWeights.z +\n           getBoneMatrix(vertex_boneIndices.w) * vertex_boneWeights.w;\n}\nvec4 getPosition() {\n    dModelMatrix = getModelMatrix();\n    vec4 posW = dModelMatrix * vec4(vertex_position, 1.0);\n    //posW.xyz /= posW.w;\n    posW.xyz += skinPosOffset;\n    dPositionW = posW.xyz;// / posW.w;\n    return matrix_viewProjection * posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
+pc.shaderChunks.transformSkinnedVS = "mat4 getModelMatrix() {\n    return matrix_model * (getBoneMatrix(vertex_boneIndices.x) * vertex_boneWeights.x +\n           getBoneMatrix(vertex_boneIndices.y) * vertex_boneWeights.y +\n           getBoneMatrix(vertex_boneIndices.z) * vertex_boneWeights.z +\n           getBoneMatrix(vertex_boneIndices.w) * vertex_boneWeights.w);\n}\nvec4 getPosition() {\n    dModelMatrix = getModelMatrix();\n    vec4 posW = dModelMatrix * vec4(vertex_position, 1.0);\n    dPositionW = posW.xyz;\n    return matrix_viewProjection * posW;\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
 pc.shaderChunks.transformUv1VS = "mat4 getModelMatrix() {\n    return matrix_model;\n}\nvec4 getPosition() {\n    dModelMatrix = getModelMatrix();\n    vec4 posW = dModelMatrix * vec4(vertex_position, 1.0);\n    dPositionW = posW.xyz;\n    return vec4(vertex_texCoord1.xy * 2.0 - 1.0, 0.5, 1);\n}\nvec3 getWorldPosition() {\n    return dPositionW;\n}\n";
 pc.shaderChunks.uv0VS = "\nvec2 getUv0() {\n    return vertex_texCoord0;\n}\n";
 pc.shaderChunks.uv1VS = "\nvec2 getUv1() {\n    return vertex_texCoord1;\n}\n";
@@ -9258,7 +9258,6 @@ pc.extend(pc, function() {
     this.poseMatrixId = scope.resolve("matrix_pose[0]");
     this.boneTextureId = scope.resolve("texture_poseMap");
     this.boneTextureSizeId = scope.resolve("texture_poseMapSize");
-    this.skinPosOffsetId = scope.resolve("skinPosOffset");
     this.alphaTestId = scope.resolve("alpha_ref");
     this.opacityMapId = scope.resolve("texture_opacityMap");
     this.ambientId = scope.resolve("light_globalAmbient");
@@ -9814,7 +9813,7 @@ pc.extend(pc, function() {
     for (i = 0;i < drawCallsCount;i++) {
       skin = drawCalls[i].skinInstance;
       if (skin) {
-        skin.updateMatrices();
+        skin.updateMatrices(drawCalls[i].node);
         skin._dirty = true;
       }
     }
@@ -9922,7 +9921,6 @@ pc.extend(pc, function() {
   }, setSkinning:function(device, meshInstance, material) {
     if (meshInstance.skinInstance) {
       this._skinDrawCalls++;
-      this.skinPosOffsetId.setValue(meshInstance.skinInstance.rootNode.getPosition().data);
       if (device.supportsBoneTextures) {
         boneTexture = meshInstance.skinInstance.boneTexture;
         this.boneTextureId.setValue(boneTexture);
@@ -13428,6 +13426,7 @@ pc.extend(pc, function() {
 }());
 pc.extend(pc, function() {
   var id = 0;
+  var _tmpAabb = new pc.BoundingBox;
   var Mesh = function() {
     this._refCount = 0;
     this.id = id++;
@@ -13666,21 +13665,22 @@ pc.extend(pc, function() {
           continue;
         }
         this._boneAabb[i].setFromTransformedAabb(this.mesh.boneAabb[i], this.skinInstance.matrices[i]);
-        this._boneAabb[i].center.add(this.skinInstance.rootNode.getPosition());
       }
+      var rootNodeTransform = this.node.getWorldTransform();
       var first = true;
       for (i = 0;i < this.mesh.boneAabb.length;i++) {
         if (!boneUsed[i]) {
           continue;
         }
         if (first) {
-          this._aabb.center.copy(this._boneAabb[i].center);
-          this._aabb.halfExtents.copy(this._boneAabb[i].halfExtents);
+          _tmpAabb.center.copy(this._boneAabb[i].center);
+          _tmpAabb.halfExtents.copy(this._boneAabb[i].halfExtents);
           first = false;
         } else {
-          this._aabb.add(this._boneAabb[i]);
+          _tmpAabb.add(this._boneAabb[i]);
         }
       }
+      this._aabb.setFromTransformedAabb(_tmpAabb, rootNodeTransform);
     } else {
       if (this.node._aabbVer !== this._aabbVer) {
         this._aabb.setFromTransformedAabb(this.mesh.aabb, this.node.getWorldTransform());
@@ -13788,14 +13788,14 @@ pc.extend(pc, function() {
   return {Command:Command, Mesh:Mesh, MeshInstance:MeshInstance, InstancingData:InstancingData, _getDrawcallSortKey:getKey};
 }());
 pc.extend(pc, function() {
+  var _invMatrix = new pc.Mat4;
   var Skin = function(graphicsDevice, ibp, boneNames) {
     this.device = graphicsDevice;
     this.inverseBindPose = ibp;
     this.boneNames = boneNames;
   };
-  var SkinInstance = function(skin, node) {
+  var SkinInstance = function(skin) {
     this.skin = skin;
-    this.rootNode = node;
     this._dirty = true;
     this.bones = [];
     var numBones = skin.inverseBindPose.length;
@@ -13825,13 +13825,11 @@ pc.extend(pc, function() {
       this.matrices[i] = new pc.Mat4;
     }
   };
-  SkinInstance.prototype = {updateMatrices:function() {
-    var pos = this.rootNode.getPosition();
+  SkinInstance.prototype = {updateMatrices:function(rootNode) {
+    _invMatrix.copy(rootNode.getWorldTransform()).invert();
     for (var i = this.bones.length - 1;i >= 0;i--) {
-      this.matrices[i].mul2(this.bones[i].getWorldTransform(), this.skin.inverseBindPose[i]);
-      this.matrices[i].data[12] -= pos.x;
-      this.matrices[i].data[13] -= pos.y;
-      this.matrices[i].data[14] -= pos.z;
+      this.matrices[i].mul2(_invMatrix, this.bones[i].getWorldTransform());
+      this.matrices[i].mul2(this.matrices[i], this.skin.inverseBindPose[i]);
     }
   }, updateMatrixPalette:function() {
     var pe;
@@ -14409,7 +14407,7 @@ pc.extend(pc, function() {
     var cloneMorphInstances = [];
     for (i = 0;i < this.skinInstances.length;i++) {
       var skin = this.skinInstances[i].skin;
-      var cloneSkinInstance = new pc.SkinInstance(skin, cloneGraph);
+      var cloneSkinInstance = new pc.SkinInstance(skin);
       var bones = [];
       for (j = 0;j < skin.boneNames.length;j++) {
         var boneName = skin.boneNames[j];
@@ -15869,7 +15867,6 @@ function encodeFloatRG(v) {
     var modelMatrixId = scope.resolve("matrix_model");
     var boneTextureId = scope.resolve("texture_poseMap");
     var boneTextureSizeId = scope.resolve("texture_poseMapSize");
-    var skinPosOffsetId = scope.resolve("skinPosOffset");
     var poseMatrixId = scope.resolve("matrix_pose[0]");
     var pickColorId = scope.resolve("uColor");
     var projId = scope.resolve("matrix_projection");
@@ -15905,7 +15902,6 @@ function encodeFloatRG(v) {
           device.setDepthTest(material.depthTest);
           modelMatrixId.setValue(meshInstance.node.worldTransform.data);
           if (meshInstance.skinInstance) {
-            skinPosOffsetId.setValue(meshInstance.node.getPosition().data);
             if (device.supportsBoneTextures) {
               boneTextureId.setValue(meshInstance.skinInstance.boneTexture);
               var w = meshInstance.skinInstance.boneTexture.width;
@@ -23171,7 +23167,6 @@ pc.extend(pc, function() {
       this._scripts.splice(ind, 1);
     }
     this.system.app.scripts.off("swap:" + scriptName, scriptData.onSwap);
-    delete this._scriptsIndex[scriptName];
     delete this[scriptName];
     this.fire("destroy", scriptName, scriptData.instance || null);
     this.fire("destroy:" + scriptName, scriptData.instance || null);
@@ -31339,7 +31334,7 @@ pc.extend(pc, function() {
       }
       var skin = new pc.Skin(this._device, inverseBindMatrices, skinData.boneNames);
       skins.push(skin);
-      var skinInstance = new pc.SkinInstance(skin, nodes[0]);
+      var skinInstance = new pc.SkinInstance(skin);
       var bones = [];
       for (j = 0;j < skin.boneNames.length;j++) {
         var boneName = skin.boneNames[j];
