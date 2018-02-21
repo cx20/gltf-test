@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - e2b39d84fa87ee636a17993237bb62aa87ae3291 - Fri Mar 10 17:06:35 2017 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - c2dd3eb10550fa3a3b0758bbbc6f94a2599e69b7 - Mon Feb 19 21:57:21 2018 -0500 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -3082,7 +3082,7 @@ x3dom.EarClipping = {
 		
 		var node = linklist.first.next;
 		var plane = this.identifyPlane(node.prev.point, node.point, node.next.point);
-		var i, points, x, y;
+		var i, points, point_indexes, x, y;
 		points = [];
 		point_indexes = [];
 		
@@ -3118,8 +3118,8 @@ x3dom.EarClipping = {
 		mapped.colors = [];
 		mapped.texCoords = [];
 		
-		points = [];
-		
+		var points = [];
+		var i, x, y;
 		for (i = 0; i < linklist.length; i++) {
 			node = linklist.getNode(i);
 			switch (plane) {
@@ -3232,6 +3232,7 @@ function earcut(data, holeIndices, dim) {
 // AP: separated to get original winding order
 function windingOrder(data, start, end, dim) {
 	var sum = 0;
+	var i, j;
     for (i = start, j = end - dim; i < end; i += dim) {
         sum += (data[j] - data[i]) * (data[i + 1] + data[j + 1]);
         j = i;
@@ -7671,15 +7672,15 @@ x3dom.glTF.glTFLoader.prototype.getScene = function(shape,shaderProgram, gl, sce
     this.updateScene(shape, shaderProgram, gl, scene);
 };
 
-x3dom.glTF.glTFLoader.prototype.getMesh = function(shape,shaderProgram, gl, meshName)
+x3dom.glTF.glTFLoader.prototype.getMesh = function(shape, shaderProgram, gl, meshName)
 {
     this.reset(shape,gl);
 
     var mesh;
-    if(meshName == null)
+    if (meshName == null)
     {
         mesh = Object.keys(this.scene.meshes)[0];
-    }else
+    } else
     {
         for(var key in this.scene.meshes){
             if(this.scene.meshes.hasOwnProperty(key)
@@ -7690,7 +7691,7 @@ x3dom.glTF.glTFLoader.prototype.getMesh = function(shape,shaderProgram, gl, mesh
             }
         }
     }
-    this.updateMesh(shape, shaderProgram, gl, mesh);
+    this.updateMesh(shape, shaderProgram, gl, mesh, new x3dom.fields.SFMatrix4f());
 };
 
 x3dom.glTF.glTFLoader.prototype.reset = function(shape, gl)
@@ -8054,7 +8055,7 @@ x3dom.glTF.glTFLoader.prototype.loadImage = function(imageNodeName, mimeType)
         return this.loaded.images[imageNodeName];
 
     var imageNode = this.scene.images[imageNodeName];
-    if(imageNode.extensions!=null && imageNode.extensions.KHR_binary_glTF != null)
+    if (imageNode.extensions != null && imageNode.extensions.KHR_binary_glTF != null)
     {
         var ext = imageNode.extensions.KHR_binary_glTF;
         var bufferView = this.scene.bufferViews[ext.bufferView];
@@ -8068,6 +8069,17 @@ x3dom.glTF.glTFLoader.prototype.loadImage = function(imageNodeName, mimeType)
         var image = new Image();
 
         image.src = blobUrl;
+
+        this.loaded.images[imageNodeName] = image;
+
+        return image;
+    }
+    //untested
+    if (imageNode.uri != null)
+    {
+        var image = new Image();
+
+        image.src = imageNode.uri;
 
         this.loaded.images[imageNodeName] = image;
 
@@ -8227,11 +8239,33 @@ x3dom.glTF.glTFLoader.prototype.loadShaderProgram = function(gl, shaderProgramNa
 
 x3dom.glTF.glTFLoader.prototype._loadShaderSource = function(shaderNode)
 {
-    var bufferView = this.scene.bufferViews[shaderNode.extensions.KHR_binary_glTF.bufferView];
+    if(shaderNode.extensions != null && shaderNode.extensions.KHR_binary_glTF != null)
+    {
+        var bufferView = this.scene.bufferViews[shaderNode.extensions.KHR_binary_glTF.bufferView];
 
-    var shaderBytes = new Uint8Array(this.body.buffer, this.header.bodyOffset+bufferView.byteOffset, bufferView.byteLength);
-    var src = new TextDecoder("ascii").decode(shaderBytes);
-    return src;
+        var shaderBytes = new Uint8Array(this.body.buffer, this.header.bodyOffset+bufferView.byteOffset, bufferView.byteLength);
+        var src = new TextDecoder("ascii").decode(shaderBytes);
+        return src;
+    }
+    else
+    {
+        var dataURL = /^data\:([^]*?)(?:;([^]*?))?(;base64)?,([^]*)$/;
+        var result = dataURL .exec (shaderNode.uri);
+        if (result)
+        {
+            //var mimeType = result [1];
+            var data = result [4];
+
+            if (result [2] === "base64")
+                data = atob (data);
+            else
+                data = unescape (data);
+
+            console.log(data);
+            return data;
+        }
+        x3dom.debug.logError('no shader found');
+    }
 };
 
 /**
@@ -8509,14 +8543,13 @@ x3dom.glTF.glTFKHRMaterialCommons.prototype.bind = function(gl, shaderProgram)
 {
     this.program.bind();
 
-
     // set all used Shader Parameter
     for(var key in shaderProgram){
         if(!shaderProgram.hasOwnProperty(key))
             continue;
 
         if(this.program.hasOwnProperty(key))
-            this.program[key] = shaderProgram[key];
+            this.program[key] = this.updateTransforms(key, shaderProgram[key]);
     }
 
     if(this.diffuseTex != null)
@@ -8540,6 +8573,54 @@ x3dom.glTF.glTFKHRMaterialCommons.prototype.bind = function(gl, shaderProgram)
     this.program.lightVector = this.lightVector;
 
     this.program.technique = this.technique;
+};
+
+x3dom.glTF.glTFKHRMaterialCommons.prototype.updateTransforms = function(uniform, value)
+{
+    var matrix4f = new x3dom.fields.SFMatrix4f();
+    
+    function glMultMatrix4 (gl, m) {
+        matrix4f.setFromArray(gl);
+        return matrix4f.mult(m).toGL(); //optimize by multiplying gl matrixes directly
+    };
+    
+    switch(uniform){
+        case "modelViewInverseTransposeMatrix":
+            //do modelviewinverse
+            var worldInverse = this.worldTransform.inverse();
+            matrix4f.setFromArray(value);
+            //mult in, transpose and to GL
+            var mat = worldInverse.mult(matrix4f).transpose().toGL();
+            var model_view_inv_gl = [
+                mat[0], mat[1], mat[2],
+                mat[4],mat[5],mat[6],
+                mat[8],mat[9],mat[10]];
+            return model_view_inv_gl;
+            break;
+        case "modelViewInverseMatrix":
+            // work with worldTransform.inverse
+            // (VM x W)-1 = W-1 x VM-1
+            var worldInverse = this.worldTransform.inverse();
+            matrix4f.setFromArray(value);
+            return worldInverse.mult(matrix4f);
+            break;
+        case "modelViewMatrix":
+        case "modelViewProjectionMatrix":
+        case "modelMatrix":
+        case "model":
+            return glMultMatrix4(value, this.worldTransform);
+            break;
+        case "viewMatrix":
+        case "projectionMatrix":
+            return value;
+            break;
+        default:
+            return value;
+            break;
+    }
+    
+	console.warn("switch default not encountered ?");
+	return value;
 };
 
 x3dom.glTF.glTFMaterial = function(technique)
@@ -8810,9 +8891,8 @@ x3dom.X3DCanvas = function(x3dElem, canvasIdx)
 	this.canvas.parent = this;
 	
 	this.gl = this._initContext( this.canvas, (this.backend.search("desktop") >= 0),
-											  (this.backend.search("mobile") >= 0),
-											  (this.backend.search("flashie") >= 0),
-											  (this.backend.search("webgl2") >= 0));
+		(this.backend.search("mobile") >= 0),
+		(this.backend.search("webgl2") >= 0));
 	this.backend = 'webgl';
 	
 	if (this.gl == null)
@@ -9002,8 +9082,12 @@ x3dom.X3DCanvas.prototype.bindEventListeners = function() {
             this.focus();
 
             var originalY = this.parent.mousePosition(evt).y;
-
-            this.mouse_drag_y += 2 * evt.detail;
+            if(this.parent.doc._scene.getNavigationInfo()._vf.reverseScroll == true){
+                this.mouse_drag_y -= 2 * evt.detail;
+            }
+            else{
+                this.mouse_drag_y += 2 * evt.detail;
+            }
 
             this.parent.doc.onWheel(that.gl, this.mouse_drag_x, this.mouse_drag_y, originalY);
             this.parent.doc.needRender = true;
@@ -9015,6 +9099,7 @@ x3dom.X3DCanvas.prototype.bindEventListeners = function() {
 
     this.onKeyPress = function (evt) {
         if (!this.parent.disableKeys) {
+            evt.preventDefault();
             this.parent.doc.onKeyPress(evt.charCode);
         }
         this.parent.doc.needRender = true;
@@ -9025,8 +9110,13 @@ x3dom.X3DCanvas.prototype.bindEventListeners = function() {
             this.focus();
 
             var originalY = this.parent.mousePosition(evt).y;
-
-            this.mouse_drag_y -= 0.1 * evt.wheelDelta;
+            
+            if(this.parent.doc._scene.getNavigationInfo()._vf.reverseScroll == true){
+                this.mouse_drag_y += 0.1 * evt.wheelDelta;
+            }
+            else{
+                this.mouse_drag_y -= 0.1 * evt.wheelDelta;
+            }
 
             this.parent.doc.onWheel(that.gl, this.mouse_drag_x, this.mouse_drag_y, originalY);
             this.parent.doc.needRender = true;
@@ -9787,6 +9877,18 @@ x3dom.X3DCanvas.prototype.tick = function(timestamp)
     this.doc.advanceTime(d / 1000.0);
     var animD = new Date().getTime() - d;
 
+    if ( this.doc.hasAnimationStateChanged() )
+    {
+        if (this.doc.isAnimating())
+        {
+            runtime.onAnimationStarted();
+        }
+        else
+        {
+            runtime.onAnimationFinished();
+        }
+    }
+
     if (this.doc.needRender) {
         // calc average frames per second
         if (diff >= 1000) {
@@ -10282,13 +10384,16 @@ x3dom.Runtime.prototype.mousePosition = function(event) {
  * Returns the 2d screen position [cx, cy] for a given point [wx, wy, wz] in world coordinates.
  */
 x3dom.Runtime.prototype.calcCanvasPos = function(wx, wy, wz) {
+
+    var DPR = window.devicePixelRatio || 1;
+
     var pnt = new x3dom.fields.SFVec3f(wx, wy, wz);
     
     var mat = this.canvas.doc._viewarea.getWCtoCCMatrix();
     var pos = mat.multFullMatrixPnt(pnt);
     
-    var w = this.canvas.doc._viewarea._width;
-    var h = this.canvas.doc._viewarea._height;
+    var w = this.canvas.doc._viewarea._width / DPR;
+    var h = this.canvas.doc._viewarea._height / DPR;
     
     var x = Math.round((pos.x + 1) * (w - 1) / 2);
     var y = Math.round((h - 1) * (1 - pos.y) / 2);
@@ -10297,37 +10402,58 @@ x3dom.Runtime.prototype.calcCanvasPos = function(wx, wy, wz) {
 };
 
 /**
+ * Function: getBBoxPoints
+ *
+ * Returns the eight point of the scene bounding box
+ */
+x3dom.Runtime.prototype.getBBoxPoints = function() {
+    var scene = this.canvas.doc._scene;
+    scene.updateVolume();
+
+    return [
+        {x: scene._lastMin.x, y: scene._lastMin.y, z: scene._lastMin.z},
+        {x: scene._lastMax.x, y: scene._lastMin.y, z: scene._lastMin.z},
+        {x: scene._lastMin.x, y: scene._lastMax.y, z: scene._lastMin.z},
+        {x: scene._lastMax.x, y: scene._lastMax.y, z: scene._lastMin.z},
+        {x: scene._lastMin.x, y: scene._lastMin.y, z: scene._lastMax.z},
+        {x: scene._lastMax.x, y: scene._lastMin.y, z: scene._lastMax.z},
+        {x: scene._lastMin.x, y: scene._lastMax.y, z: scene._lastMax.z},
+        {x: scene._lastMax.x, y: scene._lastMax.y, z: scene._lastMax.z},
+    ];
+
+};
+
+
+    /**
  * Function: calcPagePos
  *
- * Returns the 2d page (returns the mouse coordinates relative to the document) position [cx, cy] 
- * for a given point [wx, wy, wz] in world coordinates.
+ * Returns the 2d rect of the scene volume
  */
-x3dom.Runtime.prototype.calcPagePos = function(wx, wy, wz) {
-    var elem = this.canvas.canvas.offsetParent;
+x3dom.Runtime.prototype.getSceneBRect = function() {
+    var min = { x: Number.MAX_VALUE, y: Number.MAX_VALUE };
+    var max = { x: Number.MIN_VALUE, y: Number.MIN_VALUE };
 
-    if (!elem) {
-        x3dom.debug.logError("Can't calc page pos without offsetParent.");
-        return [0, 0];
+    var points = this.getBBoxPoints();
+
+    for ( var i = 0; i < points.length; i++ )
+    {
+        var pos2D = this.calcCanvasPos(points[i].x, points[i].y, points[i].z);
+
+        min.x = ( pos2D[0] <  min.x ) ? pos2D[0] : min.x;
+        min.y = ( pos2D[1] <  min.y ) ? pos2D[1] : min.y;
+
+        max.x = ( pos2D[0] >  max.x ) ? pos2D[0] : max.x;
+        max.y = ( pos2D[1] >  max.y ) ? pos2D[1] : max.y;
     }
-    
-	var canvasPos = elem.getBoundingClientRect();
-	var mousePos = this.calcCanvasPos(wx, wy, wz);
-	
-	var scrollLeft = window.pageXOffset || document.body.scrollLeft;
-	var scrollTop = window.pageYOffset || document.body.scrollTop;
 
-    var compStyle = document.defaultView.getComputedStyle(elem, null);
-	
-	var paddingLeft = parseFloat(compStyle.getPropertyValue('padding-left'));
-	var borderLeftWidth = parseFloat(compStyle.getPropertyValue('border-left-width'));
-		
-	var paddingTop = parseFloat(compStyle.getPropertyValue('padding-top'));
-	var borderTopWidth = parseFloat(compStyle.getPropertyValue('border-top-width'));
-		
-	var x = canvasPos.left + paddingLeft + borderLeftWidth + scrollLeft + mousePos[0];
-    var y = canvasPos.top + paddingTop + borderTopWidth + scrollTop + mousePos[1];
-    
-    return [x, y];
+    var rect = {
+        x: min.x,
+        y: min.y,
+        width: max.x - min.x,
+        height: max.y - min.y
+    };
+
+    return rect;
 };
 
 /**
@@ -11190,6 +11316,16 @@ x3dom.Runtime.prototype.getPixelScale = function(){
     return new x3dom.fields.SFVec3f(pixelScaleX,pixelScaleY,0.0);
 };
 
+x3dom.Runtime.prototype.onAnimationStarted = function() {
+    //x3dom.debug.logInfo('Render frame finished');
+    // to be overwritten by user
+};
+
+x3dom.Runtime.prototype.onAnimationFinished = function() {
+    //x3dom.debug.logInfo('Render frame finished');
+    // to be overwritten by user
+};
+
 x3dom.Runtime.prototype.toggleProjection = function( perspViewID, orthoViewID )
 {
     var dist;
@@ -11777,6 +11913,7 @@ x3dom.Texture = function (gl, doc, cache, node) {
     this.genMipMaps = false;
     this.texture = null;
     this.ready = false;
+    this.anisotropicDegree = 1.0;
 
     this.dashtexture = false;
 
@@ -11904,6 +12041,8 @@ x3dom.Texture.prototype.updateTexture = function()
 
 		this.minFilter = x3dom.Utils.minFilterDic(gl, texProp._vf.minificationFilter);
 		this.magFilter = x3dom.Utils.magFilterDic(gl, texProp._vf.magnificationFilter);
+        
+        this.anisotropicDegree = Math.min(Math.max(texProp._vf.anisotropicDegree, 1.0), x3dom.caps.MAX_ANISOTROPY);
 
 		if (texProp._vf.generateMipMaps === true) {
 			this.genMipMaps = true;
@@ -12850,7 +12989,7 @@ x3dom.X3DDocument.prototype.onKeyUp = function(keyCode)
             stack = this._scene.getViewpoint()._stack;
 
             if (stack) {
-                stack.switchTo('next');
+                stack.switchTo('prev');
             }
             else {
                 x3dom.debug.logError ('No valid ViewBindable stack.');
@@ -12860,7 +12999,27 @@ x3dom.X3DDocument.prototype.onKeyUp = function(keyCode)
             stack = this._scene.getViewpoint()._stack;
 
             if (stack) {
-                stack.switchTo('prev');
+                stack.switchTo('next');
+            }
+            else {
+                x3dom.debug.logError ('No valid ViewBindable stack.');
+            }
+            break;
+        case 35: /* end */
+            stack = this._scene.getViewpoint()._stack;
+
+            if (stack) {
+                stack.switchTo('last');
+            }
+            else {
+                x3dom.debug.logError ('No valid ViewBindable stack.');
+            }
+            break;
+        case 36: /* home */
+            stack = this._scene.getViewpoint()._stack;
+
+            if (stack) {
+                stack.switchTo('first');
             }
             else {
                 x3dom.debug.logError ('No valid ViewBindable stack.');
@@ -13050,6 +13209,22 @@ x3dom.X3DDocument.prototype.shutdown = function(ctx)
         return;
     }
     ctx.shutdown(this._viewarea);
+};
+
+x3dom.X3DDocument.prototype.hasAnimationStateChanged = function () {
+    if (!this._viewarea) {
+        return false;
+    }
+
+    return this._viewarea.hasAnimationStateChanged();
+};
+
+x3dom.X3DDocument.prototype.isAnimating = function () {
+    if (!this._viewarea) {
+        return false;
+    }
+
+    return this._viewarea.isAnimating();
 };
 
 /*
@@ -13344,6 +13519,7 @@ x3dom.Viewarea = function (document, scene) {
     this._lastTS = 0;
     this._mixer = new x3dom.MatrixMixer();
 	this._interpolator = new x3dom.FieldInterpolator();
+    this._animationStateChanged = false;
 
     this.arc = null;
 };
@@ -13376,10 +13552,20 @@ x3dom.Viewarea.prototype.tick = function(timeStamp)
 	}
 
     var needNavAnim = this.navigateTo(timeStamp);
+
     var lastIsAnimating = this._isAnimating;
 
     this._lastTS = timeStamp;
     this._isAnimating = (this._mixer.isMixing || this._interpolator.isInterpolating || needNavAnim);
+
+    if ( this._isAnimating != lastIsAnimating )
+    {
+        this._animationStateChanged = true;
+    }
+    else
+    {
+        this._animationStateChanged = false;
+    }
 
     if (this.arc != null )
     {
@@ -13405,6 +13591,15 @@ x3dom.Viewarea.prototype.isMoving = function()
 x3dom.Viewarea.prototype.isAnimating = function()
 {
     return this._isAnimating;
+};
+
+/**
+ * Returns if the animation state has changed since the last update
+ * @return {Boolean} animation state of view area
+ */
+x3dom.Viewarea.prototype.hasAnimationStateChanged = function()
+{
+    return this._animationStateChanged;
 };
 
 /**
@@ -14153,6 +14348,9 @@ x3dom.Viewarea.prototype.onMousePress = function (x, y, buttonState)
 {
     this._needNavigationMatrixUpdate = true;
 
+    // simulate move first, in case mouse not moved after last click
+    this.prepareEvents(x, y, 0, "onmouseover");
+    // touchsensor isActive is invoked now since in affectedPointingSensorList
     this.prepareEvents(x, y, buttonState, "onmousedown");
     this._pickingInfo.lastClickObj = this._pickingInfo.pickObj;
     this._pickingInfo.firstObj = this._pickingInfo.pickObj;
@@ -15138,11 +15336,10 @@ x3dom.Mesh.prototype.calcTexCoords = function(mode)
         for (var k=0, l=0, m=this._positions[0].length; k<m; k+=3)
         {
             this._texCoords[0][l++] = (this._positions[0][k+S] - sMin) / sDenom;
-            this._texCoords[0][l++] = (this._positions[0][k+T] - tMin) / tDenom;
+            this._texCoords[0][l++] = (this._positions[0][k+T] - tMin) / sDenom;
         }
     }
 };
-
 
 /*
  * X3DOM JavaScript Library
@@ -16600,6 +16797,7 @@ x3dom.fields.SFVec2f.copy = function(v) {
 
 x3dom.fields.SFVec2f.parse = function (str) {
     var m = /^\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*$/.exec(str);
+    if (m === null) return new x3dom.fields.SFVec2f();
     return new x3dom.fields.SFVec2f(+m[1], +m[2]);
 };
 
@@ -16683,6 +16881,7 @@ x3dom.fields.SFVec2f.prototype.toString = function () {
 
 x3dom.fields.SFVec2f.prototype.setValueByStr = function(str) {
     var m = /^\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*$/.exec(str);
+    m = m || [0, 0, 0];
     this.x = +m[1];
     this.y = +m[2];
     return this;
@@ -16868,11 +17067,13 @@ x3dom.fields.SFVec4f.prototype.copy = function() {
 
 x3dom.fields.SFVec4f.parse = function (str) {
     var m = /^\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*$/.exec(str);
+    if (m === null) return new x3dom.fields.SFVec4f();
     return new x3dom.fields.SFVec4f(+m[1], +m[2], +m[3], +m[4]);
 };
 
 x3dom.fields.SFVec4f.prototype.setValueByStr = function(str) {
     var m = /^\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*$/.exec(str);
+    m = m || [0, 0, 0, 0, 0];
     this.x = +m[1];
     this.y = +m[2];
     this.z = +m[3];
@@ -16923,6 +17124,7 @@ x3dom.fields.Quaternion.prototype.multiply = function (that) {
 
 x3dom.fields.Quaternion.parseAxisAngle = function (str) {
     var m = /^\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*$/.exec(str);
+    if (m === null) return new x3dom.fields.Quaternion();
     return x3dom.fields.Quaternion.axisAngle(new x3dom.fields.SFVec3f(+m[1], +m[2], +m[3]), +m[4]);
 };
 
@@ -17228,6 +17430,7 @@ x3dom.fields.Quaternion.prototype.toString = function () {
 
 x3dom.fields.Quaternion.prototype.setValueByStr = function(str) {
     var m = /^\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*,?\s*([+\-]?\d*\.*\d*[eE]?[+\-]?\d*?)\s*$/.exec(str);
+    m = m || [0, 1, 0, 0, 0];
     var quat = x3dom.fields.Quaternion.axisAngle(new x3dom.fields.SFVec3f(+m[1], +m[2], +m[3]), +m[4]);
     this.x = quat.x;
     this.y = quat.y;
@@ -20388,12 +20591,13 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
 		if((properties.TEXTURED || properties.DIFFUSEMAP)) {
 			shader += "uniform sampler2D diffuseMap;\n";
 		}
-		if(properties.CUBEMAP) {
-			shader += "uniform samplerCube environmentMap;\n";
-			shader += "varying vec3 fragViewDir;\n";
-            shader += "uniform float environmentFactor;\n";
-
-		}
+        if(properties.CUBEMAP) {
+            shader += "uniform samplerCube environmentMap;\n";
+            shader += "varying vec3 fragViewDir;\n";
+            if(properties.CSSHADER) {
+                shader += "uniform float environmentFactor;\n";
+            }
+        }
 		if(properties.SPECMAP){
 			shader += "uniform sampler2D specularMap;\n";
 		}
@@ -20670,7 +20874,11 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
 					shader += "color.rgb *= texColor.rgb;\n";
 				}
 				if(properties.CUBEMAP) {
-					shader += "color.rgb *= mix(vec3(1.0,1.0,1.0), envColor.rgb, environmentFactor);\n";
+					if(properties.CSSHADER) {
+						shader += "color.rgb *= mix(vec3(1.0,1.0,1.0), envColor.rgb, environmentFactor);\n";
+					}else{
+						shader += "color.rgb *= envColor.rgb;\n";
+					}
 				}
 			}else{
 				shader += "color.rgb = (_emissiveColor + max(ambient + diffuse, 0.0) * texColor.rgb + specular*_specularColor);\n";
@@ -22888,7 +23096,7 @@ x3dom.shader.KHRMaterialCommonsShader.prototype.generateVertexShader = function(
                 "{"+
                 "    vec4 pos = modelViewProjectionMatrix * vec4(position, 1.0);"+
                 "    v_eye = (modelViewMatrix * vec4(position, 1.0)).xyz;"+
-                "    v_normal = (normalMatrix * vec4(normal,1.0)).xyz;"+
+                "    v_normal = normalize((normalMatrix * vec4(normal,1.0)).xyz);"+
                 "    v_texcoord = texcoord;"+
                 "    gl_Position = pos;"+
                 "}";
@@ -22956,7 +23164,7 @@ x3dom.shader.KHRMaterialCommonsShader.prototype.generateFragmentShader = functio
     "void main(void)\n"+
     "{\n"+
         "vec4 I = -vec4(normalize(v_eye),1.0);\n"+
-        "vec4 N = vec4(normalize(v_normal),1.0);\n"+
+        "vec4 N = vec4(v_normal,1.0);\n"+
         "vec4 al = ambientLight;\n"+
         "vec4 L = normalize(lightVector-vec4(v_eye,1.0));\n";
 
@@ -23008,6 +23216,8 @@ x3dom.shader.KHRMaterialCommonsShader.prototype.generateFragmentShader = functio
             shader += "    eye = -v_eye.xyz;\n";
             shader += "}\n";
 
+            //divide glTF shininess by 128 since it is provided premultiplied
+            shader += "float _shininess = shininess * 0.0078125;\n";
             shader += "vec3 ads;\n";
 
             for(var l=0; l<properties.LIGHTS; l++) {
@@ -23022,7 +23232,7 @@ x3dom.shader.KHRMaterialCommonsShader.prototype.generateFragmentShader = functio
                     "light"+l+"_AmbientIntensity, " +
                     "light"+l+"_BeamWidth, " +
                     "light"+l+"_CutOffAngle, " +
-                    "v_normal, eye, shininess, ambientIntensity);\n";
+                    "v_normal, eye, _shininess, ambientIntensity);\n";
                 shader += "ambient  += " + lightCol + " * ads.r;\n" +
                     "diffuse  += " + lightCol + " * ads.g;\n" +
                     "specular += " + lightCol + " * ads.b;\n";
@@ -23035,7 +23245,7 @@ x3dom.shader.KHRMaterialCommonsShader.prototype.generateFragmentShader = functio
             shader += "color.rgb = (_emission.rgb + max(ambient + diffuse, 0.0) * color.rgb + specular*_specularColor.rgb);\n";
         }
 
-        shader += "gl_FragColor = vec4(color.rgb, 1.0-transparency);\n"+
+        shader += "gl_FragColor = vec4(color.rgb, transparency);\n"+
     "}";
 
     var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
@@ -23048,6 +23258,7 @@ x3dom.shader.KHRMaterialCommonsShader.prototype.generateFragmentShader = functio
 
     return fragmentShader;
 };
+
 /**
  * Generate the final ShadowShader program
  */
@@ -23605,7 +23816,7 @@ x3dom.gfx_webgl = (function () {
         var validContextNames = ['webgl', 'experimental-webgl', 'moz-webgl', 'webkit-3d'];
 
         if (tryWebGL2) {
-            validContextNames = ['experimental-webgl2'].concat(validContextNames);
+            validContextNames = ['webgl2','experimental-webgl2'].concat(validContextNames);
         }
 
         var ctx = null;
@@ -23674,6 +23885,14 @@ x3dom.gfx_webgl = (function () {
                         x3dom.caps.DRAW_BUFFERS = ctx.getExtension("WEBGL_draw_buffers");
 						x3dom.caps.DEPTH_TEXTURE = ctx.getExtension("WEBGL_depth_texture");
                         x3dom.caps.DEBUGRENDERINFO = ctx.getExtension("WEBGL_debug_renderer_info");
+                        x3dom.caps.ANISOTROPIC = ctx.getExtension("EXT_texture_filter_anisotropic");
+                        
+                        if ( x3dom.caps.ANISOTROPIC )
+                        {
+                            x3dom.caps.MAX_ANISOTROPY = ctx.getParameter( x3dom.caps.ANISOTROPIC.MAX_TEXTURE_MAX_ANISOTROPY_EXT );
+                        }
+                        
+                        
 						x3dom.caps.EXTENSIONS = ctx.getSupportedExtensions();
 						
 						//Enabled WebGL2 breaks picking if we use the depth_texture extension for the picking fbo
@@ -25222,6 +25441,9 @@ x3dom.gfx_webgl = (function () {
             if (!sp) {   // error
                 return;
             }
+            
+            //Save current shader
+            s_gl.shader = sp;
 
             //Bind shader
             this.stateManager.useProgram(sp);
@@ -26002,7 +26224,12 @@ x3dom.gfx_webgl = (function () {
             gl.texParameteri(tex.type, gl.TEXTURE_WRAP_T, tex.wrapT);
             gl.texParameteri(tex.type, gl.TEXTURE_MAG_FILTER, tex.magFilter);
             gl.texParameteri(tex.type, gl.TEXTURE_MIN_FILTER, tex.minFilter);
-
+            
+            if ( x3dom.caps.ANISOTROPIC )
+            {
+                gl.texParameterf(tex.type, x3dom.caps.ANISOTROPIC.TEXTURE_MAX_ANISOTROPY_EXT, tex.anisotropicDegree);
+            }
+            
             if (!shader || !isUserDefinedShader) {
                 if (!sp[tex.samplerName])
                     sp[tex.samplerName] = cnt;
@@ -26795,10 +27022,12 @@ x3dom.gfx_webgl = (function () {
     /*****************************************************************************
      * Render ColorBuffer-Pass for picking sub window
      *****************************************************************************/
-    Context.prototype.pickRect = function (viewarea, x1, y1, x2, y2)
+    Context.prototype.pickRect = function (viewarea, x1, y1, x2, y2, fromMultipartAPI)
     {
         var gl = this.ctx3d;
         var scene = viewarea ? viewarea._scene : null;
+        
+        fromMultipartAPI = (fromMultipartAPI != undefined) ? fromMultipartAPI : false;
 
         // method requires that scene has already been rendered at least once
         if (!gl || !scene || !scene._webgl || !scene.drawableCollection)
@@ -26852,6 +27081,8 @@ x3dom.gfx_webgl = (function () {
         // for deriving shadow ids together with shape ids
         var baseID = x3dom.nodeTypes.Shape.objectID + 2;
 
+        var partIDs = [];
+        
         for (index = 0; index < pickedObjects.length; index++) {
             objId = pickedObjects[index];
 
@@ -26861,7 +27092,7 @@ x3dom.gfx_webgl = (function () {
 
                 //Check if there are MultiParts
                 if (scene._multiPartMap) {
-                    var mp, multiPart, colorMap, emissiveMap, specularMap, visibilityMap, partID;
+                    var mp, multiPart, colorMap, emissiveMap, specularMap, visibilityMap, partID
 
                     //Find related MultiPart
                     for (mp = 0; mp < scene._multiPartMap.multiParts.length; mp++) {
@@ -26871,6 +27102,9 @@ x3dom.gfx_webgl = (function () {
                         specularMap = multiPart._inlineNamespace.defMap["MultiMaterial_SpecularMap"];
                         visibilityMap = multiPart._inlineNamespace.defMap["MultiMaterial_VisibilityMap"];
                         if (objId >= multiPart._minId && objId <= multiPart._maxId) {
+                            
+                            partIDs.push(objId);
+                            
                             partID = multiPart._idMap.mapping[objId - multiPart._minId].name;
                             hitObject = new x3dom.Parts(multiPart, [objId], colorMap, emissiveMap, specularMap, visibilityMap);
 
@@ -26890,6 +27124,11 @@ x3dom.gfx_webgl = (function () {
                 if (hitObject)
                     pickedNodes.push(hitObject);
             }
+        }
+        
+        if( fromMultipartAPI && partIDs.length )
+        {
+            pickedNodes = new x3dom.Parts(multiPart, partIDs, colorMap, emissiveMap, specularMap, visibilityMap);
         }
 
         return pickedNodes;
@@ -28958,14 +29197,14 @@ x3dom.registerNodeType(
                     pos = fromField.indexOf(pre);
                     if (pos === 0) {
                         fieldName = fromField.substr(pre.length, fromField.length - 1);
-                        if (this._vf[fieldName]) {
+                        if (this._vf[fieldName] !== undefined) {
                             fromField = fieldName;
                         }
                     } else {
                         pos = fromField.indexOf(post);
                         if (pos > 0) {
                             fieldName = fromField.substr(0, fromField.length - post.length);
-                            if (this._vf[fieldName]) {
+                            if (this._vf[fieldName] !== undefined) {
                                 fromField = fieldName;
                             }
                         }
@@ -28977,7 +29216,7 @@ x3dom.registerNodeType(
                     pos = toField.indexOf(pre);
                     if (pos === 0) {
                         fieldName = toField.substr(pre.length, toField.length - 1);
-                        if (toNode._vf[fieldName]) {
+                        if (toNode._vf[fieldName] !== undefined) {
                             toField = fieldName;
                         }
                     }
@@ -28985,7 +29224,7 @@ x3dom.registerNodeType(
                         pos = toField.indexOf(post);
                         if (pos > 0) {
                             fieldName = toField.substr(0, toField.length - post.length);
-                            if (toNode._vf[fieldName]) {
+                            if (toNode._vf[fieldName] !== undefined) {
                                 toField = fieldName;
                             }
                         }
@@ -29033,14 +29272,14 @@ x3dom.registerNodeType(
                     pos = fromField.indexOf(pre);
                     if (pos === 0) {
                         fieldName = fromField.substr(pre.length, fromField.length - 1);
-                        if (this._vf[fieldName]) {
+                        if (this._vf[fieldName] !== undefined) {
                             fromField = fieldName;
                         }
                     } else {
                         pos = fromField.indexOf(post);
                         if (pos > 0) {
                             fieldName = fromField.substr(0, fromField.length - post.length);
-                            if (this._vf[fieldName]) {
+                            if (this._vf[fieldName] !== undefined) {
                                 fromField = fieldName;
                             }
                         }
@@ -29052,7 +29291,7 @@ x3dom.registerNodeType(
                     pos = toField.indexOf(pre);
                     if (pos === 0) {
                         fieldName = toField.substr(pre.length, toField.length - 1);
-                        if (toNode._vf[fieldName]) {
+                        if (toNode._vf[fieldName] !== undefined) {
                             toField = fieldName;
                         }
                     }
@@ -29060,7 +29299,7 @@ x3dom.registerNodeType(
                         pos = toField.indexOf(post);
                         if (pos > 0) {
                             fieldName = toField.substr(0, toField.length - post.length);
-                            if (toNode._vf[fieldName]) {
+                            if (toNode._vf[fieldName] !== undefined) {
                                 toField = fieldName;
                             }
                         }
@@ -34563,6 +34802,54 @@ x3dom.registerNodeType(
              * @instance
              */
             this.addField_MFVec3f(ctx, 'point', []);
+        
+        },
+        {
+            getPoints: function() {
+                return this._vf.point;
+            }
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2017 A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+/* ### Coordinate ### */
+x3dom.registerNodeType(
+    "CoordinateDouble",
+    "Nurbs",
+    defineClass(x3dom.nodeTypes.X3DCoordinateNode,
+        
+        /**
+         * Constructor for CoordinateDouble
+         * @constructs x3dom.nodeTypes.CoordinateDouble
+         * @x3d 3.3
+         * @component Nurbs
+         * @status full
+         * @extends x3dom.nodeTypes.X3DCoordinateNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc Coordinate builds geometry using a set of double precision 3D coordinates.
+         * X3DCoordinateNode is used by IndexedFaceSet, IndexedLineSet, LineSet and PointSet.
+         */
+        function (ctx) {
+            x3dom.nodeTypes.CoordinateDouble.superClass.call(this, ctx);
+
+            /**
+             * Contains the 3D coordinates
+             * @var {x3dom.fields.MFVec3d} point
+             * @memberof x3dom.nodeTypes.Coordinate
+             * @initvalue []
+             * @field x3d
+             * @instance
+             */
+            this.addField_MFVec3d(ctx, 'point', []);
         
         },
         {
@@ -42103,6 +42390,126 @@ x3dom.registerNodeType(
                     }
                 }
             },
+            
+            /**
+             *
+             *
+             * @param left border position in screen pixel
+             * @param right border position in screen pixel
+             * @param bottom border position in screen pixel
+             * @param top border position in screen pixel
+             * @returns selected Parts
+             */
+            getPartsByRect_Pixel : function (left, right, bottom, top)
+            {
+                var canvas = this._nameSpace.doc._x3dElem.runtime.canvas;
+                var ctx = canvas.gl;
+                var viewarea = canvas.doc._viewarea;
+                
+                if (!ctx || !viewarea) {
+                    return [];
+                }
+
+                return ctx.pickRect(viewarea, left, top, right, bottom, true);
+            },
+            
+            /**
+             *
+             *
+             * @param left border position in screen pixel
+             * @param right border position in screen pixel
+             * @param bottom border position in screen pixel
+             * @param top border position in screen pixel
+             * @param mode specifies the intersection mode 0 intersects 1 fully inside
+             * @returns selected Parts
+             */
+            getPartsByRect_Volume : function (left, right, bottom, top, mode)
+            {
+                mode = (mode != undefined) ? mode : 0;
+                
+                var viewarea = this._nameSpace.doc._viewarea;
+                var viewpoint = viewarea._scene.getViewpoint();
+
+                var origViewMatrix    = viewarea.getViewMatrix();
+                var origProjMatrix    = viewarea.getProjectionMatrix();
+
+                var upDir   = new x3dom.fields.SFVec3f(origViewMatrix._01, origViewMatrix._11, origViewMatrix._21);
+                var viewDir = new x3dom.fields.SFVec3f(origViewMatrix._02, origViewMatrix._12, origViewMatrix._22);
+                var pos = new x3dom.fields.SFVec3f(origViewMatrix._03, origViewMatrix._13, origViewMatrix._23);
+
+                var normalizedLeft   = (left   - viewarea._width  / 2) / (viewarea._width  / 2);
+                var normalizedRight  = (right  - viewarea._width  / 2) / (viewarea._width  / 2);
+                var normalizedTop    = (top    - viewarea._height / 2) / (viewarea._height / 2);
+                var normalizedBottom = (bottom - viewarea._height / 2) / (viewarea._height / 2);
+
+                /*
+                    For any given distance Z from the camera,
+                    the shortest distance D from the center point of a plane
+                    perpendicular to the viewing vector at Z to one of its borders
+                    above or below the center (really, the intersection of the plane and frustum)
+                    is D = tan(FOV / 2) * Z . Add and subtract D from the center point's Y component
+                    to get the maximum and minimum Y extents.
+                */
+
+                var zNear = viewpoint._zNear;
+                var zFar = viewpoint._zFar;
+                var aspect = viewpoint._lastAspect;
+                var fov = viewpoint.getFieldOfView();
+                var factorH = Math.tan(fov/2) * zNear;
+                var factorW = Math.tan(fov/2)* aspect * zNear;
+
+                var projMatrix, viewMatrix, factor;
+
+                if (x3dom.isa(viewpoint, x3dom.nodeTypes.OrthoViewpoint))
+                {
+                    aspect = (right - left) / (bottom - top);
+                    factor = Math.max(normalizedLeft, normalizedRight, normalizedTop, normalizedBottom) * viewpoint._fieldOfView[2];
+                    viewMatrix = origViewMatrix;
+                    projMatrix = x3dom.fields.SFMatrix4f.ortho(-factor, factor, -factor, factor, zNear, zFar, aspect );
+                }
+                else
+                {
+                    left = normalizedLeft * factorW;
+                    right = normalizedRight * factorW;
+                    bottom = normalizedBottom * factorH;
+                    top = normalizedTop * factorH;
+
+                    projMatrix = x3dom.fields.SFMatrix4f.perspectiveFrustum( left, right, bottom, top, zNear, zFar);
+                    viewMatrix = x3dom.fields.SFMatrix4f.lookAt(pos,  pos.subtract(viewDir.multiply(5.0)), upDir);
+                }
+
+                var frustum =  new x3dom.fields.FrustumVolume( projMatrix.mult(viewMatrix) );
+
+                var selection = [];
+                var volumes = this._partVolume;
+                for(id in volumes){
+                    if(!volumes.hasOwnProperty(id))
+                        continue;
+
+                    var intersect = frustum.intersect(volumes[id], 0);
+                    if(mode == 0 && intersect > 0)
+                    {
+                        selection.push(+id);
+                    }
+                    else if(mode == 1 && intersect == 63)
+                    {
+                        selection.push(+id);
+                    }
+                        
+                }
+
+                var colorMap = this._inlineNamespace.defMap["MultiMaterial_ColorMap"];
+                var emissiveMap = this._inlineNamespace.defMap["MultiMaterial_EmissiveMap"];
+                var specularMap = this._inlineNamespace.defMap["MultiMaterial_SpecularMap"];
+                var visibilityMap = this._inlineNamespace.defMap["MultiMaterial_VisibilityMap"];
+
+                if ( selection.length == 0) {
+                    return null;
+                } else {
+                    return new x3dom.Parts(this, selection, colorMap, emissiveMap, specularMap, visibilityMap);
+                }
+
+            },
 
             appendAPI: function ()
             {
@@ -42179,76 +42586,23 @@ x3dom.registerNodeType(
                  * @param top border position in screen pixel
                  * @returns selected Parts
                  */
-                this._xmlNode.getPartsByRect = function (left, right, bottom, top)
+                this._xmlNode.getPartsByRect = function (left, right, bottom, top, technique, mode)
                 {
-                    var viewarea = multiPart._nameSpace.doc._viewarea;
-                    var viewpoint = viewarea._scene.getViewpoint();
-
-                    var origViewMatrix    = viewarea.getViewMatrix();
-                    var origProjMatrix    = viewarea.getProjectionMatrix();
-
-                    var upDir   = new x3dom.fields.SFVec3f(origViewMatrix._01, origViewMatrix._11, origViewMatrix._21);
-                    var viewDir = new x3dom.fields.SFVec3f(origViewMatrix._02, origViewMatrix._12, origViewMatrix._22);
-                    var pos = new x3dom.fields.SFVec3f(origViewMatrix._03, origViewMatrix._13, origViewMatrix._23);
-
-                    var normalizedLeft   = (left   - viewarea._width  / 2) / (viewarea._width  / 2);
-                    var normalizedRight  = (right  - viewarea._width  / 2) / (viewarea._width  / 2);
-                    var normalizedTop    = (top    - viewarea._height / 2) / (viewarea._height / 2);
-                    var normalizedBottom = (bottom - viewarea._height / 2) / (viewarea._height / 2);
-
-                    /*
-                        For any given distance Z from the camera,
-                        the shortest distance D from the center point of a plane
-                        perpendicular to the viewing vector at Z to one of its borders
-                        above or below the center (really, the intersection of the plane and frustum)
-                        is D = tan(FOV / 2) * Z . Add and subtract D from the center point's Y component
-                        to get the maximum and minimum Y extents.
-                    */
-
-                    var fov = viewpoint._vf.fieldOfView;
-                    var factorH = Math.tan(fov/2) * viewpoint._zNear;
-                    var factorW = Math.tan(fov/2)* viewpoint._lastAspect * viewpoint._zNear;
-
-                    var projMatrix = x3dom.fields.SFMatrix4f.perspectiveFrustum(
-                        normalizedLeft * factorW,
-                        normalizedRight * factorW,
-                        normalizedBottom * factorH,
-                        normalizedTop * factorH,
-                        viewpoint.getNear(),
-                        viewpoint.getFar());
-
-                    var viewMatrix = x3dom.fields.SFMatrix4f.lookAt(pos,
-                        pos.subtract(viewDir.multiply(5.0)),
-                        upDir);
-
-                    var frustum =  new x3dom.fields.FrustumVolume( projMatrix.mult(viewMatrix) );
-                    //viewpoint._projMatrix = projMatrix;
-
-                    //return null;
-
-                    var selection = [];
-                    var volumes = this._x3domNode._partVolume;
-                    for(id in volumes){
-                        if(!volumes.hasOwnProperty(id))
-                            continue;
-
-                        var intersect = frustum.intersect(volumes[id], 0);
-                        if(intersect > 0)
-                            selection.push(id);
+                    var parts;
+                    technique = (technique != undefined) ? technique : "volume";
+                    mode = (mode != undefined) ? mode : 0;
+                    
+                    if ( technique == "volume" )
+                    {
+                        parts = multiPart.getPartsByRect_Volume(left, right, bottom, top, mode);
                     }
-
-                    var colorMap = multiPart._inlineNamespace.defMap["MultiMaterial_ColorMap"];
-                    var emissiveMap = multiPart._inlineNamespace.defMap["MultiMaterial_EmissiveMap"];
-                    var specularMap = multiPart._inlineNamespace.defMap["MultiMaterial_SpecularMap"];
-                    var visibilityMap = multiPart._inlineNamespace.defMap["MultiMaterial_VisibilityMap"];
-
-                    if ( selection.length == 0) {
-                        return null;
-                    } else {
-                        return new x3dom.Parts(multiPart, selection, colorMap, emissiveMap, specularMap, visibilityMap);
+                    else if ( technique == "pixel" )
+                    {
+                        parts = multiPart.getPartsByRect_Pixel(left, right, bottom, top);
                     }
-
-                };
+                    
+                    return parts;
+                }
             },
 
             loadInline: function ()
@@ -43388,11 +43742,11 @@ x3dom.registerNodeType(
              * The orientation fields of the Viewpoint node specifies relative orientation to the default orientation.
              * @var {x3dom.fields.SFRotation} orientation
              * @memberof x3dom.nodeTypes.Viewpoint
-             * @initvalue 0,0,0,1
+             * @initvalue 0,0,1,0
              * @field x3d
              * @instance
              */
-            this.addField_SFRotation(ctx, 'orientation', 0, 0, 0, 1);
+            this.addField_SFRotation(ctx, 'orientation', 0, 0, 1, 0);
 
             /**
              * The centerOfRotation field specifies a center about which to rotate the user's eyepoint when in EXAMINE mode.
@@ -43760,6 +44114,7 @@ x3dom.registerNodeType(
             },
 
             setZoom: function( value ) {
+
                 this._fieldOfView[0] = -value;
                 this._fieldOfView[1] = -value;
                 this._fieldOfView[2] =  value;
@@ -43784,15 +44139,18 @@ x3dom.registerNodeType(
                     var scene = this._nameSpace.doc._viewarea._scene;
                     var min = x3dom.fields.SFVec3f.copy(scene._lastMin);
                     var max = x3dom.fields.SFVec3f.copy(scene._lastMax);
-									
                     var dia = max.subtract(min);					
 					var tanfov2 = Math.tan(fov / 2.0);
 					
 					var dist1 = ( (dia.y / 2.0) / tanfov2 + dia.z ) + this._fieldOfView[2];
 					var dist2 = ( (dia.x / 2.0) / tanfov2 + dia.z ) + this._fieldOfView[2];
-					
-					znear = 0.00001;
-					zfar = (dist1 > dist2) ? dist1 * 4 : dist2 * 4;
+
+					var dist = (dist1 > dist2) ? dist1 : dist2;
+
+					zfar = dist * 4;
+                    znear = 0.0001;
+
+                    this._viewMatrix._23 = -(dist*2);
                 }
 				
                 if (this._projMatrix == null || this._lastAspect != aspect ||
@@ -43996,6 +44354,16 @@ x3dom.registerNodeType(
             this.addField_SFBool(ctx, 'headlight', true);
 
             /**
+             * Enable/disable reversed mousewheel scrolling to zoom.
+             * @var {x3dom.fields.SFBool} reverseScroll
+             * @memberof x3dom.nodeTypes.NavigationInfo
+             * @initvalue false
+             * @field x3dom
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'reverseScroll', false);
+
+            /**
              * defines the navigation type
              * @var {x3dom.fields.MFString} type
              * @range {"ANY","WALK","EXAMINE","FLY","LOOKAT","NONE","EXPLORE",...}
@@ -44042,6 +44410,17 @@ x3dom.registerNodeType(
              * @instance
              */
             this.addField_MFFloat(ctx, 'avatarSize', [0.25, 1.6, 0.75]);
+
+            /**
+             * Factor for damping the walk animation
+             * Interchange profile hint: this field may be ignored.
+             * @var {x3dom.fields.SFFloat} walkDamping
+             * @memberof x3dom.nodeTypes.NavigationInfo
+             * @initvalue 2.0
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFFloat(ctx, 'walkDamping', 2.0);
 
             /**
              * Geometry beyond the visibilityLimit may not be rendered (far culling plane of the view frustrum).
@@ -44102,7 +44481,8 @@ x3dom.registerNodeType(
             
             this._typeMapping = {
               "default":x3dom.DefaultNavigation,
-              "turntable":x3dom.TurntableNavigation  
+              "turntable":x3dom.TurntableNavigation,
+              "walk":x3dom.WalkNavigation
             };
             
             this._heliUpdated = false;
@@ -44119,6 +44499,10 @@ x3dom.registerNodeType(
                 else if (fieldName == "type") {
                     this.setType(this.getType());
                 }
+                //AP: needs to be preserved from X3DBindableNode
+                else if (fieldName.indexOf("bind") >= 0) {
+                    this.bind(this._vf.bind);
+                }
             },
 
             setType: function(type, viewarea) {
@@ -44132,7 +44516,7 @@ x3dom.registerNodeType(
                         this._impl = new this._typeMapping[navType](this);                    
                     
                     switch (navType) {
-                        case 'game':
+                        case 'game': //perhaps needed for 'walk' as well ?
                             if (viewarea)
                                 viewarea.initMouseState();
                             else
@@ -44223,6 +44607,7 @@ x3dom.registerNodeType(
         }
     )
 );
+
 /** @namespace x3dom.nodeTypes */
 /*
  * X3DOM JavaScript Library
@@ -44956,7 +45341,7 @@ x3dom.DefaultNavigation.prototype.zoom = function(view, zoomAmount)
     {
         viewpoint.setZoom( Math.abs( viewpoint._fieldOfView[0] ) - vec.z );
     }
-    else
+    //else
     {
         if ( navi._vf.typeParams.length >= 6 ) {
 
@@ -45389,6 +45774,9 @@ x3dom.DefaultNavigation.prototype.navigateTo = function(view, timeStamp)
             // finally attach to ground when walking
             if (navType === "walk")
             {
+                // Set the up-vector to Y during walk
+                up.x = 0.0; up.y = 1.0; up.z = 0.0;
+
                 tmpAt = view._from.addScaled(up, -1.0);
                 tmpUp = sv.cross(up.negate()).normalize();  // lv
 
@@ -45401,9 +45789,11 @@ x3dom.DefaultNavigation.prototype.navigateTo = function(view, timeStamp)
                 if (view._pickingInfo.pickObj)
                 {
                     dist = view._pickingInfo.pickPos.subtract(view._from).length();
+                    dist = (avatarHeight - dist) / navi._vf.walkDamping;
 
-                    view._at = view._at.add(up.multiply(avatarHeight - dist));
-                    view._from = view._from.add(up.multiply(avatarHeight - dist));
+                    view._at = view._at.add(up.multiply(dist));
+                    view._from = view._from.add(up.multiply(dist));
+
                 }
             }
             view._pickingInfo.pickObj = null;
@@ -45529,6 +45919,16 @@ x3dom.DefaultNavigation.prototype.onDrag = function(view, x, y, buttonState)
 
     var dx = x - view._lastX;
     var dy = y - view._lastY;
+	
+	
+    view._dx = dx;
+    view._dy = dy;
+
+    view._lastX = x;
+    view._lastY = y;
+    
+    if (navType !== "examine") { return; } // reinstate 1.7.1 behaviour
+	
     var d, vec, cor, mat = null;
     var alpha, beta;
 
@@ -45576,7 +45976,7 @@ x3dom.DefaultNavigation.prototype.onDrag = function(view, x, y, buttonState)
         {
             viewpoint.setZoom( Math.abs( viewpoint._fieldOfView[0] ) - vec.z );
         }
-        else
+        //else
         {
             if ( navi._vf.typeParams.length >= 6 ) {
 
@@ -45597,13 +45997,6 @@ x3dom.DefaultNavigation.prototype.onDrag = function(view, x, y, buttonState)
     }
 
     view._isMoving = true;
-    
-    
-    view._dx = dx;
-    view._dy = dy;
-
-    view._lastX = x;
-    view._lastY = y;
 };
 
 x3dom.DefaultNavigation.prototype.onTouchStart = function(view, evt, touches)
@@ -45703,6 +46096,7 @@ x3dom.DefaultNavigation.prototype.onDoubleClick = function (view, x, y)
     x3dom.debug.logInfo("New camera position:  " + from);
     view.animateTo(mat.inverse(), viewpoint);
 };
+
 
 x3dom.TurntableNavigation = function(navigationNode)
 {
@@ -46236,6 +46630,57 @@ x3dom.TurntableNavigation.prototype.onDoubleClick = function (view, x, y)
     x3dom.debug.logInfo("New camera position:  " + view._from);
     this.animateTo(view, view._flyMat.inverse(), view.getViewMatrix());
 };
+/** @namespace x3dom */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C) 2017 Andreas Plesch
+ * Dual licensed under the MIT and GPL
+ */
+
+/* ### WalkNavigation ### */
+
+// use DefaultNavigation
+x3dom.WalkNavigation = function(navigationNode)
+{
+    x3dom.DefaultNavigation.call(this, navigationNode);
+};
+
+x3dom.WalkNavigation.prototype = Object.create(x3dom.DefaultNavigation.prototype);
+x3dom.WalkNavigation.prototype.constructor = x3dom.WalkNavigation; // necessary ?
+
+// redefine onDrag
+x3dom.WalkNavigation.prototype.onDrag = function(view, x, y, buttonState)
+{
+    var navi = this.navi;
+
+    var navType = navi.getType();
+    var navRestrict = navi.getExplorationMode(); // may not apply to walk mode ?
+
+    if (navRestrict === 0) {
+        return;
+    }
+
+    var viewpoint = view._scene.getViewpoint();
+
+    var dx = x - view._lastX;
+    var dy = y - view._lastY;
+    
+    //view._isMoving = true; // only for turntable,examine?
+
+    view._dx = dx;
+    view._dy = dy;
+
+    view._lastX = x;
+    view._lastY = y;
+    // double check, probably not necessary
+    if (navType === "walk") {return;}
+    console.log("#### CHECK: in WalkNavigation but nav. type is not walk !");
+};
+
+// other event handlers from DefaultNavigation could also be simplified
+
 /** @namespace x3dom.nodeTypes */
 /*
  * X3DOM JavaScript Library
@@ -47370,8 +47815,8 @@ x3dom.registerNodeType(
             parentRemoved: function(parent)
             {
                 Array.forEach(parent._parentNodes, function (shape) {
-                    // THINKABOUTME: this is a bit ugly, cleanup more generically
-                    if (x3dom.isa(shape, x3dom.nodeTypes.Shape)) {
+                    // THINKABOUTME: cleanup more generically, X3DShapeNode allows VolumeData
+                    if (x3dom.isa(shape, x3dom.nodeTypes.X3DShapeNode)) {
                         shape._dirty.texture = true;
                     }
                     else {
@@ -47460,6 +47905,7 @@ x3dom.registerNodeType(
         }
     )
 );
+
 /** @namespace x3dom.nodeTypes */
 /*
  * X3DOM JavaScript Library
@@ -55996,6 +56442,7 @@ x3dom.registerNodeType(
             //---------------------------------------
             // PROPERTIES
             //---------------------------------------
+            this._isOver = false; // track for touchTime 
         },
         {
             //----------------------------------------------------------------------------------------------------------------------
@@ -56013,6 +56460,7 @@ x3dom.registerNodeType(
                 {
                     this._vf.isActive = true;
                     this.postMessage('isActive', true);
+                    this._isOver = true;
                 }
             },
 
@@ -56054,6 +56502,7 @@ x3dom.registerNodeType(
                 if (this._vf.enabled)
                 {
                     this.postMessage('isOver', false);
+                    this._isOver = false;
                 }
             },
 
@@ -56070,6 +56519,8 @@ x3dom.registerNodeType(
                 {
                     this._vf.isActive = false;
                     this.postMessage('isActive', false);
+                    if (this._isOver) // button released and still over
+                      this.postMessage('touchTime', Date.now()/1000);
                 }
             }
 
@@ -57161,17 +57612,641 @@ x3dom.registerNodeType(
         }
     )
 );
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### X3DSequencerNode ###
+x3dom.registerNodeType(
+    "X3DSequencerNode",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DChildNode,
+        
+        /**
+         * Constructor for X3DSequencerNode
+         * @constructs x3dom.nodeTypes.X3DSequencerNode
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DChildNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc The abstract node X3DSequencerNode forms the basis for all types of sequencers.
+         */
+        function (ctx) {
+            x3dom.nodeTypes.X3DSequencerNode.superClass.call(this, ctx);
+        
+            /**
+             * If the next inputOnly field receives an SFBool event with value TRUE, it triggers the next output value in keyValue array by issuing a value_changed event with that value.
+             * After reaching the boundary of keyValue array, next goes to the initial element after last.
+             * @var {x3dom.fields.SFBool} next
+             * @memberof x3dom.nodeTypes.X3DSequencerNode
+             * @initvalue false
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'next', false);
+        
+            /**
+             * If the previous inputOnly field receives an SFBool event with value TRUE, it triggers the previous output value in keyValue array by issuing a value_changed event with that value.
+             * After reaching the boundary of keyValue array previous goes to the last element after the first.
+             * @var {x3dom.fields.SFBool} previous
+             * @memberof x3dom.nodeTypes.X3DSequencerNode
+             * @initvalue false
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'previous', false);
+
+            /**
+             * The key field contains the list of key times, the keyValue field contains values for the target field, one complete set of values for each key.
+             * Sequencer nodes containing no keys in the key field shall not produce any events.
+             * However, an input event that replaces an empty key field with one that contains keys will cause the sequencer node to produce events the next time that a set_fraction event is received.
+             * @var {x3dom.fields.MFFloat} key
+             * @memberof x3dom.nodeTypes.X3DSequencerNode
+             * @initvalue []
+             * @field x3d
+             * @instance
+             */
+            this.addField_MFFloat(ctx, 'key', []);
+
+            /**
+             * The set_fraction inputOnly field receives an SFFloat event and causes the sequencer node function to evaluate, resulting in a value_changed output event of the specified type with the same timestamp as the set_fraction event.
+             * @var {x3dom.fields.SFFloat} set_fraction
+             * @memberof x3dom.nodeTypes.X3DSequencerNode
+             * @initvalue 0
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFFloat(ctx, 'set_fraction', 0);
+        
+            this._keyIndex = -1;
+            this._key_changed = false;
+            this._keyValue_changed = false;
+        
+        },
+        {
+            findInterval: function (time) {
+                var keyLength = this._vf.key.length-1;
+                
+                if (time < this._vf.key[0]) {
+                    return 0;
+                }
+
+                else if (time >= this._vf.key[keyLength]) {
+                    return keyLength;
+                }
+
+                for (var i = 0; i < keyLength; ++i) {
+                    if ((this._vf.key[i] <= time) && (time < this._vf.key[i+1])) {
+                        return i;
+                    }
+                }
+                return 0; // should never happen
+            },        
+
+            fieldChanged: function(fieldName)
+            {
+                if(fieldName === "set_fraction")
+                {
+                    var keyIndex = this.findInterval(this._vf.set_fraction);
+                    if (keyIndex !== this._keyIndex) { // only generate event when necessary
+                      this._keyIndex = keyIndex;
+                      this.postMessage('value_changed', this._vf.keyValue[keyIndex]);
+                    }
+                    return;
+                }
+                if(fieldName === "next" && this._vf.next)
+                {
+                    this._keyIndex = (this._keyIndex + 1)%(this._vf.key.length);
+                    this.postMessage('value_changed', this._vf.keyValue[this._keyIndex]);
+                    return;
+                }
+                if(fieldName === "previous" && this._vf.previous)
+                {
+                    this._keyIndex = (this._keyIndex - 1 + this._vf.key.length)%(this._vf.key.length);
+                    this.postMessage('value_changed', this._vf.keyValue[this._keyIndex]);
+                    return;
+                }
+                if(fieldName === "key")
+                {
+                    if (this._key_changed) { // avoid loop this way since no timestamping
+                        this._key_changed = false;
+                        return
+                    }
+                    this._key_changed = true;
+                    this.postMessage('key', this._vf.key);
+                    return;
+                }
+                if(fieldName === "keyValue")
+                {
+                    if (this._keyValue_changed) { // avoid loop this way since no timestamping
+                        this._keyValue_changed = false;
+                        return
+                    }
+                    this._keyValue_changed = true;
+                    this.postMessage('keyValue', this._vf.keyValue);
+                    return;
+                }
+            }
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### BooleanFilter ###
+x3dom.registerNodeType(
+    "X3DTriggerNode",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DChildNode,
+        
+        /**
+         * Constructor for X3DTriggerNode
+         * @constructs x3dom.nodeTypes.X3DTriggerNode
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DChildNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc This abstract node type is the base node type from which all trigger nodes are derived.
+         */
+         
+        function (ctx) {
+            x3dom.nodeTypes.X3DTriggerNode.superClass.call(this, ctx);
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### BooleanFilter ###
+x3dom.registerNodeType(
+    "BooleanFilter",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DChildNode,
+        
+        /**
+         * Constructor for BooleanFilter
+         * @constructs x3dom.nodeTypes.BooleanFilter
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DChildNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc filters Boolean events, allowing for selective routing of TRUE or FALSE values and negation.
+         */
+         
+        function (ctx) {
+            x3dom.nodeTypes.BooleanFilter.superClass.call(this, ctx);
+            
+            /**
+             * input bool event to be filtered.
+             * @var {x3dom.fields.SFBool} set_boolean
+             * @memberof x3dom.nodeTypes.BooleanFilter
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'set_boolean');
+            
+            /**
+             * output if input is false
+             * @var {x3dom.fields.SFBool} inputFalse
+             * @memberof x3dom.nodeTypes.BooleanFilter
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'inputFalse');
+            
+            /**
+             * output if input is true
+             * @var {x3dom.fields.SFBool} inputTrue
+             * @memberof x3dom.nodeTypes.BooleanFilter
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'inputTrue');
+            
+            /**
+             * output negated input
+             * @var {x3dom.fields.SFBool} inputNegate
+             * @memberof x3dom.nodeTypes.BooleanFilter
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'inputNegate');
+        },
+        {
+            fieldChanged: function(fieldName)
+            {
+                if (fieldName === 'set_boolean') { //ignore attempted input to all other fields
+                    var input = this._vf.set_boolean;
+                    this._vf.inputNegate = !input;
+                    this.postMessage('inputNegate', !input);
+                    if (input) {
+                        this._vf.inputTrue = true;
+                        this.postMessage('inputTrue', true);
+                        return;
+                    }
+                    this._vf.inputFalse = false; // confirmed with other browsers
+                    this.postMessage('inputFalse', false);
+                    return;
+                }
+            }
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### BooleanSequencer ###
+x3dom.registerNodeType(
+    "BooleanSequencer",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DSequencerNode,
+        
+        /**
+         * Constructor for BooleanSequencer
+         * @constructs x3dom.nodeTypes.BooleanSequencer
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DSequencerNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc BooleanSequencer generates sequential value_changed events selected from the keyValue field when driven from a TimeSensor clock. Among other actions, it can enable/disable lights and sensors, or bind/unbind viewpoints and other X3DBindableNode nodes using set_bind events.
+         */
+         
+        function (ctx) {
+            x3dom.nodeTypes.BooleanSequencer.superClass.call(this, ctx);
+            
+            /**
+             * Defines the set of Booleans, that are used for sequencing.
+             * Is made up of a list of FALSE and TRUE values.
+             * @var {x3dom.fields.MFBoolean} keyValue
+             * @memberof x3dom.nodeTypes.BooleanSequencer
+             * @initvalue []
+             * @field x3d
+             * @instance
+             */
+            this.addField_MFBoolean(ctx, 'keyValue', []);
+        
+        },
+        {
+        // all in base class
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### BooleanFilter ###
+x3dom.registerNodeType(
+    "BooleanToggle",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DChildNode,
+        
+        /**
+         * Constructor for BooleanToggle
+         * @constructs x3dom.nodeTypes.BooleanToggle
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DChildNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc stores and toggles boolean value
+         */
+         
+        function (ctx) {
+            x3dom.nodeTypes.BooleanToggle.superClass.call(this, ctx);
+            
+            /**
+             * input bool in event to cause toggling.
+             * @var {x3dom.fields.SFBool} set_boolean
+             * @memberof x3dom.nodeTypes.BooleanToggle
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'set_boolean');
+            
+            /**
+             * stored value to toggle and output; resetable
+             * @var {x3dom.fields.SFBool} toggle
+             * @memberof x3dom.nodeTypes.BooleanToggle
+             * @initvalue false
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'toggle', false);
+            
+        },
+        {
+            fieldChanged: function(fieldName)
+            {
+                if (fieldName === 'set_boolean') { //resetting toggle happens elsewhere 
+                    if (this._vf.set_boolean) { //ignore false as input
+                      var toggled = ! this._vf.toggle; //minimize property access
+                      this._vf.toggle = toggled;
+                      this.postMessage('toggle', toggled);
+                    }
+                    return;
+                }
+            }
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### BooleanFilter ###
+x3dom.registerNodeType(
+    "BooleanTrigger",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DTriggerNode,
+        
+        /**
+         * Constructor for BooleanTrigger
+         * @constructs x3dom.nodeTypes.BooleanTrigger
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DChildNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc generates true Boolean events upon receiving time events
+         */
+         
+        function (ctx) {
+            x3dom.nodeTypes.BooleanTrigger.superClass.call(this, ctx);
+            
+            /**
+             * input time in event to trigger output.
+             * @var {x3dom.fields.SFBool} set_triggerTime
+             * @memberof x3dom.nodeTypes.BooleanTrigger
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFTime(ctx, 'set_triggerTime');
+            
+            /**
+             * output field name; probably needed only as event name since output only; not 'physically'
+             * @var {x3dom.fields.SFBool} triggerTrue
+             * @memberof x3dom.nodeTypes.BooleanTrigger
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            //this.addField_SFBool(ctx, 'triggerTrue');
+            
+        },
+        {
+            fieldChanged: function(fieldName)
+            {
+                if (fieldName === 'set_triggerTime') { //for any time input
+                    this.postMessage('triggerTrue', true);
+                }
+                return;
+            }
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### IntegerSequencer ###
+x3dom.registerNodeType(
+    "IntegerSequencer",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DSequencerNode,
+        
+        /**
+         * Constructor for IntegerSequencer
+         * @constructs x3dom.nodeTypes.IntegerSequencer
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DSequencerNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc The IntegerSequencer node generates sequential discrete value_changed events selected from the keyValue field in response to each set_fraction, next, or previous event.
+         */
+         
+        function (ctx) {
+            x3dom.nodeTypes.IntegerSequencer.superClass.call(this, ctx);
+            
+            /**
+             * Defines the set of integers, that are used for sequencing.
+             * @var {x3dom.fields.MFInt32} keyValue
+             * @memberof x3dom.nodeTypes.IntegerSequencer
+             * @initvalue []
+             * @field x3d
+             * @instance
+             */
+            this.addField_MFInt32(ctx, 'keyValue', []);
+        
+        },
+        {
+        // all in base class
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### BooleanFilter ###
+x3dom.registerNodeType(
+    "IntegerTrigger",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DTriggerNode,
+        
+        /**
+         * Constructor for IntegerTrigger
+         * @constructs x3dom.nodeTypes.IntegerTrigger
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DChildNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc generates Integer events upon receiving Boolean events
+         */
+         
+        function (ctx) {
+            x3dom.nodeTypes.IntegerTrigger.superClass.call(this, ctx);
+            
+            /**
+             * input boolean to trigger output.
+             * @var {x3dom.fields.SFBool} set_boolean
+             * @memberof x3dom.nodeTypes.IntegerTrigger
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'set_boolean');
+            
+            /**
+             * integer value to be output upon input; can be reset
+             * @var {x3dom.fields.SFInt32} integerKey
+             * @memberof x3dom.nodeTypes.IntegerTrigger
+             * @initvalue -1
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFInt32(ctx, 'integerKey', -1);
+      
+            /**
+             * output field name; probably needed only as event name since output only; not 'physically'
+             * @var {x3dom.fields.SFInt32} triggerValue
+             * @memberof x3dom.nodeTypes.IntegerTrigger
+             * @initvalue none
+             * @field x3d
+             * @instance
+             */
+            //this.addField_SFInt32(ctx, 'triggerValue');
+            
+        },
+        {
+            fieldChanged: function(fieldName)
+            {
+                if (fieldName === 'set_boolean') { //for any boolean input
+                  //if (this._vf.set_boolean) //Mantis 519 proposal: only if true
+                    this.postMessage('triggerValue', this._vf.integerKey);
+                }
+                return;
+            }
+        }
+    )
+);
+
+/** @namespace x3dom.nodeTypes */
+/*
+ * X3DOM JavaScript Library
+ * http://www.x3dom.org
+ *
+ * (C)2009, 2017, A. Plesch, Fraunhofer IGD, Darmstadt, Germany
+ * Dual licensed under the MIT and GPL
+ */
+
+// ### BooleanFilter ###
+x3dom.registerNodeType(
+    "TimeTrigger",
+    "EventUtilities",
+    defineClass(x3dom.nodeTypes.X3DTriggerNode,
+        
+        /**
+         * Constructor for TimeTrigger
+         * @constructs x3dom.nodeTypes.TimeTrigger
+         * @x3d 3.3
+         * @component EventUtilities
+         * @status experimental
+         * @extends x3dom.nodeTypes.X3DChildNode
+         * @param {Object} [ctx=null] - context object, containing initial settings like namespace
+         * @classdesc generates Time events upon receiving Boolean events
+         */
+         
+        function (ctx) {
+            x3dom.nodeTypes.TimeTrigger.superClass.call(this, ctx);
+            
+            /**
+             * input boolean to trigger output.
+             * @var {x3dom.fields.SFBool} set_boolean
+             * @memberof x3dom.nodeTypes.TimeTrigger
+             * @initvalue None
+             * @field x3d
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'set_boolean');
+            
+            /**
+             * output field name; probably needed only as event name since output only; not 'physically'
+             * @var {x3dom.fields.SFTime} triggerTime
+             * @memberof x3dom.nodeTypes.TimeTrigger
+             * @initvalue none
+             * @field x3d
+             * @instance
+             */
+            //this.addField_SFTime(ctx, 'triggerTime');
+            
+        },
+        {
+            fieldChanged: function(fieldName)
+            {
+                if (fieldName === 'set_boolean') { //for any boolean input
+                  //if (this._vf.set_boolean) //Mantis 519 proposal
+                    this.postMessage('triggerTime', Date.now()/1000);
+                }
+                return;
+            }
+        }
+    )
+);
+
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: 'e2b39d84fa87ee636a17993237bb62aa87ae3291',
-    date:     'Fri Mar 10 17:06:35 2017 +0100'
+    revision: 'c2dd3eb10550fa3a3b0758bbbc6f94a2599e69b7',
+    date:     'Mon Feb 19 21:57:21 2018 -0500'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: 'e2b39d84fa87ee636a17993237bb62aa87ae3291',
-    date:     'Fri Mar 10 17:06:35 2017 +0100'
+    revision: 'c2dd3eb10550fa3a3b0758bbbc6f94a2599e69b7',
+    date:     'Mon Feb 19 21:57:21 2018 -0500'
 };
 
