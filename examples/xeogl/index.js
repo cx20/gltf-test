@@ -35,15 +35,15 @@ xeogl.scene.lights.lights = [
     })
 ];
 
-var view = model.scene.camera.view;
+var camera = model.scene.camera;
 if (modelInfo.name == "GearboxAssy" ) {
-    view.eye = [184.21, 10.54, -7.03];
-    view.look = [159.20, 17.02, 3.21];
-    view.up = [-0.15, 0.97, 0.13];
+    camera.eye = [184.21, 10.54, -7.03];
+    camera.look = [159.20, 17.02, 3.21];
+    camera.up = [-0.15, 0.97, 0.13];
 } else {
-    view.eye = [0.0, 0.0, -3.0];
-    view.look = [0.0, 0.0, 0.0];
-    view.up = [0.0, 1.0, 0.0];
+    camera.eye = [0.0, 1.0, -3.0];
+    camera.look = [0.0, 0.0, 0.0];
+    camera.up = [0.0, 1.0, 0.0];
 }
 
 var dirLights = [
@@ -80,6 +80,5 @@ lights.lights = dirLights;
 new xeogl.CameraControl();
 model.scene.on("tick",
     function () {
-        //view.rotateEyeY(1.0);
-        view.rotateEyeY(ROTATE ? 0.2 : 0);
+        camera.orbitYaw(0.2);
     });
