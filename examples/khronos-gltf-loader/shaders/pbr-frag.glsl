@@ -132,7 +132,8 @@ vec3 getNormal()
     vec3 n = texture2D(u_NormalSampler, v_UV).rgb;
     n = normalize(tbn * ((2.0 * n - 1.0) * vec3(u_NormalScale, u_NormalScale, 1.0)));
 #else
-    vec3 n = tbn[2].xyz;
+    // The tbn matrix is linearly interpolated, so we need to re-normalize
+    vec3 n = normalize(tbn[2].xyz);
 #endif
 
     return n;
@@ -281,6 +282,7 @@ void main()
     // Calculation of analytical lighting contribution
     vec3 diffuseContrib = (1.0 - F) * diffuse(pbrInputs);
     vec3 specContrib = F * G * D / (4.0 * NdotL * NdotV);
+    // Obtain final intensity as reflectance (BRDF) scaled by the energy of the light (cosine law)
     vec3 color = NdotL * u_LightColor * (diffuseContrib + specContrib);
 
     // Calculate lighting contribution from image based lighting source (IBL)

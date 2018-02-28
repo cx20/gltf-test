@@ -87,6 +87,7 @@ function loadCubeMap(gl, envMap, type, state) {
     return 1;
 }
 
+
 // Update model from dat.gui change
 //function updateModel(value, gl, glState, viewMatrix, projectionMatrix, backBuffer, frontBuffer) {
 function updateModel(modelInfo, gl, glState, viewMatrix, projectionMatrix, backBuffer, frontBuffer) {
@@ -181,7 +182,7 @@ function init(vertSource, fragSource) {
             canvas.width = canvas2d.width = canvasWidth = width;
             canvas.height = canvas2d.height = canvasHeight = height;
             gl.viewport(0, 0, width, height);
-            mat4.perspective(projectionMatrix, 45.0 * Math.PI / 180.0, width / height, 0.01, 1000.0);
+            mat4.perspective(projectionMatrix, 45.0 * Math.PI / 180.0, width / height, 0.01, 100.0);
         }
     }
 
@@ -192,8 +193,10 @@ function init(vertSource, fragSource) {
     loadCubeMap(gl, envMap, "specular", glState);
     // Get location of mvp matrix uniform
     glState.uniforms['u_MVPMatrix'] = { 'funcName': 'uniformMatrix4fv' };
-    // Get location of normal matrix uniform
+    // Get location of model matrix uniform
     glState.uniforms['u_ModelMatrix'] = { 'funcName': 'uniformMatrix4fv' };
+    // Get location of normal matrix uniform
+    glState.uniforms['u_NormalMatrix'] = { 'funcName': 'uniformMatrix4fv' };
 
     // Light
     glState.uniforms['u_LightDirection'] = { 'funcName': 'uniform3f', 'vals': [0.0, 0.5, 0.5] };
@@ -257,19 +260,12 @@ function init(vertSource, fragSource) {
 
 
     var text = { Model: defaultModelName };
-    folder.add(text, 'Model', ['MetalRoughSpheres', 'AppleTree', 'Avocado', 'BarramundiFish', 'BoomBox', 'Corset', 'DamagedHelmet', 'FarmLandDiorama', 'NormalTangentTest', 'Telephone', 'TextureSettingsTest', 'Triangle', 'WaterBottle']).onChange(function(value) {
+    folder.add(text, 'Model', ['MetalRoughSpheres', 'AppleTree', 'Avocado', 'BarramundiFish', 'BoomBox', 'Corset', 'DamagedHelmet', 'FarmLandDiorama', 'NormalTangentTest', 'Telephone', 'TextureSettingsTest', 'Triangle', 'WaterBottle', 'InterpolatedNormalsTest', 'NonUniformScalingTest']).onChange(function(value) {
         updateModel(value, gl, glState, viewMatrix, projectionMatrix, canvas, ctx2d);
     });
     folder.open();
 
     var light = gui.addFolder("Directional Light");
-
-    light.addColor(lightProps, "lightColor").onChange(updateLight);
-    light.add(lightProps, "lightScale", 0, 10).onChange(updateLight);
-    light.add(lightProps, "lightRotation", 0, 360).onChange(updateLight);
-    light.add(lightProps, "lightPitch", -90, 90).onChange(updateLight);
-
-    light.open();
 */
     var lightProps = { lightColor: [255, 255, 255], lightScale: 1.0, lightRotation: 75, lightPitch: 40 };
 
@@ -286,6 +282,15 @@ function init(vertSource, fragSource) {
 
         redraw();
     };
+/*
+
+    light.addColor(lightProps, "lightColor").onChange(updateLight);
+    light.add(lightProps, "lightScale", 0, 10).onChange(updateLight);
+    light.add(lightProps, "lightRotation", 0, 360).onChange(updateLight);
+    light.add(lightProps, "lightPitch", -90, 90).onChange(updateLight);
+
+    light.open();
+*/
     updateLight();
 
     //mouseover scaling
