@@ -101,5 +101,7 @@ lights.reflectionMap = reflectionMap;
 new xeogl.CameraControl();
 scene.on("tick",
     function () {
-        camera.orbitYaw(0.2);
+        if ( ROTATE ) {
+            camera.orbitYaw(0.2);
+        }
     });
