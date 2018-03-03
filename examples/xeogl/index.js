@@ -29,13 +29,21 @@ var model = new xeogl.GLTFModel({
     })
 });
 
-xeogl.scene.lights.lights = [
+var skybox = new xeogl.Skybox({
+    src: "../../textures/skybox/cloudySkyBox.jpg",
+    active: true
+});
+
+// Get the default Scene off the Skybox
+var scene = skybox.scene;
+
+scene.lights.lights = [
     new xeogl.AmbientLight({
         color: [1.0, 0.7, 0.7]
     })
 ];
 
-var camera = model.scene.camera;
+var camera = scene.camera;
 if (modelInfo.name == "GearboxAssy" ) {
     camera.eye = [184.21, 10.54, -7.03];
     camera.look = [159.20, 17.02, 3.21];
@@ -72,13 +80,26 @@ var dirLights = [
     })
 ];
 
-var lights = xeogl.scene.lights;
+var reflectionMap = new xeogl.CubeTexture({
+    src: [
+        "../../textures/cube/skybox/px.jpg",
+        "../../textures/cube/skybox/nx.jpg",
+        "../../textures/cube/skybox/py.jpg",
+        "../../textures/cube/skybox/ny.jpg",
+        "../../textures/cube/skybox/pz.jpg",
+        "../../textures/cube/skybox/nz.jpg"
+    ],
+    encoding: "linear"
+});
+
+var lights = scene.lights;
 lights.lights = dirLights;
 
+lights.reflectionMap = reflectionMap;
  
 
 new xeogl.CameraControl();
-model.scene.on("tick",
+scene.on("tick",
     function () {
         camera.orbitYaw(0.2);
     });
