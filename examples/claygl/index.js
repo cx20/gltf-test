@@ -58,6 +58,8 @@ var app = clay.application.create('#main', {
                 environmentMap: cubemap
             });
         });
+        
+        app.createAmbientCubemapLight('../../textures/hdr/pisa.hdr', 1, 1);
 
         // Load specified model. return a load promise to make sure the look will be start after model loaded.
         return app.loadModel(url).then((function (result) {
