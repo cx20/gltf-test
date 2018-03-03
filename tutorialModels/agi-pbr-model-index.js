@@ -3,6 +3,7 @@ var TutorialAgiPbrModelIndex = {};
 TutorialAgiPbrModelIndex.List = [
     {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.2},
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
+    {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
     {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
     {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
     {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
