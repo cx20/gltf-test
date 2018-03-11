@@ -8,17 +8,11 @@ var engines = [{
     name: 'Cesium',
     path: 'examples/cesium/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
-    name: 'xeogl',
-    path: 'examples/xeogl/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-    name: 'GLBoost',
-    path: 'examples/glboost/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
     name: 'Grimore.js',
     path: 'examples/grimoiregl/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
-    name: 'X3DOM',
-    path: 'examples/x3dom/index.html?category={category}&model={model}&scale={scale}&type={type}'
+    name: 'xeogl',
+    path: 'examples/xeogl/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
     name: 'minimal-gltf-loader',
     path: 'examples/minimal-gltf-loader/index.html?category={category}&model={model}&scale={scale}&type={type}'
@@ -34,7 +28,16 @@ var engines = [{
 },{
     name: 'PlayCanvas',
     path: 'examples/playcanvas/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'X3DOM',
+    path: 'examples/x3dom/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
+
+/*
+    name: 'GLBoost',
+    path: 'examples/glboost/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+*/
 
 function getEngineByName(name) {
     var result;
