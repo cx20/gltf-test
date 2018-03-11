@@ -15,20 +15,11 @@
 <!-- jquery.js v2.2.4 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.js"></script>
 
-<!-- x3dom.debug.js 1.7.3-dev -->
-<script src="../../libs/x3dom/1.7.3dev/x3dom.debug.js"></script>
+<!-- x3dom.js 1.7.3-dev -->
+<script src="../../libs/x3dom/1.7.3dev/x3dom.js"></script>
 <x3d id="x3d" width="100%" height="100%"> 
     <scene>
-        <Environment frustumCulling='false'></Environment>
-        <Viewpoint id="vp" position="0 0 5" zNear="0.01" zFar="10000"></Viewpoint>
-        <navigationInfo id="head" headlight='true' type='"EXAMINE"'>  </navigationInfo> 
-        <Transform DEF="model" rotation="0 1 0 0" id="gltf">
-            <!-- <ExternalShape id="exshape" url="https://cdn.rawgit.com/cx20/gltf-test/master/sampleModels/Duck/glTF-Binary/Duck.glb"></ExternalShape> -->
-        </Transform>                
-        <timeSensor DEF="time" cycleInterval="40" loop="true"></timeSensor>
-        <OrientationInterpolator DEF="move" key="0 0.5 1" keyValue="0 1 0 0, 0 1 0 3.14, 0 1 0 6.28"></OrientationInterpolator>
-        <Route fromNode="time" fromField ="fraction_changed" toNode="move" toField="set_fraction"></Route>
-        <Route fromNode="move" fromField ="value_changed" toNode="model" toField="rotation"></Route>
+        <Inline id="inline"></Inline>
     </scene> 
 </x3d> 
 
