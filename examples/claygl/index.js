@@ -59,10 +59,10 @@ var app = clay.application.create('#main', {
             });
         });
         
-        app.createAmbientCubemapLight('../../textures/hdr/pisa.hdr', 1, 1);
+        app.createAmbientCubemapLight('../../textures/hdr/pisa.hdr', 0.7, 0.7);
 
         // Load specified model. return a load promise to make sure the look will be start after model loaded.
-        return app.loadModel(url).then((function (result) {
+        return app.loadModel(url, {textureConvertToPOT: true}).then((function (result) {
             this._gltfModel = result.rootNode;
             this._gltfModel.scale.set(scale, scale, scale);
         }).bind(this));
