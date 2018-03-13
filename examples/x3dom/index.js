@@ -32,7 +32,8 @@ document.onload = function () {
 
 function onDownloadsFinished()
 {
-    runtime.showAll("posZ", true);
+    //runtime.showAll("posZ", true);
+    runtime.showAll("negZ", true);
 };
 
 function load(file, type)
@@ -44,5 +45,6 @@ function load(file, type)
     url = file;
     document.getElementById("inline").setAttribute("url", url);
 
-    runtime.showAll("posZ", true);
+    //runtime.showAll("posZ", true);
+    runtime.showAll("negZ", true);
 }
