@@ -31,7 +31,7 @@ var camera = new Hilo3d.PerspectiveCamera({
     aspect: innerWidth / innerHeight,
     fov:75,
     far: 2000,
-    near: 1,
+    near: 0.1,
     z:3
 });
 
