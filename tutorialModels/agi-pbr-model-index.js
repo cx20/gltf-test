@@ -7,6 +7,7 @@ TutorialAgiPbrModelIndex.List = [
     {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
     {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
     {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
+    {category:'tutorialModels', name:'OrientationTest', scale:0.2},
 ];
 
 TutorialAgiPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
