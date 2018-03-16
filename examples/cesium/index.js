@@ -9,7 +9,7 @@ if (!modelInfo) {
     modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
-    modelInfo = TutorialAgiPbrModelIndex.getCurrentModel();
+    modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
     document.getElementById('cesiumContainer').innerHTML = 'Please specify a model to load';

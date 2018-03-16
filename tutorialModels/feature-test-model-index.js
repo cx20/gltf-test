@@ -1,25 +1,26 @@
-var TutorialAgiPbrModelIndex = {};
+var TutorialFeatureTestModelIndex = {};
 
-TutorialAgiPbrModelIndex.List = [
+TutorialFeatureTestModelIndex.List = [
+    {category:'tutorialModels', name:'BoomBoxWithAxes', scale:80.0},
     {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.2},
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
-    {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
-    {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
-    {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
     {category:'tutorialModels', name:'OrientationTest', scale:0.2},
+    {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
+    {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
+    {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
 ];
 
-TutorialAgiPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
+TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
+    'BoomBoxWithAxes'
 ];
 
-TutorialAgiPbrModelIndex.getScreenshot = function(name) {
-    var extension = ((TutorialAgiPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
-    //var extension = ((TutorialAgiPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
+TutorialFeatureTestModelIndex.getScreenshot = function(name) {
+    var extension = ((TutorialFeatureTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
     return name + '/screenshot/screenshot.' + extension;
 };
 
-//TutorialAgiPbrModelIndex.getEmbeddedFolderName = function(name) {
+//TutorialFeatureTestModelIndex.getEmbeddedFolderName = function(name) {
 //    var suffixHash = {
 //        'SimpleMaterial': '-buffer',
 //        'AdvancedMaterial': '-buffer',
@@ -31,13 +32,13 @@ TutorialAgiPbrModelIndex.getScreenshot = function(name) {
 //    return 'glTF-Embedded' + suffix;
 //};
 
-TutorialAgiPbrModelIndex.getModelInfoCollection = function() {
-    var numModels = TutorialAgiPbrModelIndex.List.length;
+TutorialFeatureTestModelIndex.getModelInfoCollection = function() {
+    var numModels = TutorialFeatureTestModelIndex.List.length;
     var modelInfoCollection = {};
     for (var i = 0; i < numModels; ++i) {
-        var category = TutorialAgiPbrModelIndex.List[i].category;
-        var name = TutorialAgiPbrModelIndex.List[i].name;
-        var scale = TutorialAgiPbrModelIndex.List[i].scale;
+        var category = TutorialFeatureTestModelIndex.List[i].category;
+        var name = TutorialFeatureTestModelIndex.List[i].name;
+        var scale = TutorialFeatureTestModelIndex.List[i].scale;
         modelInfoCollection[name] = {
             category: category,
             name: name,
@@ -47,8 +48,8 @@ TutorialAgiPbrModelIndex.getModelInfoCollection = function() {
     return modelInfoCollection;
 }
 
-TutorialAgiPbrModelIndex.getCurrentModel = function() {
-    var modelInfoCollection = TutorialAgiPbrModelIndex.getModelInfoCollection();
+TutorialFeatureTestModelIndex.getCurrentModel = function() {
+    var modelInfoCollection = TutorialFeatureTestModelIndex.getModelInfoCollection();
     var queryString = window.location.search.substring(1);
     var parts = queryString.replace(/\+/g, '%20').split('&');
     var options = {};

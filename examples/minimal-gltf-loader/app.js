@@ -2631,7 +2631,7 @@ var Utils = Utils || {};
 	    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
 	}
 	if (!modelInfo) {
-	    modelInfo = TutorialAgiPbrModelIndex.getCurrentModel();
+	    modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
 	}
 	if (!modelInfo) {
 	    document.getElementById('container').innerHTML = 'Please specify a model to load';

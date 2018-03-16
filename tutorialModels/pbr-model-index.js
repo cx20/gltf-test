@@ -5,11 +5,10 @@ TutorialPbrModelIndex.List = [
     {category:'tutorialModels', name:'BarramundiFish', scale:5.0},	// copied from sampleModels
     {category:'tutorialModels', name:'BoomBox', scale:80.0},
     {category:'tutorialModels', name:'Corset', scale:25.0},
+    {category:'tutorialModels', name:'DamagedHelmet', scale:1.0},
     {category:'tutorialModels', name:'FlightHelmet', scale:0.5},
     {category:'tutorialModels', name:'Lantern', scale:0.06},
     {category:'tutorialModels', name:'WaterBottle', scale:10.0},
-    {category:'tutorialModels', name:'DamagedHelmet', scale:1.0},
-    {category:'tutorialModels', name:'BoomBoxWithAxes', scale:80.0},
 ];
 
 TutorialPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)

@@ -228,13 +228,13 @@ function makeTutorialFurtherPbrModelLinks() {
     }
 }
 
-function makeTutorialAgiPbrModelLinks() {
-    var modelList = TutorialAgiPbrModelIndex.List;
+function makeTutorialFeatureTestModelLinks() {
+    var modelList = TutorialFeatureTestModelIndex.List;
     var numModels = modelList.length;
     var numEngines = engines.length;
 
-    var tableHead = document.querySelector('#tutorialAgiPbrModelTable thead tr');
-    var tableBody = document.querySelector('#tutorialAgiPbrModelTable tbody');
+    var tableHead = document.querySelector('#tutorialFeatureTestModelTable thead tr');
+    var tableBody = document.querySelector('#tutorialFeatureTestModelTable tbody');
 
     var i, j;
     for (i = 0; i < numEngines; ++i) {
@@ -252,7 +252,7 @@ function makeTutorialAgiPbrModelLinks() {
         tr.appendChild(tdName);
         var tdPic = document.createElement('td');
         var img = document.createElement('img');
-        img.setAttribute('src', 'tutorialModels/' + TutorialAgiPbrModelIndex.getScreenshot(modelName));
+        img.setAttribute('src', 'tutorialModels/' + TutorialFeatureTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
         img.setAttribute('height', 128);
         tdPic.appendChild(img);
@@ -292,5 +292,5 @@ function createlink(engineName, categoryName, modelName, type, scale)
 makeTutorialModelLinks();
 makeTutorialPbrModelLinks();
 makeTutorialFurtherPbrModelLinks();
-makeTutorialAgiPbrModelLinks();
+makeTutorialFeatureTestModelLinks();
 makeSampleModelLinks();
