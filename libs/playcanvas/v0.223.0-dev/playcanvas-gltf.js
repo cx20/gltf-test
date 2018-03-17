@@ -13,7 +13,7 @@
         this.keys.sort(function (a, b) {
             return a.time - b.time;
         });
-    }
+    };
 
     AnimCurve.prototype.evaluate = function (time) {
         var keys = this.keys;
@@ -57,6 +57,9 @@
         };
 
         Anim.prototype.update = function (dt) {
+            var i, j;
+            var curve, value;
+
             this.time += dt;
             var numKeys = this.curves[0].keys.length;
             var duration = (this.curves[0].keys[numKeys - 1]).time;
@@ -66,21 +69,21 @@
 
             if (this.entity.model) {
                 var meshInstances = this.entity.model.meshInstances;
-                for (var i = 0; i < meshInstances.length; i++) {
+                for (i = 0; i < meshInstances.length; i++) {
                     var morphInstance = meshInstances[i].morphInstance;
                     if (morphInstance) {
-                        for (var j = 0; j < this.curves.length; j++) {
-                            var curve = this.curves[j];
-                            var value = curve.evaluate(this.time);
+                        for (j = 0; j < this.curves.length; j++) {
+                            curve = this.curves[j];
+                            value = curve.evaluate(this.time);
                             morphInstance.setWeight(j, value);
                         }
                     }
                 }
             }
 
-            for (var j = 0; j < this.curves.length; j++) {
-                var curve = this.curves[j];
-                var value = curve.evaluate(this.time);
+            for (i = 0; i < this.curves.length; i++) {
+                curve = this.curves[i];
+                value = curve.evaluate(this.time);
                 switch (curve.target) {
                     case 'translation':
                         this.entity.setLocalPosition(value);
@@ -121,22 +124,6 @@
         }
 
         return primType;
-    }
-
-    function getAccessorComponentType(accessor) {
-        var pcType = pc.TYPE_FLOAT32;
-
-        switch (accessor.componentType) {
-            case 5120: pcType = pc.TYPE_INT8; break;
-            case 5121: pcType = pc.TYPE_UINT8; break;
-            case 5122: pcType = pc.TYPE_INT16; break;
-            case 5123: pcType = pc.TYPE_UINT16; break;
-            // The glTF spec doesn't mention signed ints. Bug?
-            case 5125: pcType = pc.TYPE_UINT32; break;
-            case 5126: pcType = pc.TYPE_FLOAT32; break;
-        }
-
-        return pcType;
     }
 
     function getAccessorTypeSize(type) {
@@ -182,9 +169,8 @@
         return pcWrap;
     }
 
-    function isDataURI(s) {
-        var regex = /^data:.+\/(.+);base64,(.*)$/;
-        return !!s.match(regex);
+    function isDataURI(uri) {
+        return /^data:.*,.*$/i.test(uri);
     }
 
     function getAccessorData(gltf, accessor, buffers) {
@@ -207,376 +193,6 @@
         }
 
         return data;
-    }
-
-    function resampleImage(image) {
-        var srcW = image.width;
-        var srcH = image.height;
-
-        var dstW = nearestPow2(srcW);
-        var dstH = nearestPow2(srcH);
-
-        var canvas = document.createElement('canvas');
-        canvas.width = dstW;
-        canvas.height = dstH;
-
-        var context = canvas.getContext('2d');
-        context.drawImage(image, 0, 0, srcW, srcH, 0, 0, dstW, dstH);
-
-        return canvas.toDataURL();
-    }
-
-    function translateImage(data, resources) {
-        var image = new Image();
-        image.addEventListener('load', function () {
-            var gltf = resources.gltf;
-
-            var imageIndex = resources.images.indexOf(image);
-            gltf.textures.forEach(function (texture, idx) {
-                if (texture.hasOwnProperty('source')) {
-                    if (texture.source === imageIndex) {
-                        var t = resources.textures[idx];
-                        if ((!isPowerOf2(image.width) || !isPowerOf2(image.width)) &&
-                            ((t.addressU === pc.ADDRESS_REPEAT) || (t.addressU === pc.ADDRESS_MIRRORED_REPEAT) ||
-                             (t.addressV === pc.ADDRESS_REPEAT) || (t.addressV === pc.ADDRESS_MIRRORED_REPEAT) ||
-                             (t.minFilter === pc.FILTER_LINEAR_MIPMAP_LINEAR) || (t.minFilter === pc.FILTER_NEAREST_MIPMAP_LINEAR) ||
-                             (t.minFilter === pc.FILTER_LINEAR_MIPMAP_NEAREST) || (t.minFilter === pc.FILTER_NEAREST_MIPMAP_NEAREST))) {
-                            var potImage = new Image();
-                            potImage.addEventListener('load', function () {
-                                t.setSource(potImage);
-                            });
-                            potImage.src = resampleImage(image);
-                        } else {
-                            t.setSource(image);
-                        }
-                    }
-                }
-            });
-        }, false);
-
-        if (data.hasOwnProperty('uri')) {
-            if (isDataURI(data.uri)) {
-                image.src = data.uri;
-            } else if (resources.processUri) {
-                resources.processUri(data.uri, function(uri) {
-                    image.src = uri;
-                });
-            } else {
-                image.src = resources.basePath + data.uri;
-            }
-        }
-
-        if (data.hasOwnProperty('bufferView')) {
-            var gltf = resources.gltf;
-            var buffers = resources.buffers;
-            var bufferView = gltf.bufferViews[data.bufferView];
-            var arrayBuffer = buffers[bufferView.buffer];
-            var byteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
-            var imageBuffer = arrayBuffer.slice(byteOffset, byteOffset + bufferView.byteLength);
-            var blob = new Blob([ imageBuffer ], { type: data.mimeType });
-            image.src = URL.createObjectURL(blob);
-        }
-
-        return image;
-    }
-
-    function translateTexture(data, resources) {
-        var texture = new pc.Texture(resources.device, {
-            flipY: false
-        });
-
-        if (data.hasOwnProperty('name')) {
-            texture.name = data.name;
-        }
-
-        if (data.hasOwnProperty('sampler')) {
-            var gltf = resources.gltf;
-            var sampler = gltf.samplers[data.sampler];
-
-            if (sampler.hasOwnProperty('minFilter')) {
-                texture.minFilter = getFilter(sampler.minFilter);
-            }
-            if (sampler.hasOwnProperty('magFilter')) {
-                texture.magFilter = getFilter(sampler.magFilter);
-            }
-            if (sampler.hasOwnProperty('wrapS')) {
-                texture.addressU = getWrap(sampler.wrapS);
-            }
-            if (sampler.hasOwnProperty('wrapT')) {
-                texture.addressV = getWrap(sampler.wrapT);
-            }
-        }
-
-        return texture;
-    }
-
-    function translateMaterial(data, resources) {
-        var material = new pc.StandardMaterial();
-
-        material.chunks.glossPS = [
-            "#ifdef MAPFLOAT",
-            "uniform float material_shininess;",
-            "#endif",
-            "",
-            "#ifdef MAPTEXTURE",
-            "uniform sampler2D texture_glossMap;",
-            "#endif",
-            "",
-            "void getGlossiness() {",
-            "    dGlossiness = 1.0;",
-            "",
-            "    #ifdef MAPFLOAT",
-            "        dGlossiness *= material_shininess;",
-            "    #endif",
-            "",
-            "    #ifdef MAPTEXTURE",
-            "        dGlossiness *= 1.0 - texture2D(texture_glossMap, $UV).$CH;",
-            "    #endif",
-            "",
-            "    #ifdef MAPVERTEX",
-            "        dGlossiness *= 1.0 - saturate(vVertexColor.$VC);",
-            "    #endif",
-            "",
-            "    dGlossiness += 0.0000001;",
-            "}"
-        ].join('\n');
-
-        // glTF dooesn't define how to occlude specular
-        material.occludeSpecular = false;
-        material.diffuseTint = true;
-        material.diffuseVertexColor = true;
-
-        var roughnessFloat;
-        var color;
-
-        if (data.hasOwnProperty('name')) {
-            material.name = data.name;
-        }
-
-        if (data.hasOwnProperty('pbrMetallicRoughness')) {
-            var pbrData = data.pbrMetallicRoughness;
-
-            if (pbrData.hasOwnProperty('baseColorFactor')) {
-                color = pbrData.baseColorFactor;
-                material.diffuse.set(color[0], color[1], color[2]);
-                material.diffuseMapTint = true;
-                material.opacity = color[3];
-            } else {
-                material.diffuse.set(1, 1, 1);
-                material.diffuseMapTint = false;
-                material.opacity = 1;
-            }
-            if (pbrData.hasOwnProperty('baseColorTexture')) {
-                var baseColorTexture = pbrData.baseColorTexture;
-                material.diffuseMap = resources.textures[baseColorTexture.index];
-                if (baseColorTexture.hasOwnProperty('texCoord')) {
-                    material.diffuseMapUv = baseColorTexture.texCoord;
-                }
-            }
-            material.useMetalness = true;
-            if (pbrData.hasOwnProperty('metallicFactor')) {
-                material.metalness = pbrData.metallicFactor;
-            } else {
-                material.metalness = 1;
-            }
-            if (pbrData.hasOwnProperty('roughnessFactor')) {
-                material.shininess = 100 * (1 - pbrData.roughnessFactor);
-                roughnessFloat = true;
-            } else {
-                material.shininess = 0;
-                roughnessFloat = false;
-            }
-            if (pbrData.hasOwnProperty('metallicRoughnessTexture')) {
-                var metallicRoughnessTexture = pbrData.metallicRoughnessTexture;
-                material.metalnessMap = resources.textures[metallicRoughnessTexture.index];
-                material.metalnessMapChannel = 'b';
-                material.glossMap = resources.textures[metallicRoughnessTexture.index];
-                material.glossMapChannel = 'g';
-                if (!roughnessFloat) material.shininess = 100;
-                if (metallicRoughnessTexture.hasOwnProperty('texCoord')) {
-                    material.glossMapUv = metallicRoughnessTexture.texCoord;
-                    material.metalnessMapUv = metallicRoughnessTexture.texCoord;
-                }
-            }
-        }
-        if (data.hasOwnProperty('normalTexture')) {
-            var normalTexture = data.normalTexture;
-            material.normalMap = resources.textures[normalTexture.index];
-            if (normalTexture.hasOwnProperty('texCoord')) {
-                material.normalMapUv = normalTexture.texCoord;
-            }
-            if (normalTexture.hasOwnProperty('scale')) {
-                material.bumpiness = normalTexture.scale;
-            }
-        }
-        if (data.hasOwnProperty('occlusionTexture')) {
-            var occlusionTexture = data.occlusionTexture;
-            material.aoMap = resources.textures[occlusionTexture.index];
-            if (occlusionTexture.hasOwnProperty('texCoord')) {
-                material.aoMapUv = occlusionTexture.texCoord;
-            }
-            // TODO: support 'strength'
-        }
-        if (data.hasOwnProperty('emissiveFactor')) {
-            color = data.emissiveFactor;
-            material.emissive.set(color[0], color[1], color[2]);
-            material.emissiveMapTint = true;
-        } else {
-            material.emissive.set(0, 0, 0);
-            material.emissiveMapTint = false;
-        }
-        if (data.hasOwnProperty('emissiveTexture')) {
-            material.emissiveMap = resources.textures[data.emissiveTexture.index];
-        }
-        if (data.hasOwnProperty('alphaMode')) {
-            switch (data.alphaMode) {
-                case 'MASK':
-                    material.blendType = pc.BLEND_NONE;
-                    break;
-                case 'BLEND':
-                    material.blendType = pc.BLEND_NORMAL;
-                    break;
-                default:
-                case 'OPAQUE':
-                    material.blendType = pc.BLEND_NONE;
-                    break;
-            }
-        } else {
-            material.blendType = pc.BLEND_NONE;
-        }
-        if (data.hasOwnProperty('alphaCutoff')) {
-            material.alphaTest = data.alphaCutoff;
-        } else {
-            material.alphaTest = 0.5;
-        }
-        if (data.hasOwnProperty('doubleSided')) {
-            material.twoSidedLighting = data.doubleSided;
-            material.cull = data.doubleSided ? pc.CULLFACE_NONE : pc.CULLFACE_BACK;
-        } else {
-            material.twoSidedLighting = false;
-            material.cull = pc.CULLFACE_BACK;
-        }
-
-        material.update();
-
-        return material;
-    }
-
-    // Specification:
-    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#node
-    function translateNode(data, resources) {
-        var entity = new pc.Entity();
-
-        entity.name = data.hasOwnProperty('name') ? data.name : "";
-
-        // Parse transformation properties
-        if (data.hasOwnProperty('matrix')) {
-            var m = new pc.Mat4(data.matrix);
-            entity.setLocalPosition(m.getTranslation());
-            entity.setLocalEulerAngles(m.getEulerAngles());
-            entity.setLocalScale(m.getScale());
-        }
-
-        if (data.hasOwnProperty('rotation')) {
-            var r = data.rotation;
-            entity.setLocalRotation(r[0], r[1], r[2], r[3]);
-        }
-
-        if (data.hasOwnProperty('translation')) {
-            var t = data.translation;
-            entity.setLocalPosition(t[0], t[1], t[2]);
-        }
-
-        if (data.hasOwnProperty('scale')) {
-            var s = data.scale;
-            entity.setLocalScale(s[0], s[1], s[2]);
-        }
-
-        if (data.hasOwnProperty('camera')) {
-            var gltf = resources.gltf;
-            var camera = gltf.cameras[data.camera];
-
-            var options = {};
-
-            if (camera.type === 'perspective') {
-                options.type = pc.PROJECTION_PERSPECTIVE;
-
-                if (camera.hasOwnProperty('perspective')) {
-                    var perspective = camera.perspective;
-                    if (perspective.hasOwnProperty('aspectRatio')) {
-                        options.aspectRatio = perspective.aspectRatio;
-                    }
-                    options.fov = perspective.yfov;
-                    if (perspective.hasOwnProperty('zfar')) {
-                        options.farClip = perspective.zfar;
-                    }
-                    options.nearClip = perspective.znear;
-                }
-            } else if (camera.type === 'orthographic') {
-                options.type = pc.PROJECTION_ORTHOGRAPHIC;
-
-                if (camera.hasOwnProperty('orthographic')) {
-                    var orthographic = camera.orthographic;
-
-                    options.aspectRatio = orthographic.xmag / orthographic.ymag;
-                    options.orthoHeight = orthographic.ymag * 0.5;
-                    options.farClip = orthographic.zfar;
-                    options.nearClip = orthographic.znear;
-                }
-            }
-
-            entity.addComponent('camera', options);
-
-            // Diable loaded cameras by default and leave it to the application to enable them
-            entity.camera.enabled = false;
-        }
-
-        return entity;
-    }
-
-    function createModels(resources) {
-        resources.gltf.nodes.forEach(function (node, idx) {
-            if (node.hasOwnProperty('mesh')) {
-                var meshGroup = resources.meshes[node.mesh];
-                if (meshGroup.length > 0) {
-                    var model = new pc.Model();
-                    model.graph = new pc.Entity();
-                    for (var i = 0; i < meshGroup.length; i++) {
-                        var material;
-                        if (meshGroup[i].materialIndex === undefined) {
-                            material = resources.defaultMaterial;
-                        } else {
-                            material = resources.materials[meshGroup[i].materialIndex];
-                        }
-
-                        var meshInstance = new pc.MeshInstance(model.graph, meshGroup[i], material);
-                        if (meshGroup[i].morph) {
-                            meshInstance.morphInstance = new pc.MorphInstance(meshGroup[i].morph);
-
-                            // HACK: need to force calculation of the morph's AABB due to a bug
-                            // in the engine. This is a private function and will be removed!
-                            meshInstance.morphInstance.updateBounds(meshInstance.mesh);
-                        }
-                        model.meshInstances.push(meshInstance);
-
-                        if (node.hasOwnProperty('skin')) {
-                            var skin = resources.skins[node.skin];
-                            meshGroup[i].skin = skin;
-                            var skinInstance = new pc.SkinInstance(skin, skin.skeleton);
-                            skinInstance.bones = skin.bones;
-                            meshInstance.skinInstance = skinInstance;
-                            model.skinInstances = [ skinInstance ];
-                        }
-                    }
-
-                    model.getGraph().syncHierarchy();
-
-                    var entity = resources.nodes[idx];
-                    entity.addComponent('model');
-                    entity.model.model = model;
-                }
-            }
-        });
     }
 
     // Specification:
@@ -649,6 +265,244 @@
     }
 
     // Specification:
+    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#image
+    function resampleImage(image) {
+        var srcW = image.width;
+        var srcH = image.height;
+
+        var dstW = nearestPow2(srcW);
+        var dstH = nearestPow2(srcH);
+
+        var canvas = document.createElement('canvas');
+        canvas.width = dstW;
+        canvas.height = dstH;
+
+        var context = canvas.getContext('2d');
+        context.drawImage(image, 0, 0, srcW, srcH, 0, 0, dstW, dstH);
+
+        return canvas.toDataURL();
+    }
+
+    function translateImage(data, resources, success) {
+        var image = new Image();
+
+        image.addEventListener('load', function () {
+            var gltf = resources.gltf;
+
+            var imageIndex = resources.images.indexOf(image);
+            gltf.textures.forEach(function (texture, idx) {
+                if (texture.hasOwnProperty('source')) {
+                    if (texture.source === imageIndex) {
+                        var t = resources.textures[idx];
+                        if ((!isPowerOf2(image.width) || !isPowerOf2(image.width)) &&
+                            ((t.addressU === pc.ADDRESS_REPEAT) || (t.addressU === pc.ADDRESS_MIRRORED_REPEAT) ||
+                             (t.addressV === pc.ADDRESS_REPEAT) || (t.addressV === pc.ADDRESS_MIRRORED_REPEAT) ||
+                             (t.minFilter === pc.FILTER_LINEAR_MIPMAP_LINEAR) || (t.minFilter === pc.FILTER_NEAREST_MIPMAP_LINEAR) ||
+                             (t.minFilter === pc.FILTER_LINEAR_MIPMAP_NEAREST) || (t.minFilter === pc.FILTER_NEAREST_MIPMAP_NEAREST))) {
+                            var potImage = new Image();
+                            potImage.addEventListener('load', function () {
+                                t.setSource(potImage);
+                            });
+                            potImage.src = resampleImage(image);
+                        } else {
+                            t.setSource(image);
+                        }
+                    }
+                }
+            });
+
+            resources.imagesLoaded++;
+            if (resources.imagesLoaded === gltf.images.length) {
+                success();
+            }
+        }, false);
+
+        if (data.hasOwnProperty('uri')) {
+            if (isDataURI(data.uri)) {
+                image.src = data.uri;
+            } else if (resources.processUri) {
+                resources.processUri(data.uri, function(uri) {
+                    image.crossOrigin = "anonymous";
+                    image.src = uri;
+                });
+            } else {
+                image.crossOrigin = "anonymous";
+                image.src = resources.basePath + data.uri;
+            }
+        }
+
+        if (data.hasOwnProperty('bufferView')) {
+            var gltf = resources.gltf;
+            var buffers = resources.buffers;
+            var bufferView = gltf.bufferViews[data.bufferView];
+            var arrayBuffer = buffers[bufferView.buffer];
+            var byteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
+            var imageBuffer = arrayBuffer.slice(byteOffset, byteOffset + bufferView.byteLength);
+            var blob = new Blob([ imageBuffer ], { type: data.mimeType });
+            image.src = URL.createObjectURL(blob);
+        }
+
+        return image;
+    }
+
+    // Specification:
+    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#material
+    var glossChunk = [
+        "#ifdef MAPFLOAT",
+        "uniform float material_shininess;",
+        "#endif",
+        "",
+        "#ifdef MAPTEXTURE",
+        "uniform sampler2D texture_glossMap;",
+        "#endif",
+        "",
+        "void getGlossiness() {",
+        "    dGlossiness = 1.0;",
+        "",
+        "    #ifdef MAPFLOAT",
+        "        dGlossiness *= material_shininess;",
+        "    #endif",
+        "",
+        "    #ifdef MAPTEXTURE",
+        "        dGlossiness *= 1.0 - texture2D(texture_glossMap, $UV).$CH;",
+        "    #endif",
+        "",
+        "    #ifdef MAPVERTEX",
+        "        dGlossiness *= 1.0 - saturate(vVertexColor.$VC);",
+        "    #endif",
+        "",
+        "    dGlossiness += 0.0000001;",
+        "}"
+    ].join('\n');
+
+    function translateMaterial(data, resources) {
+        var material = new pc.StandardMaterial();
+
+        // glTF dooesn't define how to occlude specular
+        material.occludeSpecular = false;
+        material.diffuseTint = true;
+        material.diffuseVertexColor = true;
+        material.chunks.glossPS = glossChunk;
+
+        if (data.hasOwnProperty('name')) {
+            material.name = data.name;
+        }
+
+        var color;
+        if (data.hasOwnProperty('pbrMetallicRoughness')) {
+            var pbrData = data.pbrMetallicRoughness;
+
+            if (pbrData.hasOwnProperty('baseColorFactor')) {
+                color = pbrData.baseColorFactor;
+                material.diffuse.set(color[0], color[1], color[2]);
+                material.opacity = color[3];
+            } else {
+                material.diffuse.set(1, 1, 1);
+                material.opacity = 1;
+            }
+            if (pbrData.hasOwnProperty('baseColorTexture')) {
+                var baseColorTexture = pbrData.baseColorTexture;
+                var texture = resources.textures[baseColorTexture.index];
+
+                material.diffuseMap = texture;
+                material.diffuseMapChannel = 'rgb';
+                material.opacityMap = texture;
+                material.opacityMapChannel = 'a';
+                if (baseColorTexture.hasOwnProperty('texCoord')) {
+                    material.diffuseMapUv = baseColorTexture.texCoord;
+                    material.opacityMapUv = baseColorTexture.texCoord;
+                }
+            }
+            material.useMetalness = true;
+            if (pbrData.hasOwnProperty('metallicFactor')) {
+                material.metalness = pbrData.metallicFactor;
+            } else {
+                material.metalness = 1;
+            }
+            if (pbrData.hasOwnProperty('roughnessFactor')) {
+                material.shininess = 100 * (1 - pbrData.roughnessFactor);
+            } else {
+                material.shininess = 0;
+            }
+            if (pbrData.hasOwnProperty('metallicRoughnessTexture')) {
+                var metallicRoughnessTexture = pbrData.metallicRoughnessTexture;
+                material.metalnessMap = resources.textures[metallicRoughnessTexture.index];
+                material.metalnessMapChannel = 'b';
+                material.glossMap = resources.textures[metallicRoughnessTexture.index];
+                material.glossMapChannel = 'g';
+                if (!pbrData.hasOwnProperty('roughnessFactor')) {
+                    material.shininess = 100;
+                }
+                if (metallicRoughnessTexture.hasOwnProperty('texCoord')) {
+                    material.glossMapUv = metallicRoughnessTexture.texCoord;
+                    material.metalnessMapUv = metallicRoughnessTexture.texCoord;
+                }
+            }
+        }
+        if (data.hasOwnProperty('normalTexture')) {
+            var normalTexture = data.normalTexture;
+            material.normalMap = resources.textures[normalTexture.index];
+            if (normalTexture.hasOwnProperty('texCoord')) {
+                material.normalMapUv = normalTexture.texCoord;
+            }
+            if (normalTexture.hasOwnProperty('scale')) {
+                material.bumpiness = normalTexture.scale;
+            }
+        }
+        if (data.hasOwnProperty('occlusionTexture')) {
+            var occlusionTexture = data.occlusionTexture;
+            material.aoMap = resources.textures[occlusionTexture.index];
+            if (occlusionTexture.hasOwnProperty('texCoord')) {
+                material.aoMapUv = occlusionTexture.texCoord;
+            }
+            // TODO: support 'strength'
+        }
+        if (data.hasOwnProperty('emissiveFactor')) {
+            color = data.emissiveFactor;
+            material.emissive.set(color[0], color[1], color[2]);
+            material.emissiveTint = true;
+        } else {
+            material.emissive.set(0, 0, 0);
+            material.emissiveTint = false;
+        }
+        if (data.hasOwnProperty('emissiveTexture')) {
+            material.emissiveMap = resources.textures[data.emissiveTexture.index];
+        }
+        if (data.hasOwnProperty('alphaMode')) {
+            switch (data.alphaMode) {
+                case 'MASK':
+                    material.blendType = pc.BLEND_NONE;
+                    if (data.hasOwnProperty('alphaCutoff')) {
+                        material.alphaTest = data.alphaCutoff;
+                    } else {
+                        material.alphaTest = 0.5;
+                    }
+                    break;
+                case 'BLEND':
+                    material.blendType = pc.BLEND_NORMAL;
+                    break;
+                default:
+                case 'OPAQUE':
+                    material.blendType = pc.BLEND_NONE;
+                    break;
+            }
+        } else {
+            material.blendType = pc.BLEND_NONE;
+        }
+        if (data.hasOwnProperty('doubleSided')) {
+            material.twoSidedLighting = data.doubleSided;
+            material.cull = data.doubleSided ? pc.CULLFACE_NONE : pc.CULLFACE_BACK;
+        } else {
+            material.twoSidedLighting = false;
+            material.cull = pc.CULLFACE_BACK;
+        }
+
+        material.update();
+
+        return material;
+    }
+
+    // Specification:
     //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#mesh
     function translateMesh(data, resources) {
         var gltf = resources.gltf;
@@ -663,9 +517,9 @@
             var texCoord0 = null;
             var texCoord1 = null;
             var colors = null;
-            var indices = null;
             var joints = null;
             var weights = null;
+            var indices = null;
 
             var i;
 
@@ -708,9 +562,7 @@
                     }
 
                     var numPoints = outputGeometry.num_points();
-                    var numAttributes = outputGeometry.num_attributes();
                     var numFaces = outputGeometry.num_faces();
-                    var attribute, attributeId;
 
                     if (extDraco.hasOwnProperty('attributes')) {
                         var extractAttribute = function (uniqueId) {
@@ -728,23 +580,23 @@
                             return values;
                         };
 
-                        var attributes = extDraco.attributes;
-                        if (attributes.hasOwnProperty('POSITION'))
-                            positions = extractAttribute(attributes.POSITION);
-                        if (attributes.hasOwnProperty('NORMAL'))
-                            normals   = extractAttribute(attributes.NORMAL);
-                        if (attributes.hasOwnProperty('TANGENT'))
-                            tangents  = extractAttribute(attributes.TANGENT);
-                        if (attributes.hasOwnProperty('COLOR'))
-                            colors    = extractAttribute(attributes.COLOR);
-                        if (attributes.hasOwnProperty('TEXCOORD_0'))
-                            texCoord0 = extractAttribute(attributes.TEXCOORD_0);
-                        if (attributes.hasOwnProperty('TEXCOORD_1'))
-                            texCoord1 = extractAttribute(attributes.TEXCOORD_1);
-                        if (attributes.hasOwnProperty('JOINTS_0'))
-                            joints = extractAttribute(attributes.JOINTS_0);
-                        if (attributes.hasOwnProperty('WEIGHTS_0'))
-                            weights = extractAttribute(attributes.WEIGHTS_0);
+                        var dracoAttribs = extDraco.attributes;
+                        if (dracoAttribs.hasOwnProperty('POSITION'))
+                            positions = extractAttribute(dracoAttribs.POSITION);
+                        if (dracoAttribs.hasOwnProperty('NORMAL'))
+                            normals   = extractAttribute(dracoAttribs.NORMAL);
+                        if (dracoAttribs.hasOwnProperty('TANGENT'))
+                            tangents  = extractAttribute(dracoAttribs.TANGENT);
+                        if (dracoAttribs.hasOwnProperty('TEXCOORD_0'))
+                            texCoord0 = extractAttribute(dracoAttribs.TEXCOORD_0);
+                        if (dracoAttribs.hasOwnProperty('TEXCOORD_1'))
+                            texCoord1 = extractAttribute(dracoAttribs.TEXCOORD_1);
+                        if (dracoAttribs.hasOwnProperty('COLOR_0'))
+                            colors    = extractAttribute(dracoAttribs.COLOR_0);
+                        if (dracoAttribs.hasOwnProperty('JOINTS_0'))
+                            joints    = extractAttribute(dracoAttribs.JOINTS_0);
+                        if (dracoAttribs.hasOwnProperty('WEIGHTS_0'))
+                            weights   = extractAttribute(dracoAttribs.WEIGHTS_0);
                     }
 
                     if (geometryType == decoderModule.TRIANGULAR_MESH) {
@@ -772,7 +624,6 @@
                 accessor = gltf.accessors[primitive.attributes.POSITION];
                 positions = getAccessorData(gltf, accessor, resources.buffers);
             }
-
             if (attributes.hasOwnProperty('NORMAL') && normals === null) {
                 accessor = gltf.accessors[primitive.attributes.NORMAL];
                 normals = getAccessorData(gltf, accessor, resources.buffers);
@@ -806,11 +657,21 @@
                 indices = getAccessorData(gltf, accessor, resources.buffers);
             }
 
-            if (positions !== null && indices !== null && normals === null) {
-                normals = pc.calculateNormals(positions, indices);
+            var numVertices = positions.length / 3;
+
+            var dummyIndices;
+            if (positions !== null && normals === null) {
+                // pc.calculateNormals needs indices so generate some
+                if (indices === null) {
+                    dummyIndices = new Uint16Array(numVertices);
+                    for (i = 0; i < numVertices; i++) {
+                        dummyIndices[i] = i;
+                    }
+                }
+                normals = pc.calculateNormals(positions, (indices === null) ? dummyIndices : indices);
             }
-            if (positions !== null && normals !== null && texCoord0 !== null && indices !== null && tangents === null) {
-                tangents = pc.calculateTangents(positions, normals, texCoord0, indices);
+            if (positions !== null && normals !== null && texCoord0 !== null && tangents === null) {
+                tangents = pc.calculateTangents(positions, normals, texCoord0, (indices === null) ? dummyIndices : indices);
             }
 
             var vertexDesc = [];
@@ -839,114 +700,141 @@
                 vertexDesc.push({ semantic: pc.SEMANTIC_BLENDWEIGHT, components: 4, type: pc.TYPE_FLOAT32 });
             }
 
-            var numVertices = positions.length / 3;
-
             var vertexFormat = new pc.VertexFormat(resources.device, vertexDesc);
             var vertexBuffer = new pc.VertexBuffer(resources.device, vertexFormat, numVertices, pc.BUFFER_STATIC);
             var vertexData = vertexBuffer.lock();
 
-            var dataView = new DataView(vertexData);
-            var o = 0;
+            var vertexDataF32 = new Float32Array(vertexData);
+            var vertexDataU8  = new Uint8Array(vertexData);
 
+            var getAttribute = function (semantic) {
+                return vertexFormat.elements.find(function (element) {
+                    return element.name === semantic;
+                });
+            };
+
+            var dstIndex, srcIndex;
+            var attr, dstOffset, dstStride;
             if (positions !== null) {
-                for (i = 0; i < numVertices; i++) {
-                    offset = i * vertexFormat.size;
-                    dataView.setFloat32(offset + 0, positions[i * 3 + 0], true);
-                    dataView.setFloat32(offset + 4, positions[i * 3 + 1], true);
-                    dataView.setFloat32(offset + 8, positions[i * 3 + 2], true);
-                }
+                attr = getAttribute(pc.SEMANTIC_POSITION);
+                dstOffset = attr.offset / 4;
+                dstStride = attr.stride / 4;
 
-                o += 12;
+                for (i = 0; i < numVertices; i++) {
+                    dstIndex = dstOffset + i * dstStride;
+                    srcIndex = i * 3;
+                    vertexDataF32[dstIndex]     = positions[srcIndex];
+                    vertexDataF32[dstIndex + 1] = positions[srcIndex + 1];
+                    vertexDataF32[dstIndex + 2] = positions[srcIndex + 2];
+                }
             }
 
             if (normals !== null) {
-                for (i = 0; i < numVertices; i++) {
-                    offset = i * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0, normals[i * 3 + 0], true);
-                    dataView.setFloat32(offset + 4, normals[i * 3 + 1], true);
-                    dataView.setFloat32(offset + 8, normals[i * 3 + 2], true);
-                }
+                attr = getAttribute(pc.SEMANTIC_NORMAL);
+                dstOffset = attr.offset / 4;
+                dstStride = attr.stride / 4;
 
-                o += 12;
+                for (i = 0; i < numVertices; i++) {
+                    dstIndex = dstOffset + i * dstStride;
+                    srcIndex = i * 3;
+                    vertexDataF32[dstIndex]     = normals[srcIndex];
+                    vertexDataF32[dstIndex + 1] = normals[srcIndex + 1];
+                    vertexDataF32[dstIndex + 2] = normals[srcIndex + 2];
+                }
             }
 
             if (tangents !== null) {
-                for (i = 0; i < numVertices; i++) {
-                    offset = i * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0,  tangents[i * 4 + 0], true);
-                    dataView.setFloat32(offset + 4,  tangents[i * 4 + 1], true);
-                    dataView.setFloat32(offset + 8,  tangents[i * 4 + 2], true);
-                    dataView.setFloat32(offset + 12, tangents[i * 4 + 3], true);
-                }
+                attr = getAttribute(pc.SEMANTIC_TANGENT);
+                dstOffset = attr.offset / 4;
+                dstStride = attr.stride / 4;
 
-                o += 16;
+                for (i = 0; i < numVertices; i++) {
+                    dstIndex = dstOffset + i * dstStride;
+                    srcIndex = i * 4;
+                    vertexDataF32[dstIndex]     = tangents[srcIndex];
+                    vertexDataF32[dstIndex + 1] = tangents[srcIndex + 1];
+                    vertexDataF32[dstIndex + 2] = tangents[srcIndex + 2];
+                    vertexDataF32[dstIndex + 3] = tangents[srcIndex + 3];
+                }
             }
 
             if (texCoord0 !== null) {
-                for (i = 0; i < numVertices; i++) {
-                    offset = i * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0, texCoord0[i * 2 + 0], true);
-                    dataView.setFloat32(offset + 4, texCoord0[i * 2 + 1], true);
-                }
+                attr = getAttribute(pc.SEMANTIC_TEXCOORD0);
+                dstOffset = attr.offset / 4;
+                dstStride = attr.stride / 4;
 
-                o += 8;
+                for (i = 0; i < numVertices; i++) {
+                    dstIndex = dstOffset + i * dstStride;
+                    srcIndex = i * 2;
+                    vertexDataF32[dstIndex]     = texCoord0[srcIndex];
+                    vertexDataF32[dstIndex + 1] = texCoord0[srcIndex + 1];
+                }
             }
 
             if (texCoord1 !== null) {
-                for (i = 0; i < numVertices; i++) {
-                    offset = i * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0, texCoord1[i * 2 + 0], true);
-                    dataView.setFloat32(offset + 4, texCoord1[i * 2 + 1], true);
-                }
+                attr = getAttribute(pc.SEMANTIC_TEXCOORD1);
+                dstOffset = attr.offset / 4;
+                dstStride = attr.stride / 4;
 
-                o += 8;
+                for (i = 0; i < numVertices; i++) {
+                    dstIndex = dstOffset + i * dstStride;
+                    srcIndex = i * 2;
+                    vertexDataF32[dstIndex]     = texCoord1[srcIndex];
+                    vertexDataF32[dstIndex + 1] = texCoord1[srcIndex + 1];
+                }
             }
 
             if (colors !== null) {
-                for (i = 0; i < numVertices; i++) {
-                    offset = i * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0,  colors[i * 4 + 0], true);
-                    dataView.setFloat32(offset + 4,  colors[i * 4 + 1], true);
-                    dataView.setFloat32(offset + 8,  colors[i * 4 + 2], true);
-                    dataView.setFloat32(offset + 12, colors[i * 4 + 3], true);
-                }
+                attr = getAttribute(pc.SEMANTIC_COLOR);
+                dstOffset = attr.offset / 4;
+                dstStride = attr.stride / 4;
 
-                o += 16;
+                for (i = 0; i < numVertices; i++) {
+                    dstIndex = dstOffset + i * dstStride;
+                    srcIndex = i * 4;
+                    vertexDataF32[dstIndex]     = colors[srcIndex];
+                    vertexDataF32[dstIndex + 1] = colors[srcIndex + 1];
+                    vertexDataF32[dstIndex + 2] = colors[srcIndex + 2];
+                    vertexDataF32[dstIndex + 3] = colors[srcIndex + 3];
+                }
             }
 
             if (joints !== null) {
-                for (i = 0; i < numVertices; i++) {
-                    offset = i * vertexFormat.size + o;
-                    dataView.setUint8(offset + 0, joints[i * 4 + 0], true);
-                    dataView.setUint8(offset + 1, joints[i * 4 + 1], true);
-                    dataView.setUint8(offset + 2, joints[i * 4 + 2], true);
-                    dataView.setUint8(offset + 3, joints[i * 4 + 3], true);
-                }
+                attr = getAttribute(pc.SEMANTIC_BLENDINDICES);
+                dstOffset = attr.offset;
+                dstStride = attr.stride;
 
-                o += 4;
+                for (i = 0; i < numVertices; i++) {
+                    dstIndex = dstOffset + i * dstStride;
+                    srcIndex = i * 4;
+                    vertexDataU8[dstIndex]     = joints[srcIndex];
+                    vertexDataU8[dstIndex + 1] = joints[srcIndex + 1];
+                    vertexDataU8[dstIndex + 2] = joints[srcIndex + 2];
+                    vertexDataU8[dstIndex + 3] = joints[srcIndex + 3];
+                }
             }
 
             if (weights !== null) {
-                for (i = 0; i < numVertices; i++) {
-                    offset = i * vertexFormat.size + o;
-                    dataView.setFloat32(offset + 0,  weights[i * 4 + 0], true);
-                    dataView.setFloat32(offset + 4,  weights[i * 4 + 1], true);
-                    dataView.setFloat32(offset + 8,  weights[i * 4 + 2], true);
-                    dataView.setFloat32(offset + 12, weights[i * 4 + 3], true);
-                }
+                attr = getAttribute(pc.SEMANTIC_BLENDWEIGHT);
+                dstOffset = attr.offset / 4;
+                dstStride = attr.stride / 4;
 
-                o += 16;
+                for (i = 0; i < numVertices; i++) {
+                    dstIndex = dstOffset + i * dstStride;
+                    srcIndex = i * 4;
+                    vertexDataF32[dstIndex]     = weights[srcIndex];
+                    vertexDataF32[dstIndex + 1] = weights[srcIndex + 1];
+                    vertexDataF32[dstIndex + 2] = weights[srcIndex + 2];
+                    vertexDataF32[dstIndex + 3] = weights[srcIndex + 3];
+                }
             }
 
             vertexBuffer.unlock();
 
             var mesh = new pc.Mesh();
             mesh.vertexBuffer = vertexBuffer;
-            mesh.indexBuffer[0] = indexBuffer;
             mesh.primitive[0].type = getPrimitiveType(primitive);
             mesh.primitive[0].base = 0;
-
-            var indexBuffer = null;
             mesh.primitive[0].indexed = (indices !== null);
             if (indices !== null) {
                 accessor = gltf.accessors[primitive.indices];
@@ -963,8 +851,8 @@
                         indexFormat = pc.INDEXFORMAT_UINT32;
                         break;
                 }
-                var numIndices = indices.length; // accessor.count
-                indexBuffer = new pc.IndexBuffer(resources.device, indexFormat, numIndices, pc.BUFFER_STATIC, indices);
+                var numIndices = indices.length;
+                var indexBuffer = new pc.IndexBuffer(resources.device, indexFormat, numIndices, pc.BUFFER_STATIC, indices);
                 mesh.indexBuffer[0] = indexBuffer;
                 mesh.primitive[0].count = indices.length;
             } else {
@@ -1013,6 +901,84 @@
     }
 
     // Specification:
+    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#node
+    var tempMat = new pc.Mat4();
+    var tempVec = new pc.Vec3();
+
+    function translateNode(data, resources) {
+        var entity = new pc.Entity();
+
+        entity.name = data.hasOwnProperty('name') ? data.name : "";
+
+        // Parse transformation properties
+        if (data.hasOwnProperty('matrix')) {
+            tempMat.data.set(data.matrix);
+            tempMat.getTranslation(tempVec);
+            entity.setLocalPosition(tempVec);
+            tempMat.getEulerAngles(tempVec);
+            entity.setLocalEulerAngles(tempVec);
+            tempMat.getScale(tempVec);
+            entity.setLocalScale(tempVec);
+        }
+
+        if (data.hasOwnProperty('rotation')) {
+            var r = data.rotation;
+            entity.setLocalRotation(r[0], r[1], r[2], r[3]);
+        }
+
+        if (data.hasOwnProperty('translation')) {
+            var t = data.translation;
+            entity.setLocalPosition(t[0], t[1], t[2]);
+        }
+
+        if (data.hasOwnProperty('scale')) {
+            var s = data.scale;
+            entity.setLocalScale(s[0], s[1], s[2]);
+        }
+
+        if (data.hasOwnProperty('camera')) {
+            var gltf = resources.gltf;
+            var camera = gltf.cameras[data.camera];
+
+            var options = {};
+
+            if (camera.type === 'perspective') {
+                options.type = pc.PROJECTION_PERSPECTIVE;
+
+                if (camera.hasOwnProperty('perspective')) {
+                    var perspective = camera.perspective;
+                    if (perspective.hasOwnProperty('aspectRatio')) {
+                        options.aspectRatio = perspective.aspectRatio;
+                    }
+                    options.fov = perspective.yfov;
+                    if (perspective.hasOwnProperty('zfar')) {
+                        options.farClip = perspective.zfar;
+                    }
+                    options.nearClip = perspective.znear;
+                }
+            } else if (camera.type === 'orthographic') {
+                options.type = pc.PROJECTION_ORTHOGRAPHIC;
+
+                if (camera.hasOwnProperty('orthographic')) {
+                    var orthographic = camera.orthographic;
+
+                    options.aspectRatio = orthographic.xmag / orthographic.ymag;
+                    options.orthoHeight = orthographic.ymag * 0.5;
+                    options.farClip = orthographic.zfar;
+                    options.nearClip = orthographic.znear;
+                }
+            }
+
+            entity.addComponent('camera', options);
+
+            // Diable loaded cameras by default and leave it to the application to enable them
+            entity.camera.enabled = false;
+        }
+
+        return entity;
+    }
+
+    // Specification:
     //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#skin
     function translateSkin(data, resources) {
         var gltf = resources.gltf;
@@ -1054,9 +1020,44 @@
         return skin;
     }
 
+    // Specification:
+    //   https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#texture
+    function translateTexture(data, resources) {
+        var texture = new pc.Texture(resources.device, {
+            flipY: false
+        });
+
+        if (data.hasOwnProperty('name')) {
+            texture.name = data.name;
+        }
+
+        if (data.hasOwnProperty('sampler')) {
+            var gltf = resources.gltf;
+            var sampler = gltf.samplers[data.sampler];
+
+            if (sampler.hasOwnProperty('minFilter')) {
+                texture.minFilter = getFilter(sampler.minFilter);
+            }
+            if (sampler.hasOwnProperty('magFilter')) {
+                texture.magFilter = getFilter(sampler.magFilter);
+            }
+            if (sampler.hasOwnProperty('wrapS')) {
+                texture.addressU = getWrap(sampler.wrapS);
+            }
+            if (sampler.hasOwnProperty('wrapT')) {
+                texture.addressV = getWrap(sampler.wrapT);
+            }
+        }
+
+        return texture;
+    }
+
     function loadBuffers(resources, success) {
         // buffers already loaded so early out
-        if (resources.buffers) success();
+        if (resources.buffers) {
+            success();
+            return;
+        }
 
         var gltf = resources.gltf;
         resources.buffers = [];
@@ -1112,10 +1113,22 @@
         }
     }
 
-    function parse(property, translator, resources) {
+    function parse(property, translator, resources, success) {
+        if (success) {
+            if (!resources.gltf.hasOwnProperty(property)) {
+                success();
+                return;
+            }
+
+            if (resources.gltf[property].length === 0) {
+                success();
+                return;
+            }
+        }
+
         if (resources.gltf.hasOwnProperty(property)) {
             resources[property] = resources.gltf[property].map(function (item) {
-                return translator(item, resources);
+                return translator(item, resources, success);
             });
         }
     }
@@ -1126,15 +1139,91 @@
             if (node.hasOwnProperty('children')) {
                 node.children.forEach(function (childIdx) {
                     var child = resources.nodes[childIdx];
-                    if (!child.parent) {
-                        var parent = resources.nodes[idx];
-                        parent.addChild(child);
-                    } else {
-                        console.warn('Child node ' + child.name + ' has more than one parent.');
+                    // If this triggers, a node in the glTF has more than one parent which is wrong
+                    if (child.parent) {
+                        child.parent.removeChild(child);
                     }
+                    var parent = resources.nodes[idx];
+                    parent.addChild(child);
                 });
             }
         });
+    }
+
+    function createModels(resources) {
+        resources.gltf.nodes.forEach(function (node, idx) {
+            if (node.hasOwnProperty('mesh')) {
+                var meshGroup = resources.meshes[node.mesh];
+                if (meshGroup.length > 0) {
+                    var entity = new pc.Entity();
+                    var meshInstances = [];
+                    var skinInstances = [];
+                    var morphInstances = [];
+
+                    for (var i = 0; i < meshGroup.length; i++) {
+                        var material;
+                        if (meshGroup[i].materialIndex === undefined) {
+                            material = resources.defaultMaterial;
+                        } else {
+                            material = resources.materials[meshGroup[i].materialIndex];
+                        }
+
+                        var meshInstance = new pc.MeshInstance(entity, meshGroup[i], material);
+                        meshInstances.push(meshInstance);
+
+                        if (meshGroup[i].morph) {
+                            var morphInstance = new pc.MorphInstance(meshGroup[i].morph);
+                            meshInstance.morphInstance = morphInstance;
+                            // HACK: need to force calculation of the morph's AABB due to a bug
+                            // in the engine. This is a private function and will be removed!
+                            morphInstance.updateBounds(meshInstance.mesh);
+
+                            morphInstances.push(morphInstance);
+                        }
+
+                        if (node.hasOwnProperty('skin')) {
+                            var skin = resources.skins[node.skin];
+                            meshGroup[i].skin = skin;
+
+                            var skinInstance = new pc.SkinInstance(skin);
+                            skinInstance.bones = skin.bones;
+                            meshInstance.skinInstance = skinInstance;
+
+                            skinInstances.push(skinInstance);
+                        }
+                    }
+
+                    var model = new pc.Model();
+                    model.graph = entity;
+                    model.meshInstances = meshInstances;
+                    model.morphInstances = morphInstances;
+                    model.skinInstances = skinInstances;
+
+                    entity = resources.nodes[idx];
+                    entity.addComponent('model');
+                    entity.model.model = model;
+                }
+            }
+        });
+    }
+
+    function getRoots(resources) {
+        var gltf = resources.gltf;
+        var rootNodes = [];
+        if (gltf.hasOwnProperty('scenes')) {
+            var sceneIndex = 0;
+            if (gltf.hasOwnProperty('scene')) {
+                sceneIndex = gltf.scene;
+            }
+            var nodes = gltf.scenes[sceneIndex].nodes;
+            for (var i = 0; i < nodes.length; i++) {
+                rootNodes.push(resources.nodes[nodes[i]]);
+            }
+        } else {
+            rootNodes.push(resources.nodes[0]);
+        }
+
+        return rootNodes;
     }
 
     function loadGltf(gltf, device, success, options) {
@@ -1146,9 +1235,9 @@
 
         var resources = {
             buffers: buffers,
+            imagesLoaded: 0,
             basePath: basePath,
             processUri: processUri,
-            counter: 0,
             gltf: gltf,
             device: device,
             defaultMaterial: translateMaterial({})
@@ -1163,31 +1252,18 @@
 
         loadBuffers(resources, function () {
             parse('textures', translateTexture, resources);
-            parse('images', translateImage, resources);
-            parse('materials', translateMaterial, resources);
-            parse('meshes', translateMesh, resources);
-            parse('nodes', translateNode, resources);
-            parse('skins', translateSkin, resources);
-            parse('animations', translateAnimation, resources);
+            parse('images', translateImage, resources, function () {
+                parse('materials', translateMaterial, resources);
+                parse('meshes', translateMesh, resources);
+                parse('nodes', translateNode, resources);
+                parse('skins', translateSkin, resources);
+                parse('animations', translateAnimation, resources);
 
-            buildHierarchy(resources);
-            createModels(resources);
+                buildHierarchy(resources);
+                createModels(resources);
 
-            var rootNodes = [];
-            if (gltf.hasOwnProperty('scenes')) {
-                var sceneIndex = 0;
-                if (gltf.hasOwnProperty('scene')) {
-                    sceneIndex = gltf.scene;
-                }
-                var nodes = gltf.scenes[sceneIndex].nodes;
-                for (var i = 0; i < nodes.length; i++) {
-                    rootNodes.push(resources.nodes[nodes[i]]);
-                }
-            } else {
-                rootNodes.push(resources.nodes[0]);
-            }
-
-            success(rootNodes);
+                success(getRoots(resources));
+            });
         });
     }
 
