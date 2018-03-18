@@ -796,13 +796,15 @@
                 dstOffset = attr.offset / 4;
                 dstStride = attr.stride / 4;
 
+                accessor = gltf.accessors[primitive.attributes.COLOR_0];
+
                 for (i = 0; i < numVertices; i++) {
                     dstIndex = dstOffset + i * dstStride;
-                    srcIndex = i * 4;
+                    srcIndex = accessor.type === 'VEC4' ? i * 4 : i * 3;
                     vertexDataF32[dstIndex]     = colors[srcIndex];
                     vertexDataF32[dstIndex + 1] = colors[srcIndex + 1];
                     vertexDataF32[dstIndex + 2] = colors[srcIndex + 2];
-                    vertexDataF32[dstIndex + 3] = colors[srcIndex + 3];
+                    vertexDataF32[dstIndex + 3] = accessor.type === 'VEC4' ? colors[srcIndex + 3] : 1;
                 }
             }
 
