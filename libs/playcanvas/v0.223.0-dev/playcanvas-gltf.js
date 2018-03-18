@@ -30,13 +30,14 @@
             if (time > k0.time && time < k1.time) {
                 var interval = k1.time - k0.time;
                 var delta = time - k0.time;
+                var alpha = delta / interval;
                 var value;
                 if (k0.value instanceof pc.Quat) {
-                    value = new pc.Quat().slerp(k0.value, k1.value, delta / interval);
+                    value = new pc.Quat().slerp(k0.value, k1.value, alpha);
                 } else if (k0.value instanceof pc.Vec3) {
-                    value = new pc.Vec3().lerp(k0.value, k1.value, delta / interval);
+                    value = new pc.Vec3().lerp(k0.value, k1.value, alpha);
                 } else {
-                    value = pc.math.lerp(k0.value, k1.value, delta / interval);
+                    value = pc.math.lerp(k0.value, k1.value, alpha);
                 }
                 return value;
             }
@@ -60,11 +61,13 @@
             var i, j;
             var curve, value;
 
-            this.time += dt;
             var numKeys = this.curves[0].keys.length;
             var duration = (this.curves[0].keys[numKeys - 1]).time;
-            if (this.time > duration) {
-                this.time = 0;
+
+            this.time += dt;
+            // loop
+            while (this.time > duration) {
+                this.time -= duration;
             }
 
             if (this.entity.model) {
@@ -200,8 +203,10 @@
     function translateAnimation(data, resources) {
         var gltf = resources.gltf;
 
-        if (data.hasOwnProperty('name')) {
+//        var clip = new AnimClip();
 
+        if (data.hasOwnProperty('name')) {
+//            clip.name = data.name;
         }
 
         // parse animation data
@@ -659,19 +664,21 @@
 
             var numVertices = positions.length / 3;
 
-            var dummyIndices;
-            if (positions !== null && normals === null) {
-                // pc.calculateNormals needs indices so generate some
-                if (indices === null) {
-                    dummyIndices = new Uint16Array(numVertices);
-                    for (i = 0; i < numVertices; i++) {
-                        dummyIndices[i] = i;
-                    }
+            var calculateIndices = function () {
+                var dummyIndices = new Uint16Array(numVertices);
+                for (i = 0; i < numVertices; i++) {
+                    dummyIndices[i] = i;
                 }
-                normals = pc.calculateNormals(positions, (indices === null) ? dummyIndices : indices);
+                return dummyIndices;
+            };
+
+            if (positions !== null && normals === null) {
+                // pc.calculateNormals needs indices so generate some if none are present
+                normals = pc.calculateNormals(positions, (indices === null) ? calculateIndices() : indices);
             }
             if (positions !== null && normals !== null && texCoord0 !== null && tangents === null) {
-                tangents = pc.calculateTangents(positions, normals, texCoord0, (indices === null) ? dummyIndices : indices);
+                // pc.calculateTangents needs indices so generate some if none are present
+                tangents = pc.calculateTangents(positions, normals, texCoord0, (indices === null) ? calculateIndices() : indices);
             }
 
             var vertexDesc = [];
