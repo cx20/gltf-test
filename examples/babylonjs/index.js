@@ -84,9 +84,20 @@ var createScene = function(engine) {
             "../../textures/cube/skybox/",
             scene,
             ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]
-            );
+        );
         scene.createDefaultSkybox(cubeTexture, true, 10000);
-
+/*
+        // If you care about the performance of createDefaultSkybox(), The following code can be used to avoid this. However, the environmental texture will not be applied.
+        // http://www.html5gamedevs.com/topic/36997-using-skybox-takes-time-to-display-is-it-a-usage-problem/?tab=comments#comment-211765
+        var skybox = BABYLON.Mesh.CreateBox("skyBox", 10000, scene);
+        var skyboxMaterial = new BABYLON.StandardMaterial("skyBoxMaterial", scene);
+        skyboxMaterial.backFaceCulling = false;
+        skyboxMaterial.reflectionTexture = cubeTexture;
+        skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+        skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+        skyboxMaterial.disableLighting = true;
+        skybox.material = skyboxMaterial;
+*/
         //scene.debugLayer.show(true, camera);
 
         guiBoundingBox.onChange(function (value) {
@@ -105,14 +116,13 @@ var createScene = function(engine) {
         });
     });
     
-    // http://www.html5gamedevs.com/topic/34476-gltfs-animation-does-not-work-properly-with-the-latest-version-of-babylonjs/
-    //loader.animationStartMode = BABYLON.GLTFLoaderAnimationStartMode.ALL;
-    
     return scene;
 }
 
 var canvas = document.querySelector("#renderCanvas");
 var engine = new BABYLON.Engine(canvas, true);
+engine.enableOfflineSupport = false; // Suppress manifest reference
+
 window.addEventListener('resize', function() {
     engine.resize();
 });
