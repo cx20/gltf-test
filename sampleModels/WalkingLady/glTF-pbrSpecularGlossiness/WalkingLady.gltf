@@ -3,25 +3,32 @@
         "generator": "COLLADA2GLTF",
         "version": "2.0"
     },
-    "scene": 0,
     "scenes": [
         {
             "nodes": [
-                1,
                 0
             ]
         }
     ],
+    "scene": 0,
     "nodes": [
         {
+            "children": [
+                2,
+                1
+            ],
+            "name": "Y_UP"
+        },
+        {
             "mesh": 0,
-            "skin": 0
+            "skin": 0,
+            "name": "AzumaAnimeHead1"
         },
         {
             "children": [
-                8,
-                5,
-                2
+                9,
+                6,
+                3
             ],
             "translation": [
                 0.0,
@@ -33,11 +40,12 @@
                 -0.0,
                 -0.7071067690849304,
                 -0.7071067690849304
-            ]
+            ],
+            "name": "koshi"
         },
         {
             "children": [
-                3
+                4
             ],
             "translation": [
                 -0.09959916770458222,
@@ -49,11 +57,12 @@
                 0.3421671688556671,
                 0.9099985361099244,
                 0.05327758193016052
-            ]
+            ],
+            "name": "L_ashi_tsukene"
         },
         {
             "children": [
-                4
+                5
             ],
             "translation": [
                 0.4261918067932129,
@@ -65,7 +74,8 @@
                 -0.10387097299098969,
                 -0.017577026039361958,
                 -0.4499080777168274
-            ]
+            ],
+            "name": "L_hiza"
         },
         {
             "matrix": [
@@ -85,11 +95,12 @@
                 0.0,
                 0.0,
                 1.0
-            ]
+            ],
+            "name": "L_ashi"
         },
         {
             "children": [
-                6
+                7
             ],
             "translation": [
                 -0.09959910809993744,
@@ -106,11 +117,12 @@
                 1.0,
                 0.9999999403953552,
                 0.9999999403953552
-            ]
+            ],
+            "name": "R_ashi_tsukene"
         },
         {
             "children": [
-                7
+                8
             ],
             "translation": [
                 0.4261919856071472,
@@ -127,7 +139,8 @@
                 0.9999999403953552,
                 1.0,
                 0.9999999403953552
-            ]
+            ],
+            "name": "R_hiza"
         },
         {
             "matrix": [
@@ -147,13 +160,14 @@
                 0.0,
                 0.0,
                 1.0
-            ]
+            ],
+            "name": "R_ashi"
         },
         {
             "children": [
-                15,
-                12,
-                9
+                16,
+                13,
+                10
             ],
             "translation": [
                 0.3349156975746155,
@@ -162,14 +176,15 @@
             ],
             "rotation": [
                 -0.03603024408221245,
-                0.026178697124123575,
+                0.026178697124123578,
                 -0.000944162195082754,
                 -0.9990073442459106
-            ]
+            ],
+            "name": "sakotsu"
         },
         {
             "children": [
-                10
+                11
             ],
             "translation": [
                 -0.00437387265264988,
@@ -186,11 +201,12 @@
                 1.0,
                 0.9999999403953552,
                 1.0
-            ]
+            ],
+            "name": "L_kata"
         },
         {
             "children": [
-                11
+                12
             ],
             "matrix": [
                 0.13042369484901429,
@@ -209,7 +225,8 @@
                 0.0,
                 0.0,
                 1.0
-            ]
+            ],
+            "name": "L_kurubushi"
         },
         {
             "matrix": [
@@ -229,11 +246,12 @@
                 0.0,
                 0.0,
                 1.0
-            ]
+            ],
+            "name": "L_te"
         },
         {
             "children": [
-                13
+                14
             ],
             "translation": [
                 -0.004377983044832945,
@@ -245,11 +263,12 @@
                 0.014196733944118025,
                 0.8159940838813782,
                 -0.11238817870616912
-            ]
+            ],
+            "name": "R_kata"
         },
         {
             "children": [
-                14
+                15
             ],
             "translation": [
                 0.26631131768226626,
@@ -261,7 +280,8 @@
                 0.5278940796852112,
                 0.07437131553888321,
                 -0.840549886226654
-            ]
+            ],
+            "name": "R_kurubushi"
         },
         {
             "matrix": [
@@ -281,11 +301,12 @@
                 0.0,
                 0.0,
                 1.0
-            ]
+            ],
+            "name": "R_te"
         },
         {
             "children": [
-                16
+                17
             ],
             "translation": [
                 0.07004772871732712,
@@ -297,7 +318,8 @@
                 -0.03787321597337723,
                 0.002210785634815693,
                 -0.9992801547050476
-            ]
+            ],
+            "name": "neck"
         },
         {
             "matrix": [
@@ -317,7 +339,8 @@
                 0.0,
                 0.0,
                 1.0
-            ]
+            ],
+            "name": "atama"
         }
     ],
     "meshes": [
@@ -344,21 +367,210 @@
                 {
                     "sampler": 0,
                     "target": {
-                        "node": 1,
+                        "node": 2,
                         "path": "translation"
                     }
                 },
                 {
                     "sampler": 1,
                     "target": {
-                        "node": 1,
+                        "node": 2,
                         "path": "rotation"
                     }
                 },
                 {
                     "sampler": 2,
                     "target": {
-                        "node": 1,
+                        "node": 2,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 3,
+                    "target": {
+                        "node": 9,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 4,
+                    "target": {
+                        "node": 9,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 5,
+                    "target": {
+                        "node": 9,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 6,
+                    "target": {
+                        "node": 16,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 7,
+                    "target": {
+                        "node": 16,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 8,
+                    "target": {
+                        "node": 16,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 9,
+                    "target": {
+                        "node": 13,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 10,
+                    "target": {
+                        "node": 13,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 11,
+                    "target": {
+                        "node": 13,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 12,
+                    "target": {
+                        "node": 14,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 13,
+                    "target": {
+                        "node": 14,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 14,
+                    "target": {
+                        "node": 14,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 15,
+                    "target": {
+                        "node": 10,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 16,
+                    "target": {
+                        "node": 10,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 17,
+                    "target": {
+                        "node": 10,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 18,
+                    "target": {
+                        "node": 6,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 19,
+                    "target": {
+                        "node": 6,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 20,
+                    "target": {
+                        "node": 6,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 21,
+                    "target": {
+                        "node": 7,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 22,
+                    "target": {
+                        "node": 7,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 23,
+                    "target": {
+                        "node": 7,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 24,
+                    "target": {
+                        "node": 3,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 25,
+                    "target": {
+                        "node": 3,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 26,
+                    "target": {
+                        "node": 3,
+                        "path": "scale"
+                    }
+                },
+                {
+                    "sampler": 27,
+                    "target": {
+                        "node": 4,
+                        "path": "translation"
+                    }
+                },
+                {
+                    "sampler": 28,
+                    "target": {
+                        "node": 4,
+                        "path": "rotation"
+                    }
+                },
+                {
+                    "sampler": 29,
+                    "target": {
+                        "node": 4,
                         "path": "scale"
                     }
                 }
@@ -378,34 +590,7 @@
                     "input": 5,
                     "interpolation": "LINEAR",
                     "output": 8
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 8,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 8,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 8,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 9,
                     "interpolation": "LINEAR",
@@ -420,34 +605,7 @@
                     "input": 9,
                     "interpolation": "LINEAR",
                     "output": 12
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 15,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 15,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 15,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 13,
                     "interpolation": "LINEAR",
@@ -462,34 +620,7 @@
                     "input": 13,
                     "interpolation": "LINEAR",
                     "output": 16
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 12,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 12,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 12,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 17,
                     "interpolation": "LINEAR",
@@ -504,34 +635,7 @@
                     "input": 17,
                     "interpolation": "LINEAR",
                     "output": 20
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 13,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 13,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 13,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 21,
                     "interpolation": "LINEAR",
@@ -546,34 +650,7 @@
                     "input": 21,
                     "interpolation": "LINEAR",
                     "output": 24
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 9,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 9,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 9,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 25,
                     "interpolation": "LINEAR",
@@ -588,34 +665,7 @@
                     "input": 25,
                     "interpolation": "LINEAR",
                     "output": 28
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 5,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 5,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 5,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 29,
                     "interpolation": "LINEAR",
@@ -630,34 +680,7 @@
                     "input": 29,
                     "interpolation": "LINEAR",
                     "output": 32
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 6,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 6,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 6,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 33,
                     "interpolation": "LINEAR",
@@ -672,34 +695,7 @@
                     "input": 33,
                     "interpolation": "LINEAR",
                     "output": 36
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 2,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 2,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 2,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 37,
                     "interpolation": "LINEAR",
@@ -714,34 +710,7 @@
                     "input": 37,
                     "interpolation": "LINEAR",
                     "output": 40
-                }
-            ]
-        },
-        {
-            "channels": [
-                {
-                    "sampler": 0,
-                    "target": {
-                        "node": 3,
-                        "path": "translation"
-                    }
                 },
-                {
-                    "sampler": 1,
-                    "target": {
-                        "node": 3,
-                        "path": "rotation"
-                    }
-                },
-                {
-                    "sampler": 2,
-                    "target": {
-                        "node": 3,
-                        "path": "scale"
-                    }
-                }
-            ],
-            "samplers": [
                 {
                     "input": 41,
                     "interpolation": "LINEAR",
@@ -763,24 +732,24 @@
     "skins": [
         {
             "inverseBindMatrices": 45,
-            "skeleton": 1,
+            "skeleton": 2,
             "joints": [
-                1,
-                8,
-                15,
+                2,
+                9,
                 16,
-                12,
+                17,
                 13,
                 14,
-                9,
+                15,
                 10,
                 11,
-                5,
+                12,
                 6,
                 7,
-                2,
+                8,
                 3,
-                4
+                4,
+                5
             ],
             "name": "AzumaAnimeHead1Shape-skin"
         }
@@ -1436,7 +1405,7 @@
             "count": 30,
             "max": [
                 0.3991850018501282,
-                0.35532745718956,
+                0.35532745718955996,
                 0.9344059824943544,
                 0.05699191242456436
             ],
@@ -1539,7 +1508,7 @@
             "max": [
                 0.25,
                 0.19004157185554505,
-                0.24943925440311436,
+                0.24943925440311433,
                 0.0,
                 0.25,
                 0.25,
@@ -1549,9 +1518,9 @@
                 0.16127344965934754,
                 0.25,
                 0.0,
-                0.253867506980896,
-                1.4341108798980713,
-                0.015050992369651797,
+                1.284605860710144,
+                0.5605754852294922,
+                0.06020396947860718,
                 1.0
             ],
             "min": [
@@ -1567,9 +1536,9 @@
                 -0.2464240789413452,
                 -0.25,
                 0.0,
-                -0.3649542629718781,
-                0.867169976234436,
-                -0.015050999820232392,
+                -1.284605860710144,
+                -0.560575008392334,
+                -0.060203999280929568,
                 1.0
             ],
             "type": "MAT4"
