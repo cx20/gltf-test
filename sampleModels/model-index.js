@@ -19,7 +19,8 @@ ModelIndex.List = [
     {category:'sampleModels', name:'CesiumMan', scale:1.0},
     {category:'sampleModels', name:'Monster', scale:0.05},
     {category:'sampleModels', name:'BrainStem', scale:1.0},
-    {category:'sampleModels', name:'VC', scale:0.2}
+    {category:'sampleModels', name:'VC', scale:0.2},
+    {category:'sampleModels', name:'WalkingLady', scale:1.0}
 ];
 
 ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
