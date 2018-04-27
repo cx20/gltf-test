@@ -31,6 +31,9 @@ var engines = [{
 }, {
     name: 'X3DOM',
     path: 'examples/x3dom/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'CZPG.js',
+    path: 'examples/czpg/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 /*
