@@ -28,8 +28,8 @@ window.addEventListener('load', function() {
     const scene = new CZPG.Scene(renderer);
     const controler = scene.controler;
 
-    let camera = new CZPG.PerspectiveCamera(45, context.canvas.width/context.canvas.height);
-    camera.transform.position = [0, 0, 7];
+    let camera = new CZPG.PerspectiveCamera(75, context.canvas.width/context.canvas.height, 0.01, 2000);
+    camera.transform.position = [0, 2, 3];
     let cameraControler = new CZPG.OrbitControls(camera, context.canvas, controler);
     cameraControler.enableDamping = true;
     cameraControler.autoRotate = true;
@@ -86,6 +86,7 @@ window.addEventListener('load', function() {
         .then( res => {
             const {rootNode, textures, animations} = res;
             sceneNode = rootNode;
+            sceneNode.setScale( scale, scale, scale );
             const gltfTextures = CZPG.createTextures(context, textures);
             sceneNode.traverse((node)=> {
                 if(node.model && node.model.textures !== undefined) {
