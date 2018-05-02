@@ -104,7 +104,16 @@ window.addEventListener('load', function() {
             });
 
             animator = new CZPG.Animator(animations);
-            animator.playAll();
+            let animates = animator.animations;
+            if(animates.length > 0) {
+                let animateMap = animates.map(ani => ani.name);
+                animateMap = ['None'].concat(animateMap);
+                datgui.add(controlObj, 'animate', animateMap)
+                    .onFinishChange(value => {
+                        animator.resetAll().playAnimation(value);
+                    });
+            }
+
             scene.add([
                 {shader: gltfShader, model: sceneNode},
             ]);
@@ -133,6 +142,7 @@ window.addEventListener('load', function() {
     let controlObj = {
         showgrid: false,
         autoRotate: true,
+        animate: 'None',
     }
     let datgui = new dat.GUI();
     datgui.add(controlObj, 'showgrid')
