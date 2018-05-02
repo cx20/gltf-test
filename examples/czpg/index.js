@@ -136,6 +136,6 @@ window.addEventListener('load', function() {
         });
     datgui.add(controlObj, 'autoRotate')
         .onFinishChange(value => {
-                controler.autoRotate = value;
+                cameraControler.autoRotate = value;
         });
 });
