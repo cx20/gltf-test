@@ -9329,11 +9329,11 @@ Object.assign( GLTFLoader.prototype, {
                 if ( skeleton !== GLTFLoader.SCENE_ROOT_SKELETON ) {
 
                     globalTransformNode = rootNode.findInChildren( GLTFLoader.GLTF_NODE_INDEX_PROPERTY, skeleton );
-                    if ( globalTransformNode !== rootNode )
+                    if ( globalTransformNode.parent !== rootNode )
                         globalTransformNode = globalTransformNode.parent;
 
                 } else
-                    globalTransformNode = rootNode;
+                    globalTransformNode = rootNode.children[ 0 ];
 
                 const frag = new Array( 16 );
                 const fragWorld = new Array( 16 );
@@ -9344,7 +9344,7 @@ Object.assign( GLTFLoader.prototype, {
                     for ( let n = 0; n < jointNum; n ++ ) {
 
                         Matrix4.mult( frag, fragWorld, globalJointTransformNodes[ n ].transform.getWorldMatrix() );
-                        if ( inverseBindMatrices !== GLTFLoader.IDENTITY_INVERSE_BIND_MATRICES )
+                        if ( inverseBindMatrices[ n ] !== GLTFLoader.IDENTITY_INVERSE_BIND_MATRICES )
                             Matrix4.mult( frag, frag, inverseBindMatrices[ n ] );
                         jointMats = jointMats.concat( frag );
 
