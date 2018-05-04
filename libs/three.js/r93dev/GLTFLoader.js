@@ -137,13 +137,19 @@ THREE.GLTFLoader = ( function () {
 
 				if ( json.extensionsUsed.indexOf( EXTENSIONS.KHR_MATERIALS_PBR_SPECULAR_GLOSSINESS ) >= 0 ) {
 
-					extensions[ EXTENSIONS.KHR_MATERIALS_PBR_SPECULAR_GLOSSINESS ] = new GLTFMaterialsPbrSpecularGlossinessExtension();
+					extensions[ EXTENSIONS.KHR_MATERIALS_PBR_SPECULAR_GLOSSINESS ] = new GLTFMaterialsPbrSpecularGlossinessExtension( json );
 
 				}
 
 				if ( json.extensionsUsed.indexOf( EXTENSIONS.KHR_DRACO_MESH_COMPRESSION ) >= 0 ) {
 
-					extensions[ EXTENSIONS.KHR_DRACO_MESH_COMPRESSION ] = new GLTFDracoMeshCompressionExtension( this.dracoLoader );
+					extensions[ EXTENSIONS.KHR_DRACO_MESH_COMPRESSION ] = new GLTFDracoMeshCompressionExtension( json, this.dracoLoader );
+
+				}
+
+				if ( json.extensionsUsed.indexOf( EXTENSIONS.KHR_TEXTURE_TRANSFORM ) >= 0 ) {
+
+					extensions[ EXTENSIONS.KHR_TEXTURE_TRANSFORM ] = new GLTFTextureTransformExtension( json );
 
 				}
 
@@ -155,6 +161,8 @@ THREE.GLTFLoader = ( function () {
 
 			}
 
+			console.time( 'GLTFLoader' );
+
 			var parser = new GLTFParser( json, extensions, {
 
 				path: path || this.path || '',
@@ -164,6 +172,8 @@ THREE.GLTFLoader = ( function () {
 			} );
 
 			parser.parse( function ( scene, scenes, cameras, animations, asset ) {
+
+				console.timeEnd( 'GLTFLoader' );
 
 				var glTF = {
 					scene: scene,
@@ -227,6 +237,7 @@ THREE.GLTFLoader = ( function () {
 		KHR_LIGHTS: 'KHR_lights',
 		KHR_MATERIALS_PBR_SPECULAR_GLOSSINESS: 'KHR_materials_pbrSpecularGlossiness',
 		KHR_MATERIALS_UNLIT: 'KHR_materials_unlit',
+		KHR_TEXTURE_TRANSFORM: 'KHR_texture_transform',
 		MSFT_TEXTURE_DDS: 'MSFT_texture_dds'
 	};
 
@@ -239,7 +250,7 @@ THREE.GLTFLoader = ( function () {
 	 */
 	function GLTFTextureDDSExtension() {
 
-		if ( ! THREE.DDSLoader ) {
+		if (!THREE.DDSLoader) {
 
 			throw new Error( 'THREE.GLTFLoader: Attempting to load .dds texture without importing THREE.DDSLoader' );
 
@@ -359,7 +370,7 @@ THREE.GLTFLoader = ( function () {
 
 			if ( metallicRoughness.baseColorTexture !== undefined ) {
 
-				pending.push( parser.assignTexture( materialParams, 'map', metallicRoughness.baseColorTexture.index ) );
+				pending.push( parser.assignTexture( materialParams, 'map', metallicRoughness.baseColorTexture ) );
 
 			}
 
@@ -442,7 +453,7 @@ THREE.GLTFLoader = ( function () {
 	 *
 	 * Specification: https://github.com/KhronosGroup/glTF/pull/874
 	 */
-	function GLTFDracoMeshCompressionExtension ( dracoLoader ) {
+	function GLTFDracoMeshCompressionExtension ( json, dracoLoader ) {
 
 		if ( ! dracoLoader ) {
 
@@ -481,6 +492,49 @@ THREE.GLTFLoader = ( function () {
 		} );
 
 	};
+
+	/**
+	 * Texture Transform Extension
+	 *
+	 * Specification:
+	 */
+	function GLTFTextureTransformExtension ( json ) {
+
+		this.name = EXTENSIONS.KHR_TEXTURE_TRANSFORM;
+
+	}
+
+	GLTFTextureTransformExtension.prototype.extendTexture = function ( texture, mapDef ) {
+
+		var transform = mapDef.extensions !== undefined ? mapDef.extensions[ this.name ] : undefined;
+
+		if ( transform === undefined ) return texture;
+
+		texture = texture.clone();
+
+		if ( transform.offset !== undefined ) {
+
+			texture.offset.fromArray( transform.offset );
+
+		}
+
+		if ( transform.rotation !== undefined ) {
+
+			texture.rotation = transform.rotation;
+
+		}
+
+		if ( transform.scale !== undefined ) {
+
+			texture.repeat.fromArray( transform.scale );
+
+		}
+
+		texture.needsUpdate = true;
+
+		return texture;
+
+	}
 
 	/**
 	 * Specular-Glossiness Extension
@@ -572,6 +626,7 @@ THREE.GLTFLoader = ( function () {
 				].join( '\n' );
 
 				var fragmentShader = shader.fragmentShader
+					.replace( '#include <specularmap_fragment>', '' )
 					.replace( 'uniform float roughness;', 'uniform vec3 specular;' )
 					.replace( 'uniform float metalness;', 'uniform float glossiness;' )
 					.replace( '#include <roughnessmap_pars_fragment>', specularMapParsFragmentChunk )
@@ -611,7 +666,7 @@ THREE.GLTFLoader = ( function () {
 
 				if ( pbrSpecularGlossiness.diffuseTexture !== undefined ) {
 
-					pending.push( parser.assignTexture( params, 'map', pbrSpecularGlossiness.diffuseTexture.index ) );
+					pending.push( parser.assignTexture( params, 'map', pbrSpecularGlossiness.diffuseTexture ) );
 
 				}
 
@@ -627,9 +682,9 @@ THREE.GLTFLoader = ( function () {
 
 				if ( pbrSpecularGlossiness.specularGlossinessTexture !== undefined ) {
 
-					var specGlossIndex = pbrSpecularGlossiness.specularGlossinessTexture.index;
-					pending.push( parser.assignTexture( params, 'glossinessMap', specGlossIndex ) );
-					pending.push( parser.assignTexture( params, 'specularMap', specGlossIndex ) );
+					var specGlossMapDef = pbrSpecularGlossiness.specularGlossinessTexture;
+					pending.push( parser.assignTexture( params, 'glossinessMap', specGlossMapDef ) );
+					pending.push( parser.assignTexture( params, 'specularMap', specGlossMapDef ) );
 
 				}
 
@@ -1901,7 +1956,6 @@ THREE.GLTFLoader = ( function () {
 
 			if ( textureDef.name !== undefined ) texture.name = textureDef.name;
 
-			// .format of dds texture is set in DDSLoader
 			if ( ! textureExtensions[ EXTENSIONS.MSFT_TEXTURE_DDS ] ) {
 
 				texture.format = textureDef.format !== undefined ? WEBGL_TEXTURE_FORMATS[ textureDef.format ] : THREE.RGBAFormat;
@@ -1934,15 +1988,23 @@ THREE.GLTFLoader = ( function () {
 	/**
 	 * Asynchronously assigns a texture to the given material parameters.
 	 * @param {Object} materialParams
-	 * @param {string} textureName
-	 * @param {number} textureIndex
+	 * @param {string} mapName
+	 * @param {Object} mapDef
 	 * @return {Promise}
 	 */
-	GLTFParser.prototype.assignTexture = function ( materialParams, textureName, textureIndex ) {
+	GLTFParser.prototype.assignTexture = function ( materialParams, mapName, mapDef ) {
 
-		return this.getDependency( 'texture', textureIndex ).then( function ( texture ) {
+		var parser = this;
 
-			materialParams[ textureName ] = texture;
+		return this.getDependency( 'texture', mapDef.index ).then( function ( texture ) {
+
+			if ( parser.extensions[ EXTENSIONS.KHR_TEXTURE_TRANSFORM ] ) {
+
+				texture = parser.extensions[ EXTENSIONS.KHR_TEXTURE_TRANSFORM ].extendTexture( texture, mapDef );
+
+			}
+
+			materialParams[ mapName ] = texture;
 
 		} );
 
@@ -2001,7 +2063,7 @@ THREE.GLTFLoader = ( function () {
 
 			if ( metallicRoughness.baseColorTexture !== undefined ) {
 
-				pending.push( parser.assignTexture( materialParams, 'map', metallicRoughness.baseColorTexture.index ) );
+				pending.push( parser.assignTexture( materialParams, 'map', metallicRoughness.baseColorTexture ) );
 
 			}
 
@@ -2010,9 +2072,8 @@ THREE.GLTFLoader = ( function () {
 
 			if ( metallicRoughness.metallicRoughnessTexture !== undefined ) {
 
-				var textureIndex = metallicRoughness.metallicRoughnessTexture.index;
-				pending.push( parser.assignTexture( materialParams, 'metalnessMap', textureIndex ) );
-				pending.push( parser.assignTexture( materialParams, 'roughnessMap', textureIndex ) );
+				pending.push( parser.assignTexture( materialParams, 'metalnessMap', metallicRoughness.metallicRoughnessTexture ) );
+				pending.push( parser.assignTexture( materialParams, 'roughnessMap', metallicRoughness.metallicRoughnessTexture ) );
 
 			}
 
@@ -2044,7 +2105,7 @@ THREE.GLTFLoader = ( function () {
 
 		if ( materialDef.normalTexture !== undefined && materialType !== THREE.MeshBasicMaterial) {
 
-			pending.push( parser.assignTexture( materialParams, 'normalMap', materialDef.normalTexture.index ) );
+			pending.push( parser.assignTexture( materialParams, 'normalMap', materialDef.normalTexture ) );
 
 			materialParams.normalScale = new THREE.Vector2( 1, 1 );
 
@@ -2058,7 +2119,7 @@ THREE.GLTFLoader = ( function () {
 
 		if ( materialDef.occlusionTexture !== undefined && materialType !== THREE.MeshBasicMaterial) {
 
-			pending.push( parser.assignTexture( materialParams, 'aoMap', materialDef.occlusionTexture.index ) );
+			pending.push( parser.assignTexture( materialParams, 'aoMap', materialDef.occlusionTexture ) );
 
 			if ( materialDef.occlusionTexture.strength !== undefined ) {
 
@@ -2076,7 +2137,7 @@ THREE.GLTFLoader = ( function () {
 
 		if ( materialDef.emissiveTexture !== undefined && materialType !== THREE.MeshBasicMaterial) {
 
-			pending.push( parser.assignTexture( materialParams, 'emissiveMap', materialDef.emissiveTexture.index ) );
+			pending.push( parser.assignTexture( materialParams, 'emissiveMap', materialDef.emissiveTexture ) );
 
 		}
 
