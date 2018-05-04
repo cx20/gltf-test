@@ -10,10 +10,12 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
     {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
     {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
+    {category:'tutorialModels', name:'TextureTransformTest', scale:1.0},
 ];
 
 TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-    'BoomBoxWithAxes'
+    'BoomBoxWithAxes',
+    'TextureTransformTest'
 ];
 
 TutorialFeatureTestModelIndex.getScreenshot = function(name) {
