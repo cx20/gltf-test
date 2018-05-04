@@ -5823,7 +5823,6 @@ MeshLineModel.prototype = Object.assign( Object.create( Model.prototype ), {
 const defaults = {
     textureColor: new Uint8Array( [ 255, 105, 180, 255 ] ),
     textureOptions: {},
-    crossOrigin: undefined,
 };
 
 /* PixelFormat */
@@ -6170,11 +6169,27 @@ function setTextureTo1PixelColor( gl, tex, options ) {
 
 }
 
+const getDefaultCrossOrigin = ( function () {
+
+    const expression = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)?/gi; // eslint-disable-line
+    const regex = new RegExp( expression );
+
+    return function getDefaultCrossOrigin( url ) { // eslint-disable-line
+
+        if ( url.match( regex ) && ( new URL( url ) ).origin !== window.location.origin )
+            return 'anonymous';
+
+        return undefined;
+
+    };
+
+}() );
+
 function loadImage( url, crossOrigin, callback ) {
 
     const cb = callback || empty;
     let img = new Image();
-    const cors = crossOrigin !== undefined ? crossOrigin : defaults.crossOrigin;
+    const cors = crossOrigin !== undefined ? crossOrigin : getDefaultCrossOrigin( url );
     if ( cors !== undefined )
         img.crossOrigin = cors;
 
