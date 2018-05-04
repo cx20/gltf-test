@@ -9279,12 +9279,17 @@ Object.assign( GLTFLoader.prototype, {
 
                 }
 
-                if ( nodeInfo.skin ) {
+                if ( nodeInfo.skin )
 
-                    node.skin = Object.assign( nodeInfo.skin, { models } );
-                    skins.push( node.skin );
+                    if ( skins.indexOf( nodeInfo.skin ) > - 1 )
+                        nodeInfo.skin.models.push( ...models );
+                    else {
 
-                }
+                        node.skin = Object.assign( nodeInfo.skin, { models } );
+                        skins.push( node.skin );
+
+                    }
+
 
             }
             return node;
