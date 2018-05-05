@@ -12,6 +12,9 @@ if (!modelInfo) {
     modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
+    modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 

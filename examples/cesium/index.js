@@ -12,6 +12,9 @@ if (!modelInfo) {
     modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
+    modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     document.getElementById('cesiumContainer').innerHTML = 'Please specify a model to load';
     throw new Error('Model not specified or not found in list.');
 }

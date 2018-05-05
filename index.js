@@ -276,6 +276,51 @@ function makeTutorialFeatureTestModelLinks() {
     }
 }
 
+function makeTutorialExtensionTestModelLinks() {
+    var modelList = TutorialExtensionTestModelIndex.List;
+    var numModels = modelList.length;
+    var numEngines = engines.length;
+
+    var tableHead = document.querySelector('#tutorialExtensionTestModelTable thead tr');
+    var tableBody = document.querySelector('#tutorialExtensionTestModelTable tbody');
+
+    var i, j;
+    for (i = 0; i < numEngines; ++i) {
+        var th = document.createElement('th');
+        th.textContent = engines[i].name;
+        tableHead.appendChild(th);
+    }
+
+    for (j = 0; j < numModels; ++j) {
+        var modelName = modelList[j].name;
+        var scale = modelList[j].scale;
+        var tr = document.createElement('tr');
+        var tdName = document.createElement('td');
+        tdName.textContent = modelName;
+        tr.appendChild(tdName);
+        var tdPic = document.createElement('td');
+        var img = document.createElement('img');
+        img.setAttribute('src', 'tutorialModels/' + TutorialExtensionTestModelIndex.getScreenshot(modelName));
+        img.setAttribute('width', 170);
+        img.setAttribute('height', 128);
+        tdPic.appendChild(img);
+        tr.appendChild(tdPic);
+        for (i = 0; i < numEngines; ++i) {
+            var td = document.createElement('td');
+            td.setAttribute('width', '100');
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            //td.appendChild(document.createElement('br'));
+            //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+            //td.appendChild(document.createElement('br'));
+            //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
+            //td.appendChild(document.createElement('br'));
+            //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Embedded', scale));
+            tr.appendChild(td);
+        }
+        tableBody.appendChild(tr);
+    }
+}
+
 function createlink(engineName, categoryName, modelName, type, scale)
 {
     var a = document.createElement('a');
@@ -296,4 +341,5 @@ makeTutorialModelLinks();
 makeTutorialPbrModelLinks();
 makeTutorialFurtherPbrModelLinks();
 makeTutorialFeatureTestModelLinks();
+makeTutorialExtensionTestModelLinks();
 makeSampleModelLinks();

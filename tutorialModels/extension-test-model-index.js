@@ -1,27 +1,19 @@
-var TutorialFeatureTestModelIndex = {};
+var TutorialExtensionTestModelIndex = {};
 
-TutorialFeatureTestModelIndex.List = [
-    {category:'tutorialModels', name:'AlphaBlendModeTest', scale:0.5},
-    {category:'tutorialModels', name:'BoomBoxWithAxes', scale:80.0},
-    {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.2},
-    {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
-    {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
-    {category:'tutorialModels', name:'OrientationTest', scale:0.2},
-    {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
-    {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
-    {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
+TutorialExtensionTestModelIndex.List = [
+    {category:'tutorialModels', name:'TextureTransformTest', scale:1.0},
 ];
 
-TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-    'BoomBoxWithAxes',
+TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
+    'TextureTransformTest'
 ];
 
-TutorialFeatureTestModelIndex.getScreenshot = function(name) {
-    var extension = ((TutorialFeatureTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
+TutorialExtensionTestModelIndex.getScreenshot = function(name) {
+    var extension = ((TutorialExtensionTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
     return name + '/screenshot/screenshot.' + extension;
 };
 
-//TutorialFeatureTestModelIndex.getEmbeddedFolderName = function(name) {
+//TutorialExtensionTestModelIndex.getEmbeddedFolderName = function(name) {
 //    var suffixHash = {
 //        'SimpleMaterial': '-buffer',
 //        'AdvancedMaterial': '-buffer',
@@ -33,13 +25,13 @@ TutorialFeatureTestModelIndex.getScreenshot = function(name) {
 //    return 'glTF-Embedded' + suffix;
 //};
 
-TutorialFeatureTestModelIndex.getModelInfoCollection = function() {
-    var numModels = TutorialFeatureTestModelIndex.List.length;
+TutorialExtensionTestModelIndex.getModelInfoCollection = function() {
+    var numModels = TutorialExtensionTestModelIndex.List.length;
     var modelInfoCollection = {};
     for (var i = 0; i < numModels; ++i) {
-        var category = TutorialFeatureTestModelIndex.List[i].category;
-        var name = TutorialFeatureTestModelIndex.List[i].name;
-        var scale = TutorialFeatureTestModelIndex.List[i].scale;
+        var category = TutorialExtensionTestModelIndex.List[i].category;
+        var name = TutorialExtensionTestModelIndex.List[i].name;
+        var scale = TutorialExtensionTestModelIndex.List[i].scale;
         modelInfoCollection[name] = {
             category: category,
             name: name,
@@ -49,8 +41,8 @@ TutorialFeatureTestModelIndex.getModelInfoCollection = function() {
     return modelInfoCollection;
 }
 
-TutorialFeatureTestModelIndex.getCurrentModel = function() {
-    var modelInfoCollection = TutorialFeatureTestModelIndex.getModelInfoCollection();
+TutorialExtensionTestModelIndex.getCurrentModel = function() {
+    var modelInfoCollection = TutorialExtensionTestModelIndex.getModelInfoCollection();
     var queryString = window.location.search.substring(1);
     var parts = queryString.replace(/\+/g, '%20').split('&');
     var options = {};

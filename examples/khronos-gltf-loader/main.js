@@ -11,6 +11,9 @@ if (!modelInfo) {
 if (!modelInfo) {
     modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
 }
+if (!modelInfo) {
+    modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
+}
 
 var scale = modelInfo.scale;
 
