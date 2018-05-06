@@ -4,7 +4,7 @@
 	(factory());
 }(this, (function () { 'use strict';
 
-// This revision is the commit right after the SHA: 04559a39
+// This revision is the commit right after the SHA: 54cb3243
 var global = ('global',eval)('this');
 
 (function (global) {
@@ -11449,9 +11449,26 @@ class M_Group extends M_Element {
    * @param {Element} element  [en] a instance of Element class [ja] Elementクラスのインスタンス
    */
   addChild(element) {
-    this.removeChild(element);
-    element._parent = this;
-    this._elements.push(element);
+    { 
+      //// if forbit duplicated register
+      // this.removeChild(element);
+      // element._parent = this;
+      // this._elements.push(element);
+
+    }
+
+    {
+
+      // if forgive duplicated register by copy
+      let elem = null;
+      if (element._parent) {
+        elem = element.clone();
+      } else {
+        elem = element;
+      }
+      elem._parent = this;
+      this._elements.push(elem);
+    }
   }
 
   /**
@@ -16890,7 +16907,7 @@ class GLTF2Loader {
       isExistJointGizmo: false,
       isBlend: false,
       isDepthTest: true,
-      isAllMeshesTransparent: true
+      isAllMeshesTransparent: false
     }) 
     {
 
