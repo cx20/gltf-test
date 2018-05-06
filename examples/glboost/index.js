@@ -62,7 +62,18 @@ promise.then(function(group) {
 */
 var glTF2Loader = GLBoost.GLTF2Loader.getInstance();
 var modelConverter = GLBoost.ModelConverter.getInstance();
-var promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {defaultShader: GLBoost.PhongShader});
+//var promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {defaultShader: GLBoost.PhongShader});
+var promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
+      extensionLoader: null,
+      defaultShader: GLBoost.PhongShader,
+      isNeededToMultiplyAlphaToColorOfPixelOutput: true,
+      isTextureImageToLoadPreMultipliedAlpha: false,
+      isExistJointGizmo: false,
+      isBlend: false,
+      isDepthTest: true,
+      isAllMeshesTransparent: false
+    });
+      
 promise.then(function(gltfObj) {
     let group = modelConverter.convertToGLBoostModel(glBoostContext, gltfObj);
     console.log(group);
