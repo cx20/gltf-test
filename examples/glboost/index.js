@@ -94,6 +94,7 @@ promise.then(function(gltfObj) {
     var render = function() {
         scene.setCurrentAnimationValue('time', gtime);
         renderer.clearCanvas();
+        renderer.update(expression); 
         renderer.draw(expression);
         gtime += 0.03;
         if (gtime > 5) {
