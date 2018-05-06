@@ -34,13 +34,11 @@ var engines = [{
 }, {
     name: 'CZPG.js',
     path: 'examples/czpg/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}];
-
-/*
+}, {
     name: 'GLBoost',
     path: 'examples/glboost/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-*/
+}];
+
 
 function getEngineByName(name) {
     var result;

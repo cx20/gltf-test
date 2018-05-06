@@ -54,10 +54,18 @@ camera.cameraController = glBoostContext.createCameraController();
 scene.addChild(camera);
 
 var gtime = 0;
-var glTFLoader = GLBoost.GLTFLoader.getInstance();
+/*
+var glTFLoader = GLBoost.GLTF2Loader.getInstance();
 //var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, null);
 var promise = glTFLoader.loadGLTF(glBoostContext, "../../" + modelInfo.category + "/" + modelInfo.path, null);
 promise.then(function(group) {
+*/
+var glTF2Loader = GLBoost.GLTF2Loader.getInstance();
+var modelConverter = GLBoost.ModelConverter.getInstance();
+var promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {defaultShader: GLBoost.PhongShader});
+promise.then(function(gltfObj) {
+    let group = modelConverter.convertToGLBoostModel(glBoostContext, gltfObj);
+    console.log(group);
     //console.log(group);
     if (modelInfo.name == "GearboxAssy" ) {
         scale = 0.2;
