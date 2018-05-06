@@ -4,7 +4,7 @@
 	(factory());
 }(this, (function () { 'use strict';
 
-// This revision is the commit right after the SHA: cac69522
+// This revision is the commit right after the SHA: 68e01fdb
 var global = ('global',eval)('this');
 
 (function (global) {
@@ -17423,12 +17423,21 @@ class ModelConverter {
     // Animation
     this._setupAnimation(gltfModel, groups);
 
+    // Root Group
     let rootGroup = glBoostContext.createGroup();
-
     if (gltfModel.scenes[0].nodesIndices) {
       for (let nodesIndex of gltfModel.scenes[0].nodesIndices) {
         rootGroup.addChild(groups[nodesIndex]);
       }  
+    }
+
+    // Post Skeletal Proccess
+    for (let glboostMesh of glboostMeshes) {
+      if (glboostMesh instanceof M_SkeletalMesh) {
+        if (!glboostMesh.jointsHierarchy) {
+          glboostMesh.jointsHierarchy = rootGroup;
+        }
+      }
     }
 
     let options = gltfModel.asset.extras.glboostOptions;
@@ -17772,6 +17781,8 @@ class ModelConverter {
   }
 
   _setupMaterial(glBoostContext, gltfModel, gltfMaterial, materialJson, accessor, additional, vertexData, dataViewMethodDic, _positions, indices, geometry, i) {
+    let options = gltfModel.asset.extras.glboostOptions;
+
     if (accessor) {
       additional['texcoord'][i] =  accessor.extras.vertexAttributeArray;
       vertexData.components.texcoord = accessor.extras.componentN;
@@ -17782,7 +17793,7 @@ class ModelConverter {
       let setTextures = (materialJson)=> {
         let baseColorTexture = materialJson.pbrMetallicRoughness.baseColorTexture;
         if (baseColorTexture) {
-          let sampler = baseColorTexture.sampler;
+          let sampler = baseColorTexture.texture.sampler;
           let texture = glBoostContext.createTexture(baseColorTexture.image, '', {
             'TEXTURE_MAG_FILTER': sampler.magFilter,
             'TEXTURE_MIN_FILTER': sampler.minFilter,
@@ -17833,8 +17844,6 @@ class ModelConverter {
     if (indices !== null) {
       gltfMaterial.setVertexN(geometry, indices.length);
     }
-
-    let options = gltfModel.asset.extras.glboostOptions;
     
     if (options.defaultShader) {
       gltfMaterial.shaderClass = options.defaultShader;
