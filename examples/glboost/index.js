@@ -41,8 +41,8 @@ var pointLight = glBoostContext.createPointLight(new GLBoost.Vector3(1.0, 1.0, 1
 pointLight.translate = new GLBoost.Vector3(10, 10, 10);
 scene.addChild(pointLight);
 var camera = glBoostContext.createPerspectiveCamera({
-    eye: new GLBoost.Vector3(0.0, 3.0, 4.0),
-    center: new GLBoost.Vector3(0.0, 1.0, 0.0),
+    eye: new GLBoost.Vector3(0.0, 2.0, 3.0),
+    center: new GLBoost.Vector3(0.0, 0.0, 0.0),
     up: new GLBoost.Vector3(0.0, 1.0, 0.0)
 }, {
     fovy: 75.0,
@@ -50,7 +50,7 @@ var camera = glBoostContext.createPerspectiveCamera({
     zNear: 0.1,
     zFar: 3000.0
 });
-camera.cameraController = glBoostContext.createCameraController();
+//camera.cameraController = glBoostContext.createCameraController();
 scene.addChild(camera);
 
 var gtime = 0;
