@@ -50,19 +50,13 @@ var camera = glBoostContext.createPerspectiveCamera({
     zNear: 0.1,
     zFar: 3000.0
 });
-//camera.cameraController = glBoostContext.createCameraController();
+camera.cameraController = glBoostContext.createCameraController();
+//camera.cameraController.zFarAdjustingFactorBasedOnAABB = 3;
 scene.addChild(camera);
 
 var gtime = 0;
-/*
-var glTFLoader = GLBoost.GLTF2Loader.getInstance();
-//var promise = glTFLoader.loadGLTF(glBoostContext, "../../sampleModels/" + modelInfo.path, null);
-var promise = glTFLoader.loadGLTF(glBoostContext, "../../" + modelInfo.category + "/" + modelInfo.path, null);
-promise.then(function(group) {
-*/
 var glTF2Loader = GLBoost.GLTF2Loader.getInstance();
 var modelConverter = GLBoost.ModelConverter.getInstance();
-//var promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {defaultShader: GLBoost.PhongShader});
 var promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
       extensionLoader: null,
       defaultShader: GLBoost.PhongShader,
@@ -76,6 +70,7 @@ var promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelIn
       
 promise.then(function(gltfObj) {
     let group = modelConverter.convertToGLBoostModel(glBoostContext, gltfObj);
+    //camera.cameraController.target = group;
     console.log(group);
     //console.log(group);
     if (modelInfo.name == "GearboxAssy" ) {
@@ -86,7 +81,7 @@ promise.then(function(gltfObj) {
         group.scale = new GLBoost.Vector3(scale, scale, scale);
     }
     scene.addChild(group);
-    
+
     var expression = glBoostContext.createExpressionAndRenderPasses(1);
     expression.renderPasses[0].scene = scene;
     expression.prepareToRender();

@@ -4,7 +4,7 @@
 	(factory());
 }(this, (function () { 'use strict';
 
-// This revision is the commit right after the SHA: 54cb3243
+// This revision is the commit right after the SHA: 4437c38a
 var global = ('global',eval)('this');
 
 (function (global) {
@@ -3462,6 +3462,7 @@ class L_Element extends GLBoostObject {
   }
 
   isTrsMatrixNeeded(lineName, inputValue) {
+    //console.log(this._animationLine['time']);
     let result = (
       this._getAnimatedTransformValue(inputValue, this._animationLine[lineName], 'translate') === null &&
       this._getAnimatedTransformValue(inputValue, this._animationLine[lineName], 'rotate') === null &&
@@ -11786,35 +11787,26 @@ class M_Group extends M_Element {
         //return AABB.multiplyMatrix(elem.transformMatrix, elem.AABB);
       }
       if (elem instanceof M_Mesh) {
-        let aabb = elem.rawAABBInLocal;
+        let aabb = elem.AABBInWorld;
         //console.log(aabb.toString());
         return aabb;
       }
 
       return null;
     })(this);
-    this._AABB = new AABB();
-    this._AABB.mergeAABB(aabb);
-    this._AABB.updateAllInfo();
+    this.AABB.mergeAABB(aabb);
 
-    let world_m = this.worldMatrix;
-    let aabbInWorld = AABB.multiplyMatrix(world_m, this._AABB);
+    let newAABB = this.AABB;
 
 //    this._AABB = aabbInWorld;
 
     this._updateAABBGizmo();
 
-    return aabbInWorld;
+    return newAABB;
   }
 
-  /*
-   * Note that it's in local space
-   */
   get AABB() {
-    let world_m = this.worldMatrix;
-    //let aabbInWorld = AABB.multiplyMatrix(world_m, this._AABB);
-    //return aabbInWorld;
-    return this._AABB;//.clone();
+    return this._AABB;
   }
 
   clone(clonedOriginalRootElement = this, clonedRootElement = null, onCompleteFuncs = []) {
@@ -15660,6 +15652,21 @@ class GLTFLoader {
       isExistJointGizmo: false,
       isBlend: false,
       isDepthTest: true,
+      statesOfElements: [
+        {
+          targets: [], //["name_foo", "name_boo"],
+          specifyMethod: GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME, // GLBoost.QUERY_TYPE_INSTANCE_NAME // GLBoost.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR
+          states: {
+            enable: [
+                // 3042,  // BLEND
+            ],
+            functions: {
+              //"blendFuncSeparate": [1, 0, 1, 0],
+            }
+          },
+          globalStatesUsage: GLOBAL_STATES_USAGE_IGNORE // GLOBAL_STATES_USAGE_DO_NOTHING // GLOBAL_STATES_USAGE_INCLUSIVE // GLOBAL_STATES_USAGE_EXCLUSIVE
+        }
+      ],
       isAllMeshesTransparent: true
     }
   ) {
@@ -16986,7 +16993,10 @@ class GLTF2Loader {
       images: []
     };
     promises.push(this._loadResources(arrayBufferBinary, basePath, gltfJson, options, resources));
-    this._loadJsonContent(gltfJson, resources, options);
+    promises.push(new Promise(((resolve, reject) => {
+      this._loadJsonContent(gltfJson, resources, options);
+      resolve();
+    })));
 
     return Promise.all(promises);
   }
@@ -17087,17 +17097,22 @@ class GLTF2Loader {
     // Mesh
     for (let mesh of gltfJson.meshes) {
       for (let primitive of mesh.primitives) {
-        primitive.materialIndex = primitive.material;
-        primitive.material = gltfJson.materials[primitive.materialIndex];
+        if (primitive.material !== void 0) {
+          primitive.materialIndex = primitive.material;
+          primitive.material = gltfJson.materials[primitive.materialIndex];  
+        }
 
         primitive.attributesindex = Object.assign({}, primitive.attributes);
         for (let attributeName in primitive.attributesindex) {
-          let accessor = gltfJson.accessors[primitive.attributesindex[attributeName]];
-          accessor.extras = {
-            toGetAsTypedArray: true
-          };
-          primitive.attributes[attributeName] = accessor;
-
+          if (primitive.attributesindex[attributeName] >= 0) {
+            let accessor = gltfJson.accessors[primitive.attributesindex[attributeName]];
+            accessor.extras = {
+              toGetAsTypedArray: true
+            };
+            primitive.attributes[attributeName] = accessor;
+          } else {
+            primitive.attributes[attributeName] = void 0;
+          }
         }
 
         if (primitive.indices !== void 0) {
@@ -17110,18 +17125,23 @@ class GLTF2Loader {
 
   _loadDependenciesOfMaterials(gltfJson) {
     // Material
-    for (let material of gltfJson.materials) {
-      let baseColorTexture = material.pbrMetallicRoughness.baseColorTexture;
-      if (baseColorTexture !== void 0) {
-        baseColorTexture.texture = gltfJson.textures[baseColorTexture.index];
-      }
-      let metallicRoughnessTexture = material.pbrMetallicRoughness.metallicRoughnessTexture;
-      if (metallicRoughnessTexture !== void 0) {
-        metallicRoughnessTexture.texture = gltfJson.textures[metallicRoughnessTexture.index];
-      }
-      let normalTexture = material.normalTexture;
-      if (normalTexture !== void 0) {
-        normalTexture.texture = gltfJson.textures[normalTexture.index];
+    if (gltfJson.materials) {
+      for (let material of gltfJson.materials) {
+        if (material.pbrMetallicRoughness) {
+          let baseColorTexture = material.pbrMetallicRoughness.baseColorTexture;
+          if (baseColorTexture !== void 0) {
+            baseColorTexture.texture = gltfJson.textures[baseColorTexture.index];
+          }
+          let metallicRoughnessTexture = material.pbrMetallicRoughness.metallicRoughnessTexture;
+          if (metallicRoughnessTexture !== void 0) {
+            metallicRoughnessTexture.texture = gltfJson.textures[metallicRoughnessTexture.index];
+          }
+        }
+
+        let normalTexture = material.normalTexture;
+        if (normalTexture !== void 0) {
+          normalTexture.texture = gltfJson.textures[normalTexture.index];
+        }
       }
     }
   }
@@ -17333,15 +17353,16 @@ class GLTF2Loader {
       
       promisesToLoadResources.push(new Promise((resolve, reject)=> {
         let img = new Image();
-        if (!imageUri.match(/^data:/)) {
-          img.crossOrigin = 'Anonymous';
-        }
-        img.onload = () => {
-          imageJson.image = img;
-          resolve(gltfJson);
-        };
-
         img.src = imageUri;
+        imageJson.image = img;
+        if (imageUri.match(/^data:/)) {
+          resolve(gltfJson);
+        } else {
+          img.crossOrigin = 'Anonymous';
+          img.onload = () => {
+            resolve(gltfJson);
+          };
+        }
 
         resources.images[i] = img;
       }));
@@ -17432,7 +17453,7 @@ class ModelConverter {
     this._setupTransform(gltfModel, groups);
 
     // Skeleton
-    this._setupSkeleton(gltfModel, groups, glboostMeshes);
+    this._setupSkeleton(glBoostContext, gltfModel, groups, glboostMeshes);
 
     // Hierarchy
     this._setupHierarchy(glBoostContext, gltfModel, groups, glboostMeshes);
@@ -17531,7 +17552,7 @@ class ModelConverter {
     }
   }
 
-  _setupSkeleton(gltfModel, groups, glboostMeshes) {
+  _setupSkeleton(glBoostContext, gltfModel, groups, glboostMeshes) {
     for (let node_i in gltfModel.nodes) {
       let node = gltfModel.nodes[node_i];
       let group = groups[node_i];
@@ -17562,7 +17583,7 @@ class ModelConverter {
     for (let mesh of gltfModel.meshes) {
       let geometry = null;
       let glboostMesh = null;
-      if (mesh.extras && mesh.extras._skin) {
+      if (mesh.extras && mesh.extras._skin && mesh.extras._skin.inverseBindMatrices) {
         geometry = glBoostContext.createSkeletalGeometry();
         glboostMesh = glBoostContext.createSkeletalMesh(geometry, null);
         glboostMesh.gltfJointIndices = mesh.extras._skin.jointsIndices;
@@ -17591,7 +17612,8 @@ class ModelConverter {
       let additional = {
         'joint': [],
         'weight': [],
-        'texcoord': []
+        'texcoord': [],
+        'color': []
       };
 
       let dataViewMethodDic = {};
@@ -17622,12 +17644,24 @@ class ModelConverter {
 
         {
           let accessor = primitive.attributes.NORMAL;
-          _normals[i] = accessor.extras.vertexAttributeArray;
-          vertexData.components.normal = accessor.extras.componentN;
-          vertexData.componentBytes.normal = accessor.extras.componentBytes;
-          vertexData.componentType.normal = accessor.componentType;
-          dataViewMethodDic.normal = accessor.extras.dataViewMethod;
+          if (accessor) {
+            _normals[i] = accessor.extras.vertexAttributeArray;
+            vertexData.components.normal = accessor.extras.componentN;
+            vertexData.componentBytes.normal = accessor.extras.componentBytes;
+            vertexData.componentType.normal = accessor.componentType;
+            dataViewMethodDic.normal = accessor.extras.dataViewMethod;
+          }
+          
+          accessor = primitive.attributes.COLOR_0;
+          if (accessor) {
+            additional['color'][i] = accessor.extras.vertexAttributeArray;
+            vertexData.components.color = accessor.extras.componentN;
+            vertexData.componentBytes.color = accessor.extras.componentBytes;
+            vertexData.componentType.color = accessor.componentType;
+            dataViewMethodDic.color = accessor.extras.dataViewMethod;
+          }
         }
+
 
         {
           let accessor = primitive.attributes.JOINTS_0;
@@ -17676,8 +17710,8 @@ class ModelConverter {
           } else {
             glboostMaterial = glBoostContext.createClassicMaterial();
           }
-          if (defaultShader) {
-            glboostMaterial.shaderClass = defaultShader;
+          if (options.defaultShader) {
+            glboostMaterial.shaderClass = options.defaultShader;
           } else {
             glboostMaterial.baseColor = new Vector4(0.5, 0.5, 0.5, 1);
           }
@@ -17701,6 +17735,9 @@ class ModelConverter {
           }
           if (typeof additional['texcoord'][i] !== 'undefined') {
             lengthDic.texcoord += additional['texcoord'][i].length;
+          }
+          if (typeof additional['color'][i] !== 'undefined') {
+            lengthDic.color += additional['color'][i].length;
           }
         }
   
@@ -17742,6 +17779,8 @@ class ModelConverter {
               array = additional['weight'][i];
             } else if (attribName === 'texcoord') {
               array = additional['texcoord'][i];
+            } else if (attribName === 'color') {
+              array = additional['color'][i];
             }
   
             if (array) {
@@ -17760,6 +17799,8 @@ class ModelConverter {
             additional['weight'] = newTypedArray;
           } else if (attribName === 'texcoord') {
             additional['texcoord'] = newTypedArray;
+          } else if (attribName === 'color') {
+            additional['color'] = newTypedArray;
           }
         }
   
@@ -17770,6 +17811,7 @@ class ModelConverter {
         additional['joint'] = additional['joint'][0];
         additional['weight'] = additional['weight'][0];
         additional['texcoord'] = additional['texcoord'][0];
+        additional['color'] = additional['color'][0];
       }
   
       if (typeof vertexData.normal === 'undefined' || vertexData.normal.length === 0) {
@@ -17783,6 +17825,9 @@ class ModelConverter {
       }
       if (typeof additional['texcoord'] === 'undefined' || additional['texcoord'].length === 0) {
         delete additional['texcoord'];
+      }
+      if (typeof additional['color'] === 'undefined' || additional['color'].length === 0) {
+        delete additional['color'];
       }
   
   
@@ -17808,33 +17853,35 @@ class ModelConverter {
       dataViewMethodDic.texcoord = accessor.extras.dataViewMethod;
 
       let setTextures = (materialJson)=> {
-        let baseColorTexture = materialJson.pbrMetallicRoughness.baseColorTexture;
-        if (baseColorTexture) {
-          let sampler = baseColorTexture.texture.sampler;
+        if (materialJson.pbrMetallicRoughness) {
+          let baseColorTexture = materialJson.pbrMetallicRoughness.baseColorTexture;
+          if (baseColorTexture) {
+            let sampler = baseColorTexture.texture.sampler;
 
-          let isNeededToMultiplyAlphaToColorOfTexture = false;
-          if (options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
-            if (options.isTextureImageToLoadPreMultipliedAlpha) {
-              // Nothing to do because premultipling alpha is already done.
-            } else {
-              isNeededToMultiplyAlphaToColorOfTexture = true;
+            let isNeededToMultiplyAlphaToColorOfTexture = false;
+            if (options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
+              if (options.isTextureImageToLoadPreMultipliedAlpha) {
+                // Nothing to do because premultipling alpha is already done.
+              } else {
+                isNeededToMultiplyAlphaToColorOfTexture = true;
+              }
+            } else { // if is NOT Needed To Multiply AlphaToColor Of PixelOutput
+              if (options.isTextureImageToLoadPreMultipliedAlpha) {
+                // TODO: Implement to Make Texture Straight.
+              } else {
+                // Nothing to do because the texture is straight.
+              }        
             }
-          } else { // if is NOT Needed To Multiply AlphaToColor Of PixelOutput
-            if (options.isTextureImageToLoadPreMultipliedAlpha) {
-              // TODO: Implement to Make Texture Straight.
-            } else {
-              // Nothing to do because the texture is straight.
-            }        
-          }
 
-          let texture = glBoostContext.createTexture(baseColorTexture.texture.image.image, '', {
-            'TEXTURE_MAG_FILTER': sampler.magFilter,
-            'TEXTURE_MIN_FILTER': sampler.minFilter,
-            'TEXTURE_WRAP_S': sampler.wrapS,
-            'TEXTURE_WRAP_T': sampler.wrapT,
-            'UNPACK_PREMULTIPLY_ALPHA_WEBGL': isNeededToMultiplyAlphaToColorOfTexture
-          });
-          gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
+            let texture = glBoostContext.createTexture(baseColorTexture.texture.image.image, '', {
+              'TEXTURE_MAG_FILTER': sampler.magFilter,
+              'TEXTURE_MIN_FILTER': sampler.minFilter,
+              'TEXTURE_WRAP_S': sampler.wrapS,
+              'TEXTURE_WRAP_T': sampler.wrapT,
+              'UNPACK_PREMULTIPLY_ALPHA_WEBGL': isNeededToMultiplyAlphaToColorOfTexture
+            });
+            gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
+          }
 
           let enables = [];
           if (options.isBlend) {
@@ -17869,7 +17916,7 @@ class ModelConverter {
       }
     }
 
-    if (materialJson.pbrMetallicRoughness.baseColorFactor) {
+    if (materialJson.pbrMetallicRoughness && materialJson.pbrMetallicRoughness.baseColorFactor) {
       let value = materialJson.pbrMetallicRoughness.baseColorFactor;
       gltfMaterial.baseColor = new Vector4(value[0], value[1], value[2], value[3]);
     }
