@@ -4,7 +4,7 @@
 	(factory());
 }(this, (function () { 'use strict';
 
-// This revision is the commit right after the SHA: 4437c38a
+// This revision is the commit right after the SHA: 0f209901
 var global = ('global',eval)('this');
 
 (function (global) {
@@ -3389,7 +3389,7 @@ class L_Element extends GLBoostObject {
     if (this._is_scale_updated) {
       return this._scale.clone();
     } else if (this._is_trs_matrix_updated) {
-      let m = this._matrix();
+      let m = this._matrix;
       this._scale.x = Math.sqrt(m.m00*m.m00 + m.m01*m.m01 + m.m02*m.m02);
       this._scale.y = Math.sqrt(m.m10*m.m10 + m.m11*m.m11 + m.m12*m.m12);
       this._scale.z = Math.sqrt(m.m20*m.m20 + m.m21*m.m21 + m.m22*m.m22);
@@ -3476,8 +3476,8 @@ class L_Element extends GLBoostObject {
   getMatrixAtOrStatic(lineName, inputValue) {
     let input = inputValue;
 
-   // console.log(this.userFlavorName + ": " + this.isTrsMatrixNeeded(lineName, inputValue));
-    if (this.isTrsMatrixNeeded(lineName, inputValue)) {
+    //console.log(this.userFlavorName + ": " + this.isTrsMatrixNeeded(lineName, inputValue));
+    if (this.isTrsMatrixNeeded(lineName, inputValue) && this._is_trs_matrix_updated) {
       return this.getMatrixNotAnimated();
     } else {
 
@@ -3497,7 +3497,7 @@ class L_Element extends GLBoostObject {
 
     }
 
-    this._is_trs_matrix_updated = true;    
+    this._is_trs_matrix_updated = true;
   }
 
 
@@ -3545,7 +3545,6 @@ class L_Element extends GLBoostObject {
       }
       this._quaternion = value;
       this._is_quaternion_updated = true;
-      this._is_trs_matrix_updated = false;
     }
 
     return this._quaternion;
@@ -4172,14 +4171,14 @@ class SkeletalShaderSource {
     shaderText += `${in_} vec4 aVertex_joint;\n`;
     shaderText += `${in_} vec4 aVertex_weight;\n`;
 
-    if (!GLBoost$1.VALUE_TARGET_IS_MOBILE) {
+    if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
       shaderText += 'uniform mat4 skinTransformMatrices[' + extraData.jointN  + '];\n';
-    } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE === 1){
+    } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1){
       shaderText += 'uniform vec4 quatArray[' + extraData.jointN  + '];\n';
       shaderText += 'uniform vec4 transArray[' + extraData.jointN  + '];\n';
       //    shaderText += 'uniform vec2 quatArray[' + extraData.jointN  + '];\n';
 
-    } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE > 1) {
+    } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
       // `OneVec4` Version [Begin]
       shaderText += 'uniform vec4 quatTranslationArray[' + extraData.jointN  + '];\n';
       shaderText += 'uniform vec3 translationScale;\n';
@@ -4444,19 +4443,19 @@ return mat4(
 
     shaderText += 'vec4 weightVec = aVertex_weight;\n'; // DO NOT normalize as vec4!
 
-    if (!GLBoost$1.VALUE_TARGET_IS_MOBILE) {
+    if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
       shaderText += 'mat4 skinMat = weightVec.x * skinTransformMatrices[int(aVertex_joint.x)];\n';
       shaderText += 'skinMat += weightVec.y * skinTransformMatrices[int(aVertex_joint.y)];\n';
       shaderText += 'skinMat += weightVec.z * skinTransformMatrices[int(aVertex_joint.z)];\n';
       shaderText += 'skinMat += weightVec.w * skinTransformMatrices[int(aVertex_joint.w)];\n';
-    } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE === 1) {
+    } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
 
       // `Quaterion (Vec4) Transform(Vec3)` Version
       shaderText += 'mat4 skinMat = weightVec.x * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.x)], transArray[int(aVertex_joint.x)]);\n';
       shaderText += 'skinMat += weightVec.y * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.y)], transArray[int(aVertex_joint.y)]);\n';
       shaderText += 'skinMat += weightVec.z * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.z)], transArray[int(aVertex_joint.z)]);\n';
       shaderText += 'skinMat += weightVec.w * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.w)], transArray[int(aVertex_joint.w)]);\n';
-    } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE > 1) {
+    } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
 
       // `OneVec4` Version
       shaderText += `vec2 criteria = vec2(4096.0, 4096.0);\n`;
@@ -4506,11 +4505,11 @@ return mat4(
       }
     });
 
-    if (!GLBoost$1.VALUE_TARGET_IS_MOBILE) {
+    if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
       let skinTransformMatricesUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'skinTransformMatrices');
       material.setUniform(shaderProgram, 'uniform_skinTransformMatrices', skinTransformMatricesUniformLocation);
       material._semanticsDic['JOINTMATRIX'] = 'skinTransformMatrices';
-    } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE === 1) {
+    } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
       
       let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatArray');
       material.setUniform(shaderProgram, 'uniform_quatArray', quatArrayUniformLocation);
@@ -4519,7 +4518,7 @@ return mat4(
       material.setUniform(shaderProgram, 'uniform_transArray', transArrayUniformLocation);
       material._semanticsDic['JOINT_TRANSLATION'] = 'transArray';
       
-    } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE > 1) {
+    } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
       
       // `OneVec4` Version [Begin]
       let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatTranslationArray');
@@ -5135,7 +5134,7 @@ class Shader extends GLBoostObject {
       shader = this._glContext.createShader(this, gl.VERTEX_SHADER);
     } else {
       // Unknown shader type
-      return null;
+      shader = null;
     }
 
     gl.shaderSource(shader, theSource);
@@ -5145,10 +5144,12 @@ class Shader extends GLBoostObject {
 
     // See if it compiled successfully
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      alert('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
+      console.error('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));
       console.error(gl.getShaderInfoLog(shader));
-      return null;
+
+      shader = null;
     }
+  
 
     return shader;
   }
@@ -5164,6 +5165,10 @@ class Shader extends GLBoostObject {
     var vertexShader = this._getShader(gl, vertexShaderStr, 'x-shader/x-vertex');
     var fragmentShader = this._getShader(gl, fragmentShaderStr, 'x-shader/x-fragment');
 
+    if (vertexShader === null || fragmentShader === null) {
+      return null;
+    }
+
     // Create the shader program
     var shaderProgram = this._glContext.createProgram(this);
     gl.attachShader(shaderProgram, vertexShader);
@@ -5174,7 +5179,7 @@ class Shader extends GLBoostObject {
 
     // If creating the shader program failed, alert
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-      alert('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+      console.error('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
       console.error(gl.getProgramInfoLog(shaderProgram));
     }
 
@@ -5191,56 +5196,64 @@ class Shader extends GLBoostObject {
     var gl = this._glContext.gl;
     var canvasId = this._glContext.belongingCanvasId;
 
-    let lights = this.getDefaultPointLightIfNotExist(lights_);
-
-    lights = lights.filter((light)=>{return !light.isTypeAmbient();});
-
-    var vertexShaderText = this._getVertexShaderString(gl, vertexAttribs, existCamera_f, lights, material, extraData);
-    var fragmentShaderText = this._getFragmentShaderString(gl, vertexAttribs, lights, material,  extraData);
-
-    // lookup shaderHashTable
-    var baseText = vertexShaderText + '\n###SPLIT###\n' + fragmentShaderText;
-    var hash = Hash.toCRC32(baseText);
-    if (!Shader._shaderHashTable[canvasId]) {
-      Shader._shaderHashTable[canvasId] = {};
-    }
     let programToReturn = null;
-    var hashTable = Shader._shaderHashTable[canvasId];
-    if (hash in hashTable) {
-      if (hashTable[hash].code === baseText) {
-        programToReturn = hashTable[hash].program;
-      } else {
-        for (let i=0; i<hashTable[hash].collisionN; i++) {
-          if (hashTable[hash + '_' + i].code === baseText) {
-            programToReturn = hashTable[hash + '_' + i].program;
-            break;
+    let lights = null;
+    
+    do {
+      lights = this.getDefaultPointLightIfNotExist(lights_);
+      lights = lights.filter((light)=>{return !light.isTypeAmbient();});
+
+      var vertexShaderText = this._getVertexShaderString(gl, vertexAttribs, existCamera_f, lights, material, extraData);
+      var fragmentShaderText = this._getFragmentShaderString(gl, vertexAttribs, lights, material,  extraData);
+
+      // lookup shaderHashTable
+      var baseText = vertexShaderText + '\n###SPLIT###\n' + fragmentShaderText;
+      var hash = Hash.toCRC32(baseText);
+      if (!Shader._shaderHashTable[canvasId]) {
+        Shader._shaderHashTable[canvasId] = {};
+      }
+      var hashTable = Shader._shaderHashTable[canvasId];
+      if (hash in hashTable) {
+        if (hashTable[hash].code === baseText) {
+          programToReturn = hashTable[hash].program;
+        } else {
+          for (let i=0; i<hashTable[hash].collisionN; i++) {
+            if (hashTable[hash + '_' + i].code === baseText) {
+              programToReturn = hashTable[hash + '_' + i].program;
+              break;
+            }
           }
+          hashTable[hash].collisionN++;
         }
-        hashTable[hash].collisionN++;
-      }
-    }
-
-    if (programToReturn === null || !gl.isProgram(programToReturn)) {
-    // if the current shader codes is not in shaderHashTable, create GLSL Shader Program.
-
-      // register it to shaderHashTable.
-      let indexStr = null;
-      if (typeof hashTable[hash] !== 'undefined' && hashTable[hash].collisionN > 0) {
-        indexStr = hash + '_' + hashTable[hash].collisionN;
-      } else {
-        indexStr = hash;
       }
 
-      MiscUtil.consoleLog(GLBoost$1.LOG_SHADER_CODE, 'ShaderInstance: ' + material.shaderInstance + '   ShaderHashId: ' + indexStr);
-      programToReturn = this._initShaders(gl, vertexShaderText, fragmentShaderText);
-      programToReturn.createdAt = performance.now();
-      programToReturn.hashId = indexStr;
-      programToReturn.glslProgramsSelfUsageCount = -1;
+      if (programToReturn === null || !gl.isProgram(programToReturn)) {
+      // if the current shader codes is not in shaderHashTable, create GLSL Shader Program.
 
-      hashTable[indexStr] = {code:baseText, program:programToReturn, collisionN:0};
-      Shader._shaderHashTable[canvasId] = hashTable;
+        // register it to shaderHashTable.
+        let indexStr = null;
+        if (typeof hashTable[hash] !== 'undefined' && hashTable[hash].collisionN > 0) {
+          indexStr = hash + '_' + hashTable[hash].collisionN;
+        } else {
+          indexStr = hash;
+        }
 
-    }
+        MiscUtil.consoleLog(GLBoost$1.LOG_SHADER_CODE, 'ShaderInstance: ' + material.shaderInstance + '   ShaderHashId: ' + indexStr);
+        programToReturn = this._initShaders(gl, vertexShaderText, fragmentShaderText);
+        if (programToReturn !== null) {
+          programToReturn.createdAt = performance.now();
+          programToReturn.hashId = indexStr;
+          programToReturn.glslProgramsSelfUsageCount = -1;
+
+          hashTable[indexStr] = {code:baseText, program:programToReturn, collisionN:0};
+          Shader._shaderHashTable[canvasId] = hashTable;
+        } else if (this.className === "SkeletalShader") {
+          GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL++;
+          console.log('GLBoost.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL was changed to : '+GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL);
+        }
+
+      }
+    } while (programToReturn === null && this.className === "SkeletalShader" && GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL < 3);
 
     this._glslProgram = programToReturn;
 
@@ -5384,7 +5397,7 @@ class Shader extends GLBoostObject {
       shaderText += '  vec3 normal = normalize(v_normal_world);\n';
       shaderText += '  vec3 normal_world = normal;\n';
     } else if (material.isFlatShading || !Shader._exist(f, GLBoost$1.NORMAL)) {
-      if (!GLBoost$1.VALUE_TARGET_IS_MOBILE) {
+      if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
         shaderText += '  vec3 dx = dFdx(v_position_world);\n';
         shaderText += '  vec3 dy = dFdy(v_position_world);\n';
 
@@ -5410,6 +5423,21 @@ class Shader extends GLBoostObject {
       shaderText += `  normal_world = normal;\n`;
 
     }
+
+    return shaderText;
+  }
+
+  _multiplyAlphaToColorOfTexel(gl) {
+    var gl = this._glContext.gl;
+    let shaderText = "";
+    let textureFunc = Shader._texture_func(gl);
+    shaderText += `vec4 multiplyAlphaToColorOfTexel(sampler2D texture, vec2 texcoord, int toMultiplyAlphaFlag) {\n`;
+    shaderText += `  vec4 texel = ${textureFunc}(texture, texcoord);\n`;
+    shaderText += `  if (toMultiplyAlphaFlag == 1) {\n`;      
+    shaderText += `    texel.rgb /= texel.a;\n`;
+    shaderText += `  }\n`;
+    shaderText += `  return texel;\n`;
+    shaderText += `}\n`;
 
     return shaderText;
   }
@@ -6149,27 +6177,27 @@ class FreeShader extends Shader {
 
     let newAttributes = {};
     for (let attributeName in attributes) {
-      switch (attributes[attributeName]) {
+      switch (attributeName) {
         case 'POSITION':
-          newAttributes.position = attributeName;
+          newAttributes.position = attributes[attributeName];
           break;
         case 'NORMAL':
-          newAttributes.normal = attributeName;
+          newAttributes.normal = attributes[attributeName];
           break;
         case 'COLOR':
-          newAttributes.color = attributeName;
+          newAttributes.color = attributes[attributeName];
           break;
         case 'TEXCOORD_0':
-          newAttributes.texcoord = attributeName;
+          newAttributes.texcoord = attributes[attributeName];
           break;
         case 'JOINT':
-          newAttributes.joint = attributeName;
+          newAttributes.joint = attributes[attributeName];
           break;
         case 'WEIGHT':
-          newAttributes.weight = attributeName;
+          newAttributes.weight = attributes[attributeName];
           break;
         default:
-          newAttributes[attributes[attributeName]] = attributeName;
+          newAttributes[attributeName] = attributes[attributeName];
           break;
       }
     }
@@ -6216,14 +6244,16 @@ class FreeShader extends Shader {
         textureCount++;
       }
 
-      switch (this._uniforms[uniformName]) {
+      switch (uniformName) {
+        case 'WORLD':
+        case 'VIEW':
         case 'MODELVIEW':
         case 'MODELVIEWINVERSETRANSPOSE':
         case 'PROJECTION':
         case 'JOINTMATRIX':
-          material.setUniform(shaderProgram, 'uniform_' + uniformName, this._glContext.getUniformLocation(shaderProgram, uniformName));
+          material.setUniform(shaderProgram, 'uniform_' + this._uniforms[uniformName], this._glContext.getUniformLocation(shaderProgram, this._uniforms[uniformName]));
         case 'TEXTURE':
-          material.addSemanticsDic(this._uniforms[uniformName], uniformName);
+          material.addSemanticsDic(uniformName, this._uniforms[uniformName]);
           continue;
       }
 
@@ -7378,6 +7408,8 @@ class AbstractTexture extends GLBoostObject {
 
     // x,y are uv scale, zw are uv transform. calculation is applied as first scale, second transform
     this._uvTransform = new Vector4(1, 1, 0, 0);
+
+    this._toMultiplyAlphaToColorPreviously = false; // same result when UNPACK_PREMULTIPLY_ALPHA_WEBGL is true
   }
 
   /**
@@ -7536,6 +7568,13 @@ class AbstractTexture extends GLBoostObject {
     this._uvTransform = vec4;
   }
 
+  get toMultiplyAlphaToColorPreviously() {
+    return this._toMultiplyAlphaToColorPreviously;
+  }
+
+  set toMultiplyAlphaToColorPreviously(flag) {
+    this._toMultiplyAlphaToColorPreviously = flag;
+  }
 }
 
 class FragmentSimpleShaderSource {
@@ -7795,6 +7834,15 @@ class DecalShaderSource {
       shaderText += 'uniform sampler2D uTexture;\n';
     }
     shaderText += 'uniform vec4 materialBaseColor;\n';
+    shaderText += 'uniform int uIsTextureToMultiplyAlphaToColorPreviously;\n';
+
+    return shaderText;
+  }
+
+  FSMethodDefine_DecalShaderSource(in_, f, lights, material, extraData) {
+    let shaderText = '';
+
+    shaderText += this._multiplyAlphaToColorOfTexel();
 
     return shaderText;
   }
@@ -7810,7 +7858,7 @@ class DecalShaderSource {
     }
     shaderText += '    rt0 *= materialBaseColor;\n';
     if (Shader._exist(f, GLBoost$1.TEXCOORD) && material.hasAnyTextures()) {
-      shaderText += `  rt0 *= ${textureFunc}(uTexture, texcoord);\n`;
+      shaderText += `  rt0 *= multiplyAlphaToColorOfTexel(uTexture, texcoord, uIsTextureToMultiplyAlphaToColorPreviously);\n`;
     }
 
     //shaderText += '    float shadowRatio = 0.0;\n';
@@ -7838,6 +7886,11 @@ class DecalShaderSource {
     let diffuseTexture = material.getTextureFromPurpose(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
     if (!diffuseTexture) {
       diffuseTexture = this._glBoostContext.defaultDummyTexture;
+    }
+
+    if (diffuseTexture.toMultiplyAlphaToColorPreviously) {
+      let uIsTextureToMultiplyAlphaToColorPreviously = this._glContext.getUniformLocation(shaderProgram, 'uIsTextureToMultiplyAlphaToColorPreviously');
+      material.setUniform(shaderProgram, 'uIsTextureToMultiplyAlphaToColorPreviously', uIsTextureToMultiplyAlphaToColorPreviously);
     }
 
     let uTexture = this._glContext.getUniformLocation(shaderProgram, 'uTexture');
@@ -7894,6 +7947,7 @@ class DecalShader extends FragmentSimpleShader {
     let diffuseTexture = material.getTextureFromPurpose(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
     if (diffuseTexture) {
       material.uniformTextureSamplerDic['uTexture'].textureName = diffuseTexture.userFlavorName;
+      this._glContext.uniform1i(material.getUniform(glslProgram, 'uIsTextureToMultiplyAlphaToColorPreviously'), diffuseTexture.toMultiplyAlphaToColorPreviously, true);
     }
 
 
@@ -9049,16 +9103,23 @@ class M_AbstractCamera extends M_Element {
 GLBoost['M_AbstractCamera'] = M_AbstractCamera;
 
 class L_CameraController extends GLBoostObject {
-  constructor(glBoostContext, isSymmetryMode = true, doResetWhenCameraSettingChanged = false, isForceGrab = false, efficiency = 1.0) {
+  constructor(glBoostContext, 
+    options = {
+      isSymmetryMode: true,
+      doResetWhenCameraSettingChanged: false,
+      isForceGrab: false,
+      efficiency: 1.0
+    }
+  ) {
     super(glBoostContext);
 
     this._camaras = new Set();
 
     this._isKeyUp = true;
-    this._isForceGrab = isForceGrab;
-    this._isSymmetryMode = isSymmetryMode;
+    this._isForceGrab = options.isForceGrab !== void 0 ? options.isForceGrab : false;
+    this._isSymmetryMode = options.isSymmetryMode !== void 0 ? options.isSymmetryMode : true;
 
-    this._efficiency = 0.5 * efficiency;
+    this._efficiency = options.efficiency !== void 0 ? 0.5 * options.efficiency : 1;
 
     this._rot_bgn_x = 0;
     this._rot_bgn_y = 0;
@@ -9088,7 +9149,7 @@ class L_CameraController extends GLBoostObject {
     this._foyvBias = 1.0;
     this._zFarAdjustingFactorBasedOnAABB = 1.0;
 
-    this._doResetWhenCameraSettingChanged = doResetWhenCameraSettingChanged;
+    this._doResetWhenCameraSettingChanged = options.doResetWhenCameraSettingChanged !== void 0 ? options.doResetWhenCameraSettingChanged : false;
 
     this._shiftCameraTo = null;
 
@@ -9297,8 +9358,9 @@ class L_CameraController extends GLBoostObject {
     }
 
     let newZNear = camera.zNear;
-    let newZFar = camera.zNear + Vector3.subtract(newCenterVec, newEyeVec).length();
+    let newZFar = camera.zFar;
     if (this._target) {
+      newZFar = camera.zNear + Vector3.subtract(newCenterVec, newEyeVec).length();
       newZFar += this._getTargetAABB().lengthCenterToCorner * this._zFarAdjustingFactorBasedOnAABB;
     }
 
@@ -10203,8 +10265,9 @@ class Sphere extends Geometry {
       vertexColor = new Vector4(1, 1, 1, 1);
     }
 
+    let shiftValue = 0.001; // for avoid Singular point
     for (var latNumber = 0; latNumber <= heightSegments; latNumber++) {
-      var theta = latNumber * Math.PI / heightSegments;
+      var theta = latNumber * Math.PI / heightSegments + shiftValue;
       var sinTheta = Math.sin(theta);
       var cosTheta = Math.cos(theta);
 
@@ -10816,8 +10879,8 @@ class GLBoostLowContext {
     return new L_OrthoCamera(this, true, lookat, ortho);
   }
 
-  createCameraController(isSymmetryMode, doResetWhenCameraSettingChanged, isForceGrab, efficiency) {
-    return new L_CameraController(this, isSymmetryMode, doResetWhenCameraSettingChanged, isForceGrab, efficiency);
+  createCameraController(options) {
+    return new L_CameraController(this, options);
   }
 
   createTexture(src, userFlavorName, parameters = null) {
@@ -13746,7 +13809,7 @@ class M_SkeletalGeometry extends Geometry {
       matrices[i] = matrix;
   }
 */
-    if (!GLBoost$1.VALUE_TARGET_IS_MOBILE) {
+    if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
 
       let flatMatrices = [];
       for (let i=0; i<matrices.length; i++) {
@@ -13767,7 +13830,7 @@ class M_SkeletalGeometry extends Geometry {
       }
       skeletalMesh._jointMatrices = flatMatrices;
 
-    } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE === 1) {
+    } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
       {
         // no comporess
 
@@ -13806,7 +13869,7 @@ class M_SkeletalGeometry extends Geometry {
          // console.log(scale);
         }
       }
-    } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE > 1) {
+    } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
       /*
       {
         // comporess quaternion only
@@ -13892,13 +13955,13 @@ class M_SkeletalGeometry extends Geometry {
       //var glslProgram = materials[i].shaderInstance.glslProgram;
 //      this._glContext.useProgram(glslProgram);
       
-      if (!GLBoost$1.VALUE_TARGET_IS_MOBILE) {
+      if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
         Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'JOINTMATRIX', new Float32Array(skeletalMesh._jointMatrices));
-      } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE === 1) {
+      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
         Shader.trySettingVec4ArrayToUniform(gl, glslProgram, material, material._semanticsDic, 'JOINT_QUATERNION', skeletalMesh._qArray);
   //      Shader.trySettingVec2ArrayToUniform(gl, glslProgram, material, material._semanticsDic, 'JOINT_QUATERNION', skeletalMesh._qArray);
         Shader.trySettingVec4ArrayToUniform(gl, glslProgram, material, material._semanticsDic, 'JOINT_TRANSLATION', skeletalMesh._tArray);      
-      } else if (GLBoost$1.VALUE_TARGET_IS_MOBILE > 1) {
+      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
         
         // `OneVec4` Vertion [Begin]
         Shader.trySettingVec4ArrayToUniform(gl, glslProgram, material, material._semanticsDic, 'JOINT_QUATTRANSLATION', skeletalMesh._qtArray); // 
@@ -15511,7 +15574,7 @@ GLBoost$1["ObjLoader"] = ObjLoader;
   /// define value of GLBoost global settings.
   let define = defineValueOfGLBoostConstants;
   define('VALUE_TARGET_WEBGL_VERSION', 1);
-  define('VALUE_TARGET_IS_MOBILE', 0);
+  define('VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL', 0);
   define('VALUE_DEFAULT_POINTLIGHT_INTENSITY', new Vector3(1, 1, 1));
   define('VALUE_ANGLE_UNIT', GLBoost$1.DEGREE);
   define('VALUE_WEBGL_ONE_USE_EXTENSIONS', true);
@@ -15648,7 +15711,7 @@ class GLTFLoader {
     options = {
       extensionLoader: null,
       isNeededToMultiplyAlphaToColorOfPixelOutput: true,
-      isTextureImageToLoadPreMultipliedAlpha: false,
+//      isTextureImageToLoadPreMultipliedAlpha: false,
       isExistJointGizmo: false,
       isBlend: false,
       isDepthTest: true,
@@ -15664,7 +15727,9 @@ class GLTFLoader {
               //"blendFuncSeparate": [1, 0, 1, 0],
             }
           },
-          globalStatesUsage: GLOBAL_STATES_USAGE_IGNORE // GLOBAL_STATES_USAGE_DO_NOTHING // GLOBAL_STATES_USAGE_INCLUSIVE // GLOBAL_STATES_USAGE_EXCLUSIVE
+          isTransparent: true,
+          isTextureImageToLoadPreMultipliedAlpha: false,
+          globalStatesUsage: GLBoost$1.GLOBAL_STATES_USAGE_IGNORE // GLBoost.GLOBAL_STATES_USAGE_DO_NOTHING // GLBoost.GLOBAL_STATES_USAGE_INCLUSIVE // GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE
         }
       ],
       isAllMeshesTransparent: true
@@ -15832,7 +15897,7 @@ class GLTFLoader {
           textureUri = basePath + imageFileStr;
         }
       }
-
+/*
       let isNeededToMultiplyAlphaToColorOfTexture = false;
       if (options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
         if (options.isTextureImageToLoadPreMultipliedAlpha) {
@@ -15847,13 +15912,13 @@ class GLTFLoader {
           // Nothing to do because the texture is straight.
         }
       }
-      
+      */
       let texture = glBoostContext.createTexture(null, textureName, {
         'TEXTURE_MAG_FILTER': samplerJson.magFilter,
         'TEXTURE_MIN_FILTER': samplerJson.minFilter,
         'TEXTURE_WRAP_S': samplerJson.wrapS,
-        'TEXTURE_WRAP_T': samplerJson.wrapT,
-        'UNPACK_PREMULTIPLY_ALPHA_WEBGL': isNeededToMultiplyAlphaToColorOfTexture
+        'TEXTURE_WRAP_T': samplerJson.wrapT
+//        'UNPACK_PREMULTIPLY_ALPHA_WEBGL': isNeededToMultiplyAlphaToColorOfTexture
       });
       
       if (options.extensionLoader && options.extensionLoader.setUVTransformToTexture) {
@@ -15957,7 +16022,7 @@ class GLTFLoader {
           rootJointStr = nodeJson.skeletons[0];
           skinStr = nodeJson.skin;
         }
-        let mesh = this._loadMesh(glBoostContext, meshJson, buffers, json, defaultShader, rootJointStr, skinStr, shaders, textures, glTFVer, options);
+        let mesh = this._loadMesh(glBoostContext, meshJson, buffers, json, defaultShader, rootJointStr, skinStr, shaders, textures, glTFVer, group, options);
         mesh.userFlavorName = meshStr;
         group.addChild(mesh);
       }
@@ -16041,7 +16106,7 @@ class GLTFLoader {
     return group;
   }
 
-  _loadMesh(glBoostContext, meshJson, buffers, json, defaultShader, rootJointStr, skinStr, shaders, textures, glTFVer, options) {
+  _loadMesh(glBoostContext, meshJson, buffers, json, defaultShader, rootJointStr, skinStr, shaders, textures, glTFVer, group, options) {
     var mesh = null;
     var geometry = null;
     if (rootJointStr) {
@@ -16156,7 +16221,6 @@ class GLTFLoader {
           }
         }
 */
-//        if (material === null) {
         let material = null;
         if (options.extensionLoader && options.extensionLoader.createClassicMaterial) {
           material = options.extensionLoader.createClassicMaterial(glBoostContext);
@@ -16167,9 +16231,32 @@ class GLTFLoader {
           material.shaderParameters.isNeededToMultiplyAlphaToColorOfPixelOutput = options.isNeededToMultiplyAlphaToColorOfPixelOutput;
         }
         this._materials.push(material);
-//        }
 
-        texcoords = this._loadMaterial(glBoostContext, buffers, json, vertexData, indices, material, materialStr, positions, dataViewMethodDic, additional, texcoords, texcoords0AccessorStr, geometry, defaultShader, shaders, textures, i, glTFVer, options);
+        if (options.statesOfElements) {
+          for (let statesInfo of options.statesOfElements) {
+            if (statesInfo.targets) {
+              for (let target of statesInfo.targets) {
+                let isMatch = false;
+                let specifyMethod = statesInfo.specifyMethod !== void 0 ? statesInfo.specifyMethod : GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME;
+                switch (specifyMethod) {
+                  case GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME:
+                    isMatch = group.userFlavorName === target; break;
+                  case GLBoost$1.QUERY_TYPE_INSTANCE_NAME:
+                    isMatch = group.instanceName === target; break;
+                  case GLBoost$1.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR:
+                    isMatch = group.instanceNameWithUserFlavor === target; break;                      
+                }
+                if (isMatch) {
+                  material.states = statesInfo.states;
+                  group.isTransparent = statesInfo.isTransparent !== void 0 ? statesInfo.isTransparent : false;
+                  material.globalStatesUsage = statesInfo.globalStatesUsage !== void 0 ? statesInfo.globalStatesUsage : GLBoost$1.GLOBAL_STATES_USAGE_IGNORE;
+                }
+              }
+            }
+          }
+        }
+
+        texcoords = this._loadMaterial(glBoostContext, buffers, json, vertexData, indices, material, materialStr, positions, dataViewMethodDic, additional, texcoords, texcoords0AccessorStr, geometry, defaultShader, shaders, textures, i, glTFVer, group, options);
 
         materials.push(material);
       } else {
@@ -16308,7 +16395,7 @@ class GLTFLoader {
     }
   }
 
-  _loadMaterial(glBoostContext, buffers, json, vertexData, indices, material, materialStr, positions, dataViewMethodDic, additional, texcoords, texcoords0AccessorStr, geometry, defaultShader, shaders, textures, idx, glTFVer, options) {
+  _loadMaterial(glBoostContext, buffers, json, vertexData, indices, material, materialStr, positions, dataViewMethodDic, additional, texcoords, texcoords0AccessorStr, geometry, defaultShader, shaders, textures, idx, glTFVer, group, options) {
     let materialJson = json.materials[materialStr];
     material.userFlavorName = materialJson.name;
     let originalMaterialJson = materialJson;
@@ -16346,7 +16433,50 @@ class GLTFLoader {
             if (valueName === 'diffuse' || (materialJson.technique === "CONSTANT" && valueName === 'ambient')) {
               texturePurpose = GLBoost$1.TEXTURE_PURPOSE_DIFFUSE;
             }
-            material.setTexture(textures[textureStr], texturePurpose);
+
+            let texture = textures[textureStr];
+            
+            let isNeededToMultiplyAlphaToColorOfTexture = false;
+            if (options.statesOfElements) {
+              for (let statesInfo of options.statesOfElements) {
+                if (statesInfo.targets) {
+                  for (let target of statesInfo.targets) {
+                    let isMatch = false;
+                    let specifyMethod = statesInfo.specifyMethod !== void 0 ? statesInfo.specifyMethod : GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME;
+                    switch (specifyMethod) {
+                      case GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME:
+                        isMatch = group.userFlavorName === target; break;
+                      case GLBoost$1.QUERY_TYPE_INSTANCE_NAME:
+                        isMatch = group.instanceName === target; break;
+                      case GLBoost$1.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR:
+                        isMatch = group.instanceNameWithUserFlavor === target; break;                      
+                    }
+
+                    if (isMatch) {
+                      if (options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
+                        if (options.statesOfElements.isTextureImageToLoadPreMultipliedAlpha) {
+                          // Nothing to do because premultipling alpha is already done.
+                        } else {
+                          isNeededToMultiplyAlphaToColorOfTexture = true;
+                        }
+                      } else { // if is NOT Needed To Multiply AlphaToColor Of PixelOutput
+                        if (options.statesOfElements.isTextureImageToLoadPreMultipliedAlpha) {
+                          // TODO: Implement to Make Texture Straight.
+                        } else {
+                          // Nothing to do because the texture is straight.
+                        }
+                      }
+                    }
+
+                    //texture.setParameter('UNPACK_PREMULTIPLY_ALPHA_WEBGL', isNeededToMultiplyAlphaToColorOfTexture);
+//                    texture.loadWebGLTexture();
+                  }
+                }
+              }
+            }
+
+            material.setTexture(texture, texturePurpose);
+            material.toMultiplyAlphaToColorPreviously = isNeededToMultiplyAlphaToColorOfTexture;
 
             let enables = [];
             if (options.isBlend) {
@@ -16355,9 +16485,17 @@ class GLTFLoader {
             if (options.isDepthTest) {
               enables.push(2929);
             }
-            material.states.enable = enables; // It means, [gl.BLEND];
+            material.states.enable = material.states.enable.concat(enables);
+
+            // Remove duplicated values
+            material.states.enable = material.states.enable.filter(function (x, i, self) {
+              return self.indexOf(x) === i;
+            });
+
             if (options.isBlend && options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
-              material.states.functions.blendFuncSeparate = [1, 771, 1, 771];
+              if (material.states.functions.blendFuncSeparate === void 0) {
+                material.states.functions.blendFuncSeparate = [1, 771, 1, 771];
+              }
             }
             material.globalStatesUsage = GLBoost$1.GLOBAL_STATES_USAGE_IGNORE;
           }
@@ -16453,7 +16591,7 @@ class GLTFLoader {
       //attributes[attributesJson[attributeName]] = attributeName;
       let parameterName = attributesJson[attributeName];
       let parameterJson = parametersJson[parameterName];
-      attributes[attributeName] = parameterJson.semantic;
+      attributes[parameterJson.semantic] = attributeName;
     }
 
     let uniforms = {};
@@ -16462,7 +16600,7 @@ class GLTFLoader {
       let parameterName = uniformsJson[uniformName];
       let parameterJson = parametersJson[parameterName];
       if (typeof parameterJson.semantic !== 'undefined') {
-        uniforms[uniformName] = parameterJson.semantic;
+        uniforms[parameterJson.semantic] = uniformName;
       } else {
         let value = null;
         if (typeof materialJson.values !== 'undefined' && typeof materialJson.values[parameterName] !== 'undefined') {

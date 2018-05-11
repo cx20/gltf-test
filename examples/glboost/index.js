@@ -33,6 +33,7 @@ var renderer = glBoostContext.createRenderer({
         alpha: 1
     }
 });
+
 renderer.resize(width, height);
 
 var scene = glBoostContext.createScene();
