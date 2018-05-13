@@ -76,7 +76,8 @@ window.addEventListener('load', function() {
 
     //let file = './resource/gltf/buster_drone/scene.gltf';
     let file = url;
-    let gltfShader = new CZPG.GLTFShader(context, camera).setUniformObj({
+    //let gltfShader = new CZPG.GLTFShader(context, camera).setUniformObj({
+    let gltfShader = new CZPG.GLTFShader(context).setUniformObj({
         u_lightDirection: [0, 1, 1],
         u_lightColor: [1, 1, 1],
         u_diffuseEnvMap: textures.diffuse,
@@ -87,7 +88,7 @@ window.addEventListener('load', function() {
     let animator;
     gltfLoader.load(file)
         .then( res => {
-            const {rootNode, textures, animations} = res;
+            const {rootNode, textures, animations, cameras} = res;
             sceneNode = rootNode;
 
             if (modelInfo.name == "GearboxAssy" ) {
@@ -105,6 +106,21 @@ window.addEventListener('load', function() {
                     node.model.setUniformObj(node.model.textures);
                 }
             });
+
+            if(cameras.length > 0) {
+                allCamera = [camera, ...cameras];
+                allCameraName = ['Default', ...cameras.map(c => c.name)];
+                datgui.add(controlObj, 'camera', allCameraName)
+                    .onFinishChange(value => {
+                        let target = allCamera.filter(c => c.name === value);
+                        scene.setCamera(allCamera[allCameraName.indexOf(value)]);
+                        if(scene.currentCamera === camera) {
+                            cameraControler.enable = true;
+                        } else {
+                            cameraControler.enable = false;
+                        }
+                    });
+            }
 
             animator = new CZPG.Animator(animations);
             let animates = animator.animations;
@@ -131,7 +147,7 @@ window.addEventListener('load', function() {
     scene.add([
         // {shader: gridShader, model: gridModal},
         {shader: skymapShader, model: skyCubeModal},
-    ]);
+    ]).setCamera(camera);
 
     let resized = false;
     let loop = new CZPG.Render(function(timespan) {
@@ -146,6 +162,7 @@ window.addEventListener('load', function() {
         showgrid: false,
         autoRotate: true,
         animate: 'None',
+        camera: 'Default'
     }
     let datgui = new dat.GUI();
     datgui.add(controlObj, 'showgrid')
