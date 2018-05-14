@@ -138,10 +138,10 @@ window.addEventListener('load', function() {
             ]);
         });
 
-    let gridShader = new CZPG.GridAxisShader(context, camera);
+    let gridShader = new CZPG.GridAxisShader(context);
     let gridModal = CZPG.GridAxis.createModel()
 
-    let skymapShader = new CZPG.DynamicSkyboxShader(context, camera, textures.env);
+    let skymapShader = new CZPG.DynamicSkyboxShader(context, textures.env);
     let skyCubeModal = new CZPG.Model(CZPG.Cube.createMesh('sky', 200, 200, 200, 0, 0, 0));
 
     scene.add([
