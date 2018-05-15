@@ -4,7 +4,7 @@
 	(factory());
 }(this, (function () { 'use strict';
 
-// This revision is the commit right after the SHA: 0f209901
+// This revision is the commit right after the SHA: 61ad4f8c
 var global = ('global',eval)('this');
 
 (function (global) {
@@ -1222,11 +1222,12 @@ class Vector4 {
 
   divide(val) {
     console.assert(val != 0, "0 division!");
-    this.x /= val;
-    this.y /= val;
-    this.z /= val;
-    this.w /= val;
-
+    if (val !== 0) {
+      this.x /= val;
+      this.y /= val;
+      this.z /= val;
+      this.w /= val;
+    }
     return this;
   }
 
@@ -1436,9 +1437,11 @@ class Vector3 {
    */
   divide(val) {
     console.assert(val != 0, "0 division!");
-    this.x /= val;
-    this.y /= val;
-    this.z /= val;
+    if (val !== 0) {
+      this.x /= val;
+      this.y /= val;
+      this.z /= val;
+    }
 
     return this;
   }
@@ -1713,6 +1716,14 @@ class Matrix33 {
       sin, cos, 0,
       0, 0, 1
     );
+  }
+
+  static rotateXYZ(x, y, z) {
+    return (Matrix33.rotateZ(z).multiply(Matrix33.rotateY(y).multiply(Matrix33.rotateX(x))));
+  }
+
+  static rotate(vec3) {
+    return (Matrix33.rotateZ(vec3.z).multiply(Matrix33.rotateY(vec3.y).multiply(Matrix33.rotateX(vec3.x))));
   }
 
   scale(vec) {
@@ -2816,6 +2827,24 @@ class Quaternion {
     );
   }
 
+  get rotationMatrix33() {
+    var sx = this.x * this.x;
+    var sy = this.y * this.y;
+    var sz = this.z * this.z;
+    var cx = this.y * this.z;
+    var cy = this.x * this.z;
+    var cz = this.x * this.y;
+    var wx = this.w * this.x;
+    var wy = this.w * this.y;
+    var wz = this.w * this.z;
+
+    return new Matrix33(
+      1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy),
+      2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx),
+      2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy)
+    );
+  }
+
   axisAngle(axisVec3, angle) {
     var radian = 0;
     if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
@@ -2962,6 +2991,11 @@ class Quaternion {
   }
 */
 
+  static fromPosition(vec3) {
+    let q = new Quaternion(vec3.x, vec3.y, vec3.z, 0);
+    return q;
+  }
+
   at(i) {
     switch (i%4) {
     case 0: return this.x;
@@ -2989,6 +3023,9 @@ class Quaternion {
     return this;
   }
 
+  toString() {
+    return '(' + this.x + ', ' + this.y + ', ' + this.z + ', ' + this.w + ')';
+  }
 }
 
 GLBoost$1["Quaternion"] = Quaternion;
@@ -3267,6 +3304,11 @@ class L_Element extends GLBoostObject {
       return;
     }
     this._translate = vec.clone();
+    if (this._is_trs_matrix_updated) {
+//      this._matrix.m03 = vec.x;
+//      this._matrix.m13 = vec.y;
+//      this._matrix.m23 = vec.z;  
+    }
     this._is_trs_matrix_updated = false;
     this._is_translate_updated = true;
     this._needUpdate();
@@ -3312,6 +3354,7 @@ class L_Element extends GLBoostObject {
     }
     this._rotate = vec.clone();
     this._is_trs_matrix_updated = false;
+    this._is_quaternion_updated = false;
     this._is_euler_angles_updated = true;
     this._needUpdate();
   }
@@ -3358,6 +3401,12 @@ class L_Element extends GLBoostObject {
       return;
     }
     this._scale = vec.clone();
+    if (this._is_trs_matrix_updated) {
+//      let m = this._matrix;
+//      m.m00 *= vec.x;
+//      m.m11 *= vec.y;
+//      m.m22 *= vec.z;
+    }
     this._is_trs_matrix_updated = false;
     this._is_scale_updated = true;
     this._needUpdate();
@@ -3507,6 +3556,7 @@ class L_Element extends GLBoostObject {
     }
     this._quaternion = quat.clone();
     this._is_trs_matrix_updated = false;
+    this._is_euler_angles_updated = false;
     this._is_quaternion_updated = true;
     this._needUpdate();
   }
@@ -3542,6 +3592,8 @@ class L_Element extends GLBoostObject {
         value = Quaternion.fromMatrix(this._matrix);
       } else if (this._is_euler_angles_updated) {
         value = Quaternion.fromMatrix(Matrix44$1$1.rotateXYZ(this._rotate.x, this._rotate.y, this._rotate.z));
+      } else {
+        console.log('jojjeoe');
       }
       this._quaternion = value;
       this._is_quaternion_updated = true;
@@ -3704,14 +3756,19 @@ class M_Element extends L_Element {
   }
 
   get worldMatrixWithoutMySelf() {
-    var tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this);
-    //console.log(tempNumber);
-    if (this._accumulatedAncestryObjectUpdateNumberWithoutMySelf !== tempNumber || typeof this._worldMatrixWithoutMySelf === 'undefined') {
-      this._worldMatrixWithoutMySelf = this._multiplyMyAndParentTransformMatrices(false, null).clone();
-      this._accumulatedAncestryObjectUpdateNumberWithoutMySelf = tempNumber;
+    return this.getWorldMatrixWithoutMySelfAt(void 0);
+  }
+
+  getWorldMatrixWithoutMySelfAt(input) {
+
+    let tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this);
+  
+    if (this._accumulatedWithoutMySelfAncestryObjectUpdateNumber !== tempNumber || this._matrixAccumulatedWithoutMySelfAncestry === void 0) {
+      this._matrixAccumulatedWithoutMySelfAncestry = this._multiplyMyAndParentTransformMatrices(false, input);
+      this._accumulatedWithoutMySelfAncestryObjectUpdateNumber = tempNumber;
     }
 
-    return this._worldMatrixWithoutMySelf;
+    return this._matrixAccumulatedWithoutMySelfAncestry.clone();
   }
 
   get normalMatrix() {
@@ -5658,7 +5715,7 @@ class DrawKickerLocal {
               lightVec = lights[j].worldMatrix.multiplyVector(lightVec);
               isPointLight = 1.0;
             } else if (lights[j].className === 'M_DirectionalLight') {
-              lightVec = new Vector4(-lights[j].direction.x, -lights[j].direction.y, -lights[j].direction.z, 1);
+              lightVec = new Vector4(lights[j].direction.x, lights[j].direction.y, lights[j].direction.z, 1);
               lightVec = lights[j].rotateMatrixAccumulatedAncestry.multiplyVector(lightVec);
               lightVec.w = 0.0;
               isPointLight = 0.0;
@@ -5832,8 +5889,9 @@ class DrawKickerWorld {
               lightPosition = light.worldMatrix.multiplyVector(lightPosition);
             }
             if (light.className === 'M_DirectionalLight' || light.className === 'M_SpotLight') {
-              lightDirection = new Vector3(-light.direction.x, -light.direction.y, -light.direction.z);
-              //lightDirection = light.rotateMatrixAccumulatedAncestry.multiplyVector(lightDirection).toVector3();
+//              lightDirection = new Vector3(0, 0, 1);
+//              lightDirection = light.worldMatrix.multiplyVector(lightDirection.toVector4()).toVector3();
+              lightDirection = light.directionInWorld;
               lightDirection.normalize();
             }
             material._glContext.uniform3f(material.getUniform(glslProgram, `uniform_lightPosition_${j}`), lightPosition.x, lightPosition.y, lightPosition.z, true);
@@ -6282,6 +6340,20 @@ class FreeShader extends Shader {
         this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_' + uniformName), value.x, value.y, value.z, true);
       } else if (value instanceof Vector4) {
         this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_' + uniformName), value.x, value.y, value.z, value.w, true);
+      }
+    }
+
+    for (let parameterName in material.shaderParameters) {
+      let value = material.shaderParameters[parameterName];
+
+      if (typeof value === 'number') {
+        this._glContext.uniform1f(material.getUniform(glslProgram, 'uniform_' + parameterName), value, true);
+      } else if (value instanceof Vector2) {
+        this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_' + parameterName), value.x, value.y, true);
+      } else if (value instanceof Vector3) {
+        this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_' + parameterName), value.x, value.y, value.z, true);
+      } else if (value instanceof Vector4) {
+        this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_' + parameterName), value.x, value.y, value.z, value.w, true);
       }
     }
   }
@@ -9108,7 +9180,8 @@ class L_CameraController extends GLBoostObject {
       isSymmetryMode: true,
       doResetWhenCameraSettingChanged: false,
       isForceGrab: false,
-      efficiency: 1.0
+      efficiency: 1.0,
+      eventTargetDom: document
     }
   ) {
     super(glBoostContext);
@@ -9120,6 +9193,7 @@ class L_CameraController extends GLBoostObject {
     this._isSymmetryMode = options.isSymmetryMode !== void 0 ? options.isSymmetryMode : true;
 
     this._efficiency = options.efficiency !== void 0 ? 0.5 * options.efficiency : 1;
+    let eventTargetDom = options.eventTargetDom;
 
     this._rot_bgn_x = 0;
     this._rot_bgn_y = 0;
@@ -9270,15 +9344,15 @@ class L_CameraController extends GLBoostObject {
       });
     };
 
-    if (document) {
-      document.addEventListener('mousedown', this._onMouseDown);
-      document.addEventListener('mouseup', this._onMouseUp);
-      document.addEventListener('mousemove', this._onMouseMove);
+    if (eventTargetDom) {
+      eventTargetDom.addEventListener('mousedown', this._onMouseDown);
+      eventTargetDom.addEventListener('mouseup', this._onMouseUp);
+      eventTargetDom.addEventListener('mousemove', this._onMouseMove);
       if (window.WheelEvent) {
-        document.addEventListener("wheel", this._onMouseWheel);
+        eventTargetDom.addEventListener("wheel", this._onMouseWheel);
       }
-      document.addEventListener('contextmenu', this._onContexMenu, false);
-      document.addEventListener("dblclick", this._onMouseDblClick);
+      eventTargetDom.addEventListener('contextmenu', this._onContexMenu, false);
+      eventTargetDom.addEventListener("dblclick", this._onMouseDblClick);
     }
   }
 
@@ -10265,7 +10339,7 @@ class Sphere extends Geometry {
       vertexColor = new Vector4(1, 1, 1, 1);
     }
 
-    let shiftValue = 0.001; // for avoid Singular point
+    let shiftValue = 0.00001; // for avoid Singular point
     for (var latNumber = 0; latNumber <= heightSegments; latNumber++) {
       var theta = latNumber * Math.PI / heightSegments + shiftValue;
       var sinTheta = Math.sin(theta);
@@ -11512,17 +11586,9 @@ class M_Group extends M_Element {
    * [ja] このグループにelementを子供として追加します。
    * @param {Element} element  [en] a instance of Element class [ja] Elementクラスのインスタンス
    */
-  addChild(element) {
-    { 
-      //// if forbit duplicated register
-      // this.removeChild(element);
-      // element._parent = this;
-      // this._elements.push(element);
+  addChild(element, isDuplicateOk = false) {
 
-    }
-
-    {
-
+    if (isDuplicateOk){
       // if forgive duplicated register by copy
       let elem = null;
       if (element._parent) {
@@ -11532,6 +11598,11 @@ class M_Group extends M_Element {
       }
       elem._parent = this;
       this._elements.push(elem);
+    } else {
+      //// if forbit duplicated register
+      this.removeChild(element);
+      element._parent = this;
+      this._elements.push(element);
     }
   }
 
@@ -14333,16 +14404,19 @@ class M_DirectionalLight extends M_AbstractLight {
   /**
    * The constructor of DirectionalLight class. 
    * @param {Vector4} intensity intensity as Vector4 Color
-   * @param {Vector4} direction the light (traveling) direction
    */
-  constructor(glBoostContext, intensity, direction, length = 1.0) {
+  constructor(glBoostContext, intensity, rotate = new Vector3(0, 0, 0), length = 1.0) {
     super(glBoostContext);
 
     this._intensity = intensity;
-    this._direction = direction;
+    this._direction = new Vector3(0.0, 0.0, 1.0);
+//    this._direction = direction;
 
     this._gizmo = new M_DirectionalLightGizmo(glBoostContext, length);
     this._gizmos.push(this._gizmo);
+
+    //this.direction = direction;
+    this.rotate = rotate;
 
     //this._gizmo._mesh.masterElement = this._gizmo;
     this._isLightType = 'directional';
@@ -14357,14 +14431,6 @@ class M_DirectionalLight extends M_AbstractLight {
     return this._gizmo.getMatrixNotAnimated();
   }
 
-  set translate(vec3) {
-    this._gizmo._mesh.translate = vec3;
-  }
-
-  get translate() {
-    return this._gizmo.translate;
-  }
-
   set intensity(vec) {
     this._intensity = vec;
   }
@@ -14373,17 +14439,109 @@ class M_DirectionalLight extends M_AbstractLight {
     return this._intensity;
   }
 
-  set direction(vec) {
-    this._direction = vec;
+  set rotate(vec3) {
+    super.rotate = vec3;
+    this._gizmo._mesh.rotate = vec3;
+
+    this.callCameraCustomFunction();
+  }
+
+  set translate(vec3) {
+    super.translate = vec3;
+    this._gizmo._mesh.translate = vec3;
+
+    this.callCameraCustomFunction();
+  }
+
+  get translate() {
+    return this._gizmo.translate;
+  }
+
+  get rotate() {
+    return super.rotate;
+  }
+
+  set matrix(vec3) {
+    super.matrix = vec3;
+    this._gizmo._mesh.matrix = vec3;
+
+    this.callCameraCustomFunction();
+  }
+
+  get matrix() {
+    return super.matrix;
+  }
+
+  set quaternion(vec3) {
+    super.quaternion = vec3;
+    this._gizmo._mesh.quaternion = vec3;
+
+    this.callCameraCustomFunction();
+  }
+
+  get quaternion() {
+    return super.quaternion;
+  }
+
+  callCameraCustomFunction() {
     if (this._camera) {
       if (this._camera.customFunction) {
         this._camera.customFunction(this);
       }
     }
   }
+  
+  set direction(_zDir) {
+    let yDir = new Vector3(0, 1, 0);
+    let xDir = Vector3.cross(yDir, _zDir);
+    let zDir = Vector3.cross(xDir, yDir);
+    
+    let result = Matrix44$1$1.identity();
+
+    result.m00 = xDir.x;
+    result.m10 = xDir.y;
+    result.m20 = xDir.z;
+  
+    result.m01 = yDir.x;
+    result.m11 = yDir.y;
+    result.m21 = yDir.z;
+  
+    result.m02 = zDir.x;
+    result.m12 = zDir.y;
+    result.m22 = zDir.z;
+/*
+
+    result.m00 = xDir.x;
+    result.m01 = xDir.y;
+    result.m02 = xDir.z;
+
+    result.m10 = yDir.x;
+    result.m11 = yDir.y;
+    result.m12 = yDir.z;
+
+    result.m20 = zDir.x;
+    result.m21 = zDir.y;
+    result.m22 = zDir.z;
+*/
+
+
+
+    this.matrix = result;
+    this._gizmo._mesh.matrix = result;
+
+    this.callCameraCustomFunction();
+  }
+
 
   get direction() {
-    return this._direction;
+    //return Matrix33.rotate(super.rotate).multiplyVector(this._direction);
+    let result = super.quaternion.rotationMatrix33.multiplyVector(this._direction);
+    return result;
+  }
+
+  get directionInWorld() {
+    let direction = this.worldMatrixWithoutMySelf.multiplyVector(this.direction.toVector4()).toVector3();
+    return direction;
   }
 
 }
@@ -14426,13 +14584,15 @@ class M_SpotLight extends M_AbstractLight {
    * @param {Vector4} direction the light (traveling) direction
    * @param {HTMLCanvas|string} canvas canvas or canvas' id string.
    */
-  constructor(glBoostContext, intensity, direction) {
+  constructor(glBoostContext, intensity, rotate = new Vector3(0, 0, 0)) {
     super(glBoostContext);
 
     this._intensity = intensity;
     
     this._isLightType = 'spot';
-    this._direction = direction;
+    this._direction = new Vector3(0.0, 0.0, 1.0);
+
+    this.rotate = rotate;
 
     this._spotExponent = 1.0;
     this._spotCutoffInDegree = 30;
@@ -14448,7 +14608,46 @@ class M_SpotLight extends M_AbstractLight {
   }
 
   set direction(vec) {
-    this._direction = vec;
+    console.error("Not supported Now!");
+  }
+
+  get translate() {
+    return this._gizmo.translate;
+  }
+
+  set rotate(vec3) {
+    super.rotate = vec3;
+  
+    this.callCameraCustomFunction();
+  }
+
+  get rotate() {
+    return super.rotate;
+  }
+
+  set matrix(vec3) {
+    super.matrix = vec3;
+    this._gizmo._mesh.matrix = vec3;
+
+    this.callCameraCustomFunction();
+  }
+
+  get matrix() {
+    return super.matrix;
+  }
+
+  set quaternion(vec3) {
+    super.quaternion = vec3;
+    this._gizmo._mesh.quaternion = vec3;
+
+    this.callCameraCustomFunction();
+  }
+
+  get quaternion() {
+    return super.quaternion;
+  }
+
+  callCameraCustomFunction() {
     if (this._camera) {
       if (this._camera.customFunction) {
         this._camera.customFunction(this);
@@ -14456,9 +14655,55 @@ class M_SpotLight extends M_AbstractLight {
     }
   }
 
-  get direction() {
-    return this._direction;
+  set direction(_zDir) {
+    let yDir = new Vector3(0, 1, 0);
+    let xDir = Vector3.cross(yDir, _zDir);
+    let zDir = Vector3.cross(xDir, yDir);
+  
+    let result = Matrix44.identity();
+
+    
+    result.m00 = xDir.x;
+    result.m10 = xDir.y;
+    result.m20 = xDir.z;
+  
+    result.m01 = yDir.x;
+    result.m11 = yDir.y;
+    result.m21 = yDir.z;
+  
+    result.m02 = zDir.x;
+    result.m12 = zDir.y;
+    result.m22 = zDir.z;
+/*
+
+    result.m00 = xDir.x;
+    result.m01 = xDir.y;
+    result.m02 = xDir.z;
+
+    result.m10 = yDir.x;
+    result.m11 = yDir.y;
+    result.m12 = yDir.z;
+
+    result.m20 = zDir.x;
+    result.m21 = zDir.y;
+    result.m22 = zDir.z;
+*/
+
+    this.matrix = result;
+
+    this.callCameraCustomFunction();
   }
+
+  get direction() {
+    let result = this.quaternion.rotationMatrix33.multiplyVector(this._direction);
+    return result;
+  }
+
+  get directionInWorld() {
+    let direction = this.worldMatrixWithoutMySelf.multiplyVector(this.direction.toVector4()).toVector3();
+    return direction;
+  }
+
 
   set spotExponent(val) {
     this._spotExponent = val;
@@ -14747,8 +14992,8 @@ class GLBoostMiddleContext extends GLBoostLowContext {
     return new M_OrthoCamera(this, true, lookat, ortho);
   }
 
-  createDirectionalLight(intensity, direction, length) {
-    return new M_DirectionalLight(this, intensity, direction, length);
+  createDirectionalLight(intensity, rotate, length) {
+    return new M_DirectionalLight(this, intensity, rotate, length);
   }
 
   createPointLight(intensity) {
@@ -14759,8 +15004,8 @@ class GLBoostMiddleContext extends GLBoostLowContext {
     return new M_AmbientLight(this, intensity);
   }
 
-  createSpotLight(intensity, direction) {
-    return new M_SpotLight(this, intensity, direction);
+  createSpotLight(intensity, rotate) {
+    return new M_SpotLight(this, intensity, rotate);
   }
 
   createJoint(isExistJointGizmo) {
@@ -15704,17 +15949,18 @@ class GLTFLoader {
    * [en] the method to load glTF file.<br>
    * [ja] glTF fileをロードするためのメソッド。
    * @param {string} url [en] url of glTF file [ja] glTFファイルのurl
-   * @param {Shader} defaultShader [en] a shader to assign to loaded geometries [ja] 読み込んだジオメトリに適用するシェーダー
    * @return {Promise} [en] a promise object [ja] Promiseオブジェクト
    */
-  loadGLTF(glBoostContext, url, defaultShader = null,
-    options = {
+  loadGLTF(glBoostContext, url, options) {
+    let defaultOptions = {
       extensionLoader: null,
       isNeededToMultiplyAlphaToColorOfPixelOutput: true,
-//      isTextureImageToLoadPreMultipliedAlpha: false,
       isExistJointGizmo: false,
       isBlend: false,
       isDepthTest: true,
+      defaultShaderClass: null,
+      statesOfElements: null,
+      isAllMeshesTransparent: false,
       statesOfElements: [
         {
           targets: [], //["name_foo", "name_boo"],
@@ -15728,13 +15974,25 @@ class GLTFLoader {
             }
           },
           isTransparent: true,
+          shaderClass: DecalShader, // LambertShader // PhongShader
           isTextureImageToLoadPreMultipliedAlpha: false,
           globalStatesUsage: GLBoost$1.GLOBAL_STATES_USAGE_IGNORE // GLBoost.GLOBAL_STATES_USAGE_DO_NOTHING // GLBoost.GLOBAL_STATES_USAGE_INCLUSIVE // GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE
         }
-      ],
-      isAllMeshesTransparent: true
+      ]
+    };
+
+    if (!options) {
+      options = defaultOptions;
+     } else {
+      for (let optionName in options) {
+        defaultOptions[optionName] = options[optionName];
+      }
+      options = defaultOptions;
     }
-  ) {
+
+
+    let defaultShader = (options && typeof options.defaultShaderClass !== "undefined") ? options.defaultShaderClass : null;
+
     return DataUtil.loadResourceAsync(url, true,
       (resolve, response)=>{
         var arrayBuffer = response;
@@ -15979,7 +16237,7 @@ class GLTFLoader {
       // Animation
       this._loadAnimation(group, buffers, json, glTFVer);
 
-      if (options.extensionLoader && options.extensionLoader.setAssetPropertiesToRootGroup) {
+      if (options && options.extensionLoader && options.extensionLoader.setAssetPropertiesToRootGroup) {
         options.extensionLoader.setAssetPropertiesToRootGroup(rootGroup, json.asset);
       }
 
@@ -15990,25 +16248,27 @@ class GLTFLoader {
     resolve(rootGroup);
   }
 
-
+  _setTransform(element, nodeJson) {
+    if (nodeJson.translation) {
+      element.translate = new Vector3(nodeJson.translation[0], nodeJson.translation[1], nodeJson.translation[2]);
+    }
+    if (nodeJson.scale) {
+      element.scale = new Vector3(nodeJson.scale[0], nodeJson.scale[1], nodeJson.scale[2]);
+    }
+    if (nodeJson.rotation) {
+      element.quaternion = new Quaternion(nodeJson.rotation[0], nodeJson.rotation[1], nodeJson.rotation[2], nodeJson.rotation[3]);
+    }
+    if (nodeJson.matrix) {
+      element.matrix = new Matrix44$1$1(nodeJson.matrix, true);
+    }
+  }
 
   _recursiveIterateNode(glBoostContext, nodeStr, buffers, json, defaultShader, shaders, textures, glTFVer, options) {
     var nodeJson = json.nodes[nodeStr];
     var group = glBoostContext.createGroup();
     group.userFlavorName = nodeStr;
 
-    if (nodeJson.translation) {
-      group.translate = new Vector3(nodeJson.translation[0], nodeJson.translation[1], nodeJson.translation[2]);
-    }
-    if (nodeJson.scale) {
-      group.scale = new Vector3(nodeJson.scale[0], nodeJson.scale[1], nodeJson.scale[2]);
-    }
-    if (nodeJson.rotation) {
-      group.quaternion = new Quaternion(nodeJson.rotation[0], nodeJson.rotation[1], nodeJson.rotation[2], nodeJson.rotation[3]);
-    }
-    if (nodeJson.matrix) {
-      group.matrix = new Matrix44$1$1(nodeJson.matrix, true);
-    }
+    this._setTransform(group, nodeJson);
 
     if (nodeJson.meshes) {
       for (let i = 0; i < nodeJson.meshes.length; i++) {
@@ -16080,15 +16340,19 @@ class GLTFLoader {
           } else if (lightJson.type === 'point') {
             let color = lightJson.point.color;
             light = glBoostContext.createPointLight(new Vector3(color[0], color[1], color[2]));
+            this._setTransform(group, nodeJson);
             group.addChild(light);
           } else if (lightJson.type === 'directional') {
             const color = lightJson.directional.color;
-            let lightDir = new Vector4(0, 0, -1, 1);
-            const matrix = new Matrix44$1$1(nodeJson.matrix, true);
-            lightDir = matrix.multiplyVector(lightDir);
-            light = glBoostContext.createDirectionalLight(new Vector3(color[0], color[1], color[2]), lightDir.toVector3());
-            light.multiplyMatrixGizmo = group.getMatrixNotAnimated();
-            group.matrix = Matrix44$1$1.identity();
+            light = glBoostContext.createDirectionalLight(new Vector3(color[0], color[1], color[2]));
+            light.rotate = new Vector3(0, 0, 0);
+            this._setTransform(group, nodeJson);
+            group.addChild(light);
+          } else if (lightJson.type === 'spot') {
+            const color = lightJson.spot.color;
+            light = glBoostContext.createSpotLight(new Vector3(color[0], color[1], color[2]));
+            light.rotate = new Vector3(0, 0, 0);
+            this._setTransform(group, nodeJson);
             group.addChild(light);
           }
         }
@@ -16124,7 +16388,7 @@ class GLTFLoader {
       mesh = glBoostContext.createMesh(geometry);
     }
 
-    if (options.isAllMeshesTransparent) {
+    if (options && options.isAllMeshesTransparent) {
       mesh.isTransparent = true;
     }
 
@@ -16222,17 +16486,17 @@ class GLTFLoader {
         }
 */
         let material = null;
-        if (options.extensionLoader && options.extensionLoader.createClassicMaterial) {
+        if (options && options.extensionLoader && options.extensionLoader.createClassicMaterial) {
           material = options.extensionLoader.createClassicMaterial(glBoostContext);
         } else {
           material = glBoostContext.createClassicMaterial();
         }
-        if (options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
+        if (options && options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
           material.shaderParameters.isNeededToMultiplyAlphaToColorOfPixelOutput = options.isNeededToMultiplyAlphaToColorOfPixelOutput;
         }
         this._materials.push(material);
 
-        if (options.statesOfElements) {
+        if (options && options.statesOfElements) {
           for (let statesInfo of options.statesOfElements) {
             if (statesInfo.targets) {
               for (let target of statesInfo.targets) {
@@ -16437,7 +16701,7 @@ class GLTFLoader {
             let texture = textures[textureStr];
             
             let isNeededToMultiplyAlphaToColorOfTexture = false;
-            if (options.statesOfElements) {
+            if (options && options.statesOfElements) {
               for (let statesInfo of options.statesOfElements) {
                 if (statesInfo.targets) {
                   for (let target of statesInfo.targets) {
@@ -16571,6 +16835,32 @@ class GLTFLoader {
           material.shaderClass = options.extensionLoader.getDecalShader();
         } else {
           material.shaderClass = DecalShader;
+        }
+      }
+    }
+
+    if (options && options.statesOfElements) {
+      for (let statesInfo of options.statesOfElements) {
+        if (statesInfo.targets) {
+          for (let target of statesInfo.targets) {
+            let isMatch = false;
+            let specifyMethod = statesInfo.specifyMethod !== void 0 ? statesInfo.specifyMethod : GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME;
+            switch (specifyMethod) {
+              case GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME:
+                isMatch = group.userFlavorName === target; break;
+              case GLBoost$1.QUERY_TYPE_INSTANCE_NAME:
+                isMatch = group.instanceName === target; break;
+              case GLBoost$1.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR:
+                isMatch = group.instanceNameWithUserFlavor === target; break;                      
+            }
+
+            if (isMatch) {
+              if (statesInfo.shaderClass) {
+                material.shaderClass = statesInfo.shaderClass;
+              }
+            }
+
+          }
         }
       }
     }
