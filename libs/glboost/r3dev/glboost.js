@@ -4,7 +4,7 @@
   (factory());
 }(this, (function () { 'use strict';
 
-  // This revision is the commit right after the SHA: 0700d0bf
+  // This revision is the commit right after the SHA: 2ae9c1d1
   var global = (0, eval)('this');
 
   (function (global) {
@@ -18180,7 +18180,7 @@ return mat4(
       let rootGroup = glBoostContext.createGroup();
       if (gltfModel.scenes[0].nodesIndices) {
         for (let nodesIndex of gltfModel.scenes[0].nodesIndices) {
-          rootGroup.addChild(groups[nodesIndex]);
+          rootGroup.addChild(groups[nodesIndex], true);
         }  
       }
 
@@ -18227,12 +18227,12 @@ return mat4(
         let node = gltfModel.nodes[parseInt(node_i)];
         let parentGroup = groups[node_i];
         if (node.mesh) {
-          parentGroup.addChild(glboostMeshes[node.meshIndex]);
+          parentGroup.addChild(glboostMeshes[node.meshIndex], true);
         }
         if (node.childrenIndices) {
           for (let childNode_i of node.childrenIndices) {
             let childGroup = groups[childNode_i];
-            parentGroup.addChild(childGroup);
+            parentGroup.addChild(childGroup, true);
           }  
         }
       }
@@ -18286,7 +18286,7 @@ return mat4(
             glboostJoint._glTFJointIndex = joint_i;
   //          glboostJoint.userFlavorName = nodeJson.jointName;
             let group = groups[joint_i];
-            group.addChild(glboostJoint);
+            group.addChild(glboostJoint, true);
           }
         }
       }
