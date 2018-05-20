@@ -4,7 +4,7 @@
   (factory());
 }(this, (function () { 'use strict';
 
-  // This revision is the commit right after the SHA: 2ae9c1d1
+  // This revision is the commit right after the SHA: 0809b167
   var global = (0, eval)('this');
 
   (function (global) {
@@ -1380,42 +1380,87 @@
 
   GLBoost$1['GLBoostObject'] = GLBoostObject;
 
-  class Vector2 {
+  /*       */
 
-    constructor(x, y) {
-      this.x = x;
-      this.y = y;
+                                                                             
+                                                                       
+
+  class Vector2 {
+                  
+
+    constructor(x                  , y        ) {
+      if (ArrayBuffer.isView(x)) {
+        this.v = ((x    )           );
+        return;
+      } else {
+        this.v = new Float32Array(2);
+      }
+
+      this.x = ((x    )       );
+      this.y = ((y    )       );
     }
 
     clone() {
       return new Vector2(this.x, this.y);
     }
 
-    multiply(val) {
+    multiply(val       ) {
       this.x *= val;
       this.y *= val;
 
       return this;
     }
 
-    static multiply(vec2, val) {
+    static multiply(vec2        , val       ) {
       return new Vector2(vec2.x * val, vec2.y * val);
     }
 
+    get x() {
+      return this.v[0];
+    }
+
+    set x(x       ) {
+      this.v[0] = x;
+    }
+
+    get y() {
+      return this.v[1];
+    }
+
+    set y(y       ) {
+      this.v[1] = y;
+    }
+
+    get raw() {
+      return this.v;
+    }
   }
 
   GLBoost$1["Vector2"] = Vector2;
 
-  class Vector4 {
+  /*       */
 
-    constructor(x, y, z, w) {
-      this.x = x;
-      this.y = y;
-      this.z = z;
-      this.w = w;
+                                                                             
+                                                                       
+
+  class Vector4 {
+                  
+
+    constructor(x                  , y        , z        , w        ) {
+      if (ArrayBuffer.isView(x)) {
+        this.v = ((x    )           );
+        return;
+      } else {
+        this.v = new Float32Array(4);
+      }
+
+      this.x = ((x    )       );
+      this.y = ((y    )       );
+      this.z = ((z    )       );
+      this.w = ((w    )       );
     }
 
-    isEqual(vec) {
+    isEqual(vec        )          {
       if (this.x === vec.x && this.y === vec.y && this.z === vec.z && this.w === vec.w) {
         return true;
       } else {
@@ -1445,7 +1490,7 @@
       return this;
     }
 
-    static normalize(vec4) {
+    static normalize(vec4        ) {
       var length = vec4.length();
       var newVec = new Vector4(vec4.x, vec4.y, vec4.z, vec4.w);
       newVec.divide(length);
@@ -1461,7 +1506,7 @@
     /**
      * add value
      */
-    add(v) {
+    add(v        ) {
       this.x += v.x;
       this.y += v.y;
       this.z += v.z;
@@ -1473,14 +1518,14 @@
     /**
      * add value（static version）
      */
-    static add(lv, rv) {
+    static add(lv        , rv        ) {
       return new Vector4(lv.x + rv.x, lv.y + rv.y, lv.z + rv.z, lv.z + rv.z);
     }
 
     /**
      * add value except w component
      */
-    addWithOutW(v) {
+    addWithOutW(v                ) {
       this.x += v.x;
       this.y += v.y;
       this.z += v.z;
@@ -1491,11 +1536,11 @@
     /**
      * add value except w component（static version）
      */
-    static addWithOutW(lv, rv) {
+    static addWithOutW(lv        , rv        ) {
       return new Vector4(lv.x + rv.x, lv.y + rv.y, lv.z + rv.z, lv.z);
     }
 
-    multiply(val) {
+    multiply(val       ) {
       this.x *= val;
       this.y *= val;
       this.z *= val;
@@ -1504,7 +1549,7 @@
       return this;
     }
 
-    multiplyVector(vec) {
+    multiplyVector(vec        ) {
       this.x *= vec.x;
       this.y *= vec.y;
       this.z *= vec.z;
@@ -1513,16 +1558,16 @@
       return this;
     }
 
-    static multiply(vec4, val) {
+    static multiply(vec4        , val       ) {
       return new Vector4(vec4.x * val, vec4.y * val, vec4.z * val, vec4.w * val);
     }
 
-    static multiplyVector(vec4, vec) {
+    static multiplyVector(vec4        , vec        ) {
       return new Vector4(vec4.x * vec.x, vec4.y * vec.y, vec4.z * vec.z, vec4.w * vec.w);
     }
 
 
-    divide(val) {
+    divide(val       ) {
       console.assert(val != 0, "0 division!");
       if (val !== 0) {
         this.x /= val;
@@ -1533,12 +1578,12 @@
       return this;
     }
 
-    static divide(vec4, val) {
+    static divide(vec4        , val       ) {
       console.assert(val != 0, "0 division!");
       return new Vector4(vec4.x / val, vec4.y / val, vec4.z / val, vec4.w / val);
     }
 
-    divideVector(vec4) {
+    divideVector(vec4        ) {
       this.x /= vec4.x;
       this.y /= vec4.y;
       this.z /= vec4.z;
@@ -1547,35 +1592,75 @@
       return this;
     }
 
-    static divideVector(lvec4, rvec4) {
+    static divideVector(lvec4        , rvec4        ) {
       return new Vector4(lvec4.x / rvec4.x, lvec4.y / rvec4.y, lvec4.z / rvec4.z, lvec4.w / rvec4.w);
-    }
-
-    at(i) {
-      switch (i%4) {
-      case 0: return this.x;
-      case 1: return this.y;
-      case 2: return this.z;
-      case 3: return this.w;
-      }
     }
 
     toString() {
       return '(' + this.x + ', ' + this.y + ', ' + this.z + ', ' + this.w + ')';
     }
+
+    get x() {
+      return this.v[0];
+    }
+
+    set x(x       ) {
+      this.v[0] = x;
+    }
+
+    get y() {
+      return this.v[1];
+    }
+
+    set y(y       ) {
+      this.v[1] = y;
+    }
+
+    get z() {
+      return this.v[2];
+    }
+
+    set z(z       ) {
+      this.v[2] = z;
+    }
+
+    get w() {
+      return this.v[3];
+    }
+
+    set w(w       ) {
+      this.v[3] = w;
+    }
+
+    get raw() {
+      return this.v;
+    }
   }
 
   GLBoost$1["Vector4"] = Vector4;
 
-  class Vector3 {
+  /*       */
 
-    constructor(x, y, z) {
-      this.x = x;
-      this.y = y;
-      this.z = z;
+                                                                             
+                                                                       
+
+  class Vector3 {
+                  
+
+    constructor(x                  , y        , z        ) {
+      if (ArrayBuffer.isView(x)) {
+        this.v = ((x    )           );
+        return;
+      } else {
+        this.v = new Float32Array(3);
+      }
+
+      this.x = ((x    )       );
+      this.y = ((y    )       );
+      this.z = ((z    )       );
     }
 
-    isEqual(vec) {
+    isEqual(vec        ) {
       if (this.x === vec.x && this.y === vec.y && this.z === vec.z) {
         return true;
       } else {
@@ -1619,18 +1704,18 @@
     /**
      * 長さの2乗（static版）
      */
-    static lengthSquared(vec3) {
+    static lengthSquared(vec3        ) {
       return vec3.x*vec3.x + vec3.y*vec3.y + vec3.z*vec3.z;
     }
 
-    lengthTo(vec3) {
+    lengthTo(vec3        ) {
       var deltaX = vec3.x - this.x;
       var deltaY = vec3.y - this.y;
       var deltaZ = vec3.z - this.z;
       return Math.sqrt(deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ);
     }
 
-    static lengthBtw(lhv, rhv) {
+    static lengthBtw(lhv        , rhv        ) {
       var deltaX = rhv.x - lhv.x;
       var deltaY = rhv.y - lhv.y;
       var deltaZ = rhv.z - lhv.z;
@@ -1640,21 +1725,21 @@
     /**
      * 内積
      */
-    dotProduct(vec3) {
+    dotProduct(vec3        ) {
         return this.x * vec3.x + this.y * vec3.y + this.z * vec3.z;
     }
 
     /**
      * 内積（static版）
      */
-    static dotProduct(lv, rv) {
+    static dotProduct(lv        , rv        ) {
       return lv.x * rv.x + lv.y * rv.y + lv.z * rv.z;
     }
 
     /**
      * 外積
      */
-    cross(v) {
+    cross(v        ) {
       var x = this.y*v.z - this.z*v.y;
       var y = this.z*v.x - this.x*v.z;
       var z = this.x*v.y - this.y*v.x;
@@ -1669,7 +1754,7 @@
     /**
     * 外積(static版)
     */
-    static cross(lv, rv) {
+    static cross(lv        , rv        ) {
       var x = lv.y*rv.z - lv.z*rv.y;
       var y = lv.z*rv.x - lv.x*rv.z;
       var z = lv.x*rv.y - lv.y*rv.x;
@@ -1690,7 +1775,7 @@
     /**
      * 正規化（static版）
      */
-    static normalize(vec3) {
+    static normalize(vec3        ) {
       var length = vec3.length();
       var newVec = new Vector3(vec3.x, vec3.y, vec3.z);
       newVec.divide(length);
@@ -1701,7 +1786,7 @@
     /**
      * add value
      */
-    add(v) {
+    add(v        ) {
       this.x += v.x;
       this.y += v.y;
       this.z += v.z;
@@ -1712,14 +1797,14 @@
     /**
      * add value（static version）
      */
-    static add(lv, rv) {
+    static add(lv        , rv        ) {
       return new Vector3(lv.x + rv.x, lv.y + rv.y, lv.z + rv.z);
     }
 
     /**
      * 減算
      */
-    subtract(v) {
+    subtract(v        ) {
       this.x -= v.x;
       this.y -= v.y;
       this.z -= v.z;
@@ -1730,14 +1815,14 @@
     /**
      * 減算（static版）
      */
-    static subtract(lv, rv) {
+    static subtract(lv        , rv        ) {
       return new Vector3(lv.x - rv.x, lv.y - rv.y, lv.z - rv.z);
     }
 
     /**
      * 除算
      */
-    divide(val) {
+    divide(val       ) {
       console.assert(val != 0, "0 division!");
       if (val !== 0) {
         this.x /= val;
@@ -1751,12 +1836,12 @@
     /**
      * 除算（static版）
      */
-    static divide(vec3, val) {
+    static divide(vec3        , val       ) {
       console.assert(val != 0, "0 division!");
       return new Vector3(vec3.x / val, vec3.y / val, vec3.z / val);
     }
 
-    multiply(val) {
+    multiply(val       ) {
       this.x *= val;
       this.y *= val;
       this.z *= val;
@@ -1764,7 +1849,7 @@
       return this;
     }
 
-    multiplyVector(vec) {
+    multiplyVector(vec        ) {
       this.x *= vec.x;
       this.y *= vec.y;
       this.z *= vec.z;
@@ -1772,15 +1857,15 @@
       return this;
     }
 
-    static multiply(vec3, val) {
+    static multiply(vec3        , val       ) {
       return new Vector3(vec3.x * val, vec3.y * val, vec3.z * val);
     }
 
-    static multiplyVector(vec3, vec) {
+    static multiplyVector(vec3        , vec        ) {
       return new Vector3(vec3.x * vec.x, vec3.y * vec.y, vec3.z * vec.z);
     }
 
-    static angleOfVectors(lhv, rhv) {
+    static angleOfVectors(lhv        , rhv        ) {
       let cos_sita = Vector3.dotProduct(lhv, rhv) / ( lhv.length() * rhv.length() );
 
       let sita = Math.acos(cos_sita);
@@ -1792,7 +1877,7 @@
       return sita;
     }
 
-    divideVector(vec3) {
+    divideVector(vec3        ) {
       this.x /= vec3.x;
       this.y /= vec3.y;
       this.z /= vec3.z;
@@ -1800,7 +1885,7 @@
       return this;
     }
 
-    static divideVector(lvec3, rvec3) {
+    static divideVector(lvec3        , rvec3        ) {
       return new Vector3(lvec3.x / rvec3.x, lvec3.y / rvec3.y, lvec3.z / rvec3.z);
     }
 
@@ -1813,12 +1898,32 @@
       return '(' + this.x + ', ' + this.y + ', ' + this.z +')';
     }
 
-    at(i) {
-      switch (i%3) {
-      case 0: return this.x;
-      case 1: return this.y;
-      case 2: return this.z;
-      }
+    get x() {
+      return this.v[0];
+    }
+
+    set x(x       ) {
+      this.v[0] = x;
+    }
+
+    get y() {
+      return this.v[1];
+    }
+
+    set y(y       ) {
+      this.v[1] = y;
+    }
+
+    get z() {
+      return this.v[2];
+    }
+
+    set z(z       ) {
+      this.v[2] = z;
+    }
+
+    get raw() {
+      return this.v;
     }
   }
 
