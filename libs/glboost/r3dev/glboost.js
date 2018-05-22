@@ -4,7 +4,7 @@
   (factory());
 }(this, (function () { 'use strict';
 
-  // This revision is the commit right after the SHA: 0809b167
+  // This revision is the commit right after the SHA: 287f19ed
   var global = (0, eval)('this');
 
   (function (global) {
@@ -1533,6 +1533,18 @@
       return this;
     }
 
+    subtract(v        ) {
+      this.x -= v.x;
+      this.y -= v.y;
+      this.z -= v.z;
+      this.w -= v.w;
+
+      return this;
+    }
+
+    static subtract(lv        , rv        ) {
+      return new Vector4(lv.x - rv.x, lv.y - rv.y, lv.z - rv.z, lv.w  - rv.w);
+    }
     /**
      * add value except w component（static version）
      */
@@ -9708,13 +9720,9 @@ return mat4(
         this._rot_x = this._rot_bgn_x - delta_x;
 
         // check if rotation angle is within range
-        if (this._verticalAngleThrethold - this._verticalAngleOfVectors < this._rot_y) {
-          this._rot_y = this._verticalAngleThrethold + this._verticalAngleOfVectors;
-        }
+        if (this._verticalAngleThrethold - this._verticalAngleOfVectors < this._rot_y) ;
 
-        if (this._rot_y < -this._verticalAngleThrethold + this._verticalAngleOfVectors) {
-          this._rot_y = -this._verticalAngleThrethold - this._verticalAngleOfVectors;
-        }
+        if (this._rot_y < -this._verticalAngleThrethold + this._verticalAngleOfVectors) ;
 
         this._camaras.forEach(function (camera) {
           camera._needUpdateView(false);
@@ -9820,7 +9828,7 @@ return mat4(
         } else {
           verticalSign = -1;
         }
-        this._verticalAngleOfVectors *= verticalSign;
+        //this._verticalAngleOfVectors *= verticalSign;
 
       } else {
         let centerToEyeVec = Vector3.subtract(this._eyeVec, this._centerVec).multiply(this._wheel_y * 1.0/Math.tan(MathUtil.degreeToRadian(fovy/2.0)));
@@ -9969,6 +9977,33 @@ return mat4(
     get dolly() {
       return this._wheel_y;
     }
+
+    get rotX() {
+      return this._rot_x;
+    }
+
+    set rotX(value) {
+      this._rot_x = value;
+      this._rot_bgn_x = 0;
+      this._camaras.forEach(function (camera) {
+        camera._needUpdateView(true);
+        camera._needUpdateProjection();
+      });
+    }
+
+    get rotY() {
+      return this._rot_y;
+    }
+
+    set rotY(value) {
+      this._rot_y = value;
+      this._rot_bgn_y = 0;
+      this._camaras.forEach(function (camera) {
+        camera._needUpdateView(true);
+        camera._needUpdateProjection();
+      });
+    }
+
   }
 
   class MutableTexture extends AbstractTexture {
@@ -18842,7 +18877,7 @@ return mat4(
 
     _accessBinaryWithAccessor(accessor) {
       var bufferView = accessor.bufferView;
-      var byteOffset = bufferView.byteOffset + accessor.byteOffset;
+      const byteOffset = bufferView.byteOffset + (accessor.byteOffset !== void 0 ? accessor.byteOffset : 0);
       var buffer = bufferView.buffer;
       var arrayBuffer = buffer.buffer;
 
