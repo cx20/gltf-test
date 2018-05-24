@@ -4,7 +4,7 @@
   (factory());
 }(this, (function () { 'use strict';
 
-  // This revision is the commit right after the SHA: 287f19ed
+  // This revision is the commit right after the SHA: 43cd873f
   var global = (0, eval)('this');
 
   (function (global) {
@@ -13759,6 +13759,8 @@ return mat4(
       if (_clearColor) {
         gl.clearColor( _clearColor.red, _clearColor.green, _clearColor.blue, _clearColor.alpha );
       }
+
+      this.__animationFrameId = -1;
     }
 
     /**
@@ -13969,6 +13971,41 @@ return mat4(
       this._glContext.canvasHeight = height;
     }
 
+    /**
+     * This method treats the given callback function as a render loop and call it every frame.
+     */
+    doRenderLoop(renderLoopFunc, ...args) {
+
+      renderLoopFunc.apply(renderLoopFunc, args);
+
+      this.__animationFrameId = requestAnimationFrame(()=>{
+        this.doRenderLoop(renderLoopFunc, ...args);
+      });
+    }
+
+    doConvenientRenderLoop(expression, beforeCallback, afterCallback, ...args) {
+
+      if (beforeCallback) {
+        beforeCallback.apply(beforeCallback, args);
+      }
+
+      this.clearCanvas();
+      this.update(expression);
+      this.draw(expression);
+
+      if (afterCallback) {
+        afterCallback.apply(afterCallback, args);
+      }
+
+      this.__animationFrameId = requestAnimationFrame(()=>{
+        this.doConvenientRenderLoop(expression, beforeCallback, afterCallback, ...args);
+      });
+    }
+
+    stopRenderLoop() {
+      cancelAnimationFrame(this.__animationFrameId);
+      this.__animationFrameId = -1;
+    }
   }
 
   /*       */
@@ -18722,10 +18759,10 @@ return mat4(
               }
 
               let texture = glBoostContext.createTexture(baseColorTexture.texture.image.image, '', {
-                'TEXTURE_MAG_FILTER': sampler.magFilter,
-                'TEXTURE_MIN_FILTER': sampler.minFilter,
-                'TEXTURE_WRAP_S': sampler.wrapS,
-                'TEXTURE_WRAP_T': sampler.wrapT,
+                'TEXTURE_MAG_FILTER': sampler === void 0 ? GLBoost$1.LINEAR : sampler.magFilter,
+                'TEXTURE_MIN_FILTER': sampler === void 0 ? GLBoost$1.LINEAR_MIPMAP_LINEAR : sampler.minFilter,
+                'TEXTURE_WRAP_S': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapS,
+                'TEXTURE_WRAP_T': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapT,
                 'UNPACK_PREMULTIPLY_ALPHA_WEBGL': isNeededToMultiplyAlphaToColorOfTexture
               });
               gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
@@ -19659,6 +19696,53 @@ return mat4(
   }
 
   GLBoost$1['AnimationPlayer'] = AnimationPlayer;
+
+  async function formatDetector(uri) {
+
+    return DataUtil.loadResourceAsync(uri, true,
+      (resolve, response)=>
+      {
+        const arrayBuffer = response;
+
+        const isLittleEndian = true;
+
+        const dataView = new DataView(arrayBuffer, 0, 20);
+        // Magic field
+        const magic = dataView.getUint32(0, isLittleEndian);
+
+        // 0x46546C67 is 'glTF' in ASCII codes.
+        if (magic !== 0x46546C67) {
+          // It must be normal glTF (NOT binary) file...
+          let gotText = DataUtil.arrayBufferToString(arrayBuffer);
+          let partsOfPath = uri.split('/');
+          let basePath = '';
+          for (let i = 0; i < partsOfPath.length - 1; i++) {
+            basePath += partsOfPath[i] + '/';
+          }
+          let gltfJson = JSON.parse(gotText);
+
+          let glTFVer = checkGLTFVersion(gltfJson);
+
+          resolve("glTF"+glTFVer);
+
+          return;
+        }
+
+        let gltfVer = dataView.getUint32(4, isLittleEndian);
+        resolve("glTF"+glTFVer);
+       }
+    );
+  }
+
+  function checkGLTFVersion(gltfJson) {
+    let glTFVer = 1.0;
+    if (gltfJson.asset && gltfJson.asset.version) {
+      glTFVer = parseFloat(gltfJson.asset.version);
+    }
+    return glTFVer;
+  }
+
+  GLBoost$1["formatDetector"] = formatDetector;
 
 })));
 //# sourceMappingURL=glboost.js.map
