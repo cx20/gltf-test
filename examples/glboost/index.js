@@ -87,6 +87,20 @@ promise.then(function(gltfObj) {
     expression.renderPasses[0].scene = scene;
     expression.prepareToRender();
     
+    const animationLength = group.getEndAnimationInputValue('time');
+    var lastAnimatedTime = Date.now();
+    renderer.doConvenientRenderLoop(expression, function() {
+        var currentMillisecondDeltaFromStart = Date.now() - lastAnimatedTime;
+        scene.setCurrentAnimationValue('time', currentMillisecondDeltaFromStart / 1000);
+        if (currentMillisecondDeltaFromStart / 1000 > animationLength) {
+            lastAnimatedTime = Date.now();
+        }
+
+        var rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
+        var rotatedVector = rotateMatrix.multiplyVector(camera.eye);
+        camera.eye = rotatedVector;
+    });
+/*
     var render = function() {
         scene.setCurrentAnimationValue('time', gtime);
         renderer.clearCanvas();
@@ -96,10 +110,11 @@ promise.then(function(gltfObj) {
         if (gtime > 5) {
             gtime = 0.0;
         }
-        var rotateMatrix = GLBoost.Matrix33.rotateY(-0.5);
+        var rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
         var rotatedVector = rotateMatrix.multiplyVector(camera.eye);
         camera.eye = rotatedVector;
         requestAnimationFrame(render);
     };
     render();
+*/
 });

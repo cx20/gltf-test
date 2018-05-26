@@ -4,7 +4,7 @@
   (factory());
 }(this, (function () { 'use strict';
 
-  // This revision is the commit right after the SHA: 43cd873f
+  // This revision is the commit right after the SHA: f94ae8d8
   var global = (0, eval)('this');
 
   (function (global) {
@@ -6187,11 +6187,89 @@ return mat4(
       return this[singleton$2];
     }
 
-    draw(gl, glem, expression, mesh, originalMaterials, camera, lights, scene, vertices, vaoDic, vboDic, iboArrayDic, geometry, geometryName, primitiveType, vertexN, renderPassIndex) {
+    static setCamera(gl, glslProgram, material, world_m, normal_m, camera, mesh) {
+      if (camera) {
+        let viewMatrix;
+        if (mesh.isAffectedByViewMatrix) {
+          let cameraMatrix = camera.lookAtRHMatrix();
+  //          viewMatrix = cameraMatrix.multiply(camera.inverseWorldMatrixWithoutMySelf);
+          viewMatrix = cameraMatrix.multiply(camera.inverseWorldMatrix);
+        } else {
+          viewMatrix = Matrix44$2.identity();
+        }
+
+        let projectionMatrix;
+        if (mesh.isAffectedByProjectionMatrix) {
+          projectionMatrix = camera.projectionRHMatrix();
+        } else {
+          projectionMatrix = Matrix44$2.identity();
+        }
+
+        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'WORLD', world_m.flatten());
+        Shader.trySettingMatrix33ToUniform(gl, glslProgram, material, material._semanticsDic, 'MODELVIEWINVERSETRANSPOSE', normal_m.flatten());
+        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'VIEW', viewMatrix.flatten());
+        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'PROJECTION', projectionMatrix.flatten());
+        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'MODELVIEW', Matrix44$2.multiply(viewMatrix, world_m).flatten());
+
+        camera._lastPVMatrixFromLight = Matrix44$2.multiply(projectionMatrix, viewMatrix);
+      }
+    }
+
+    static setVRCamera(gl, glslProgram, material, world_m, normal_m, webvrFrameData, mesh, leftOrRight) {
+      if (webvrFrameData) {
+        let viewMatrix;
+        if (mesh.isAffectedByViewMatrix) {
+          const invertSittingToStandingTransform = (new Matrix44$2(webvrFrameData.sittingToStandingTransform, true)).invert();
+          const leftOrRightViewMatrix = new Matrix44$2(webvrFrameData[leftOrRight + 'ViewMatrix'], true);
+          viewMatrix = Matrix44$2.multiply(leftOrRightViewMatrix, invertSittingToStandingTransform);
+        } else {
+          viewMatrix = Matrix44$2.identity();
+        }
+
+        let projectionMatrix;
+        if (mesh.isAffectedByProjectionMatrix) {
+          projectionMatrix = new Matrix44$2(webvrFrameData[leftOrRight + 'ProjectionMatrix'], true);
+        } else {
+          projectionMatrix = Matrix44$2.identity();
+        }
+
+        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'WORLD', world_m.flatten());
+        Shader.trySettingMatrix33ToUniform(gl, glslProgram, material, material._semanticsDic, 'MODELVIEWINVERSETRANSPOSE', normal_m.flatten());
+        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'VIEW', viewMatrix.flatten());
+        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'PROJECTION', projectionMatrix.flatten());
+        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'MODELVIEW', Matrix44$2.multiply(viewMatrix, world_m).flatten());
+
+        camera._lastPVMatrixFromLight = Matrix44$2.multiply(projectionMatrix, viewMatrix);
+      }
+    }
+
+    draw(data) {
+      const gl = data.gl;
+      const glem = data.glem;
+      const expression = data.expression;
+      const mesh = data.mesh;
+      const originalMaterials = data.materials;
+      const camera = data.camera;
+      let lights = data.lights;
+      const scene = data.scene;
+      const vertices = data.vertices;
+      const vaoDic = data.vaoDic;
+      const vboDic = data.vboDic;
+      const iboArrayDic = data.iboArrayDic;
+      const geometry = data.geometry;
+      const geometryName = data.geometryName;
+      const primitiveType = data.primitiveType;
+      const vertexN = data.vertexN;
+      const renderPassIndex = data.renderPassIndex;
+      const viewport = data.viewport;
+      const isWebVRMode = data.isWebVRMode;
+      const webvrFrameData = data.webvrFrameData;
 
       var isVAOBound = glem.bindVertexArray(gl, vaoDic[geometryName]);
 
       let input = mesh._getCurrentAnimationInputValue('time');
+
+
 
       for (let i=0; i<originalMaterials.length;i++) {
         let material = originalMaterials[i];
@@ -6236,32 +6314,6 @@ return mat4(
         } else {
           world_m = Matrix44$2.identity();
           normal_m = Matrix33.identity();
-        }
-
-        Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'WORLD', world_m.flatten());
-        Shader.trySettingMatrix33ToUniform(gl, glslProgram, material, material._semanticsDic, 'MODELVIEWINVERSETRANSPOSE', normal_m.flatten());
-        if (camera) {
-          let viewMatrix;
-          if (mesh.isAffectedByViewMatrix) {
-            let cameraMatrix = camera.lookAtRHMatrix();
-  //          viewMatrix = cameraMatrix.multiply(camera.inverseWorldMatrixWithoutMySelf);
-            viewMatrix = cameraMatrix.multiply(camera.inverseWorldMatrix);
-          } else {
-            viewMatrix = Matrix44$2.identity();
-          }
-
-          let projectionMatrix;
-          if (mesh.isAffectedByProjectionMatrix) {
-            projectionMatrix = camera.projectionRHMatrix();
-          } else {
-            projectionMatrix = Matrix44$2.identity();
-          }
-
-          Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'VIEW', viewMatrix.flatten());
-          Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'PROJECTION', projectionMatrix.flatten());
-          Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'MODELVIEW', Matrix44$2.multiply(viewMatrix, world_m).flatten());
-
-          camera._lastPVMatrixFromLight = Matrix44$2.multiply(projectionMatrix, viewMatrix);
         }
 
         if (material.getUniform(glslProgram, 'uniform_lightPosition_0')) {
@@ -6322,20 +6374,22 @@ return mat4(
 
         geometry.drawIntermediate(gl, glslProgram, mesh, material);
 
+        if (isWebVRMode) {
+          // Left Eye
+   //       DrawKickerWorld.drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN);
 
+          gl.viewport.apply(gl, [viewport[0], viewport[1], viewport[2] * 0.5, viewport[3]]);
+          DrawKickerWorld.setVRCamera(gl, glslProgram, material, world_m, normal_m, webvrFrameData, mesh, 'left');
+          DrawKickerWorld.drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN);
 
-        if (geometry.isIndexed()) {
-          //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboArrayDic[geometryName]);
-          let vertexN = material.getVertexN(geometry);
-          let indexBitSizeGLConstant = glem.elementIndexBitSizeGLConstant(gl);
-          let indexByteSizeNumber = glem.elementIndexByteSizeNumber(gl);
-          let offset = geometry.getIndexStartOffsetArrayAtMaterial(i);
-          gl.drawElements(primitiveType, vertexN, indexBitSizeGLConstant, offset*indexByteSizeNumber);
-          //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+          // Right Eye
+          gl.viewport.apply(gl, [viewport[2] * 0.5, viewport[1], viewport[2] * 0.5, viewport[3]]);
+          DrawKickerWorld.setVRCamera(gl, glslProgram, material, world_m, normal_m, webvrFrameData, mesh, 'right');
+          DrawKickerWorld.drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN);
         } else {
-          gl.drawArrays(primitiveType, 0, vertexN);
+          DrawKickerWorld.setCamera(gl, glslProgram, material, world_m, normal_m, camera, mesh);
+          DrawKickerWorld.drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN);
         }
-        
 
 
         material.shaderInstance.setUniformsAsTearDown(gl, glslProgram, scene, material, camera, mesh, lights);
@@ -6352,6 +6406,20 @@ return mat4(
   //    gl.bindBuffer(gl.ELEMENT_BUFFER, null);
 
       //DrawKickerWorld._lastRenderPassIndex = renderPassIndex;
+    }
+
+    static drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN) {
+      if (geometry.isIndexed()) {
+        //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboArrayDic[geometryName]);
+        let vertexN = material.getVertexN(geometry);
+        let indexBitSizeGLConstant = glem.elementIndexBitSizeGLConstant(gl);
+        let indexByteSizeNumber = glem.elementIndexByteSizeNumber(gl);
+        let offset = geometry.getIndexStartOffsetArrayAtMaterial(i);
+        gl.drawElements(primitiveType, vertexN, indexBitSizeGLConstant, offset * indexByteSizeNumber);
+        //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+      } else {
+        gl.drawArrays(primitiveType, 0, vertexN);
+      }
     }
 
     _setUpOrTearDownTextures(isSetUp, material) {
@@ -7347,15 +7415,37 @@ return mat4(
       this.setUpVertexAttribs(this._glContext.gl, glslProgram, this._getAllVertexAttribs());    
     }
 
-    draw(expression, lights, camera, mesh, scene, renderPassIndex) {
-      var gl = this._glContext.gl;
-      var glem = GLExtensionsManager.getInstance(this._glContext);
+    draw(data) {
+      const gl = this._glContext.gl;
+      const glem = GLExtensionsManager.getInstance(this._glContext);
 
-      let materials = this._getAppropriateMaterials(mesh);
+      const materials = this._getAppropriateMaterials(data.mesh);
 
-      let thisName = this.toString();
+      const thisName = this.toString();
 
-      this._drawKicker.draw(gl, glem, expression, mesh, materials, camera, lights, scene, this._vertices, Geometry._vaoDic, this._vboObj, Geometry._iboArrayDic, this, thisName, this._primitiveType, this._vertexN, renderPassIndex);
+      this._drawKicker.draw(
+        {
+          gl: gl,
+          glem: glem,
+          expression: data.expression,
+          lights: data.lights,
+          camera: data.camera,
+          mesh: data.mesh,
+          scene: data.scene,
+          renderPassIndex: data.renderPassIndex,
+          materials: materials,
+          vertices: this._vertices,
+          vaoDic: Geometry._vaoDic,
+          vboObj: this._vboObj,
+          iboArrayDic: Geometry._iboArrayDic,
+          geometry: this,
+          geometryName: thisName,
+          primitiveType: this._primitiveType,
+          vertexN: this._vertexN,
+          viewport: data.viewport,
+          isWebVRMode: data.isWebVRMode,
+          webvrFrameData: data.webvrFrameData
+        });
 
     }
 
@@ -7718,9 +7808,18 @@ return mat4(
     }
 
 
-    draw(expression, lights, camera, mesh, scene, renderPass_index) {
-      this._currentRenderPassIndex = renderPass_index;
-      super.draw(expression, lights, camera, mesh, scene, renderPass_index);
+    draw(data) {
+      this._currentRenderPassIndex = data.renderPass_index;
+      super.draw({
+        expression: data.expression,
+        lights: data.lights,
+        camera: data.camera,
+        mesh: data.mesh,
+        scene: data.scene,
+        renderPassIndex: data.renderPassIndex,
+        viewport: data.viewport,
+        isWebVRMode: data.isWebVRMode,
+        webvrFrameData: data.webvrFrameData});
     }
 
     prepareToRender(expression, existCamera_f, pointLight, meshMaterial, mesh) {
@@ -8936,8 +9035,12 @@ return mat4(
       }
 
       this._translate = lookat.eye;
+      this._translateInner = super.translate.clone();
       this._center = lookat.center;
       this._up = lookat.up;
+      this._upInner = lookat.up;
+      this._centerInner = this._up.clone();
+
 
       this._cameraController = null;
 
@@ -11608,8 +11711,20 @@ return mat4(
       */
     }
 
-    draw(expression, lights, camera, scene, renderPassIndex) {
-      this._geometry.draw(expression, lights, camera, this, scene, renderPassIndex);
+    draw(data) {
+      this._geometry.draw(
+        {
+          expression: data.expression,
+          lights: data.lights,
+          camera: data.camera,
+          scene: data.renderPass.scene,
+          renderPassIndex: data.renderPassIndex,
+          mesh: this,
+          viewport: data.viewport,
+          isWebVRMode: data.isWebVRMode,
+          webvrFrameData: data.webvrFrameData
+        }
+      );
     }
 
     set geometry(geometry) {
@@ -13148,6 +13263,668 @@ return mat4(
 
   }
 
+  /**
+   * en: This class take a role as operator of rendering process. In order to render images to canvas, this Renderer class gathers other elements' data, decides a plan of drawing process, and then just execute it.<br>
+   * ja: このクラスはレンダリングプロセスの制御を司ります。Canvasにイメージをレンダリングするために、このRendererクラスは他の要素のデータを集め、描画プロセスの計画を決定し、実行します。
+   */
+  class Renderer extends GLBoostObject {
+    constructor(glBoostContext, parameters) {
+      super(glBoostContext);
+      var _clearColor = parameters.clearColor;
+
+      var gl = this._glContext.gl;
+
+      this._glBoostContext.reflectGlobalGLState();
+
+      if (_clearColor) {
+        gl.clearColor( _clearColor.red, _clearColor.green, _clearColor.blue, _clearColor.alpha );
+      }
+
+      this.__animationFrameId = -1;
+      this.__isWebVRMode = false;
+      this.__webvrFrameData = null;
+      this.__webvrDisplay = null;
+      this.__switchAnimationFrameFunctions(window);
+      this.__defaultUserSittingPositionInVR = new Vector3(0.0, 1.1, 1.5);
+      this.__requestedToEnterWebVR = false;
+    }
+
+    __switchAnimationFrameFunctions(object) {
+      this.__requestAnimationFrame = object !== void 0 ? object.requestAnimationFrame.bind(object) : null;
+      this.__cancelAnimationFrame = object !== void 0 ? object.cancelAnimationFrame.bind(object) : null;
+    }
+
+    /**
+     * en: update things of elements of the expression.<br>
+     * @param {Expression} expression a instance of Expression class
+     */
+    update(expression) {
+      
+      let skeletalMeshes = [];
+      // gather scenes as unique
+      for (let renderPass of expression.renderPasses) {
+        skeletalMeshes = skeletalMeshes.concat(renderPass._skeletalMeshes);
+        renderPass.scene.updateAmountOfAmbientLightsIntensity();
+      }
+
+      let unique = function(array) {
+        return array.reduce(function(a, b) {
+          if (a.instanceName !== b.instanceName) {
+            a.push(b);
+          }
+          return a;
+        }, []);
+      };
+      skeletalMeshes = unique(skeletalMeshes);
+      
+      for (let mesh of skeletalMeshes) {
+        mesh.geometry.update(mesh);
+      }
+
+      if (typeof effekseer !== "undefined") {
+        effekseer.update();
+      }
+
+    }
+
+    /**
+     * en: draw elements of the expression.<br>
+     * ja: sceneが持つオブジェクトを描画します
+     * @param {Expression} expression a instance of Expression class
+     */
+    draw(expression) {
+      let renderPassTag = '';
+      expression.renderPasses.forEach((renderPass, index)=>{
+        if (!renderPass.isEnableToDraw || !renderPass.scene) {
+          return;
+        }
+
+        if (renderPassTag !== renderPass.tag) {
+          renderPass.clearAssignShaders();
+        }
+        renderPassTag = renderPass.tag;
+
+        var camera = renderPass.scene.getMainCamera();
+
+        let lights = renderPass.scene.lightsExceptAmbient;
+
+        renderPass.preRender(camera ? true:false, lights);
+
+        var glContext = this._glContext;
+        var gl = glContext.gl;
+        var glem = GLExtensionsManager.getInstance(this._glContext);
+
+
+        // set render target buffers for each RenderPass.
+        /*
+        if (renderPass.fbo && renderPass.isRenderTargetAttachedTextures) {
+          gl.bindTexture(gl.TEXTURE_2D, null);
+          gl.bindFramebuffer(gl.FRAMEBUFFER, renderPass.fbo);
+        } else {
+          glem.drawBuffers(gl, [gl.BACK]);
+        }
+        */
+        if (renderPass.fbo && renderPass.isRenderTargetAttachedTextures) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, renderPass.fbo);
+        }
+
+        glem.drawBuffers(gl, renderPass.buffersToDraw);
+        //glem.readBuffer(gl, renderPass.buffersToDraw);
+
+        let viewport = null;
+        if (renderPass.viewport) {
+          viewport = [renderPass.viewport.x, renderPass.viewport.y, renderPass.viewport.z, renderPass.viewport.w];
+        } else {
+          if (this.isWebVRMode) {
+            viewport = [0, 0, glContext.canvasWidth, glContext.canvasHeight];
+          } else if (camera) {
+            let deltaWidth = glContext.canvasHeight*camera.aspect - glContext.canvasWidth;
+            viewport = [-deltaWidth/2, 0, glContext.canvasHeight*camera.aspect, glContext.canvasHeight];
+          } else {
+            viewport = [0, 0, glContext.canvasWidth, glContext.canvasHeight];
+          }
+        }
+        if (!this.isWebVRMode) {
+          gl.viewport.apply(gl, viewport);
+        }
+
+        this._clearBuffer(gl, renderPass);
+
+        if (this.isWebVRMode) {
+          this.__webvrDisplay.getFrameData(this.__webvrFrameData);
+          if (this.__webvrDisplay.stageParameters) {
+            this.__webvrFrameData.sittingToStandingTransform = this.__webvrDisplay.stageParameters.sittingToStandingTransform;
+          } else {
+            this.__webvrFrameData.sittingToStandingTransform = Matrix44$2.translate(this.__defaultUserSittingPositionInVR).flatten();
+          }
+        }
+
+
+        // draw opacity meshes.
+        const opacityMeshes = renderPass.opacityMeshes;
+        opacityMeshes.forEach((mesh)=> {
+          if (mesh.isVisible) {
+            mesh.draw({
+              expression: expression,
+              lights: lights,
+              camera: camera,
+              renderPass: renderPass,
+              renderPassIndex: index,
+              viewport: viewport,
+              isWebVRMode: this.isWebVRMode,
+              webvrFrameData: this.__webvrFrameData
+            });
+          }
+        });
+
+        if (camera) {
+          renderPass.sortTransparentMeshes(camera);
+        }
+        // draw transparent meshes.
+        const transparentMeshes = (renderPass.transparentMeshesAsManualOrder) ? renderPass.transparentMeshesAsManualOrder : renderPass.transparentMeshes;
+  //      console.log("START!!");
+        transparentMeshes.forEach((mesh)=> {
+          //console.log(mesh.userFlavorName);
+          if (mesh.isVisible) {
+            mesh.draw({
+              expression: expression,
+              lights: lights,
+              camera: camera,
+              renderPass: renderPass,
+              renderPassIndex: index,
+              viewport: viewport,
+              isWebVRMode: this.isWebVRMode,
+              webvrFrameData: this.__webvrFrameData
+            });
+          }
+        });
+  //      console.log("END!!");
+        
+        const globalStatesUsageBackup = this._glBoostContext.globalStatesUsage;
+        this._glBoostContext.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE;
+        this._glBoostContext.currentGlobalStates = [
+          3042, // gl.BLEND
+        ];
+        let gizmos = renderPass.gizmos;
+        for (let gizmo of gizmos) {
+          if (gizmo.isVisible) {
+            gizmo.mesh.draw({
+              expression: expression,
+              lights: lights,
+              camera: camera,
+              renderPass: renderPass,
+              renderPassIndex: index,
+              viewport: viewport,
+              isWebVRMode: this.isWebVRMode,
+              webvrFrameData: this.__webvrFrameData
+            });
+          }
+        }
+        this._glBoostContext.globalStatesUsage = globalStatesUsageBackup;
+        this._glBoostContext.restoreGlobalStatesToDefault();
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  //      glem.drawBuffers(gl, [gl.BACK]);
+
+        if (typeof effekseer !== "undefined") {
+          effekseer.setProjectionMatrix(camera.projectionRHMatrix().m);
+          effekseer.setCameraMatrix(camera.inverseWorldMatrix.m);
+          effekseer.draw();
+        }
+
+        renderPass.postRender(camera ? true:false, lights);
+
+        if (this.isWebVRMode) {
+          this.__webvrDisplay.submitFrame();
+        }
+
+      });
+    }
+
+    _clearBuffer(gl, renderPass) {
+      const clearColor = renderPass.clearColor;
+      const clearDepth = renderPass.clearDepth;
+      const colorMask = renderPass.colorMask;
+
+      if (clearColor) {
+        gl.clearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
+      }
+      if (clearDepth) {
+        gl.clearDepth(clearDepth);
+      }
+      if (colorMask) {
+        gl.colorMask.apply(null, [colorMask]);
+      }
+
+      if (renderPass.buffersToDraw[0] === gl.NONE) {
+        {
+          gl.clear(gl.DEPTH_BUFFER_BIT);
+        }
+      } else if (clearColor || clearDepth) {
+        gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      } else if (clearColor) {
+        gl.clear( gl.COLOR_BUFFER_BIT );
+      }
+    }
+
+    /**
+     * en: clear color/depth/stencil of canvas.<br>
+     * ja: canvasのカラー、デプス、ステンシルのいずれか又は全てをクリアします。
+     * @param {boolean} color_flg true: clear color, false: don't clear color
+     * @param {boolean} depth_flg true: clear depth, false: don't clear depth
+     * @param {boolean} stencil_flg  true: clear stencil, false: don't clear stencil
+     */
+    clearCanvas( color_flg, depth_flg, stencil_flg ) {
+
+      var gl = this._glContext.gl;
+
+      var bufferBits = 0;
+
+      if ( color_flg === void 0 || color_flg ) bufferBits |= gl.COLOR_BUFFER_BIT;
+      if ( depth_flg === void 0 || depth_flg ) bufferBits |= gl.DEPTH_BUFFER_BIT;
+      if ( stencil_flg === void 0 || stencil_flg ) bufferBits |= gl.STENCIL_BUFFER_BIT;
+
+      gl.clear( bufferBits );
+
+    }
+
+    /**
+     * en: Get WebGL context.<br>
+     * ja: WebGLコンテキストを取得します。
+     * @returns {webglcontext} a context of WebGL
+     */
+    get glContext() {
+      return this._glContext.gl;
+    }
+
+
+    /**
+     * en: resize canvas and viewport.<br>
+     * ja: canvasとビューポートをリサイズします。
+     * @param {number} width en: width to resize, ja: リサイズする幅
+     * @param {number} height en: height to resize, ja:リサイズする高さ
+     */
+    resize(width, height) {
+      this._glContext.canvasWidth = width;
+      this._glContext.canvasHeight = height;
+    }
+
+    /**
+     * This method treats the given callback function as a render loop and call it every frame.
+     */
+    doRenderLoop(renderLoopFunc, ...args) {
+
+      renderLoopFunc.apply(renderLoopFunc, args);
+
+      this.__animationFrameId = this.__requestAnimationFrame(()=>{
+        this.doRenderLoop(renderLoopFunc, ...args);
+        if (this.__requestedToEnterWebVR) {
+          this.__isWebVRMode = true;
+        }
+      });
+    }
+
+    doConvenientRenderLoop(expression, beforeCallback, afterCallback, ...args) {
+
+      if (beforeCallback) {
+        beforeCallback.apply(beforeCallback, args);
+      }
+
+      this.clearCanvas();
+      this.update(expression);
+      this.draw(expression);
+
+      if (afterCallback) {
+        afterCallback.apply(afterCallback, args);
+      }
+
+      this.__animationFrameId = this.__requestAnimationFrame(()=>{
+        this.doConvenientRenderLoop(expression, beforeCallback, afterCallback, ...args);
+        if (this.__requestedToEnterWebVR) {
+          this.__isWebVRMode = true;
+        }
+      });
+    }
+
+    stopRenderLoop() {
+      this.__cancelAnimationFrame(this.__animationFrameId);
+      this.__animationFrameId = -1;
+    }
+
+
+
+    // WebVR
+    async enterWebVR(initialUserSittingPositionIfStageParametersDoNotExist) {
+      if (initialUserSittingPositionIfStageParametersDoNotExist) {
+        this.__defaultUserSittingPositionInVR = initialUserSittingPositionIfStageParametersDoNotExist;
+      }
+      return new Promise((resolve, reject)=> {
+        this.__webvrDisplay.requestPresent([{source: this._glContext.canvas}]).then(() => {
+          this.__switchAnimationFrameFunctions(this.__webvrDisplay);
+          const leftEye = this.__webvrDisplay.getEyeParameters("left");
+          const rightEye = this.__webvrDisplay.getEyeParameters("right");
+          this.resize(Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2, Math.max(leftEye.renderHeight, rightEye.renderHeight));
+          this.__requestedToEnterWebVR = true;
+          resolve();
+        }).catch(() => {
+          console.error('Failed to requestPresent. Please check your VR Setting, or something wrong with your VR system?');
+          reject();
+        });
+      });
+    }
+
+    async readyForWebVR(requestButtonDom) {
+      if ( window.VRFrameData ) {
+        this.__webvrFrameData = new window.VRFrameData();
+      }
+
+      return new Promise((resolve, reject)=> {
+        if ( navigator.getVRDisplays ) {
+          navigator.getVRDisplays()
+            .then((vrDisplays)=>{
+              if (vrDisplays.length > 0) {
+                const webvrDisplay = vrDisplays[vrDisplays.length - 1];
+                webvrDisplay.depthNear = 0.01;
+                webvrDisplay.depthFar = 10000;
+
+                if (webvrDisplay.capabilities.canPresent) {
+                  this.__webvrDisplay = webvrDisplay;
+                  requestButtonDom.style.display = 'block';
+                  resolve();
+                } else {
+                  console.error("Can't requestPresent now. try again.");
+                  reject();
+                }
+              } else {
+                console.error('Failed to get VR Display. Please check your VR Setting, or something wrong with your VR system?');
+                reject();
+              }
+            })
+            .catch(()=>{
+              console.error('Failed to get VR Displays. Please check your VR Setting.');
+              reject();
+            });
+        } else {
+          console.error('Your browser does not support WebVR. Or it is disabled. Check again.');
+          reject();
+        }
+      });
+    }
+
+    disableWebVR() {
+      this.__switchAnimationFrameFunctions(window);
+      this.__webvrDisplay = null;
+      this.__isWebVRMode = false;
+      this.__requestedToEnterWebVR = false;
+    }
+
+    get isWebVRMode() {
+      return this.__isWebVRMode;
+    }
+  }
+
+  /*       */
+
+
+  /**
+   * [en] This M_Scene class is the top level element of scene graph hierarchy.
+   *       To render scene, pass this scene element to Renderer.draw method.<br>
+   * [ja] このSceneクラスはシーングラフ階層のトップレベルに位置する要素です。
+   *       シーンをレンダリングするには、このscene要素をRenderer.drawメソッドに渡します。
+   */
+  class M_Scene extends M_Group {
+                              
+    
+    /**
+     * [en] constructor
+     * [ja] コンストラクタ
+     * @param {HTMLCanvas|string} canvas [en] canvas or canvas' id string. [ja] canvasまたはcanvasのid文字列
+     */
+    constructor(glBoostContext    ) {
+      super(glBoostContext);
+      this._gl = this._glContext.gl;
+      this._reset();
+    }
+
+    _reset() {
+      this._meshes = [];
+      this._lights = [];
+      this._lightsExceptAmbient = [];
+      this._ambientLights = [];    
+      this._cameras = [];
+      this._accumulatedAmbientIntensity = Vector4.zero();
+    }
+
+    _getCurrentAnimationInputValue(inputName       ) {
+      let value = this._currentAnimationInputValues[inputName];
+      if (typeof value === 'undefined') {
+        return (void 0);
+      } else {
+        return value;
+      }
+    }
+
+    /**
+     * [en] Prepare for Rendering. You have to call this method before Renderer.draw method.
+     * [ja] レンダリングのための前処理を行います。Renderer.drawメソッドの前にこのメソッドを呼ぶ必要があります。
+     */
+    prepareToRender(expression    ) {
+      this._reset();
+
+      var aabb = (function setParentAndClearAccumulatedTransformMatriAndMergeAABBRecursively(elem) {
+        if (elem instanceof M_Group) {
+          elem._needUpdate(); // This line enforces to clear AccumulatedTransformMatrix for all below elements.
+          var children = elem.getChildren();
+          for(let i=0; i<children.length; i++) {
+            children[i]._parent = elem;
+            var aabb = setParentAndClearAccumulatedTransformMatriAndMergeAABBRecursively(children[i]);
+            if (aabb instanceof AABB) {
+              elem.AABB.mergeAABB(aabb);
+            } else {
+              console.assert('calculation of AABB error!');
+            }
+          }
+          return elem.AABB;
+        }
+        if (elem instanceof M_Mesh) {
+          return elem.AABB;
+        }
+
+        return null;
+      })(this);
+      this.AABB.mergeAABB(aabb);
+
+      let collectLights = function(elem) {
+        if (elem instanceof M_Group) {
+          var children = elem.getChildren();
+          var lights = [];
+          children.forEach(function(child) {
+            var childLights = collectLights(child);
+            lights = lights.concat(childLights);
+          });
+          return lights;
+        } else if (elem instanceof M_AbstractLight) {
+          return [elem];
+        } else {
+          return [];
+        }
+      };
+
+      this._lights = [];
+      this._lightsExceptAmbient = [];
+      this._ambientLights = [];
+      this._elements.forEach((elm)=> {
+        this._lights = this._lights.concat(collectLights(elm));
+        this._lightsExceptAmbient = this._lights.filter((light)=>{return !light.isTypeAmbient();});
+        this._ambientLights = this._lights.filter((light)=>{return light.isTypeAmbient();});
+      });
+
+      let existCamera_f = false;
+      let collectCameras = function(elem) {
+        if (elem instanceof M_Group) {
+          var children = elem.getChildren();
+          var cameras = [];
+          children.forEach(function(child) {
+            var childCameras = collectCameras(child);
+            cameras = cameras.concat(childCameras);
+          });
+          return cameras;
+        } else if (elem instanceof M_AbstractCamera) {
+          existCamera_f = true;
+          return [elem];
+        } else {
+          return [];
+        }
+      };
+
+      this._cameras = [];
+      this._elements.forEach((elm)=> {
+        this._cameras = this._cameras.concat(collectCameras(elm));
+      });
+      if (this._cameras.length === 0) ; else if (this._cameras.length === 1) {
+        this._cameras[0].setAsMainCamera(this);
+      } else {
+        // If there are two or more cameras present in the scene and the main camera is not explicitly specified,
+        // a camera chosen to be irresponsible is made the main camera.
+        let isNotMainCameraFound = true;
+        for (let camera of this._cameras) {
+          if (camera.isMainCamera(this)) {
+            isNotMainCameraFound = false;
+            break;
+          }
+        }
+        if (isNotMainCameraFound) {
+          this._cameras[0].setAsMainCamera(this); //
+        }
+      }
+
+
+      let collectMeshes = function(elem) {
+        if (elem instanceof M_Group) {
+          var children = elem.getChildren();
+          var meshes = [];
+          children.forEach(function(child) {
+            var childMeshes = collectMeshes(child);
+            meshes = meshes.concat(childMeshes);
+          });
+          return meshes;
+        } else if (elem instanceof M_Mesh) {
+          return [elem];
+        } else {
+          return [];
+        }
+      };
+
+      this._meshes = [];
+      this._elements.forEach((elm)=> {
+        this._meshes = this._meshes.concat(collectMeshes(elm));
+      });
+
+      let callPrepareToRenderMethodOfAllElements = (elem)=> {
+        if (elem instanceof M_Group) {
+          var children = elem.getChildren();
+
+          children.forEach(function (child) {
+            callPrepareToRenderMethodOfAllElements(child);
+          });
+
+          for (let meshGizmo of elem._gizmos) {
+            meshGizmo.prepareToRender(expression, existCamera_f, []);
+          }
+        } else if (elem instanceof M_Mesh) {
+          elem.prepareToRender(expression, existCamera_f, this._lights);
+          for (let gizmo of elem._gizmos) {
+            gizmo.mesh.prepareToRender(expression, existCamera_f, this._lights);
+          }
+        } else if (elem instanceof M_Element) {
+          elem.prepareToRender();
+          for (let gizmo of elem._gizmos) {
+            gizmo.mesh.prepareToRender(expression, existCamera_f, []);
+          }
+        } else {
+          return;
+        }
+      };
+      callPrepareToRenderMethodOfAllElements(this);
+    }
+
+    getMainCamera(renderPass    ) {
+      var camera = null;
+      this.cameras.forEach((elm)=> {
+        if (elm.isMainCamera(this)) {
+          camera = elm;
+        }
+      });
+
+      return camera;
+    }
+
+    get lightsExceptAmbient() {
+      return this._lightsExceptAmbient;
+    }
+
+    updateAmountOfAmbientLightsIntensity() {
+      this._accumulatedAmbientIntensity = Vector4.zero();
+      for (let light of this._ambientLights) {
+        this._accumulatedAmbientIntensity.add(light.intensity);
+      }
+    }
+
+    getAmountOfAmbientLightsIntensity() {
+      return this._accumulatedAmbientIntensity.clone();
+    }    
+
+    /**
+     * [en] Get child elements which belong to this scene.<br>
+     * [ja] このシーンに属していた子供の要素の配列を返します。
+     * @return {Array<Element>} [en] child elements of this scene. [ja] このシーンの子供の要素
+     */
+    getChildren() {
+      return this._elements;
+    }
+
+    /**
+     * [en] Get child elements which belong to this scene.<br>
+     * [ja] このシーンに属していた子供の要素の配列を返します。
+     * @return {Array<Element>} [en] child elements of this scene. [ja] このシーンの子供の要素
+     */
+    get elements()            {
+      return this._elements;
+    }
+
+    /**
+     * [en] Get child meshes which belong to this scene.<br>
+     * [ja] このシーンに属していた子供のMesh要素の配列を返します。
+     * @return {Array<M_Mesh>} [en] child meshes of this scene. [ja] このシーンの子供のMesh要素
+     */
+    get meshes() {
+      return this._meshes;
+    }
+
+    /**
+     * [en] Get child lights which belong to this scene.<br>
+     * [ja] このシーンに属していた子供のLight要素の配列を返します。
+     * @return {Array<M_AbstractLight>} [en] child lights of this scene. [ja] このシーンの子供のLight要素
+     */
+    get lights() {
+      return this._lights;
+    }
+
+    get lightsExceptAmbient() {
+      return this._lightsExceptAmbient;
+    }
+
+    /**
+     * [en] Get child cameras which belong to this scene.<br>
+     * [ja] このシーンに属していた子供のCamera要素の配列を返します。
+     * @return {Array<PerspectiveCamera>} [en] child cameras of this scene. [ja] このシーンの子供のCamera要素
+     */
+    get cameras() {
+      return this._cameras;
+    }
+
+  }
+
   class M_Gizmo extends M_Group {
     constructor(glBoostContext) {
       super(glBoostContext, null, null);
@@ -13742,533 +14519,6 @@ return mat4(
   }
 
   GLBoost$1['M_SkeletalMesh'] = M_SkeletalMesh;
-
-  /**
-   * en: This class take a role as operator of rendering process. In order to render images to canvas, this Renderer class gathers other elements' data, decides a plan of drawing process, and then just execute it.<br>
-   * ja: このクラスはレンダリングプロセスの制御を司ります。Canvasにイメージをレンダリングするために、このRendererクラスは他の要素のデータを集め、描画プロセスの計画を決定し、実行します。
-   */
-  class Renderer extends GLBoostObject {
-    constructor(glBoostContext, parameters) {
-      super(glBoostContext);
-      var _clearColor = parameters.clearColor;
-
-      var gl = this._glContext.gl;
-
-      this._glBoostContext.reflectGlobalGLState();
-
-      if (_clearColor) {
-        gl.clearColor( _clearColor.red, _clearColor.green, _clearColor.blue, _clearColor.alpha );
-      }
-
-      this.__animationFrameId = -1;
-    }
-
-    /**
-     * en: update things of elements of the expression.<br>
-     * @param {Expression} expression a instance of Expression class
-     */
-    update(expression) {
-      
-      let skeletalMeshes = [];
-      // gather scenes as unique
-      for (let renderPass of expression.renderPasses) {
-        skeletalMeshes = skeletalMeshes.concat(renderPass._skeletalMeshes);
-        renderPass.scene.updateAmountOfAmbientLightsIntensity();
-      }
-
-      let unique = function(array) {
-        return array.reduce(function(a, b) {
-          if (a.instanceName !== b.instanceName) {
-            a.push(b);
-          }
-          return a;
-        }, []);
-      };
-      skeletalMeshes = unique(skeletalMeshes);
-      
-      for (let mesh of skeletalMeshes) {
-        mesh.geometry.update(mesh);
-      }
-
-      if (typeof effekseer !== "undefined") {
-        effekseer.update();
-      }
-
-    }
-
-    /**
-     * en: draw elements of the expression.<br>
-     * ja: sceneが持つオブジェクトを描画します
-     * @param {Expression} expression a instance of Expression class
-     */
-    draw(expression) {
-      let renderPassTag = '';
-      expression.renderPasses.forEach((renderPass, index)=>{
-        if (!renderPass.isEnableToDraw || !renderPass.scene) {
-          return;
-        }
-
-        if (renderPassTag !== renderPass.tag) {
-          renderPass.clearAssignShaders();
-        }
-        renderPassTag = renderPass.tag;
-
-        var camera = renderPass.scene.getMainCamera();
-
-        let lights = renderPass.scene.lightsExceptAmbient;
-
-        renderPass.preRender(camera ? true:false, lights);
-
-        var glContext = this._glContext;
-        var gl = glContext.gl;
-        var glem = GLExtensionsManager.getInstance(this._glContext);
-
-
-        // set render target buffers for each RenderPass.
-        /*
-        if (renderPass.fbo && renderPass.isRenderTargetAttachedTextures) {
-          gl.bindTexture(gl.TEXTURE_2D, null);
-          gl.bindFramebuffer(gl.FRAMEBUFFER, renderPass.fbo);
-        } else {
-          glem.drawBuffers(gl, [gl.BACK]);
-        }
-        */
-        if (renderPass.fbo && renderPass.isRenderTargetAttachedTextures) {
-          gl.bindFramebuffer(gl.FRAMEBUFFER, renderPass.fbo);
-        }
-
-        glem.drawBuffers(gl, renderPass.buffersToDraw);
-        //glem.readBuffer(gl, renderPass.buffersToDraw);
-
-        if (renderPass.viewport) {
-          gl.viewport(renderPass.viewport.x, renderPass.viewport.y, renderPass.viewport.z, renderPass.viewport.w);
-        } else {
-          if (camera) {
-            let deltaWidth = glContext.canvasHeight*camera.aspect - glContext.canvasWidth;
-            gl.viewport(-deltaWidth/2, 0, glContext.canvasHeight*camera.aspect, glContext.canvasHeight);
-          } else {
-            gl.viewport(0, 0, glContext.canvasWidth, glContext.canvasHeight);
-          }
-        }
-
-        this._clearBuffer(gl, renderPass);
-
-        // draw opacity meshes.
-        var opacityMeshes = renderPass.opacityMeshes;
-        opacityMeshes.forEach((mesh)=> {
-          if (mesh.isVisible) {
-            mesh.draw(expression, lights, camera, renderPass.scene, index);
-          }
-        });
-
-        if (camera) {
-          renderPass.sortTransparentMeshes(camera);
-        }
-        // draw transparent meshes.
-        var transparentMeshes = (renderPass.transparentMeshesAsManualOrder) ? renderPass.transparentMeshesAsManualOrder : renderPass.transparentMeshes;
-  //      console.log("START!!");
-        transparentMeshes.forEach((mesh)=> {
-          //console.log(mesh.userFlavorName);
-          if (mesh.isVisible) {
-            mesh.draw(expression, lights, camera, renderPass.scene, index);
-          }
-        });
-  //      console.log("END!!");
-        
-        const globalStatesUsageBackup = this._glBoostContext.globalStatesUsage;
-        this._glBoostContext.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE;
-        this._glBoostContext.currentGlobalStates = [
-          3042, // gl.BLEND
-        ];
-        let gizmos = renderPass.gizmos;
-        for (let gizmo of gizmos) {
-          if (gizmo.isVisible) {
-            gizmo.mesh.draw(expression, lights, camera, renderPass.scene, index);
-          }
-        }
-        this._glBoostContext.globalStatesUsage = globalStatesUsageBackup;
-        this._glBoostContext.restoreGlobalStatesToDefault();
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  //      glem.drawBuffers(gl, [gl.BACK]);
-
-        if (typeof effekseer !== "undefined") {
-          effekseer.setProjectionMatrix(camera.projectionRHMatrix().m);
-          effekseer.setCameraMatrix(camera.inverseWorldMatrix.m);
-          effekseer.draw();
-        }
-
-        renderPass.postRender(camera ? true:false, lights);
-
-      });
-    }
-
-    _clearBuffer(gl, renderPass) {
-      const clearColor = renderPass.clearColor;
-      const clearDepth = renderPass.clearDepth;
-      const colorMask = renderPass.colorMask;
-
-      if (clearColor) {
-        gl.clearColor(clearColor.x, clearColor.y, clearColor.z, clearColor.w);
-      }
-      if (clearDepth) {
-        gl.clearDepth(clearDepth);
-      }
-      if (colorMask) {
-        gl.colorMask.apply(null, [colorMask]);
-      }
-
-      if (renderPass.buffersToDraw[0] === gl.NONE) {
-        {
-          gl.clear(gl.DEPTH_BUFFER_BIT);
-        }
-      } else if (clearColor || clearDepth) {
-        gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      } else if (clearColor) {
-        gl.clear( gl.COLOR_BUFFER_BIT );
-      }
-    }
-
-    /**
-     * en: clear color/depth/stencil of canvas.<br>
-     * ja: canvasのカラー、デプス、ステンシルのいずれか又は全てをクリアします。
-     * @param {boolean} color_flg true: clear color, false: don't clear color
-     * @param {boolean} depth_flg true: clear depth, false: don't clear depth
-     * @param {boolean} stencil_flg  true: clear stencil, false: don't clear stencil
-     */
-    clearCanvas( color_flg, depth_flg, stencil_flg ) {
-
-      var gl = this._glContext.gl;
-
-      var bufferBits = 0;
-
-      if ( color_flg === void 0 || color_flg ) bufferBits |= gl.COLOR_BUFFER_BIT;
-      if ( depth_flg === void 0 || depth_flg ) bufferBits |= gl.DEPTH_BUFFER_BIT;
-      if ( stencil_flg === void 0 || stencil_flg ) bufferBits |= gl.STENCIL_BUFFER_BIT;
-
-      gl.clear( bufferBits );
-
-    }
-
-    /**
-     * en: Get WebGL context.<br>
-     * ja: WebGLコンテキストを取得します。
-     * @returns {webglcontext} a context of WebGL
-     */
-    get glContext() {
-      return this._glContext.gl;
-    }
-
-
-    /**
-     * en: resize canvas and viewport.<br>
-     * ja: canvasとビューポートをリサイズします。
-     * @param {number} width en: width to resize, ja: リサイズする幅
-     * @param {number} height en: height to resize, ja:リサイズする高さ
-     */
-    resize(width, height) {
-      this._glContext.canvasWidth = width;
-      this._glContext.canvasHeight = height;
-    }
-
-    /**
-     * This method treats the given callback function as a render loop and call it every frame.
-     */
-    doRenderLoop(renderLoopFunc, ...args) {
-
-      renderLoopFunc.apply(renderLoopFunc, args);
-
-      this.__animationFrameId = requestAnimationFrame(()=>{
-        this.doRenderLoop(renderLoopFunc, ...args);
-      });
-    }
-
-    doConvenientRenderLoop(expression, beforeCallback, afterCallback, ...args) {
-
-      if (beforeCallback) {
-        beforeCallback.apply(beforeCallback, args);
-      }
-
-      this.clearCanvas();
-      this.update(expression);
-      this.draw(expression);
-
-      if (afterCallback) {
-        afterCallback.apply(afterCallback, args);
-      }
-
-      this.__animationFrameId = requestAnimationFrame(()=>{
-        this.doConvenientRenderLoop(expression, beforeCallback, afterCallback, ...args);
-      });
-    }
-
-    stopRenderLoop() {
-      cancelAnimationFrame(this.__animationFrameId);
-      this.__animationFrameId = -1;
-    }
-  }
-
-  /*       */
-
-
-  /**
-   * [en] This M_Scene class is the top level element of scene graph hierarchy.
-   *       To render scene, pass this scene element to Renderer.draw method.<br>
-   * [ja] このSceneクラスはシーングラフ階層のトップレベルに位置する要素です。
-   *       シーンをレンダリングするには、このscene要素をRenderer.drawメソッドに渡します。
-   */
-  class M_Scene extends M_Group {
-                              
-    
-    /**
-     * [en] constructor
-     * [ja] コンストラクタ
-     * @param {HTMLCanvas|string} canvas [en] canvas or canvas' id string. [ja] canvasまたはcanvasのid文字列
-     */
-    constructor(glBoostContext    ) {
-      super(glBoostContext);
-      this._gl = this._glContext.gl;
-      this._reset();
-    }
-
-    _reset() {
-      this._meshes = [];
-      this._lights = [];
-      this._lightsExceptAmbient = [];
-      this._ambientLights = [];    
-      this._cameras = [];
-      this._accumulatedAmbientIntensity = Vector4.zero();
-    }
-
-    _getCurrentAnimationInputValue(inputName       ) {
-      let value = this._currentAnimationInputValues[inputName];
-      if (typeof value === 'undefined') {
-        return (void 0);
-      } else {
-        return value;
-      }
-    }
-
-    /**
-     * [en] Prepare for Rendering. You have to call this method before Renderer.draw method.
-     * [ja] レンダリングのための前処理を行います。Renderer.drawメソッドの前にこのメソッドを呼ぶ必要があります。
-     */
-    prepareToRender(expression    ) {
-      this._reset();
-
-      var aabb = (function setParentAndClearAccumulatedTransformMatriAndMergeAABBRecursively(elem) {
-        if (elem instanceof M_Group) {
-          elem._needUpdate(); // This line enforces to clear AccumulatedTransformMatrix for all below elements.
-          var children = elem.getChildren();
-          for(let i=0; i<children.length; i++) {
-            children[i]._parent = elem;
-            var aabb = setParentAndClearAccumulatedTransformMatriAndMergeAABBRecursively(children[i]);
-            if (aabb instanceof AABB) {
-              elem.AABB.mergeAABB(aabb);
-            } else {
-              console.assert('calculation of AABB error!');
-            }
-          }
-          return elem.AABB;
-        }
-        if (elem instanceof M_Mesh) {
-          return elem.AABB;
-        }
-
-        return null;
-      })(this);
-      this.AABB.mergeAABB(aabb);
-
-      let collectLights = function(elem) {
-        if (elem instanceof M_Group) {
-          var children = elem.getChildren();
-          var lights = [];
-          children.forEach(function(child) {
-            var childLights = collectLights(child);
-            lights = lights.concat(childLights);
-          });
-          return lights;
-        } else if (elem instanceof M_AbstractLight) {
-          return [elem];
-        } else {
-          return [];
-        }
-      };
-
-      this._lights = [];
-      this._lightsExceptAmbient = [];
-      this._ambientLights = [];
-      this._elements.forEach((elm)=> {
-        this._lights = this._lights.concat(collectLights(elm));
-        this._lightsExceptAmbient = this._lights.filter((light)=>{return !light.isTypeAmbient();});
-        this._ambientLights = this._lights.filter((light)=>{return light.isTypeAmbient();});
-      });
-
-      let existCamera_f = false;
-      let collectCameras = function(elem) {
-        if (elem instanceof M_Group) {
-          var children = elem.getChildren();
-          var cameras = [];
-          children.forEach(function(child) {
-            var childCameras = collectCameras(child);
-            cameras = cameras.concat(childCameras);
-          });
-          return cameras;
-        } else if (elem instanceof M_AbstractCamera) {
-          existCamera_f = true;
-          return [elem];
-        } else {
-          return [];
-        }
-      };
-
-      this._cameras = [];
-      this._elements.forEach((elm)=> {
-        this._cameras = this._cameras.concat(collectCameras(elm));
-      });
-      if (this._cameras.length === 0) ; else if (this._cameras.length === 1) {
-        this._cameras[0].setAsMainCamera(this);
-      } else {
-        // If there are two or more cameras present in the scene and the main camera is not explicitly specified,
-        // a camera chosen to be irresponsible is made the main camera.
-        let isNotMainCameraFound = true;
-        for (let camera of this._cameras) {
-          if (camera.isMainCamera(this)) {
-            isNotMainCameraFound = false;
-            break;
-          }
-        }
-        if (isNotMainCameraFound) {
-          this._cameras[0].setAsMainCamera(this); //
-        }
-      }
-
-
-      let collectMeshes = function(elem) {
-        if (elem instanceof M_Group) {
-          var children = elem.getChildren();
-          var meshes = [];
-          children.forEach(function(child) {
-            var childMeshes = collectMeshes(child);
-            meshes = meshes.concat(childMeshes);
-          });
-          return meshes;
-        } else if (elem instanceof M_Mesh) {
-          return [elem];
-        } else {
-          return [];
-        }
-      };
-
-      this._meshes = [];
-      this._elements.forEach((elm)=> {
-        this._meshes = this._meshes.concat(collectMeshes(elm));
-      });
-
-      let callPrepareToRenderMethodOfAllElements = (elem)=> {
-        if (elem instanceof M_Group) {
-          var children = elem.getChildren();
-
-          children.forEach(function (child) {
-            callPrepareToRenderMethodOfAllElements(child);
-          });
-
-          for (let meshGizmo of elem._gizmos) {
-            meshGizmo.prepareToRender(expression, existCamera_f, []);
-          }
-        } else if (elem instanceof M_Mesh) {
-          elem.prepareToRender(expression, existCamera_f, this._lights);
-          for (let gizmo of elem._gizmos) {
-            gizmo.mesh.prepareToRender(expression, existCamera_f, this._lights);
-          }
-        } else if (elem instanceof M_Element) {
-          elem.prepareToRender();
-          for (let gizmo of elem._gizmos) {
-            gizmo.mesh.prepareToRender(expression, existCamera_f, []);
-          }
-        } else {
-          return;
-        }
-      };
-      callPrepareToRenderMethodOfAllElements(this);
-    }
-
-    getMainCamera(renderPass    ) {
-      var camera = null;
-      this.cameras.forEach((elm)=> {
-        if (elm.isMainCamera(this)) {
-          camera = elm;
-        }
-      });
-
-      return camera;
-    }
-
-    get lightsExceptAmbient() {
-      return this._lightsExceptAmbient;
-    }
-
-    updateAmountOfAmbientLightsIntensity() {
-      this._accumulatedAmbientIntensity = Vector4.zero();
-      for (let light of this._ambientLights) {
-        this._accumulatedAmbientIntensity.add(light.intensity);
-      }
-    }
-
-    getAmountOfAmbientLightsIntensity() {
-      return this._accumulatedAmbientIntensity.clone();
-    }    
-
-    /**
-     * [en] Get child elements which belong to this scene.<br>
-     * [ja] このシーンに属していた子供の要素の配列を返します。
-     * @return {Array<Element>} [en] child elements of this scene. [ja] このシーンの子供の要素
-     */
-    getChildren() {
-      return this._elements;
-    }
-
-    /**
-     * [en] Get child elements which belong to this scene.<br>
-     * [ja] このシーンに属していた子供の要素の配列を返します。
-     * @return {Array<Element>} [en] child elements of this scene. [ja] このシーンの子供の要素
-     */
-    get elements()            {
-      return this._elements;
-    }
-
-    /**
-     * [en] Get child meshes which belong to this scene.<br>
-     * [ja] このシーンに属していた子供のMesh要素の配列を返します。
-     * @return {Array<M_Mesh>} [en] child meshes of this scene. [ja] このシーンの子供のMesh要素
-     */
-    get meshes() {
-      return this._meshes;
-    }
-
-    /**
-     * [en] Get child lights which belong to this scene.<br>
-     * [ja] このシーンに属していた子供のLight要素の配列を返します。
-     * @return {Array<M_AbstractLight>} [en] child lights of this scene. [ja] このシーンの子供のLight要素
-     */
-    get lights() {
-      return this._lights;
-    }
-
-    get lightsExceptAmbient() {
-      return this._lightsExceptAmbient;
-    }
-
-    /**
-     * [en] Get child cameras which belong to this scene.<br>
-     * [ja] このシーンに属していた子供のCamera要素の配列を返します。
-     * @return {Array<PerspectiveCamera>} [en] child cameras of this scene. [ja] このシーンの子供のCamera要素
-     */
-    get cameras() {
-      return this._cameras;
-    }
-
-  }
 
   class M_SkeletalGeometry extends Geometry {
     constructor(glBoostContext) {
