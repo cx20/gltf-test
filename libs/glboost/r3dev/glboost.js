@@ -4,7 +4,7 @@
   (factory());
 }(this, (function () { 'use strict';
 
-  // This revision is the commit right after the SHA: f94ae8d8
+  // This revision is the commit right after the SHA: 9a103448
   var global = (0, eval)('this');
 
   (function (global) {
@@ -4520,6 +4520,15 @@
       }
       return this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder;
     }
+
+    readyForDiscard() {
+      if (this instanceof this.className.indexOf('Mesh') !== -1) {
+        const materials = element.getAppropriateMaterials();
+        for (let material of materials) {
+          material.readyForDiscard();
+        }
+      }
+    }
   }
 
   /**
@@ -6239,7 +6248,7 @@ return mat4(
         Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'PROJECTION', projectionMatrix.flatten());
         Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, material._semanticsDic, 'MODELVIEW', Matrix44$2.multiply(viewMatrix, world_m).flatten());
 
-        camera._lastPVMatrixFromLight = Matrix44$2.multiply(projectionMatrix, viewMatrix);
+  //      camera._lastPVMatrixFromLight = Matrix44.multiply(projectionMatrix, viewMatrix);
       }
     }
 
@@ -8696,13 +8705,18 @@ return mat4(
         return;
       }
       this._textureDic[texture.userFlavorName] = texture;
-      let index = (typeof purpose !== 'undefined' ? purpose:GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
-      this._texturePurposeDic[index] = texture.userFlavorName;
+      let _purpose = (typeof purpose !== 'undefined' ? purpose:GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
+      this._texturePurposeDic[_purpose] = texture.userFlavorName;
+      texture.purpose = _purpose;
       this._textureContributionRateDic[texture.userFlavorName] = new Vector4(1.0, 1.0, 1.0, 1.0);
       this._updateCount();
     }
 
-    removeTexture(userFlavorName) {
+    removeTexture(userFlavorName, discardTexture=true) {
+      if (discardTexture) {
+        this._textureDic[userFlavorName].readyForDiscard();
+      }
+      delete this._texturePurposeDic[this._textureDic[userFlavorName].purpose];
       delete this._textureDic[userFlavorName];
       delete this._textureContributionRateDic[userFlavorName];
       this._updateCount();
@@ -9006,7 +9020,15 @@ return mat4(
       delete this._semanticsDic[uniform];
     }
 
-
+    readyForDiscard() {
+      for (let userFlavorName in this._textureDic) {
+        this.removeTexture(userFlavorName, true);
+      }
+      if (this._shaderInstance) {
+        this._shaderInstance.readyForDiscard();
+      }
+      this._shaderInstance = null;
+    }
   }
 
   GLBoost$1['L_AbstractMaterial'] = L_AbstractMaterial;
@@ -12555,6 +12577,12 @@ return mat4(
 
   //    this._aabbGizmo.updateGizmoDisplay(aabbInWorld.minPoint, aabbInWorld.maxPoint);
     }
+
+    readyForDiscard() {
+
+      this.removeAll();
+    }
+
   }
 
   let singleton$3 = Symbol();
@@ -13287,6 +13315,7 @@ return mat4(
       this.__switchAnimationFrameFunctions(window);
       this.__defaultUserSittingPositionInVR = new Vector3(0.0, 1.1, 1.5);
       this.__requestedToEnterWebVR = false;
+      this.__isReadyForWebVR = false;
     }
 
     __switchAnimationFrameFunctions(object) {
@@ -13474,10 +13503,6 @@ return mat4(
 
         renderPass.postRender(camera ? true:false, lights);
 
-        if (this.isWebVRMode) {
-          this.__webvrDisplay.submitFrame();
-        }
-
       });
     }
 
@@ -13578,6 +13603,10 @@ return mat4(
         afterCallback.apply(afterCallback, args);
       }
 
+      if (this.isWebVRMode) {
+        this.__webvrDisplay.submitFrame();
+      }
+
       this.__animationFrameId = this.__requestAnimationFrame(()=>{
         this.doConvenientRenderLoop(expression, beforeCallback, afterCallback, ...args);
         if (this.__requestedToEnterWebVR) {
@@ -13629,7 +13658,24 @@ return mat4(
 
                 if (webvrDisplay.capabilities.canPresent) {
                   this.__webvrDisplay = webvrDisplay;
-                  requestButtonDom.style.display = 'block';
+
+                  if (requestButtonDom) {
+                    requestButtonDom.style.display = 'block';
+                  } else {
+                    const paragrach = document.createElement("p");
+                    const anchor = document.createElement("a");
+                    anchor.setAttribute("id", 'enter-vr');
+                    const enterVr = document.createTextNode("Enter VR");
+
+                    anchor.appendChild(enterVr);
+                    paragrach.appendChild(anchor);
+
+                    const canvas = this.glContext.canvas;
+                    canvas.parent.insertBefore(paragrach, canvas);
+                    window.addEventListener('click', this.enterWebVR.bind(this));
+                  }
+
+                  this.__isReadyForWebVR = true;
                   resolve();
                 } else {
                   console.error("Can't requestPresent now. try again.");
@@ -13651,15 +13697,25 @@ return mat4(
       });
     }
 
-    disableWebVR() {
+    async disableWebVR() {
+      await this.__webvrDisplay.exitPresent();
       this.__switchAnimationFrameFunctions(window);
       this.__webvrDisplay = null;
       this.__isWebVRMode = false;
       this.__requestedToEnterWebVR = false;
+      this.__isReadyForWebVR = false;
     }
 
     get isWebVRMode() {
       return this.__isWebVRMode;
+    }
+
+    get isReadyForWebVR() {
+      return this.__isReadyForWebVR;
+    }
+
+    webVrSubmitFrame() {
+      this.__webvrDisplay.submitFrame();
     }
   }
 
@@ -16711,7 +16767,14 @@ return mat4(
       }
 
 
-      let defaultShader = (options && typeof options.defaultShaderClass !== "undefined") ? options.defaultShaderClass : null;
+      let defaultShader = null;
+      if (options && typeof options.defaultShaderClass !== "undefined") {
+        if (typeof options.defaultShaderClass === "string") {
+          defaultShader = GLBoost$1[options.defaultShaderClass];
+        } else {
+          defaultShader = options.defaultShaderClass;
+        }
+      }
 
       return DataUtil.loadResourceAsync(url, true,
         (resolve, response)=>{
