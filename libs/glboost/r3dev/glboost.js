@@ -4,7 +4,7 @@
   (factory());
 }(this, (function () { 'use strict';
 
-  // This revision is the commit right after the SHA: 9a103448
+  // This revision is the commit right after the SHA: bddf6a61
   var global = (0, eval)('this');
 
   (function (global) {
@@ -13312,16 +13312,12 @@ return mat4(
       this.__isWebVRMode = false;
       this.__webvrFrameData = null;
       this.__webvrDisplay = null;
-      this.__switchAnimationFrameFunctions(window);
       this.__defaultUserSittingPositionInVR = new Vector3(0.0, 1.1, 1.5);
       this.__requestedToEnterWebVR = false;
       this.__isReadyForWebVR = false;
+      this.__animationFrameObject = window;
     }
 
-    __switchAnimationFrameFunctions(object) {
-      this.__requestAnimationFrame = object !== void 0 ? object.requestAnimationFrame.bind(object) : null;
-      this.__cancelAnimationFrame = object !== void 0 ? object.cancelAnimationFrame.bind(object) : null;
-    }
 
     /**
      * en: update things of elements of the expression.<br>
@@ -13419,7 +13415,7 @@ return mat4(
 
         this._clearBuffer(gl, renderPass);
 
-        if (this.isWebVRMode) {
+        if (this.__animationFrameObject === this.__webvrDisplay) {
           this.__webvrDisplay.getFrameData(this.__webvrFrameData);
           if (this.__webvrDisplay.stageParameters) {
             this.__webvrFrameData.sittingToStandingTransform = this.__webvrDisplay.stageParameters.sittingToStandingTransform;
@@ -13581,7 +13577,7 @@ return mat4(
 
       renderLoopFunc.apply(renderLoopFunc, args);
 
-      this.__animationFrameId = this.__requestAnimationFrame(()=>{
+      this.__animationFrameId = this.__animationFrameObject.requestAnimationFrame(()=>{
         this.doRenderLoop(renderLoopFunc, ...args);
         if (this.__requestedToEnterWebVR) {
           this.__isWebVRMode = true;
@@ -13603,11 +13599,11 @@ return mat4(
         afterCallback.apply(afterCallback, args);
       }
 
-      if (this.isWebVRMode) {
+      if (this.__webvrDisplay && this.__webvrDisplay.isPresenting) {
         this.__webvrDisplay.submitFrame();
       }
 
-      this.__animationFrameId = this.__requestAnimationFrame(()=>{
+      this.__animationFrameId = this.__animationFrameObject.requestAnimationFrame(()=>{
         this.doConvenientRenderLoop(expression, beforeCallback, afterCallback, ...args);
         if (this.__requestedToEnterWebVR) {
           this.__isWebVRMode = true;
@@ -13628,17 +13624,20 @@ return mat4(
         this.__defaultUserSittingPositionInVR = initialUserSittingPositionIfStageParametersDoNotExist;
       }
       return new Promise((resolve, reject)=> {
-        this.__webvrDisplay.requestPresent([{source: this._glContext.canvas}]).then(() => {
-          this.__switchAnimationFrameFunctions(this.__webvrDisplay);
-          const leftEye = this.__webvrDisplay.getEyeParameters("left");
-          const rightEye = this.__webvrDisplay.getEyeParameters("right");
-          this.resize(Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2, Math.max(leftEye.renderHeight, rightEye.renderHeight));
-          this.__requestedToEnterWebVR = true;
-          resolve();
-        }).catch(() => {
-          console.error('Failed to requestPresent. Please check your VR Setting, or something wrong with your VR system?');
-          reject();
-        });
+        if (!this.__webvrDisplay.isPresenting) {
+          this.__webvrDisplay.requestPresent([{source: this._glContext.canvas}]).then(() => {
+            //this.__switchAnimationFrameFunctions(this.__webvrDisplay);
+            this.__animationFrameObject = this.__webvrDisplay;
+            const leftEye = this.__webvrDisplay.getEyeParameters("left");
+            const rightEye = this.__webvrDisplay.getEyeParameters("right");
+            this.resize(Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2, Math.max(leftEye.renderHeight, rightEye.renderHeight));
+            this.__requestedToEnterWebVR = true;
+            resolve();
+          }).catch(() => {
+            console.error('Failed to requestPresent. Please check your VR Setting, or something wrong with your VR system?');
+            reject();
+          });
+        }
       });
     }
 
@@ -13697,13 +13696,25 @@ return mat4(
       });
     }
 
+    async exitWebVR() {
+      this.__isWebVRMode = false;
+      if (this.__webvrDisplay && this.__webvrDisplay.isPresenting) {
+        await this.__webvrDisplay.exitPresent();
+      }
+      this.__isReadyForWebVR = false;
+      this.__animationFrameObject = window;
+    }
+
+
     async disableWebVR() {
-      await this.__webvrDisplay.exitPresent();
-      this.__switchAnimationFrameFunctions(window);
-      this.__webvrDisplay = null;
       this.__isWebVRMode = false;
       this.__requestedToEnterWebVR = false;
       this.__isReadyForWebVR = false;
+      if (this.__webvrDisplay && this.__webvrDisplay.isPresenting) {
+        await this.__webvrDisplay.exitPresent();
+      }
+      this.__animationFrameObject = window;
+      this.__webvrDisplay = null;
     }
 
     get isWebVRMode() {
@@ -13715,7 +13726,9 @@ return mat4(
     }
 
     webVrSubmitFrame() {
-      this.__webvrDisplay.submitFrame();
+      if (this.__webvrDisplay && this.__webvrDisplay.isPresenting) {
+        this.__webvrDisplay.submitFrame();
+      }
     }
   }
 
