@@ -42,12 +42,18 @@ var engines = [{
 function queryEngines(){
     var res = location.search.match(/engines=([\w\.,]+)/);
     if(res && res[1]){
-        var showedEngines = res[1].split(',');
-        for(var i = engines.length - 1;i >= 0;i --){
-            if(showedEngines.indexOf(engines[i].name) === -1){
-                engines.splice(i, 1);
+        var engineDict = {};
+        engines.forEach(function(engine){
+            engineDict[engine.name] = engine;
+        });
+
+        engines = [];
+        res[1].split(',').forEach(function(engineName){
+            var engine = engineDict[engineName];
+            if(engine){
+                engines.push(engine);
             }
-        }
+        });
     }
 }
 
