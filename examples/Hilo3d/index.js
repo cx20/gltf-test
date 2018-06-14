@@ -88,9 +88,13 @@ var loadQueue = new Hilo3d.LoadQueue([{
     bottom: '../../textures/cube/skybox/ny.jpg',
     front: '../../textures/cube/skybox/pz.jpg',
     back: '../../textures/cube/skybox/nz.jpg',
+    magFilter: Hilo3d.constants.LINEAR,
+    minFilter: Hilo3d.constants.LINEAR_MIPMAP_LINEAR
 },{
+    type:'Texture',
     src: '../../textures/brdfLUT.png',
-    type:'Texture'
+    wrapS: Hilo3d.constants.CLAMP_TO_EDGE,
+    wrapT: Hilo3d.constants.CLAMP_TO_EDGE
 },{
     src:url
 }]).on('load', function(e){

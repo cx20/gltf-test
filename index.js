@@ -2,27 +2,6 @@ var engines = [{
     name: 'Three.js',
     path: 'examples/threejs/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
-    name: 'Babylon.js',
-    path: 'examples/babylonjs/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-    name: 'Cesium',
-    path: 'examples/cesium/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-    name: 'Grimore.js',
-    path: 'examples/grimoiregl/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-    name: 'xeogl',
-    path: 'examples/xeogl/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-    name: 'minimal-gltf-loader',
-    path: 'examples/minimal-gltf-loader/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-    name: 'Khronos glTF Loader',
-    path: 'examples/khronos-gltf-loader/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-    name: 'ClayGL',
-    path: 'examples/claygl/index.html?category={category}&model={model}&scale={scale}&type={type}'
-},{
     name: 'Hilo3d',
     path: 'examples/Hilo3d/index.html?category={category}&model={model}&scale={scale}&type={type}'
 },{
