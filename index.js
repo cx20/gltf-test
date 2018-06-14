@@ -39,6 +39,23 @@ var engines = [{
     path: 'examples/glboost/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
+function queryEngines(){
+    var res = location.search.match(/engines=([\w\.,]+)/);
+    if(res && res[1]){
+        var engineDict = {};
+        engines.forEach(function(engine){
+            engineDict[engine.name] = engine;
+        });
+
+        engines = [];
+        res[1].split(',').forEach(function(engineName){
+            var engine = engineDict[engineName];
+            if(engine){
+                engines.push(engine);
+            }
+        });
+    }
+}
 
 function getEngineByName(name) {
     var result;
@@ -335,6 +352,7 @@ function createlink(engineName, categoryName, modelName, type, scale)
     return a;
 }
 
+queryEngines();
 makeTutorialModelLinks();
 makeTutorialPbrModelLinks();
 makeTutorialFurtherPbrModelLinks();
