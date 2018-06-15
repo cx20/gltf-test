@@ -6,6 +6,12 @@ Status of [glTF loader](https://github.com/KhronosGroup/glTF#webgl-engines) in s
 
 [All Tests]( https://cx20.github.io/gltf-test/index.html ) : https://cx20.github.io/gltf-test/ ![status](https://img.shields.io/badge/glTF-2%2E0-green.svg?style=flat)
 
+If you want to narrow down the engine you can specify it with arguments. See below for usage of arguments.
+
+```
+https://cx20.github.io/gltf-test/?engines=Three.js,Babylon.js,Hilo3d
+```
+
 |Model Name           |Models  |Formats  |Libraries|Tests  |
 |:--------------------|:------:|:-------:|:-------:|:-----:|
 |Simple models        |  10    |   2     |   13    |   260 |
