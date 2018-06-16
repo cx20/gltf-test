@@ -4,12 +4,11 @@
   (factory());
 }(this, (function () { 'use strict';
 
-  // This revision is the commit right after the SHA: ########
   var global = (0, eval)('this');
 
   (function (global) {
-    let GLBoost = typeof global.GLBoost !== 'undefined' ? global.GLBoost : { REVISION: 'r3-dev' };
-
+    global.GLBoost = (typeof global.GLBoost !== 'undefined') ? global.GLBoost : {};
+    const GLBoost = global.GLBoost;
     if (typeof define === 'function' && define.amd) {
       define(function() { return GLBoost; });
     } else if (typeof exports === 'object') {
@@ -1583,19 +1582,28 @@
 
 
     divide(val       ) {
-      console.assert(val != 0, "0 division!");
       if (val !== 0) {
         this.x /= val;
         this.y /= val;
         this.z /= val;
         this.w /= val;
+      } else {
+        console.warn("0 division occured!");
+        this.x = Infinity;
+        this.y = Infinity;
+        this.z = Infinity;
+        this.w = Infinity;
       }
       return this;
     }
 
     static divide(vec4        , val       ) {
-      console.assert(val != 0, "0 division!");
-      return new Vector4(vec4.x / val, vec4.y / val, vec4.z / val, vec4.w / val);
+      if (val !== 0) {
+        return new Vector4(vec4.x / val, vec4.y / val, vec4.z / val, vec4.w / val);
+      } else {
+        console.warn("0 division occured!");
+        return new Vector4(Inifinity, Inifinity, Inifinity, Inifinity);
+      }
     }
 
     divideVector(vec4        ) {
@@ -1838,11 +1846,15 @@
      * 除算
      */
     divide(val       ) {
-      console.assert(val != 0, "0 division!");
       if (val !== 0) {
         this.x /= val;
         this.y /= val;
         this.z /= val;
+      } else {
+        console.warn("0 division occured!");
+        this.x = Infinity;
+        this.y = Infinity;
+        this.z = Infinity;
       }
 
       return this;
@@ -1852,8 +1864,12 @@
      * 除算（static版）
      */
     static divide(vec3        , val       ) {
-      console.assert(val != 0, "0 division!");
-      return new Vector3(vec3.x / val, vec3.y / val, vec3.z / val);
+      if (val !== 0) {
+        return new Vector3(vec3.x / val, vec3.y / val, vec3.z / val);
+      } else {
+        console.warn("0 division occured!");
+        return new Vector3(Inifinity, Inifinity, Inifinity);
+      }
     }
 
     multiply(val       ) {
@@ -9903,9 +9919,16 @@ return mat4(
       };
 
       if (eventTargetDom) {
-        eventTargetDom.addEventListener('mousedown', this._onMouseDown);
-        eventTargetDom.addEventListener('mouseup', this._onMouseUp);
-        eventTargetDom.addEventListener('mousemove', this._onMouseMove);
+        if ('ontouchend' in document) {
+          eventTargetDom.addEventListener('touchstart', this._onMouseDown);
+          eventTargetDom.addEventListener('touchend', this._onMouseUp);
+          eventTargetDom.addEventListener('touchmove', this._onMouseMove);          
+        }
+        if ('onmouseup' in document) {
+          eventTargetDom.addEventListener('mousedown', this._onMouseDown);
+          eventTargetDom.addEventListener('mouseup', this._onMouseUp);
+          eventTargetDom.addEventListener('mousemove', this._onMouseMove);          
+        }
         if (window.WheelEvent) {
           eventTargetDom.addEventListener("wheel", this._onMouseWheel);
         }
@@ -11445,7 +11468,7 @@ return mat4(
     constructor(canvas, initParameter, gl, width, height) {
       this._setName();
 
-      console.log('*** GLBoost revision ' + GLBoost$1.REVISION + ' ***');
+      console.log('*** GLBoost ' + GLBoost$1.VERSION + ' ***');
 
       if (gl) {
         this._glContext = GLContext.getInstance(null, initParameter, gl, width, height);
@@ -17034,13 +17057,11 @@ return mat4(
           let imageFileStr = imageJson.uri;
           const splitted = imageFileStr.split('/');
           const filename = splitted[splitted.length - 1];
-          if (options.files) {
-            if (options.files[filename]) {
-              const arrayBuffer = options.files[filename];
-              const splitted = filename.split('.');
-              const fileExtension = splitted[splitted.length - 1];
-              textureUri = this._accessArrayBufferAsImage(arrayBuffer, fileExtension);
-            }
+          if (options.files && options.files[filename]) {
+            const arrayBuffer = options.files[filename];
+            const splitted = filename.split('.');
+            const fileExtension = splitted[splitted.length - 1];
+            textureUri = this._accessArrayBufferAsImage(arrayBuffer, fileExtension);
           } else if (imageFileStr.match(/^data:/)) {
             textureUri = imageFileStr;
           } else {
@@ -20358,4 +20379,5 @@ return mat4(
   GLBoost$1["formatDetector"] = formatDetector;
 
 })));
-//# sourceMappingURL=glboost.js.map
+
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-1-g1ab08-mod branch: feature/improve-versioning';
