@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,13 +19,15 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var canvas = document.getElementById("world");
-var width = window.innerWidth;
-var height = window.innerHeight;
-var scale = modelInfo.scale;
+let canvas = document.getElementById("world");
+let width = window.innerWidth;
+let height = window.innerHeight;
+let scale = modelInfo.scale;
 
-var glBoostContext = new GLBoost.GLBoostMiddleContext(canvas);
-var renderer = glBoostContext.createRenderer({
+console.log(GLBoost.VERSION);
+
+let glBoostContext = new GLBoost.GLBoostMiddleContext(canvas);
+let renderer = glBoostContext.createRenderer({
     clearColor: {
         red: 0.6,
         green: 0.6,
@@ -36,12 +38,12 @@ var renderer = glBoostContext.createRenderer({
 
 renderer.resize(width, height);
 
-var scene = glBoostContext.createScene();
+let scene = glBoostContext.createScene();
 
-var pointLight = glBoostContext.createPointLight(new GLBoost.Vector3(1.0, 1.0, 1.0));
+let pointLight = glBoostContext.createPointLight(new GLBoost.Vector3(1.0, 1.0, 1.0));
 pointLight.translate = new GLBoost.Vector3(10, 10, 10);
 scene.addChild(pointLight);
-var camera = glBoostContext.createPerspectiveCamera({
+let camera = glBoostContext.createPerspectiveCamera({
     eye: new GLBoost.Vector3(0.0, 2.0, 3.0),
     center: new GLBoost.Vector3(0.0, 0.0, 0.0),
     up: new GLBoost.Vector3(0.0, 1.0, 0.0)
@@ -55,10 +57,10 @@ camera.cameraController = glBoostContext.createCameraController();
 //camera.cameraController.zFarAdjustingFactorBasedOnAABB = 3;
 scene.addChild(camera);
 
-var gtime = 0;
-var glTF2Loader = GLBoost.GLTF2Loader.getInstance();
-var modelConverter = GLBoost.ModelConverter.getInstance();
-var promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
+let gtime = 0;
+let glTF2Loader = GLBoost.GLTF2Loader.getInstance();
+let modelConverter = GLBoost.ModelConverter.getInstance();
+let promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
       extensionLoader: null,
       defaultShader: GLBoost.PhongShader,
       isNeededToMultiplyAlphaToColorOfPixelOutput: true,
@@ -83,25 +85,25 @@ promise.then(function(gltfObj) {
     }
     scene.addChild(group);
 
-    var expression = glBoostContext.createExpressionAndRenderPasses(1);
+    let expression = glBoostContext.createExpressionAndRenderPasses(1);
     expression.renderPasses[0].scene = scene;
     expression.prepareToRender();
     
     const animationLength = group.getEndAnimationInputValue('time');
-    var lastAnimatedTime = Date.now();
+    let lastAnimatedTime = Date.now();
     renderer.doConvenientRenderLoop(expression, function() {
-        var currentMillisecondDeltaFromStart = Date.now() - lastAnimatedTime;
+        let currentMillisecondDeltaFromStart = Date.now() - lastAnimatedTime;
         scene.setCurrentAnimationValue('time', currentMillisecondDeltaFromStart / 1000);
         if (currentMillisecondDeltaFromStart / 1000 > animationLength) {
             lastAnimatedTime = Date.now();
         }
 
-        var rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
-        var rotatedVector = rotateMatrix.multiplyVector(camera.eye);
+        let rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
+        let rotatedVector = rotateMatrix.multiplyVector(camera.eye);
         camera.eye = rotatedVector;
     });
 /*
-    var render = function() {
+    let render = function() {
         scene.setCurrentAnimationValue('time', gtime);
         renderer.clearCanvas();
         renderer.update(expression); 
@@ -110,8 +112,8 @@ promise.then(function(gltfObj) {
         if (gtime > 5) {
             gtime = 0.0;
         }
-        var rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
-        var rotatedVector = rotateMatrix.multiplyVector(camera.eye);
+        let rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
+        let rotatedVector = rotateMatrix.multiplyVector(camera.eye);
         camera.eye = rotatedVector;
         requestAnimationFrame(render);
     };
