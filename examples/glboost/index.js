@@ -62,7 +62,7 @@ let glTF2Loader = GLBoost.GLTF2Loader.getInstance();
 let modelConverter = GLBoost.ModelConverter.getInstance();
 let promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
       extensionLoader: null,
-      defaultShader: GLBoost.PhongShader,
+      defaultShaderClass: GLBoost.PhongShader,
       isNeededToMultiplyAlphaToColorOfPixelOutput: true,
       isTextureImageToLoadPreMultipliedAlpha: false,
       isExistJointGizmo: false,
