@@ -1224,7 +1224,12 @@
                             
                               
                                
+                         
                         
+                           
+                        
+                           
+                          
 
     constructor(glBoostContext                  , toRegister         = true) {
       if (this.constructor === GLBoostObject) {
@@ -1602,7 +1607,7 @@
         return new Vector4(vec4.x / val, vec4.y / val, vec4.z / val, vec4.w / val);
       } else {
         console.warn("0 division occured!");
-        return new Vector4(Inifinity, Inifinity, Inifinity, Inifinity);
+        return new Vector4(Infinity, Infinity, Infinity, Infinity);
       }
     }
 
@@ -1868,7 +1873,7 @@
         return new Vector3(vec3.x / val, vec3.y / val, vec3.z / val);
       } else {
         console.warn("0 division occured!");
-        return new Vector3(Inifinity, Inifinity, Inifinity);
+        return new Vector3(Infinity, Infinity, Infinity);
       }
     }
 
@@ -12184,6 +12189,8 @@ return mat4(
 
   /*       */
 
+                                                  
+
   class M_Group extends M_Element {
                                
 
@@ -12275,7 +12282,7 @@ return mat4(
       }
     }
 
-    _validateByQuery(object, query, queryMeta) {
+    _validateByQuery(object               , query        , queryMeta           ) {
       let propertyName = '';
       if (queryMeta.type === GLBoost.QUERY_TYPE_INSTANCE_NAME) {
         propertyName = 'instanceName';
@@ -12301,7 +12308,7 @@ return mat4(
 
     }
 
-    searchElement(query, queryMeta = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
+    searchElement(query        , queryMeta            = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
       /*
       if (element.userFlavorName === userFlavorNameOrRegExp || element.userFlavorName.match(userFlavorNameOrRegExp)) {
         return element;
@@ -12324,7 +12331,7 @@ return mat4(
       return null;
     }
 
-    searchElementByNameAndType(query, type, queryMeta = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
+    searchElementByNameAndType(query        , type               , queryMeta            = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
       if (this._validateByQuery(element, query, queryMeta) && element instanceof type) {
         return element;
       }
@@ -12342,7 +12349,7 @@ return mat4(
       return null;
     }
 
-    searchElementsByNameAndType(query, type, queryMeta = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
+    searchElementsByNameAndType(query        , type               , queryMeta            = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
       let resultElements = [];
 
       if (element instanceof M_Group) {
@@ -12366,12 +12373,12 @@ return mat4(
       return resultElements;
     }
 
-    searchElementsByType(type, element = this) {
+    searchElementsByType(type               , element           = this) {
       if (element instanceof type) {
         return element;
       }
 
-      if (type.name.indexOf('Gizmo') !== -1 && element instanceof M_Element) {
+      if (type['name'].indexOf('Gizmo') !== -1 && element instanceof M_Element) {
         let gizmos = element._gizmos;
         for (let gizmo of gizmos) {
           if (gizmo instanceof type) {
@@ -12396,7 +12403,7 @@ return mat4(
       return null;
     }
 
-    searchGLBoostObjectByNameAndType(query, type, queryMeta = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
+    searchGLBoostObjectByNameAndType(query        , type               , queryMeta            = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element          = this) {
       if (element instanceof M_Group) {
         let children = element.getChildren();
         for (let i = 0; i < children.length; i++) {
@@ -12429,7 +12436,7 @@ return mat4(
       }
     }
 
-    searchGLBoostObjectsByNameAndType(query, type, queryMeta = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
+    searchGLBoostObjectsByNameAndType(query, type               , queryMeta           = {type: GLBoost.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element = this) {
       let objects = [];
       if (element instanceof M_Group) {
         let children = element.getChildren();
@@ -13782,7 +13789,15 @@ return mat4(
    *       シーンをレンダリングするには、このscene要素をRenderer.drawメソッドに渡します。
    */
   class M_Scene extends M_Group {
-                              
+                               
+                           
+                                
+                                          
+                             
+                                          
+                                   
+                                      
+                                         
     
     /**
      * [en] constructor
@@ -16857,7 +16872,7 @@ return mat4(
       };
 
       this._materials = [];
-      if (options.files) {
+      if (options && options.files) {
         for (let fileName in options.files) {
           const splitted = fileName.split('.');
           const fileExtension = splitted[splitted.length - 1];
@@ -18316,7 +18331,7 @@ return mat4(
         ]
       };
 
-      if (options.files) {
+      if (options && options.files) {
         for (let fileName in options.files) {
           const splitted = fileName.split('.');
           const fileExtension = splitted[splitted.length - 1];
@@ -20209,7 +20224,19 @@ return mat4(
   /*       */
 
   class AnimationPlayer {
+                            
+                                 
+                               
+                                  
                                 
+                                   
+                              
+                                
+                                        
+                         
+                            
+
+                           
 
     constructor() {
     }
@@ -20226,7 +20253,7 @@ return mat4(
       this.__animationLastTime = 0;
 
       this.__currentMillisecondAtStart = 0;
-      this.__isPlaying = 0;
+      this.__isPlaying = false;
       this.__currentMotion = "All";
       this.__animationMotions = [];
 
@@ -20238,7 +20265,7 @@ return mat4(
       this.__currentMillisecondAtStart = Date.now();
     }
 
-    calcAnimationTime(speedRatio = 1) {
+    calcAnimationTime(speedRatio        = 1) {
       if (!this.__isPlaying) {
         this.__currentMillisecondAtStart = Date.now();
         return this.__animationCurrentTime;
@@ -20309,7 +20336,7 @@ return mat4(
       return this.__animationMotions;
     }
 
-    set animationMotions(motions) {
+    set animationMotions(motions    ) {
       this.__animationMotions = motions;
     }
   }
@@ -20380,4 +20407,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-1-g1ab08-mod branch: feature/improve-versioning';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-6-g576d97-mod branch: develop';
