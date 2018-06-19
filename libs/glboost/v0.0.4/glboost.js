@@ -7844,7 +7844,7 @@ return mat4(
               let pos1IndexBase = vertexIndices[k + 1] * positionElementNumPerVertex;
               let pos2IndexBase = vertexIndices[k + 2] * positionElementNumPerVertex;
 
-              if (!vertexIndices[k + 2]) {
+              if (vertexIndices[k + 2] === void 0) {
                 break;
               }
               const result = this._rayCastInner(origVec3, dirVec3, vertexIndices[k], pos0IndexBase, pos1IndexBase, pos2IndexBase);
@@ -7945,7 +7945,7 @@ return mat4(
               let pos1IndexBase = vertexIndices[j + 1] * positionElementNumPerVertex;
               let pos2IndexBase = vertexIndices[j + 2] * positionElementNumPerVertex;
 
-              if (!vertexIndices[j + 2]) {
+              if (vertexIndices[j + 2] === void 0) {
                 break;
               }
               this._calcArenbergMatrixFor3Vertices(vertexIndices, j, pos0IndexBase, pos1IndexBase, pos2IndexBase, incrementNum);
@@ -20694,4 +20694,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-15-g42841-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-18-g8d72-mod branch: develop';
