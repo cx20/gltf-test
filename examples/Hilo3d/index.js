@@ -148,7 +148,7 @@ var loadQueue = new Hilo3d.LoadQueue([{
             diffuse: specularEnvMap
         })
     }).addTo(container);
-    skybox.setScale(20);
+    skybox.setScale(50);
 
     var orbitControls = new OrbitControls(stage, {
         isLockMove:true,
