@@ -19616,7 +19616,6 @@ return mat4(
               glboostMaterial = glBoostContext.createClassicMaterial();
             }
 
-            let options = gltfModel.asset.extras.glboostOptions;
             const defaultShader = this._getDefaultShader(options);
             if (defaultShader) {
               glboostMaterial.shaderClass = defaultShader;
@@ -20824,4 +20823,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-21-g3527-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-25-g257d25-mod branch: develop';
