@@ -4604,6 +4604,10 @@
         }
       }
     }
+
+    addGizmo(gizmo) {
+      this._gizmos.push(gizmo);
+    }
   }
 
   /**
@@ -13504,17 +13508,19 @@ return mat4(
       this._gizmos = [];
       if (this._scene) {
         let elements = [];
+        Array.prototype.push.apply(this._gizmos, this._scene._gizmos);
         this._scene.getChildren().forEach((elm)=> {
+
+          // collect gizmos from elements
+          Array.prototype.push.apply(this._gizmos, elm._gizmos);
+
           // collect meshes
           this._meshes = this._meshes.concat(collectElements(elm, M_Mesh));
 
           // collect meshes
           elements = elements.concat(collectElements(elm, M_Element));
 
-          // collect gizmos from elements
-          for (let element of elements) {
-            Array.prototype.push.apply(this._gizmos, element._gizmos);
-          }
+
         });
       }
 
@@ -14239,8 +14245,8 @@ return mat4(
             callPrepareToRenderMethodOfAllElements(child);
           });
 
-          for (let meshGizmo of elem._gizmos) {
-            meshGizmo.prepareToRender(expression, existCamera_f, []);
+          for (let gizmo of elem._gizmos) {
+            gizmo.mesh.prepareToRender(expression, existCamera_f, []);
           }
         } else if (elem instanceof M_Mesh) {
           elem.prepareToRender(expression, existCamera_f, this._lights);
@@ -15941,6 +15947,126 @@ return mat4(
     }
   }
 
+  class Line extends Geometry {
+    constructor(glBoostContext, startPos = Vector3.zero(), endPos = Vector3.zero()) {
+      super(glBoostContext);
+
+      this.__startPos = startPos;
+      this.__endPos = endPos;
+
+      this._color = new GLBoost$1.Vector4(1, 1, 1, 1);
+      this._vertexData = this._setupVertexData(this.__startPos, this.__endPos);
+      this.setVerticesData(this._vertexData, null, GLBoost$1.LINES);
+    }
+
+    _setupVertexData(startPos, endPos) {
+
+      let positions = [];
+
+      positions.push(startPos);
+      positions.push(endPos);
+
+      let colors = [];
+
+      colors.push(this._color);
+      colors.push(this._color);
+
+      this._vertexData = {
+        position: positions,
+        color: colors
+      };
+
+      return this._vertexData;
+    }
+
+    update() {
+      this._vertexData = this._setupVertexData(this.__startPos, this.__endPos);
+      this.updateVerticesData(this._vertexData, true);
+    }
+
+    set startPosition(startPos) {
+      this.__startPos = startPos;
+    }
+
+    get startPosition() {
+      return this.__startPos;
+    }
+    
+    set endPosition(endPos) {
+      this.__endPos = endPos;
+    }
+
+    get endPosition() {
+      return this.__endPos;
+    }
+
+    set color(vec) {
+      this._color = vec;
+
+      this._colors = [];
+      for(let i=0; i<2; i++) {
+        this._colors.push(this._color);
+      }
+    }
+
+    get color() {
+      return this._color;
+    }
+
+  }
+
+  GLBoost$1["Line"] = Line;
+
+  class M_HeightLineGizmo extends M_Gizmo {
+    constructor(glBoostContext) {
+      super(glBoostContext, null, null);
+      this._init(glBoostContext);
+
+      this.isVisible = false;
+    }
+
+    _init(glBoostContext) {
+      this._primitive = new Line(glBoostContext);
+
+      //    this._mesh.rotate = new Vector3(-Math.PI/2, 0, 0);
+      const material = glBoostContext.createClassicMaterial();
+      this._mesh = new M_Mesh(glBoostContext, this._primitive, material);
+      this._mesh.masterElement = this;
+      this.addChild(this._mesh);
+
+    }
+
+    set startPosition(startPos) {
+      this._primitive.startPosition = startPos;
+    }
+
+    get startPosition() {
+      return this._primitive.startPosition;
+    }
+    
+    set endPosition(endPos) {
+      this._primitive.endPosition = endPos;
+    }
+
+    get endPosition() {
+      return this._primitive.endPosition;
+    }
+
+    update() {
+      this._primitive.update();
+    }
+    
+    set isVisible(flag) {
+      this._mesh.isVisible = flag;
+    }
+
+    get isVisible() {
+      return this._mesh.isVisible;
+    }
+  }
+
+  GLBoost['M_HeightLineGizmo'] = M_HeightLineGizmo;
+
   class EffekseerElement extends M_Element {
     constructor(glBoostContext) {
       super(glBoostContext);
@@ -16154,6 +16280,10 @@ return mat4(
 
     createGridGizmo(length, division, isXZ, isXY, isYZ, colorVec) {
       return new M_GridGizmo(this, length, division, isXZ, isXY, isYZ, colorVec);
+    }
+
+    createHeightLineGizmo(startPos, endPos) {
+      return new M_HeightLineGizmo(this, startPos, endPos);
     }
 
     createEffekseerElement() {
@@ -20694,4 +20824,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-18-g8d72-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-21-g3527-mod branch: develop';
