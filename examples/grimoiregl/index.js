@@ -43,11 +43,17 @@ gr(function () {
   var $$ = gr('#canvas');
   $$('#group').addComponent('Rotate');
   var scale = modelInfo.scale;
+  var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+  if(modelInfo.url) {
+    url = modelInfo.url;
+  }
   if (modelInfo.name == "GearboxAssy" ) {
       scale = 0.2;
-      $$('#model-container').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
+      //$$('#model-container').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
+      $$('#model-container').append('<model src="' + url + '" scale="' + scale + '"/>');
       $$('model').setAttribute('position', '-31.84,-3.404,-0.642');
   } else {
-      $$('#model-container').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
+      //$$('#model-container').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
+      $$('#model-container').append('<model src="' + url + '" scale="' + scale + '"/>');
   }
 });

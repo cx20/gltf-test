@@ -20,6 +20,9 @@ if (!modelInfo) {
 }
 
 var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+if(modelInfo.url) {
+    url = modelInfo.url;
+}
 var scale = modelInfo.scale;
 var modelName = modelInfo.name;
 var axis;

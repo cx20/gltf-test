@@ -58,5 +58,9 @@ function createModel(url, height) {
     });
 }
 
-//createModel('../../sampleModels/' + modelInfo.path, 10000);
-createModel('../../' + modelInfo.category + '/' + modelInfo.path, 10000);
+var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+if(modelInfo.url) {
+    url = modelInfo.url;
+}
+//createModel('../../' + modelInfo.category + '/' + modelInfo.path, 10000);
+createModel(url, 10000);

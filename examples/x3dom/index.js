@@ -28,7 +28,11 @@ document.onload = function () {
     runtime = x3d.runtime;
     
     var file = "../../" + modelInfo.category + "/" + modelInfo.path;
-    var type = modelInfo.path.includes("glTF-Binary") ? "Binary" : "";
+    if(modelInfo.url) {
+        file = modelInfo.url;
+    }
+    //var type = modelInfo.path.includes("glTF-Binary") ? "Binary" : "";
+    var type = file.split('.').pop() == "glb" ? "Binary" : "";
 
     load(file, type);
 }

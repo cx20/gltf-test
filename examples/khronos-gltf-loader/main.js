@@ -101,10 +101,15 @@ function updateModel(modelInfo, gl, glState, viewMatrix, projectionMatrix, backB
     frontBuffer.clearRect(0, 0, canvas2d.width, canvas2d.height);
     document.getElementById('loadSpinner').style.display = 'block';
     resetCamera();
+    var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    if(modelInfo.url) {
+        url = modelInfo.url;
+    }
 
     $.ajax({
         //url: 'models/' + value + '/glTF/' + value + '.gltf',
-        url: "../../" + modelInfo.category + "/" + modelInfo.path,
+        //url: "../../" + modelInfo.category + "/" + modelInfo.path,
+        url: url,
         dataType: 'json',
         async: true,
         error: (jqXhr, textStatus, errorThrown) => {
@@ -112,7 +117,8 @@ function updateModel(modelInfo, gl, glState, viewMatrix, projectionMatrix, backB
         },
         success: function(gltf) {
             //var scene = new Scene(gl, glState, "./models/" + value + "/glTF/", gltf);
-            var scene = new Scene(gl, glState, "../../" + modelInfo.category + "/" + modelInfo.path.split("/").reverse().slice(1).reverse().join("/") + "/", gltf);
+            //var scene = new Scene(gl, glState, "../../" + modelInfo.category + "/" + modelInfo.path.split("/").reverse().slice(1).reverse().join("/") + "/", gltf);
+            var scene = new Scene(gl, glState, url.split("/").reverse().slice(1).reverse().join("/") + "/", gltf);
             
             scene.projectionMatrix = projectionMatrix;
             scene.viewMatrix = viewMatrix;

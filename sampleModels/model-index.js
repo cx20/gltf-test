@@ -73,6 +73,9 @@ ModelIndex.getCurrentModel = function() {
     if (options.type === undefined) {
         options.type = 'glTF';
     }
+    if (options.scale === undefined) {
+        options.scale = 1.0;
+    }
     if (options.model && modelInfoCollection.hasOwnProperty(options.model)) {
         document.title += ' + ' + options.model + '.gltf';
         if (options.scale !== undefined) {
@@ -84,6 +87,9 @@ ModelIndex.getCurrentModel = function() {
             modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.gltf';
         }
         return modelInfoCollection[options.model];
+    }
+    if (options.url) {
+    	return {category:"Other", name:"Other", scale: options.scale, url: options.url};
     }
     return undefined;
 };

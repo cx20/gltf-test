@@ -98,6 +98,9 @@ app.root.addChild(gltfRoot);
  
 function init(){
     var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    if(modelInfo.url) {
+        url = modelInfo.url;
+    }
     var basePath = url.substring(0, url.lastIndexOf("/")) + "/";
     var ext = url.split(".").pop();
     var isGlb = ext == "glb" ? true : false;

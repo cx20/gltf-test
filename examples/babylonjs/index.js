@@ -32,6 +32,9 @@ var createScene = function(engine) {
     var scale = modelInfo.scale;
     //var path = "../../sampleModels/" + modelInfo.path;
     var path = "../../" + modelInfo.category + "/" + modelInfo.path;
+    if(modelInfo.url) {
+        path = modelInfo.url;
+    }
     var base = path.substr(0, path.lastIndexOf("/") + 1);
     var file = path.substr(path.lastIndexOf("/") + 1);
 

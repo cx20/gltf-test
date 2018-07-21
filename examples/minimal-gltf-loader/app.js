@@ -3247,7 +3247,10 @@ var Utils = Utils || {};
     // 2.0
     // var gltfUrl = '../glTFs/glTF_version_2/Duck/glTF/Duck.gltf';
     //var gltfUrl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf';
-	var gltfUrl = "../../" + modelInfo.category + "/" + modelInfo.path;
+    var gltfUrl = "../../" + modelInfo.category + "/" + modelInfo.path;
+    if(modelInfo.url) {
+        gltfUrl = modelInfo.url;
+    }
 
     var glTFLoader = new MinimalGLTFLoader.glTFLoader(gl);
 

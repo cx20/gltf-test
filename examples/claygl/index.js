@@ -20,6 +20,9 @@ if (!modelInfo) {
 }
 
 var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+if(modelInfo.url) {
+    url = modelInfo.url;
+}
 
 var ROTATE = true;
 var gui = new dat.GUI();

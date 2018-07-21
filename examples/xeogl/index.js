@@ -20,13 +20,18 @@ if (!modelInfo) {
 }
 
 var scale = modelInfo.scale;
+var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+if(modelInfo.url) {
+    url = modelInfo.url;
+}
 var ROTATE = true;
 var gui = new dat.GUI();
 var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 
 // Load glTF
 var model = new xeogl.GLTFModel({
-    src: "../../" + modelInfo.category + "/" + modelInfo.path,
+    //src: "../../" + modelInfo.category + "/" + modelInfo.path,
+    src: url,
     transform: new xeogl.Scale({
         xyz: [scale,scale,scale]
     })

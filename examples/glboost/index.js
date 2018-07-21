@@ -22,6 +22,10 @@ if (!modelInfo) {
 let canvas = document.getElementById("world");
 let width = window.innerWidth;
 let height = window.innerHeight;
+let url = "../../" + modelInfo.category + "/" + modelInfo.path;
+if(modelInfo.url) {
+    url = modelInfo.url;
+}
 let scale = modelInfo.scale;
 
 console.log(GLBoost.VERSION);
@@ -60,7 +64,8 @@ scene.addChild(camera);
 let gtime = 0;
 let glTF2Loader = GLBoost.GLTF2Loader.getInstance();
 let modelConverter = GLBoost.ModelConverter.getInstance();
-let promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
+//let promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
+let promise = glTF2Loader.loadGLTF(url, {
       extensionLoader: null,
       defaultShaderClass: GLBoost.PhongShader,
       isNeededToMultiplyAlphaToColorOfPixelOutput: true,

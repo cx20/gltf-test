@@ -68,6 +68,9 @@ function init() {
 
     var scale = modelInfo.scale;
     var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    if(modelInfo.url) {
+        url = modelInfo.url;
+    }
     loader.load(url, function (data) {
         gltf = data;
         var object;
