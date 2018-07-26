@@ -4703,6 +4703,10 @@
     addGizmo(gizmo         ) {
       this._gizmos.push(gizmo);
     }
+
+    get gizmos() {
+      return this._gizmos;
+    }
   }
 
   /**
@@ -6457,6 +6461,7 @@ return mat4(
       const viewport = data.viewport;
       const isWebVRMode = data.isWebVRMode;
       const webvrFrameData = data.webvrFrameData;
+      const forceThisMaterial = data.forceThisMaterial;
 
       var isVAOBound = glem.bindVertexArray(gl, vaoDic[geometryName]);
 
@@ -6466,6 +6471,9 @@ return mat4(
 
       for (let i=0; i<originalMaterials.length;i++) {
         let material = originalMaterials[i];
+        if (forceThisMaterial) {
+          material = forceThisMaterial;
+        }
         if (!material.isVisible) {
           continue;
         }
@@ -6567,21 +6575,23 @@ return mat4(
 
         geometry.drawIntermediate(gl, glslProgram, mesh, material);
 
+        let vertexN = originalMaterials[i].getVertexN(geometry);
+
         if (isWebVRMode) {
           // Left Eye
    //       DrawKickerWorld.drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN);
 
           gl.viewport.apply(gl, [viewport[0], viewport[1], viewport[2] * 0.5, viewport[3]]);
           DrawKickerWorld.setVRCamera(gl, glslProgram, material, world_m, normal_m, webvrFrameData, mesh, 'left');
-          DrawKickerWorld.drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN);
+          DrawKickerWorld.drawGeometry(geometry, glem, gl, i, primitiveType, vertexN);
 
           // Right Eye
           gl.viewport.apply(gl, [viewport[2] * 0.5, viewport[1], viewport[2] * 0.5, viewport[3]]);
           DrawKickerWorld.setVRCamera(gl, glslProgram, material, world_m, normal_m, webvrFrameData, mesh, 'right');
-          DrawKickerWorld.drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN);
+          DrawKickerWorld.drawGeometry(geometry, glem, gl, i, primitiveType, vertexN);
         } else {
           DrawKickerWorld.setCamera(gl, glslProgram, material, world_m, normal_m, camera, mesh);
-          DrawKickerWorld.drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN);
+          DrawKickerWorld.drawGeometry(geometry, glem, gl, i, primitiveType, vertexN);
         }
 
 
@@ -6601,10 +6611,9 @@ return mat4(
       //DrawKickerWorld._lastRenderPassIndex = renderPassIndex;
     }
 
-    static drawGeometry(geometry, material, glem, gl, i, primitiveType, vertexN) {
+    static drawGeometry(geometry, glem, gl, i, primitiveType, vertexN) {
       if (geometry.isIndexed()) {
-        //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboArrayDic[geometryName]);
-        let vertexN = material.getVertexN(geometry);
+        //gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboArrayDic[geometryName]);      
         let indexBitSizeGLConstant = glem.elementIndexBitSizeGLConstant(gl);
         let indexByteSizeNumber = glem.elementIndexByteSizeNumber(gl);
         let offset = geometry.getIndexStartOffsetArrayAtMaterial(i);
@@ -7453,17 +7462,10 @@ return mat4(
       return Geometry._allVertexAttribs(this._vertices);
     } 
 
-    prepareGLSLProgram(expression, material, index, existCamera_f, lights, doSetupVertexAttribs = true, shaderClass = void 0, argShaderInstance = void 0) {
-      let gl = this._glContext.gl;
+    prepareGLSLProgram(expression, material, existCamera_f, lights, shaderClass = void 0, argShaderInstance = void 0) {
       let vertices = this._vertices;
 
-     //let glem = GLExtensionsManager.getInstance(this._glContext);
       let _optimizedVertexAttribs = Geometry._allVertexAttribs(vertices, material);
-
-  //    if (doSetupVertexAttribs) {
-  //      glem.bindVertexArray(gl, Geometry._vaoDic[this.toString()]);
-  //    }
-
 
       let shaderInstance = null;
       if (argShaderInstance) {
@@ -7476,14 +7478,7 @@ return mat4(
         }  
       }
 
-      let glslProgram = shaderInstance.getShaderProgram(expression, _optimizedVertexAttribs, existCamera_f, lights, material, this._extraDataForShader);
-  //    if (doSetupVertexAttribs) {
-      //  this.setUpVertexAttribs(gl, glslProgram, allVertexAttribs);
-  //    }
-
-  //    if (doSetupVertexAttribs) {
-      //  glem.bindVertexArray(gl, null);
-  //    }
+      shaderInstance.getShaderProgram(expression, _optimizedVertexAttribs, existCamera_f, lights, material, this._extraDataForShader);
 
       return shaderInstance;
     }
@@ -7599,9 +7594,9 @@ return mat4(
         } else {
           */
           if (materials[i].shaderInstance && materials[i].shaderInstance.constructor === FreeShader) {
-            shaderInstance = this.prepareGLSLProgram(expression, materials[i], i, existCamera_f, lights, doAfter, void 0, materials[i].shaderInstance);
+            shaderInstance = this.prepareGLSLProgram(expression, materials[i], existCamera_f, lights, void 0, materials[i].shaderInstance);
           } else {
-            shaderInstance = this.prepareGLSLProgram(expression, materials[i], i, existCamera_f, lights, doAfter, shaderClass);
+            shaderInstance = this.prepareGLSLProgram(expression, materials[i], existCamera_f, lights, shaderClass);
           }  
   //      }
 
@@ -7630,7 +7625,7 @@ return mat4(
       const gl = this._glContext.gl;
       const glem = GLExtensionsManager.getInstance(this._glContext);
 
-      const materials = this._getAppropriateMaterials(data.mesh);
+      let materials = this._getAppropriateMaterials(data.mesh);
 
       const thisName = this.toString();
 
@@ -7655,7 +7650,8 @@ return mat4(
           vertexN: this._vertexN,
           viewport: data.viewport,
           isWebVRMode: data.isWebVRMode,
-          webvrFrameData: data.webvrFrameData
+          webvrFrameData: data.webvrFrameData,
+          forceThisMaterial: data.forceThisMaterial
         });
 
     }
@@ -10417,8 +10413,17 @@ return mat4(
 
       this._onMouseDown = (evt) => {
         let rect = evt.target.getBoundingClientRect();
-        this._clickedMouseXOnCanvas = evt.clientX - rect.left;
-        this._clickedMouseYOnCanvas = evt.clientY - rect.top;
+        let clientX = null;
+        let clientY = null;
+        if (evt.clientX) {
+          clientX = evt.clientX;
+          clientY = evt.clientY;
+        } else {
+          clientX = evt.touches[0].clientX;
+          clientY = evt.touches[0].clientY;
+        }
+        this._clickedMouseXOnCanvas = clientX - rect.left;
+        this._clickedMouseYOnCanvas = clientY - rect.top;
         this._movedMouseYOnCanvas = -1;
         this._movedMouseXOnCanvas = -1;
         this._rot_bgn_x = this._rot_x;
@@ -10446,8 +10451,17 @@ return mat4(
         }
 
         let rect = evt.target.getBoundingClientRect();
-        this._movedMouseXOnCanvas = evt.clientX - rect.left;
-        this._movedMouseYOnCanvas = evt.clientY - rect.top;
+        let clientX = null;
+        let clientY = null;
+        if (evt.clientX) {
+          clientX = evt.clientX;
+          clientY = evt.clientY;
+        } else {
+          clientX = evt.touches[0].clientX;
+          clientY = evt.touches[0].clientY;
+        }
+        this._movedMouseXOnCanvas = clientX - rect.left;
+        this._movedMouseYOnCanvas = clientY - rect.top;
 
         if (typeof evt.buttons !== 'undefined') {
           let data = evt.buttons;
@@ -12670,6 +12684,7 @@ return mat4(
         this.material = material;
       }
       this._transformedDepth = 0;
+      this._outlineGizmo = null;
     }
 
     prepareToRender(expression, existCamera_f, lights) {
@@ -12696,7 +12711,8 @@ return mat4(
           mesh: this,
           viewport: data.viewport,
           isWebVRMode: data.isWebVRMode,
-          webvrFrameData: data.webvrFrameData
+          webvrFrameData: data.webvrFrameData,
+          forceThisMaterial: data.forceThisMaterial,
         }
       );
     }
@@ -12920,6 +12936,42 @@ return mat4(
       return [intersectPositionInWorld, result[1]];
     }
 
+    get gizmos() {
+      if (this.isOutlineVisible) {
+        return this._gizmos.concat([this._outlineGizmo]);
+      } else {
+        return this._gizmos;
+      }
+    }
+
+    set isOutlineVisible(flg) {
+      if (flg && this._outlineGizmo === null) {
+        this._outlineGizmo = this._glBoostContext.createOutlineGizmo(this);
+      }
+
+      if (this._outlineGizmo) {
+        this._outlineGizmo.isVisible = flg;
+      }
+    }
+
+    get isOutlineVisible() {
+      if (this._outlineGizmo === null) {
+        return false;
+      }
+      return this._outlineGizmo.isVisible;
+    }
+
+    set isVisible(flg) {
+      super.isVisible = flg;
+      if (this._outlineGizmo) {
+        this._outlineGizmo.isVisible = flg;
+      }
+    }
+
+    get isVisible() {
+      return super.isVisible;
+    }
+
     clone() {
       let instance = new M_Mesh(this._glBoostContext, this.geometry, this.material);
       this._copy(instance);
@@ -13125,7 +13177,6 @@ return mat4(
   //    this._aabbGizmo = null;
   //    this._aabbGizmo = new M_AABBGizmo(this._glBoostContext);
   //    this._gizmos.push(this._aabbGizmo);
-
     }
 
     /**
@@ -13570,6 +13621,7 @@ return mat4(
 
       return [currentShortestIntersectedPosVec3, currentShortestT];
     }
+
   }
 
   let singleton$3 = Symbol();
@@ -13727,7 +13779,8 @@ return mat4(
 
       this._scene = null;
       this._meshes = [];
-      this._gizmos = [];
+      this._preGizmos = [];
+      this._postGizmos = [];
       this._opacityMeshes = [];
       this._transparentMeshes = [];
       this._transparentMeshesAsManualOrder = null;
@@ -13811,8 +13864,12 @@ return mat4(
       return this._transparentMeshes;
     }
 
-    get gizmos() {
-      return this._gizmos;
+    get preGizmos() {
+      return this._preGizmos;
+    }
+
+    get postGizmos() {
+      return this._postGizmos;
     }
 
     specifyRenderTargetTextures(renderTargetTextures) {
@@ -14057,7 +14114,7 @@ return mat4(
               if (!this._newShaderInstance) {
   //              let materials = obj.geometry.prepareToRender(this.expression, existCamera_f, lights, null, obj, dic.shaderClass);
   //              this._newShaderInstance = materials.filter((mat)=>{return mat.instanceName === material.instanceName})[0].shaderInstance;
-                let glslProgram = obj.geometry.prepareGLSLProgramAndSetVertexNtoMaterial(this.expression, material, 0, existCamera_f, lights, false, dic.shaderClass);
+                let glslProgram = obj.geometry.prepareGLSLProgramAndSetVertexNtoMaterial(this.expression, material, existCamera_f, lights, dic.shaderClass);
                 this._oldShaderClass = material.shaderClass;
                 this._newShaderInstance = material.shaderInstance;
               }
@@ -14087,7 +14144,7 @@ return mat4(
           if(!shaderInstance) {
   //          let materials = obj.geometry.prepareToRender(this.expression, existCamera_f, lights, null, obj, dic.shaderClass);
   //          shaderInstance = materials.filter((mat)=>{return mat.instanceName === material.instanceName})[0].shaderInstance;
-            material.shaderInstance = obj.geometry.prepareGLSLProgramAndSetVertexNtoMaterial(this.expression, material, 0, existCamera_f, lights, false, dic.shaderClass);
+            material.shaderInstance = obj.geometry.prepareGLSLProgramAndSetVertexNtoMaterial(this.expression, material, existCamera_f, lights, dic.shaderClass);
             
           }
 
@@ -14154,24 +14211,31 @@ return mat4(
       };
 
       this._meshes = [];
-      this._gizmos = [];
+      this._preGizmos = [];
+      this._postGizmos = [];
       if (this._scene) {
-        let elements = [];
-        Array.prototype.push.apply(this._gizmos, this._scene._gizmos);
-        this._scene.getChildren().forEach((elm)=> {
-
-          // collect gizmos from elements
-          Array.prototype.push.apply(this._gizmos, elm._gizmos);
-
-          // collect meshes
-          this._meshes = this._meshes.concat(collectElements(elm, M_Mesh));
-
-          // collect meshes
-          elements = elements.concat(collectElements(elm, M_Element));
-
-
-        });
+        // collect meshes
+        this._meshes = this._meshes.concat(collectElements(this._scene, M_Mesh));
       }
+
+      // collect gizmos
+      let collectGizmos = (elem)=> {
+        if (elem instanceof M_Group) {
+          var children = elem.getChildren();
+          children.forEach((child)=> {
+            collectGizmos(child);
+          });
+        } else if (elem.gizmos) {
+          elem.gizmos.filter((gizmo)=>{
+            if (gizmo.isPreDraw) {
+              this._preGizmos.push(gizmo);
+            } else {
+              this._postGizmos.push(gizmo);
+            }
+          });
+        }
+      };
+      collectGizmos(this._scene);
 
       this._opacityMeshes = [];
       this._transparentMeshes = [];
@@ -14413,6 +14477,8 @@ return mat4(
           }
         }
 
+        // draw pre gizmos
+        this._drawGizmos(renderPass.preGizmos, expression, lights, camera, renderPass, index, viewport);
 
         // draw opacity meshes.
         const opacityMeshes = renderPass.opacityMeshes;
@@ -14436,7 +14502,7 @@ return mat4(
         }
         // draw transparent meshes.
         const transparentMeshes = (renderPass.transparentMeshesAsManualOrder) ? renderPass.transparentMeshesAsManualOrder : renderPass.transparentMeshes;
-  //      console.log("START!!");
+
         transparentMeshes.forEach((mesh)=> {
           //console.log(mesh.userFlavorName);
           if (mesh.isVisible) {
@@ -14452,30 +14518,9 @@ return mat4(
             });
           }
         });
-  //      console.log("END!!");
         
-        const globalStatesUsageBackup = this._glBoostContext.globalStatesUsage;
-        this._glBoostContext.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE;
-        this._glBoostContext.currentGlobalStates = [
-          3042, // gl.BLEND
-        ];
-        let gizmos = renderPass.gizmos;
-        for (let gizmo of gizmos) {
-          if (gizmo.isVisible) {
-            gizmo.mesh.draw({
-              expression: expression,
-              lights: lights,
-              camera: camera,
-              renderPass: renderPass,
-              renderPassIndex: index,
-              viewport: viewport,
-              isWebVRMode: this.isWebVRMode,
-              webvrFrameData: this.__webvrFrameData
-            });
-          }
-        }
-        this._glBoostContext.globalStatesUsage = globalStatesUsageBackup;
-        this._glBoostContext.restoreGlobalStatesToDefault();
+        // draw post gizmos
+        this._drawGizmos(renderPass.postGizmos, expression, lights, camera, renderPass, index, viewport);
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   //      glem.drawBuffers(gl, [gl.BACK]);
@@ -14489,6 +14534,34 @@ return mat4(
         renderPass.postRender(camera ? true:false, lights);
 
       });
+    }
+
+    _drawGizmos(gizmos, expression, lights, camera, renderPass, index, viewport) {
+      const globalStatesUsageBackup = this._glBoostContext.globalStatesUsage;
+      this._glBoostContext.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE;
+      this._glBoostContext.currentGlobalStates = [
+        3042, // gl.BLEND
+      ];
+
+      for (let gizmo of gizmos) {
+        if (gizmo.isVisible) {
+          gizmo.mesh.draw({
+            expression: expression,
+            lights: lights,
+            camera: camera,
+            renderPass: renderPass,
+            renderPassIndex: index,
+            viewport: viewport,
+            isWebVRMode: this.isWebVRMode,
+            webvrFrameData: this.__webvrFrameData,
+            forceThisMaterial: gizmo.forceThisMaterial
+          });
+        }
+      }
+
+      this._glBoostContext.globalStatesUsage = globalStatesUsageBackup;
+      this._glBoostContext.restoreGlobalStatesToDefault();
+
     }
 
     _clearBuffer(gl, renderPass) {
@@ -14894,17 +14967,20 @@ return mat4(
             callPrepareToRenderMethodOfAllElements(child);
           });
 
-          for (let gizmo of elem._gizmos) {
+          for (let gizmo of elem.gizmos) {
             gizmo.mesh.prepareToRender(expression, existCamera_f, []);
           }
         } else if (elem instanceof M_Mesh) {
           elem.prepareToRender(expression, existCamera_f, this._lights);
-          for (let gizmo of elem._gizmos) {
+          for (let gizmo of elem.gizmos) {
             gizmo.mesh.prepareToRender(expression, existCamera_f, this._lights);
+            if (gizmo.forceThisMaterial) {
+              gizmo.forceThisMaterial.shaderInstance = gizmo.mesh.geometry.prepareGLSLProgram(expression, gizmo.forceThisMaterial, existCamera_f, this._lights, null);
+            }
           }
         } else if (elem instanceof M_Element) {
           elem.prepareToRender();
-          for (let gizmo of elem._gizmos) {
+          for (let gizmo of elem.gizmos) {
             gizmo.mesh.prepareToRender(expression, existCamera_f, []);
           }
         } else {
@@ -14996,12 +15072,29 @@ return mat4(
       super(glBoostContext, null, null);
 
       this._mesh = null;
+
+      // Whether or not to draw this gizmo before normal meshes drawing.
+      // If true, draw this gizmo before normal meshes drawing.
+      // If false, draw this gizmo after normal meshes drawing.
+      this._isPreDraw = false;
+      this._forceThisMaterial = null;
     }
 
     get mesh() {
       return this._mesh;
     }
 
+    set isPreDraw(flg) {
+      this._isPreDraw = flg;
+    }
+
+    get isPreDraw() {
+      return this._isPreDraw;
+    }
+
+    get forceThisMaterial() {
+      return this._forceThisMaterial;
+    }
   }
 
   class JointPrimitive extends Geometry {
@@ -16598,6 +16691,35 @@ return mat4(
     }
   }
 
+  class M_OutlineGizmo extends M_Gizmo {
+    constructor(glBoostContext, mesh, scale = 0.05) {
+      super(glBoostContext, null, null);
+
+      this._init(glBoostContext, mesh, scale);
+    }
+
+    _init(glBoostContext, mesh, scale) {
+
+      this._mesh = mesh.clone();
+      this.isPreDraw = true;
+      this._material = new ClassicMaterial$1(glBoostContext);
+      this._material.baseColor = new Vector4(0, 1, 0, 1);
+
+      this._forceThisMaterial = this._material;
+
+      this._mesh.material = this._material;
+      this._group = this._glBoostContext.createGroup();
+      this._group.matrix = mesh.worldMatrix;
+      this._group.addChild(this._mesh);
+      this.addChild(this._group);
+
+      const centerPoint = mesh.AABBInWorld.updateAllInfo().centerPoint;
+
+      this.scale = new Vector3(1+scale, 1+scale, 1+scale);
+      this.translate = Vector3.multiply(centerPoint, -1*scale);
+    }
+  }
+
   class Line extends Geometry {
     constructor(glBoostContext, startPos = Vector3.zero(), endPos = Vector3.zero()) {
       super(glBoostContext);
@@ -16932,6 +17054,11 @@ return mat4(
     createGridGizmo(length, division, isXZ, isXY, isYZ, colorVec) {
       return new M_GridGizmo(this, length, division, isXZ, isXY, isYZ, colorVec);
     }
+
+    createOutlineGizmo(mesh) {
+      return new M_OutlineGizmo(this, mesh);
+    }
+
 
     createHeightLineGizmo(startPos, endPos) {
       return new M_HeightLineGizmo(this, startPos, endPos);
@@ -18225,6 +18352,8 @@ return mat4(
         rootGroup.addChild(group);
 
       }
+
+      rootGroup.allMeshes = rootGroup.searchElementsByType(M_Mesh);
 
       resolve(rootGroup);
     }
@@ -20067,6 +20196,8 @@ return mat4(
         options.loaderExtension.setAssetPropertiesToRootGroup(rootGroup, gltfModel.asset);
       }
 
+      rootGroup.allMeshes = rootGroup.searchElementsByType(M_Mesh);
+
       return rootGroup;
     }
 
@@ -21501,4 +21632,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-60-g10ed-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-69-ge6ff-mod branch: develop';
