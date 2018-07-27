@@ -1965,513 +1965,6 @@
 
   GLBoost$1['Vector3'] = Vector3;
 
-  class Matrix33 {
-
-    constructor(m, isColumnMajor = false,
-      shaderParameterType = void 0, shaderParameterEntityIndex = void 0, shaderParameterName = void 0
-    ) {
-      this.m = new Float32Array(9); // Data order is column major
-      if (arguments.length >= 9) {
-        if (isColumnMajor === true) {
-          let m = arguments;
-          this.setComponents(
-            m[0], m[3], m[6],
-            m[1], m[4], m[7],
-            m[2], m[5], m[8]);
-        } else {
-          this.setComponents.apply(this, arguments);  // arguments[0-8] must be row major values if isColumnMajor is false
-        }
-      } else if (Array.isArray(m)) {
-        if (isColumnMajor === true) {
-          this.setComponents(
-            m[0], m[3], m[6],
-            m[1], m[4], m[7],
-            m[2], m[5], m[8]);
-        } else {
-          this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
-        }
-      } else if (m instanceof Float32Array) {
-        if (isColumnMajor === true) {
-          this.setComponents(
-            m[0], m[3], m[6],
-            m[1], m[4], m[7],
-            m[2], m[5], m[8]);
-        } else {
-          this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
-        }
-      } else {
-        this.identity();
-      }
-    }
-
-    setComponents(m00, m01, m02, m10, m11, m12, m20, m21, m22) {
-      this.m00 = m00; this.m01 = m01; this.m02 = m02;
-      this.m10 = m10; this.m11 = m11; this.m12 = m12;
-      this.m20 = m20; this.m21 = m21; this.m22 = m22;
-
-      return this;
-    }
-
-    /**
-     * 単位行列にする
-     */
-    identity() {
-      this.setComponents(
-        1, 0, 0,
-        0, 1, 0,
-        0, 0, 1
-      );
-      return this;
-    }
-
-    /**
-     * Make this identity matrix（static method version）
-     */
-    static identity() {
-      return new Matrix33(
-        1, 0, 0,
-        0, 1, 0,
-        0, 0, 1
-      );
-    }
-
-    clone() {
-      return new Matrix33(
-        this.m[0], this.m[3], this.m[6],
-        this.m[1], this.m[4], this.m[7],
-        this.m[2], this.m[5], this.m[8]
-      );
-    }
-
-    /**
-     * Create X oriented Rotation Matrix
-     */
-    rotateX(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return this.setComponents(
-        1, 0, 0,
-        0, cos, -sin,
-        0, sin, cos
-      );
-    }
-    /**
-     * Create X oriented Rotation Matrix
-     */
-    static rotateX(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return new Matrix33(
-        1, 0, 0,
-        0, cos, -sin,
-        0, sin, cos
-      );
-    }
-
-    /**
-     * Create Y oriented Rotation Matrix
-     */
-    rotateY(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      this.setComponents(
-        cos, 0, sin,
-        0, 1, 0,
-        -sin, 0, cos
-      );
-      return this;
-    }
-    /**
-     * Create Y oriented Rotation Matrix
-     */
-    static rotateY(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return new Matrix33(
-        cos, 0, sin,
-        0, 1, 0,
-        -sin, 0, cos
-      );
-    }
-
-    /**
-     * Create Z oriented Rotation Matrix
-     */
-    rotateZ(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return this.setComponents(
-        cos, -sin, 0,
-        sin, cos, 0,
-        0, 0, 1
-      );
-    }
-    /**
-     * Create Z oriented Rotation Matrix
-     */
-    static rotateZ(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return new Matrix33(
-        cos, -sin, 0,
-        sin, cos, 0,
-        0, 0, 1
-      );
-    }
-
-    static rotateXYZ(x, y, z) {
-      return (Matrix33.rotateZ(z).multiply(Matrix33.rotateY(y).multiply(Matrix33.rotateX(x))));
-    }
-
-    static rotate(vec3) {
-      return (Matrix33.rotateZ(vec3.z).multiply(Matrix33.rotateY(vec3.y).multiply(Matrix33.rotateX(vec3.x))));
-    }
-
-    scale(vec) {
-      return this.setComponents(
-        vec.x, 0, 0,
-        0, vec.y, 0,
-        0, 0, vec.z
-      );
-    }
-
-    static scale(vec) {
-      return new Matrix33(
-        vec.x, 0, 0,
-        0, vec.y, 0,
-        0, 0, vec.z
-      );
-    }
-
-    /**
-     * ゼロ行列
-     */
-    zero() {
-      this.setComponents(0, 0, 0, 0, 0, 0, 0, 0, 0);
-      return this;
-    }
-
-    static zero() {
-      return new Matrix33(0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-
-    flatten() {
-      return this.m;
-    }
-
-    flattenAsArray() {
-      return [this.m[0], this.m[1], this.m[2],
-        this.m[3], this.m[4], this.m[5],
-        this.m[6], this.m[7], this.m[8]];
-    }
-
-    _swap(l, r) {
-      this.m[r] = [this.m[l], this.m[l] = this.m[r]][0]; // Swap
-    }
-
-    /**
-     * 転置
-     */
-    transpose() {
-      this._swap(1, 3);
-      this._swap(2, 6);
-      this._swap(5, 8);
-
-      return this;
-    }
-
-    /**
-     * 転置（static版）
-     */
-    static transpose(mat) {
-
-      var mat_t = new Matrix33(
-        mat.m00, mat.m10, mat.m20,
-        mat.m01, mat.m11, mat.m21,
-        mat.m02, mat.m12, mat.m22
-      );
-
-      return mat_t;
-    }
-
-    multiplyVector(vec) {
-      var x = this.m00*vec.x + this.m01*vec.y + this.m02*vec.z;
-      var y = this.m10*vec.x + this.m11*vec.y + this.m12*vec.z;
-      var z = this.m20*vec.x + this.m21*vec.y + this.m22*vec.z;
-
-      return new Vector3(x, y, z);
-    }
-
-    /**
-     * 行列同士の乗算
-     */
-    multiply(mat) {
-      var m00 = this.m00*mat.m00 + this.m01*mat.m10 + this.m02*mat.m20;
-      var m01 = this.m00*mat.m01 + this.m01*mat.m11 + this.m02*mat.m21;
-      var m02 = this.m00*mat.m02 + this.m01*mat.m12 + this.m02*mat.m22;
-
-      var m10 = this.m10*mat.m00 + this.m11*mat.m10 + this.m12*mat.m20;
-      var m11 = this.m10*mat.m01 + this.m11*mat.m11 + this.m12*mat.m21;
-      var m12 = this.m10*mat.m02 + this.m11*mat.m12 + this.m12*mat.m22;
-
-      var m20 = this.m20*mat.m00 + this.m21*mat.m10 + this.m22*mat.m20;
-      var m21 = this.m20*mat.m01 + this.m21*mat.m11 + this.m22*mat.m21;
-      var m22 = this.m20*mat.m02 + this.m21*mat.m12 + this.m22*mat.m22;
-
-
-      return this.setComponents(
-        m00, m01, m02,
-        m10, m11, m12,
-        m20, m21, m22
-      );
-    }
-
-    /**
-     * 行列同士の乗算（static版）
-     */
-    static multiply(l_m, r_m) {
-      var m00 = l_m.m00*r_m.m00 + l_m.m01*r_m.m10 + l_m.m02*r_m.m20;
-      var m10 = l_m.m10*r_m.m00 + l_m.m11*r_m.m10 + l_m.m12*r_m.m20;
-      var m20 = l_m.m20*r_m.m00 + l_m.m21*r_m.m10 + l_m.m22*r_m.m20;
-
-      var m01 = l_m.m00*r_m.m01 + l_m.m01*r_m.m11 + l_m.m02*r_m.m21;
-      var m11 = l_m.m10*r_m.m01 + l_m.m11*r_m.m11 + l_m.m12*r_m.m21;
-      var m21 = l_m.m20*r_m.m01 + l_m.m21*r_m.m11 + l_m.m22*r_m.m21;
-
-      var m02 = l_m.m00*r_m.m02 + l_m.m01*r_m.m12 + l_m.m02*r_m.m22;
-      var m12 = l_m.m10*r_m.m02 + l_m.m11*r_m.m12 + l_m.m12*r_m.m22;
-      var m22 = l_m.m20*r_m.m02 + l_m.m21*r_m.m12 + l_m.m22*r_m.m22;
-
-      return new Matrix33(
-        m00, m01, m02,
-        m10, m11, m12,
-        m20, m21, m22
-      );
-    }
-
-    determinant() {
-      return this.m00*this.m11*this.m22 + this.m10*this.m21*this.m02 + this.m20*this.m01*this.m12
-        - this.m00*this.m21*this.m12 - this.m20*this.m11*this.m02 - this.m10*this.m01*this.m22;
-    }
-
-    static determinant(mat) {
-      return mat.m00*mat.m11*mat.m22 + mat.m10*mat.m21*mat.m02 + mat.m20*mat.m01*mat.m12
-        - mat.m00*mat.m21*mat.m12 - mat.m20*mat.m11*mat.m02 - mat.m10*mat.m01*mat.m22;
-    }
-
-    invert() {
-      var det = this.determinant();
-      var m00 = (this.m11*this.m22 - this.m12*this.m21) / det;
-      var m01 = (this.m02*this.m21 - this.m01*this.m22) / det;
-      var m02 = (this.m01*this.m12 - this.m02*this.m11) / det;
-      var m10 = (this.m12*this.m20 - this.m10*this.m22) / det;
-      var m11 = (this.m00*this.m22 - this.m02*this.m20) / det;
-      var m12 = (this.m02*this.m10 - this.m00*this.m12) / det;
-      var m20 = (this.m10*this.m21 - this.m11*this.m20) / det;
-      var m21 = (this.m01*this.m20 - this.m00*this.m21) / det;
-      var m22 = (this.m00*this.m11 - this.m01*this.m10) / det;
-
-      return this.setComponents(
-        m00, m01, m02,
-        m10, m11, m12,
-        m20, m21, m22
-      );
-    }
-
-    static invert(mat) {
-      var det = mat.determinant();
-      var m00 = (mat.m11*mat.m22 - mat.m12*mat.m21) / det;
-      var m01 = (mat.m02*mat.m21 - mat.m01*mat.m22) / det;
-      var m02 = (mat.m01*mat.m12 - mat.m02*mat.m11) / det;
-      var m10 = (mat.m12*mat.m20 - mat.m10*mat.m22) / det;
-      var m11 = (mat.m00*mat.m22 - mat.m02*mat.m20) / det;
-      var m12 = (mat.m02*mat.m10 - mat.m00*mat.m12) / det;
-      var m20 = (mat.m10*mat.m21 - mat.m11*mat.m20) / det;
-      var m21 = (mat.m01*mat.m20 - mat.m00*mat.m21) / det;
-      var m22 = (mat.m00*mat.m11 - mat.m01*mat.m10) / det;
-
-      return new Matrix33(
-        m00, m01, m02,
-        m10, m11, m12,
-        m20, m21, m22
-      );
-    }
-
-    set m00(val) {
-      this.m[0] = val;
-    }
-
-    get m00() {
-      return this.m[0];
-    }
-
-    set m10(val) {
-      this.m[1] = val;
-    }
-
-    get m10() {
-      return this.m[1];
-    }
-
-    set m20(val) {
-      this.m[2] = val;
-    }
-
-    get m20() {
-      return this.m[2];
-    }
-
-
-    set m01(val) {
-      this.m[3] = val;
-    }
-
-    get m01() {
-      return this.m[3];
-    }
-
-    set m11(val) {
-      this.m[4] = val;
-    }
-
-    get m11() {
-      return this.m[4];
-    }
-
-    set m21(val) {
-      this.m[5] = val;
-    }
-
-    get m21() {
-      return this.m[5];
-    }
-
-    set m02(val) {
-      this.m[6] = val;
-    }
-
-    get m02() {
-      return this.m[6];
-    }
-
-    set m12(val) {
-      this.m[7] = val;
-    }
-
-    get m12() {
-      return this.m[7];
-    }
-
-    set m22(val) {
-      this.m[8] = val;
-    }
-
-    get m22() {
-      return this.m[8];
-    }
-
-    toString() {
-      return this.m00 + ' ' + this.m01 + ' ' + this.m02 + '\n' +
-        this.m10 + ' ' + this.m11 + ' ' + this.m12 + '\n' +
-        this.m20 + ' ' + this.m21 + ' ' + this.m22 + '\n';
-    }
-
-    nearZeroToZero(value) {
-      if (Math.abs(value) < 0.00001) {
-        value = 0;
-      } else if (0.99999 < value && value < 1.00001) {
-        value = 1;
-      } else if (-1.00001 < value && value < -0.99999) {
-        value = -1;
-      }
-      return value;
-    }
-
-    toStringApproximately() {
-      return this.nearZeroToZero(this.m00) + ' ' + this.nearZeroToZero(this.m01) + ' ' + this.nearZeroToZero(this.m02) + '\n' +
-        this.nearZeroToZero(this.m10) + ' ' + this.nearZeroToZero(this.m11) + ' ' + this.nearZeroToZero(this.m12) + ' \n' +
-        this.nearZeroToZero(this.m20) + ' ' + this.nearZeroToZero(this.m21) + ' ' + this.nearZeroToZero(this.m22) + '\n';
-    }
-
-    toMatrix44() {
-      return new Matrix44$1(
-        this.m00, this.m01, this.m02, 0,
-        this.m10, this.m11, this.m12, 0,
-        this.m20, this.m21, this.m22, 0,
-        0, 0, 0, 1
-      );
-    }
-
-    static toMatrix44(mat) {
-      return new Matrix44$1(
-        mat.m00, mat.m01, mat.m02, 0,
-        mat.m10, mat.m11, mat.m12, 0,
-        mat.m20, mat.m21, mat.m22, 0,
-        0, 0, 0, 1
-      );
-    }
-
-    getScale() {
-      return new Vector3(
-        Math.sqrt(this.m00 * this.m00 + this.m01 * this.m01 + this.m02 * this.m02),
-        Math.sqrt(this.m10 * this.m10 + this.m11 * this.m11 + this.m12 * this.m12),
-        Math.sqrt(this.m20 * this.m20 + this.m21 * this.m21 + this.m22 * this.m22)
-      );
-    }
-
-    addScale(vec) {
-      this.m00 *= vec.x;
-      this.m11 *= vec.y;
-      this.m22 *= vec.z;
-
-      return this;
-    }
-  }
-
-  GLBoost$1['Matrix33'] = Matrix33;
-
   class Quaternion {
 
     constructor(x, y, z, w) {
@@ -3479,6 +2972,513 @@
 
   GLBoost$1["Matrix44"] = Matrix44$1;
 
+  class Matrix33 {
+
+    constructor(m, isColumnMajor = false,
+      shaderParameterType = void 0, shaderParameterEntityIndex = void 0, shaderParameterName = void 0
+    ) {
+      this.m = new Float32Array(9); // Data order is column major
+      if (arguments.length >= 9) {
+        if (isColumnMajor === true) {
+          let m = arguments;
+          this.setComponents(
+            m[0], m[3], m[6],
+            m[1], m[4], m[7],
+            m[2], m[5], m[8]);
+        } else {
+          this.setComponents.apply(this, arguments);  // arguments[0-8] must be row major values if isColumnMajor is false
+        }
+      } else if (Array.isArray(m)) {
+        if (isColumnMajor === true) {
+          this.setComponents(
+            m[0], m[3], m[6],
+            m[1], m[4], m[7],
+            m[2], m[5], m[8]);
+        } else {
+          this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
+        }
+      } else if (m instanceof Float32Array) {
+        if (isColumnMajor === true) {
+          this.setComponents(
+            m[0], m[3], m[6],
+            m[1], m[4], m[7],
+            m[2], m[5], m[8]);
+        } else {
+          this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
+        }
+      } else {
+        this.identity();
+      }
+    }
+
+    setComponents(m00, m01, m02, m10, m11, m12, m20, m21, m22) {
+      this.m00 = m00; this.m01 = m01; this.m02 = m02;
+      this.m10 = m10; this.m11 = m11; this.m12 = m12;
+      this.m20 = m20; this.m21 = m21; this.m22 = m22;
+
+      return this;
+    }
+
+    /**
+     * 単位行列にする
+     */
+    identity() {
+      this.setComponents(
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1
+      );
+      return this;
+    }
+
+    /**
+     * Make this identity matrix（static method version）
+     */
+    static identity() {
+      return new Matrix33(
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1
+      );
+    }
+
+    clone() {
+      return new Matrix33(
+        this.m[0], this.m[3], this.m[6],
+        this.m[1], this.m[4], this.m[7],
+        this.m[2], this.m[5], this.m[8]
+      );
+    }
+
+    /**
+     * Create X oriented Rotation Matrix
+     */
+    rotateX(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return this.setComponents(
+        1, 0, 0,
+        0, cos, -sin,
+        0, sin, cos
+      );
+    }
+    /**
+     * Create X oriented Rotation Matrix
+     */
+    static rotateX(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return new Matrix33(
+        1, 0, 0,
+        0, cos, -sin,
+        0, sin, cos
+      );
+    }
+
+    /**
+     * Create Y oriented Rotation Matrix
+     */
+    rotateY(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      this.setComponents(
+        cos, 0, sin,
+        0, 1, 0,
+        -sin, 0, cos
+      );
+      return this;
+    }
+    /**
+     * Create Y oriented Rotation Matrix
+     */
+    static rotateY(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return new Matrix33(
+        cos, 0, sin,
+        0, 1, 0,
+        -sin, 0, cos
+      );
+    }
+
+    /**
+     * Create Z oriented Rotation Matrix
+     */
+    rotateZ(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return this.setComponents(
+        cos, -sin, 0,
+        sin, cos, 0,
+        0, 0, 1
+      );
+    }
+    /**
+     * Create Z oriented Rotation Matrix
+     */
+    static rotateZ(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return new Matrix33(
+        cos, -sin, 0,
+        sin, cos, 0,
+        0, 0, 1
+      );
+    }
+
+    static rotateXYZ(x, y, z) {
+      return (Matrix33.rotateZ(z).multiply(Matrix33.rotateY(y).multiply(Matrix33.rotateX(x))));
+    }
+
+    static rotate(vec3) {
+      return (Matrix33.rotateZ(vec3.z).multiply(Matrix33.rotateY(vec3.y).multiply(Matrix33.rotateX(vec3.x))));
+    }
+
+    scale(vec) {
+      return this.setComponents(
+        vec.x, 0, 0,
+        0, vec.y, 0,
+        0, 0, vec.z
+      );
+    }
+
+    static scale(vec) {
+      return new Matrix33(
+        vec.x, 0, 0,
+        0, vec.y, 0,
+        0, 0, vec.z
+      );
+    }
+
+    /**
+     * ゼロ行列
+     */
+    zero() {
+      this.setComponents(0, 0, 0, 0, 0, 0, 0, 0, 0);
+      return this;
+    }
+
+    static zero() {
+      return new Matrix33(0, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    flatten() {
+      return this.m;
+    }
+
+    flattenAsArray() {
+      return [this.m[0], this.m[1], this.m[2],
+        this.m[3], this.m[4], this.m[5],
+        this.m[6], this.m[7], this.m[8]];
+    }
+
+    _swap(l, r) {
+      this.m[r] = [this.m[l], this.m[l] = this.m[r]][0]; // Swap
+    }
+
+    /**
+     * 転置
+     */
+    transpose() {
+      this._swap(1, 3);
+      this._swap(2, 6);
+      this._swap(5, 8);
+
+      return this;
+    }
+
+    /**
+     * 転置（static版）
+     */
+    static transpose(mat) {
+
+      var mat_t = new Matrix33(
+        mat.m00, mat.m10, mat.m20,
+        mat.m01, mat.m11, mat.m21,
+        mat.m02, mat.m12, mat.m22
+      );
+
+      return mat_t;
+    }
+
+    multiplyVector(vec) {
+      var x = this.m00*vec.x + this.m01*vec.y + this.m02*vec.z;
+      var y = this.m10*vec.x + this.m11*vec.y + this.m12*vec.z;
+      var z = this.m20*vec.x + this.m21*vec.y + this.m22*vec.z;
+
+      return new Vector3(x, y, z);
+    }
+
+    /**
+     * 行列同士の乗算
+     */
+    multiply(mat) {
+      var m00 = this.m00*mat.m00 + this.m01*mat.m10 + this.m02*mat.m20;
+      var m01 = this.m00*mat.m01 + this.m01*mat.m11 + this.m02*mat.m21;
+      var m02 = this.m00*mat.m02 + this.m01*mat.m12 + this.m02*mat.m22;
+
+      var m10 = this.m10*mat.m00 + this.m11*mat.m10 + this.m12*mat.m20;
+      var m11 = this.m10*mat.m01 + this.m11*mat.m11 + this.m12*mat.m21;
+      var m12 = this.m10*mat.m02 + this.m11*mat.m12 + this.m12*mat.m22;
+
+      var m20 = this.m20*mat.m00 + this.m21*mat.m10 + this.m22*mat.m20;
+      var m21 = this.m20*mat.m01 + this.m21*mat.m11 + this.m22*mat.m21;
+      var m22 = this.m20*mat.m02 + this.m21*mat.m12 + this.m22*mat.m22;
+
+
+      return this.setComponents(
+        m00, m01, m02,
+        m10, m11, m12,
+        m20, m21, m22
+      );
+    }
+
+    /**
+     * 行列同士の乗算（static版）
+     */
+    static multiply(l_m, r_m) {
+      var m00 = l_m.m00*r_m.m00 + l_m.m01*r_m.m10 + l_m.m02*r_m.m20;
+      var m10 = l_m.m10*r_m.m00 + l_m.m11*r_m.m10 + l_m.m12*r_m.m20;
+      var m20 = l_m.m20*r_m.m00 + l_m.m21*r_m.m10 + l_m.m22*r_m.m20;
+
+      var m01 = l_m.m00*r_m.m01 + l_m.m01*r_m.m11 + l_m.m02*r_m.m21;
+      var m11 = l_m.m10*r_m.m01 + l_m.m11*r_m.m11 + l_m.m12*r_m.m21;
+      var m21 = l_m.m20*r_m.m01 + l_m.m21*r_m.m11 + l_m.m22*r_m.m21;
+
+      var m02 = l_m.m00*r_m.m02 + l_m.m01*r_m.m12 + l_m.m02*r_m.m22;
+      var m12 = l_m.m10*r_m.m02 + l_m.m11*r_m.m12 + l_m.m12*r_m.m22;
+      var m22 = l_m.m20*r_m.m02 + l_m.m21*r_m.m12 + l_m.m22*r_m.m22;
+
+      return new Matrix33(
+        m00, m01, m02,
+        m10, m11, m12,
+        m20, m21, m22
+      );
+    }
+
+    determinant() {
+      return this.m00*this.m11*this.m22 + this.m10*this.m21*this.m02 + this.m20*this.m01*this.m12
+        - this.m00*this.m21*this.m12 - this.m20*this.m11*this.m02 - this.m10*this.m01*this.m22;
+    }
+
+    static determinant(mat) {
+      return mat.m00*mat.m11*mat.m22 + mat.m10*mat.m21*mat.m02 + mat.m20*mat.m01*mat.m12
+        - mat.m00*mat.m21*mat.m12 - mat.m20*mat.m11*mat.m02 - mat.m10*mat.m01*mat.m22;
+    }
+
+    invert() {
+      var det = this.determinant();
+      var m00 = (this.m11*this.m22 - this.m12*this.m21) / det;
+      var m01 = (this.m02*this.m21 - this.m01*this.m22) / det;
+      var m02 = (this.m01*this.m12 - this.m02*this.m11) / det;
+      var m10 = (this.m12*this.m20 - this.m10*this.m22) / det;
+      var m11 = (this.m00*this.m22 - this.m02*this.m20) / det;
+      var m12 = (this.m02*this.m10 - this.m00*this.m12) / det;
+      var m20 = (this.m10*this.m21 - this.m11*this.m20) / det;
+      var m21 = (this.m01*this.m20 - this.m00*this.m21) / det;
+      var m22 = (this.m00*this.m11 - this.m01*this.m10) / det;
+
+      return this.setComponents(
+        m00, m01, m02,
+        m10, m11, m12,
+        m20, m21, m22
+      );
+    }
+
+    static invert(mat) {
+      var det = mat.determinant();
+      var m00 = (mat.m11*mat.m22 - mat.m12*mat.m21) / det;
+      var m01 = (mat.m02*mat.m21 - mat.m01*mat.m22) / det;
+      var m02 = (mat.m01*mat.m12 - mat.m02*mat.m11) / det;
+      var m10 = (mat.m12*mat.m20 - mat.m10*mat.m22) / det;
+      var m11 = (mat.m00*mat.m22 - mat.m02*mat.m20) / det;
+      var m12 = (mat.m02*mat.m10 - mat.m00*mat.m12) / det;
+      var m20 = (mat.m10*mat.m21 - mat.m11*mat.m20) / det;
+      var m21 = (mat.m01*mat.m20 - mat.m00*mat.m21) / det;
+      var m22 = (mat.m00*mat.m11 - mat.m01*mat.m10) / det;
+
+      return new Matrix33(
+        m00, m01, m02,
+        m10, m11, m12,
+        m20, m21, m22
+      );
+    }
+
+    set m00(val) {
+      this.m[0] = val;
+    }
+
+    get m00() {
+      return this.m[0];
+    }
+
+    set m10(val) {
+      this.m[1] = val;
+    }
+
+    get m10() {
+      return this.m[1];
+    }
+
+    set m20(val) {
+      this.m[2] = val;
+    }
+
+    get m20() {
+      return this.m[2];
+    }
+
+
+    set m01(val) {
+      this.m[3] = val;
+    }
+
+    get m01() {
+      return this.m[3];
+    }
+
+    set m11(val) {
+      this.m[4] = val;
+    }
+
+    get m11() {
+      return this.m[4];
+    }
+
+    set m21(val) {
+      this.m[5] = val;
+    }
+
+    get m21() {
+      return this.m[5];
+    }
+
+    set m02(val) {
+      this.m[6] = val;
+    }
+
+    get m02() {
+      return this.m[6];
+    }
+
+    set m12(val) {
+      this.m[7] = val;
+    }
+
+    get m12() {
+      return this.m[7];
+    }
+
+    set m22(val) {
+      this.m[8] = val;
+    }
+
+    get m22() {
+      return this.m[8];
+    }
+
+    toString() {
+      return this.m00 + ' ' + this.m01 + ' ' + this.m02 + '\n' +
+        this.m10 + ' ' + this.m11 + ' ' + this.m12 + '\n' +
+        this.m20 + ' ' + this.m21 + ' ' + this.m22 + '\n';
+    }
+
+    nearZeroToZero(value) {
+      if (Math.abs(value) < 0.00001) {
+        value = 0;
+      } else if (0.99999 < value && value < 1.00001) {
+        value = 1;
+      } else if (-1.00001 < value && value < -0.99999) {
+        value = -1;
+      }
+      return value;
+    }
+
+    toStringApproximately() {
+      return this.nearZeroToZero(this.m00) + ' ' + this.nearZeroToZero(this.m01) + ' ' + this.nearZeroToZero(this.m02) + '\n' +
+        this.nearZeroToZero(this.m10) + ' ' + this.nearZeroToZero(this.m11) + ' ' + this.nearZeroToZero(this.m12) + ' \n' +
+        this.nearZeroToZero(this.m20) + ' ' + this.nearZeroToZero(this.m21) + ' ' + this.nearZeroToZero(this.m22) + '\n';
+    }
+
+    toMatrix44() {
+      return new Matrix44$1(
+        this.m00, this.m01, this.m02, 0,
+        this.m10, this.m11, this.m12, 0,
+        this.m20, this.m21, this.m22, 0,
+        0, 0, 0, 1
+      );
+    }
+
+    static toMatrix44(mat) {
+      return new Matrix44$1(
+        mat.m00, mat.m01, mat.m02, 0,
+        mat.m10, mat.m11, mat.m12, 0,
+        mat.m20, mat.m21, mat.m22, 0,
+        0, 0, 0, 1
+      );
+    }
+
+    getScale() {
+      return new Vector3(
+        Math.sqrt(this.m00 * this.m00 + this.m01 * this.m01 + this.m02 * this.m02),
+        Math.sqrt(this.m10 * this.m10 + this.m11 * this.m11 + this.m12 * this.m12),
+        Math.sqrt(this.m20 * this.m20 + this.m21 * this.m21 + this.m22 * this.m22)
+      );
+    }
+
+    addScale(vec) {
+      this.m00 *= vec.x;
+      this.m11 *= vec.y;
+      this.m22 *= vec.z;
+
+      return this;
+    }
+  }
+
+  GLBoost$1['Matrix33'] = Matrix33;
+
   class MathUtil {
 
     constructor() {
@@ -3501,6 +3501,34 @@
           return new Vector3(element[0], element[1], element[2]);
         } else {
           return new Vector2(element[0], element[1]);
+        }
+      } else {
+        return element;
+      }
+    }
+
+    static arrayToVectorOrMatrix(element) {
+      if (Array.isArray(element)) {
+        if(typeof(element[15]) !== 'undefined') {
+          return new Matrix44$1(element);
+        } else if(typeof(element[8]) !== 'undefined') {
+          return new Matrix33(element);
+        } else if(typeof(element[3]) !== 'undefined') {
+          return new Vector4(element[0], element[1], element[2], element[3]);
+        } else if (typeof(element[2]) !== 'undefined') {
+          return new Vector3(element[0], element[1], element[2]);
+        } else {
+          return new Vector2(element[0], element[1]);
+        }
+      } else {
+        return element;
+      }
+    }
+
+    static arrayToQuaternion(element) {
+      if (Array.isArray(element)) {
+        if(typeof(element[3]) !== 'undefined') {
+          return new Quaternion(element[0], element[1], element[2], element[3]);
         }
       } else {
         return element;
@@ -4203,6 +4231,18 @@
       instance._is_inverse_trs_matrix_updated = this._is_inverse_trs_matrix_updated;
 
       instance._updateCountAsElement = this._updateCountAsElement;
+    }
+
+    setPropertiesFromJson(json        ) {
+      for(let key in json) {
+        if(json.hasOwnProperty(key)) {
+          if (key === "quaternion") {
+            this[key] = MathUtil.arrayToQuaternion(json[key]);
+          } else {
+            this[key] = MathUtil.arrayToVectorOrMatrix(json[key]);
+          }
+        }
+      }
     }
   }
 
@@ -5232,7 +5272,7 @@ return mat4(
       shaderText +=      'uniform mat4 viewMatrix;\n';
       shaderText +=      'uniform mat4 projectionMatrix;\n';
       shaderText +=      'uniform mat3 normalMatrix;\n';
-      shaderText += `     uniform highp ivec2 objectIds;\n`;
+      shaderText += `     uniform highp ivec3 objectIds;\n`;
 
       shaderText += `${out_} vec3 v_position_world;\n`;
 
@@ -5250,6 +5290,15 @@ return mat4(
     VSTransform_VertexWorldShaderSource(existCamera_f, f, lights, material, extraData) {
       var shaderText = '';
 
+      // calc Projection * View * World matrix
+      shaderText += '  mat4 pvwMatrix = projectionMatrix * viewMatrix * worldMatrix;\n';
+      if (Shader._exist(f, GLBoost.NORMAL)) {
+  //      shaderText += '  vec4 position_proj =  pvwMatrix * position_local;\n';
+  //      shaderText += '  float borderWidth = 1000.0 / position_proj.w;\n';
+        shaderText += '  float borderWidth = 2.0;\n';
+        shaderText += '  position_local.xyz = position_local.xyz + normalize(normal_local)*borderWidth * float(objectIds.z);\n';
+      }
+      
       // Calculate only when No skinning. If skinning, these have already been calculated by SkeletalShader.
       shaderText += '  if (!isSkinning) {\n';
       shaderText += '    position_world = worldMatrix * position_local;\n';
@@ -5257,9 +5306,6 @@ return mat4(
         shaderText += '  normal_world = normalMatrix * normal_local;\n';
       }
       shaderText += '  }\n';
-
-      // calc Projection * View * World matrix
-      shaderText += '  mat4 pvwMatrix = projectionMatrix * viewMatrix * worldMatrix;\n';
 
       // calc vertex position in world space
       shaderText += '  v_position_world = position_world.xyz;\n';
@@ -5296,7 +5342,7 @@ return mat4(
     FSDefine_VertexWorldShaderSource(in_, f, lights, material, extraData) {
       let shaderText = '';
 
-      shaderText += `uniform highp ivec2 objectIds;\n`;
+      shaderText += `uniform highp ivec3 objectIds;\n`;
       shaderText += `uniform vec3 viewPosition_world;\n`;
 
       let lightNumExceptAmbient = lights.filter((light)=>{return !light.isTypeAmbient();}).length;    
@@ -5340,7 +5386,7 @@ return mat4(
         }
       });
 
-      material.setUniform(shaderProgram, 'uniform_objectIds', this._glContext.getUniformLocation(shaderProgram, 'objectIds'));
+      material.setUniform(shaderProgram, 'uniform_objectIdsAndOutlineFlag', this._glContext.getUniformLocation(shaderProgram, 'objectIds'));
 
       material.setUniform(shaderProgram, 'uniform_worldMatrix', this._glContext.getUniformLocation(shaderProgram, 'worldMatrix'));
       material._semanticsDic['WORLD'] = 'worldMatrix';
@@ -6471,8 +6517,12 @@ return mat4(
 
       for (let i=0; i<originalMaterials.length;i++) {
         let material = originalMaterials[i];
+        let isOutlineVisible = false;
         if (forceThisMaterial) {
           material = forceThisMaterial;
+          if (forceThisMaterial.userFlavorName === 'OutlineGizmoMaterial') {
+            isOutlineVisible = true;
+          }
         }
         if (!material.isVisible) {
           continue;
@@ -6496,7 +6546,7 @@ return mat4(
           }
         }
 
-        material._glContext.uniform2i(material.getUniform(glslProgram, 'uniform_objectIds'), mesh.objectIndex, 0, true);
+        material._glContext.uniform3i(material.getUniform(glslProgram, 'uniform_objectIdsAndOutlineFlag'), mesh.objectIndex, 0, isOutlineVisible, true);
 
         let opacity = mesh.opacityAccumulatedAncestry * scene.opacity;
         let query_result_uniform_opacity = material.getUniform(glslProgram, 'uniform_opacity');
@@ -9478,7 +9528,10 @@ return mat4(
       if (typeof states.functions === 'undefined') {
         states.functions = this._stateFunctionsToReset;
       }
-      this._states = states;
+      this._states.enable = states.enable;
+      if (typeof states.functions !== 'undefined') {
+        this._states.functions = states.functions;
+      }
       this._updateCount();
     }
 
@@ -12662,7 +12715,7 @@ return mat4(
     }
 
     get currentGlobalStates() {
-      return this._currentGlobalStates.concat();
+      return this._currentGlobalStates;
     }
 
     restoreGlobalStatesToDefault() {
@@ -14478,7 +14531,7 @@ return mat4(
         }
 
         // draw pre gizmos
-        this._drawGizmos(renderPass.preGizmos, expression, lights, camera, renderPass, index, viewport);
+        this._drawGizmos(renderPass.preGizmos, expression, lights, camera, renderPass, index, viewport, true);
 
         // draw opacity meshes.
         const opacityMeshes = renderPass.opacityMeshes;
@@ -14520,7 +14573,7 @@ return mat4(
         });
         
         // draw post gizmos
-        this._drawGizmos(renderPass.postGizmos, expression, lights, camera, renderPass, index, viewport);
+        this._drawGizmos(renderPass.postGizmos, expression, lights, camera, renderPass, index, viewport, false);
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   //      glem.drawBuffers(gl, [gl.BACK]);
@@ -14536,12 +14589,15 @@ return mat4(
       });
     }
 
-    _drawGizmos(gizmos, expression, lights, camera, renderPass, index, viewport) {
+    _drawGizmos(gizmos, expression, lights, camera, renderPass, index, viewport, isDepthTest) {
       const globalStatesUsageBackup = this._glBoostContext.globalStatesUsage;
-      this._glBoostContext.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE;
+      this._glBoostContext.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_INCLUSIVE;
       this._glBoostContext.currentGlobalStates = [
         3042, // gl.BLEND
       ];
+      if (isDepthTest) {
+        this._glBoostContext.currentGlobalStates.push(2929); // gl.DEPTH_TEST
+      }
 
       for (let gizmo of gizmos) {
         if (gizmo.isVisible) {
@@ -16705,9 +16761,15 @@ return mat4(
       this._material = new ClassicMaterial$1(glBoostContext);
       this._material.baseColor = new Vector4(0, 1, 0, 1);
 
+      
+      this._material.states.enable = [2884]; // gl.CULL_FACE
+      this._material.states.functions.cullFace = [1028]; // gl.front
+      this._material.states.functions.depthMask = [true]; // Write depth value
+      this._material.userFlavorName = "OutlineGizmoMaterial";
+
       this._forceThisMaterial = this._material;
 
-      this._mesh.material = this._material;
+      //this._mesh.material = this._material;
       this._group = this._glBoostContext.createGroup();
       this._group.matrix = mesh.worldMatrix;
       this._group.addChild(this._mesh);
@@ -16715,8 +16777,8 @@ return mat4(
 
       const centerPoint = mesh.AABBInWorld.updateAllInfo().centerPoint;
 
-      this.scale = new Vector3(1+scale, 1+scale, 1+scale);
-      this.translate = Vector3.multiply(centerPoint, -1*scale);
+  //    this.scale = new Vector3(1+scale, 1+scale, 1+scale);
+  //    this.translate = Vector3.multiply(centerPoint, -1*scale);
     }
   }
 
@@ -21632,4 +21694,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-69-ge6ff-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-72-g9e6c-mod branch: develop';
