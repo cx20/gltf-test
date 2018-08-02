@@ -711,25 +711,34 @@
     }
 
     registerGLBoostObject(glBoostObject) {
-      this._glBoostObjects[glBoostObject.toString()] = glBoostObject;
+      this._glBoostObjects[glBoostObject.instanceName] = glBoostObject;
       MiscUtil.consoleLog(GLBoost$1.LOG_GLBOOST_OBJECT_LIFECYCLE, 'GLBoost Resource: ' + glBoostObject.toString() + ' (' + glBoostObject.belongingCanvasId + ') was created.');
     }
 
     deregisterGLBoostObject(glBoostObject) {
-      delete this._glBoostObjects[glBoostObject.toString()];
+      delete this._glBoostObjects[glBoostObject.instanceName];
       MiscUtil.consoleLog(GLBoost$1.LOG_GLBOOST_OBJECT_LIFECYCLE, 'GLBoost Resource: ' + glBoostObject.toString() + ' (' + glBoostObject.belongingCanvasId + ') was ready for discard.');
     }
 
 
-    getGLBoostObjects(partOfGlBoostObjectClassName) {
+    getGLBoostObjects(partOfGlBoostObjectInstanceName) {
       let glBoostObjects = [];
       for (let instanceName in this._glBoostObjects) {
-        if (instanceName.indexOf(partOfGlBoostObjectClassName)>0) {
+        if (instanceName.indexOf(partOfGlBoostObjectInstanceName)>0) {
           glBoostObjects.push(this._glBoostObjects[instanceName]);
         }
       }
 
       return glBoostObjects;
+    }
+
+    getGLBoostObject(glBoostObjectInstanceName) {
+      for (let instanceName in this._glBoostObjects) {
+        if (instanceName === glBoostObjectInstanceName) {
+          return this._glBoostObjects[instanceName];
+        }
+      }
+      return null;
     }
 
     getGLBoostObjectWhichHasThisObjectId(objectId) {
@@ -2547,6 +2556,12 @@
         rotate = new Vector3(Math.atan2(-this.m01, -this.m02), -Math.PI/2.0, 0.0);
       }
 
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        rotate.x = MathUtil.radianToDegree(rotate.x);
+        rotate.y = MathUtil.radianToDegree(rotate.y);
+        rotate.z = MathUtil.radianToDegree(rotate.z);
+      }
+
       return rotate;
     }
 
@@ -3832,21 +3847,12 @@
     }
 
     set translate(vec         ) {
-      if (this._translate.isEqual(vec)) {
-        return;
-      }
       this._translate = vec.clone();
-      if (this._is_trs_matrix_updated) ;
-
-      this.updateTranslate();
-    }
-
-    updateTranslate() {
-      this.__updateFromMatrix(false, !this._is_euler_angles_updated, !this._is_scale_updated, !this._is_quaternion_updated);
+      this._is_translate_updated = true;
       this._is_trs_matrix_updated = false;
       this._is_inverse_trs_matrix_updated = false;
-      this._is_translate_updated = true;
-      this._needUpdate();
+
+      this.__updateTransform();
     }
 
     getTranslateNotAnimated() {
@@ -3883,21 +3889,15 @@
     }
 
     set rotate(vec         ) {
-      if (this._rotate.isEqual(vec)) {
-        return;
-      }
+
       this._rotate = vec.clone();
-
-      this.updateRotate();
-    }
-
-    updateRotate() {
-      this.__updateFromMatrix(!this._is_translate_updated, false, !this._is_scale_updated, false);
+      this._is_euler_angles_updated = true;
+      this._is_quaternion_updated = false;
       this._is_trs_matrix_updated = false;
       this._is_inverse_trs_matrix_updated = false;
-      this._is_quaternion_updated = false;
-      this._is_euler_angles_updated = true;
-      this._needUpdate();
+
+
+      this.__updateTransform();
     }
 
     get rotate() {
@@ -3938,21 +3938,11 @@
     }
 
     set scale(vec         ) {
-      if (this._scale.isEqual(vec)) {
-        return;
-      }
       this._scale = vec.clone();
-      if (this._is_trs_matrix_updated) ;
-
-      this.updateScale();
-    }
-
-    updateScale() {
-      this.__updateFromMatrix(!this._is_translate_updated, !this._is_euler_angles_updated, false, !this._is_quaternion_updated);
+      this._is_scale_updated = true;
       this._is_trs_matrix_updated = false;
       this._is_inverse_trs_matrix_updated = false;
-      this._is_scale_updated = true;
-      this._needUpdate();
+      this.__updateTransform();
     }
 
     get scale() {
@@ -3995,39 +3985,13 @@
       this._is_trs_matrix_updated = true;
       this._is_translate_updated = false;
       this._is_euler_angles_updated = false;
-      this._is_scale_updated = false;
       this._is_quaternion_updated = false;
-      this._is_inverse_trs_matrix_updated = false;
+      this._is_scale_updated = false;
+      this.__updateTransform();
 
-      this._needUpdate();
     }
 
-    __updateFromMatrix(updateTranslate, updateRotation, updateScale, updateQuaternion) {
-      if (updateTranslate) {
-        this._translate.x = this._matrix.m03;
-        this._translate.y = this._matrix.m13;
-        this._translate.z = this._matrix.m23;
-        this._is_translate_updated = true;
-      }
 
-      if (updateScale) {
-        const m = this._matrix;
-        this._scale.x = Math.sqrt(m.m00*m.m00 + m.m01*m.m01 + m.m02*m.m02);
-        this._scale.y = Math.sqrt(m.m10*m.m10 + m.m11*m.m11 + m.m12*m.m12);
-        this._scale.z = Math.sqrt(m.m20*m.m20 + m.m21*m.m21 + m.m22*m.m22);
-        this._is_scale_updated = true;
-      }
-
-      if (updateQuaternion) {
-        this._quaternion = Quaternion.fromMatrix(this._matrix);
-        this._is_quaternion_updated = true;
-      }
-
-      if (updateRotation) {
-        this._rotate = this._matrix.toEulerAngles();
-        this._is_euler_angles_updated = true;
-      }
-    }
 
     get matrix() {
       let input = void 0;
@@ -4123,21 +4087,12 @@
 
 
     set quaternion(quat            ) {
-      if (this._quaternion.isEqual(quat)) {
-        return;
-      }
       this._quaternion = quat.clone();
-
-      this.updateQuaternion();
-    }
-
-    updateQuaternion() {
-      this.__updateFromMatrix(!this._is_translate_updated, false, !this._is_scale_updated, false);
+      this._is_quaternion_updated = true;
+      this._is_euler_angles_updated = false;
       this._is_trs_matrix_updated = false;
       this._is_inverse_trs_matrix_updated = false;
-      this._is_euler_angles_updated = false;
-      this._is_quaternion_updated = true;
-      this._needUpdate();
+      this.__updateTransform();
     }
 
     get quaternion() {
@@ -4192,6 +4147,68 @@
       return Matrix44$1.invert(this.transformMatrix).transpose().toMatrix33();
     }
 
+    __updateTransform() {
+      this.__updateRotation();
+      this.__updateTranslate();
+      this.__updateScale();
+      this.__updateMatrix();
+      this._needUpdate();
+    }
+
+    __updateRotation() {
+      if (this._is_euler_angles_updated && !this._is_quaternion_updated) {
+        this._quaternion = Quaternion.fromMatrix(Matrix44$1.rotateXYZ(this._rotate.x, this._rotate.y, this._rotate.z));
+        this._is_quaternion_updated = true;
+      } else if (!this._is_euler_angles_updated && this._is_quaternion_updated) {
+        this._rotate = this._quaternion.rotationMatrix.toEulerAngles();
+        this._is_euler_angles_updated = true;
+      } else if (!this._is_euler_angles_updated && !this._is_quaternion_updated && this._is_trs_matrix_updated) {
+        const m = this._matrix;
+        this._quaternion = Quaternion.fromMatrix(m);
+        this._is_quaternion_updated = true;
+        this._rotate = m.toEulerAngles();
+        this._is_euler_angles_updated = true;
+      }
+    }
+
+    __updateTranslate() {
+      if (!this._is_translate_updated && this._is_trs_matrix_updated) {
+        const m = this._matrix;
+        this._translate.x = m.m03;
+        this._translate.y = m.m13;
+        this._translate.z = m.m23;
+        this._is_translate_updated = true;
+      }
+    }
+
+    __updateScale() {
+      if (!this._is_scale_updated && this._is_trs_matrix_updated) {
+        const m = this._matrix;
+        this._scale.x = Math.sqrt(m.m00*m.m00 + m.m01*m.m01 + m.m02*m.m02);
+        this._scale.y = Math.sqrt(m.m10*m.m10 + m.m11*m.m11 + m.m12*m.m12);
+        this._scale.z = Math.sqrt(m.m20*m.m20 + m.m21*m.m21 + m.m22*m.m22);
+        this._is_scale_updated = true;
+      }
+    }
+
+    __updateMatrix() {
+      if (!this._is_trs_matrix_updated && this._is_translate_updated && this._is_quaternion_updated && this._is_scale_updated) {
+        let rotationMatrix = Matrix44$1.identity();
+        rotationMatrix = this.getQuaternionNotAnimated().rotationMatrix;
+    
+        let scale = this.getScaleNotAnimated();
+    
+        this._matrix = Matrix44$1.multiply(rotationMatrix, Matrix44$1.scale(scale));
+        let translateVec = this.getTranslateNotAnimated();
+        this._matrix.m03 = translateVec.x;
+        this._matrix.m13 = translateVec.y;
+        this._matrix.m23 = translateVec.z;
+    
+        this._is_trs_matrix_updated = true;
+      }
+    }
+
+
     _copy(instance           ) {
       super._copy(instance);
 
@@ -4233,9 +4250,13 @@
       instance._updateCountAsElement = this._updateCountAsElement;
     }
 
-    setPropertiesFromJson(json        ) {
+    setPropertiesFromJson(arg        ) {
+      let json = arg;
+      if (typeof arg === "string") {
+        json = JSON.parse(arg);
+      }
       for(let key in json) {
-        if(json.hasOwnProperty(key)) {
+        if(json.hasOwnProperty(key) && key in this) {
           if (key === "quaternion") {
             this[key] = MathUtil.arrayToQuaternion(json[key]);
           } else {
@@ -4243,6 +4264,48 @@
           }
         }
       }
+    }
+
+    setRotationFromNewUpAndFront(UpVec, FrontVec) {
+      let yDir = UpVec;
+      let xDir = Vector3.cross(yDir, FrontVec);
+      let zDir = Vector3.cross(xDir, yDir);
+      
+      let rotateMatrix = Matrix44$1.identity();
+
+      rotateMatrix.m00 = xDir.x;
+      rotateMatrix.m10 = xDir.y;
+      rotateMatrix.m20 = xDir.z;
+    
+      rotateMatrix.m01 = yDir.x;
+      rotateMatrix.m11 = yDir.y;
+      rotateMatrix.m21 = yDir.z;
+    
+      rotateMatrix.m02 = zDir.x;
+      rotateMatrix.m12 = zDir.y;
+      rotateMatrix.m22 = zDir.z;
+    
+      this.rotateMatrix33 = rotateMatrix;
+    }
+
+    headToDirection(fromVec, toVec) {
+      const fromDir = Vector3.normalize(fromVec);
+      const toDir = Vector3.normalize(toVec);
+      const rotationDir = Vector3.cross(fromDir, toDir);
+      const cosTheta = Vector3.dotProduct(fromDir, toDir);
+      let theta = Math.acos(cosTheta);
+      if (GLBoost["VALUE_ANGLE_UNIT"] === GLBoost.DEGREE) {
+        theta = MathUtil.radianToDegree(theta);
+      }
+      this.quaternion = Quaternion.axisAngle(rotationDir, theta);
+    }
+
+    set rotateMatrix33(rotateMatrix) {
+      this.quaternion = Quaternion.fromMatrix(rotateMatrix);
+    }
+
+    get rotateMatrix33() {
+      return this.quaternion.rotationMatrix33();
     }
   }
 
@@ -4732,10 +4795,12 @@
     }
 
     readyForDiscard() {
-      if (this instanceof this.className.indexOf('Mesh') !== -1) {
+      if (this.className.indexOf('Mesh') !== -1) {
         const materials = this.getAppropriateMaterials();
         for (let material of materials) {
-          material.readyForDiscard();
+          if (material.userFlavorName !== 'GLBoostSystemDefaultMaterial') {
+            material.readyForDiscard();
+          }
         }
       }
     }
@@ -4747,6 +4812,11 @@
     get gizmos() {
       return this._gizmos;
     }
+
+    _needUpdate() {
+      super._needUpdate();
+    }
+
   }
 
   /**
@@ -4811,6 +4881,8 @@
       return this._camera;
     }
   }
+
+  GLBoost$1['M_AbstractLight'] = M_AbstractLight;
 
   /**
    * This is a Point Light class.
@@ -6532,6 +6604,11 @@ return mat4(
         if (renderpassSpecificMaterial) {
           material = renderpassSpecificMaterial;
         }
+
+        if (!material.shaderInstance) {
+          console.warn(`Failed to Render due to this material '${material.userFlavorName}(${material.instanceName})' has not shaderInstance.`);
+          continue;
+        }
         this._glslProgram = material.shaderInstance.glslProgram;
 
         material._glContext.useProgram(this._glslProgram);
@@ -6584,6 +6661,11 @@ return mat4(
             if (material.getUniform(glslProgram, `uniform_lightPosition_${j}`) && material.getUniform(glslProgram, `uniform_lightDiffuse_${j}`)) {
               let lightPosition = new Vector4(0, 0, 0, 1);            
               let lightDirection = new Vector4(0, 0, 0, 1);
+              let lightIntensity = light.intensity;
+              if (!light.isVisible) {
+                lightIntensity = Vector3.zero();
+              }
+
               // Directional: [0.0, 0.4), Point:[0.4, 0.6), Spot:[0.6, 1.0]
               let lightType = 0.0; // M_DirectionalLight
               if (light.className === 'M_PointLight') {
@@ -6602,7 +6684,7 @@ return mat4(
               }
               material._glContext.uniform3f(material.getUniform(glslProgram, `uniform_lightPosition_${j}`), lightPosition.x, lightPosition.y, lightPosition.z, true);
               material._glContext.uniform3f(material.getUniform(glslProgram, `uniform_lightDirection_${j}`), lightDirection.x, lightDirection.y, lightDirection.z, true);
-              material._glContext.uniform4f(material.getUniform(glslProgram, `uniform_lightDiffuse_${j}`), light.intensity.x, light.intensity.y, light.intensity.z, 1.0, true);
+              material._glContext.uniform4f(material.getUniform(glslProgram, `uniform_lightDiffuse_${j}`), lightIntensity.x, lightIntensity.y, lightIntensity.z, 1.0, true);
               if (light.className === 'M_SpotLight') {
                 material._glContext.uniform3f(material.getUniform(glslProgram, `uniform_lightSpotInfo_${j}`), lightType, light.spotCosCutoff, light.spotExponent, true);              
               } else {
@@ -6844,7 +6926,8 @@ return mat4(
 
     updateAllInfo() {
       this._centerPoint = Vector3.add(this._AABB_min, this._AABB_max).divide(2);
-      this._lengthCenterToCorner = Vector3.lengthBtw(this._centerPoint, this._AABB_max);
+      const lengthCenterToCorner = Vector3.lengthBtw(this._centerPoint, this._AABB_max);
+      this._lengthCenterToCorner = (lengthCenterToCorner !== lengthCenterToCorner) ? 0 : lengthCenterToCorner;
 
       return this;
     }
@@ -10465,6 +10548,9 @@ return mat4(
       this._shiftCameraTo = null;
 
       this._onMouseDown = (evt) => {
+        evt.preventDefault();
+        evt.stopPropagation();
+        
         let rect = evt.target.getBoundingClientRect();
         let clientX = null;
         let clientY = null;
@@ -10499,6 +10585,8 @@ return mat4(
 
       this._onMouseMove = (evt) => {
         evt.preventDefault();
+        evt.stopPropagation();
+        
         if (this._isKeyUp) {
           return;
         }
@@ -12466,6 +12554,7 @@ return mat4(
       this._defaultDummyTexture = this.createTexture(dummyWhite1x1ImageDataUrl, "GLBoost_dummyWhite1x1Texture");
 
       this._defaultMaterial = this.createClassicMaterial();
+      this._defaultMaterial.userFlavorName = 'GLBoostSystemDefaultMaterial';
 
       // effekseer
       if (typeof effekseer !== "undefined") {
@@ -12722,6 +12811,25 @@ return mat4(
       this._currentGlobalStates = this._defaultGlobalStates.concat();
     }
 
+    get glBoostMonitor() {
+      return this._glBoostMonitor;
+    }
+
+    setPropertiesFromJson(arg) {
+      let json = arg;
+      if (typeof arg === "string") {
+        json = JSON.parse(arg);
+      }
+      if (!json.targetInstanceName) {
+        console.warn(`Faild! This json doesn't include targetInstanceName field!`);
+        return;
+      }
+      const object = this._glBoostMonitor.getGLBoostObject(json.targetInstanceName);
+      object.setPropertiesFromJson(json);
+
+      return object;
+    }
+
   }
 
   GLBoost$1['GLBoostLowContext'] = GLBoostLowContext;
@@ -12738,6 +12846,7 @@ return mat4(
       }
       this._transformedDepth = 0;
       this._outlineGizmo = null;
+      this._isPickable = true;
     }
 
     prepareToRender(expression, existCamera_f, lights) {
@@ -13035,6 +13144,18 @@ return mat4(
     _copy(instance) {
       super._copy(instance);
       instance._transformedDepth = this._transformedDepth;
+    }
+
+    _needUpdate() {
+      super._needUpdate();
+    }
+
+    set isPickable(flag) {
+      this._isPickable = flag;
+    }
+
+    get isPickable() {
+      return this._isPickable;
     }
   }
   M_Mesh._geometries = {};
@@ -13652,6 +13773,20 @@ return mat4(
     }
 
     readyForDiscard() {
+      let collectElements = function(elem) {
+        if (elem instanceof M_Group) {
+          const children = elem.getChildren();
+          for (let i = 0; i < children.length; i++) {
+            collectElements(children[i]);
+          }
+        } else if (elem instanceof M_Element) {
+          // Must be M_Element
+          elem.readyForDiscard();
+        } else {
+          console.error('not M_Group nor M_Element');
+        }
+      };
+      collectElements(this);
 
       this.removeAll();
     }
@@ -13660,7 +13795,11 @@ return mat4(
       const meshes = this.searchElementsByType(M_Mesh);
       let currentShortestT = Number.MAX_VALUE;
       let currentShortestIntersectedPosVec3 = null;
+      let selectedMesh = null;
       for (let mesh of meshes) {
+        if (!mesh.isPickable) {
+          continue;
+        }
         const result = mesh.rayCast(x, y, camera, viewport);
         if (result === null) {
           return [null, null];
@@ -13669,10 +13808,29 @@ return mat4(
         if (t < currentShortestT) {
           currentShortestT = t;
           currentShortestIntersectedPosVec3 = result[0];
+          selectedMesh = mesh;
         }
       }
 
-      return [currentShortestIntersectedPosVec3, currentShortestT];
+      return [currentShortestIntersectedPosVec3, currentShortestT, selectedMesh];
+    }
+
+    _needUpdate() {
+      super._needUpdate();
+
+      let collectElements = function(elem) {
+        if (elem instanceof M_Group) {
+          const children = elem.getChildren();
+          for (let i = 0; i < children.length; i++) {
+            collectElements(children[i]);
+          }
+        } else if (elem instanceof M_Mesh) {
+          if (elem._outlineGizmo) {
+            elem._outlineGizmo.updateMatrix(elem);
+          }
+        }
+      };
+      collectElements(this);
     }
 
   }
@@ -14278,7 +14436,8 @@ return mat4(
           children.forEach((child)=> {
             collectGizmos(child);
           });
-        } else if (elem.gizmos) {
+        } 
+        if (elem.gizmos) {
           elem.gizmos.filter((gizmo)=>{
             if (gizmo.isPreDraw) {
               this._preGizmos.push(gizmo);
@@ -14418,6 +14577,8 @@ return mat4(
       this.__isWebVRMode = false;
       this.__webvrFrameData = null;
       this.__webvrDisplay = null;
+      this.__canvasWidthBackup = null;
+      this.__canvasHeightBackup = null;
       this.__defaultUserSittingPositionInVR = new Vector3(0.0, 1.1, 1.5);
       this.__requestedToEnterWebVR = false;
       this.__isReadyForWebVR = false;
@@ -14737,18 +14898,29 @@ return mat4(
 
 
     // WebVR
-    async enterWebVR(initialUserSittingPositionIfStageParametersDoNotExist) {
+    async enterWebVR(initialUserSittingPositionIfStageParametersDoNotExist, minRenderWidth = null, minRenderHeight = null) {
       if (initialUserSittingPositionIfStageParametersDoNotExist) {
         this.__defaultUserSittingPositionInVR = initialUserSittingPositionIfStageParametersDoNotExist;
       }
+      this.__minRenderWidthFromUser = minRenderWidth;
+      this.__minRenderHeightFromUser = minRenderHeight;
+
       return new Promise((resolve, reject)=> {
         if (!this.__webvrDisplay.isPresenting) {
+          this.__animationFrameObject = this.__webvrDisplay;
+          const leftEye = this.__webvrDisplay.getEyeParameters("left");
+          const rightEye = this.__webvrDisplay.getEyeParameters("right");
+
+          this.__canvasWidthBackup = this._glContext.canvasWidth;
+          this.__canvasHeightBackup = this._glContext.canvaHeight;
+
+          if (this.__minRenderWidthFromUser > leftEye.renderWidth && this.__minRenderHeightFromUser > rightEye.renderWidth) {
+            this.resize(this.__minRenderWidthFromUser * 2, this.__minRenderHeightFromUser);
+          } else {
+            this.resize(Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2, Math.max(leftEye.renderHeight, rightEye.renderHeight));
+          }
           this.__webvrDisplay.requestPresent([{source: this._glContext.canvas}]).then(() => {
             //this.__switchAnimationFrameFunctions(this.__webvrDisplay);
-            this.__animationFrameObject = this.__webvrDisplay;
-            const leftEye = this.__webvrDisplay.getEyeParameters("left");
-            const rightEye = this.__webvrDisplay.getEyeParameters("right");
-            this.resize(Math.max(leftEye.renderWidth, rightEye.renderWidth) * 2, Math.max(leftEye.renderHeight, rightEye.renderHeight));
             this.__requestedToEnterWebVR = true;
             resolve();
           }).catch(() => {
@@ -14819,6 +14991,7 @@ return mat4(
       if (this.__webvrDisplay && this.__webvrDisplay.isPresenting) {
         await this.__webvrDisplay.exitPresent();
       }
+      this.resize(this.__canvasWidthBackup, this.__canvasHeightBackup);
       this.__isReadyForWebVR = false;
       this.__animationFrameObject = window;
     }
@@ -15488,7 +15661,9 @@ return mat4(
     }
 
     updateGizmoDisplay() {
-      this._gizmo.update();
+      if (this._gizmo instanceof M_JointGizmo) {
+        this._gizmo.update();
+      }
     }
 
     clone() {
@@ -15777,7 +15952,7 @@ return mat4(
           jointZeroWorldMatrix = globalJointTransform;
         }
   //      if (true) {
-        if (this._materialForSkeletals[0].shaderInstance.constructor === FreeShader) {
+        if (this._materialForSkeletals[0].shaderInstance && this._materialForSkeletals[0].shaderInstance.constructor === FreeShader) {
           matrices[i] = inverseSkeletalMeshTransformMatrixAccmulatedAncestry;
         } else {
           matrices[i] = Matrix44$1.identity();
@@ -16351,7 +16526,7 @@ return mat4(
       super(glBoostContext);
 
       this._intensity = intensity;
-      this._direction = new Vector3(0.0, 0.0, 1.0);
+      this._direction = new Vector3(0.0, 1.0, 0.0);
   //    this._direction = direction;
 
       this._gizmo = new M_DirectionalLightGizmo(glBoostContext, length);
@@ -16669,6 +16844,8 @@ return mat4(
 
   }
 
+  GLBoost$1['M_SpotLight'] = M_SpotLight;
+
   class M_AxisGizmo extends M_Gizmo {
     constructor(glBoostContext, length) {
       super(glBoostContext);
@@ -16771,30 +16948,34 @@ return mat4(
 
       //this._mesh.material = this._material;
       this._group = this._glBoostContext.createGroup();
-      this._group.matrix = mesh.worldMatrix;
+      this.updateMatrix(mesh);
       this._group.addChild(this._mesh);
       this.addChild(this._group);
 
       const centerPoint = mesh.AABBInWorld.updateAllInfo().centerPoint;
 
-  //    this.scale = new Vector3(1+scale, 1+scale, 1+scale);
-  //    this.translate = Vector3.multiply(centerPoint, -1*scale);
+    }
+
+    updateMatrix(mesh) {
+      this._group.matrix = mesh.worldMatrix;
     }
   }
 
   class Line extends Geometry {
-    constructor(glBoostContext, startPos = Vector3.zero(), endPos = Vector3.zero()) {
+    constructor(glBoostContext, startPos = Vector3.zero(), endPos = Vector3.zero(), haveTerminalMark = false) {
       super(glBoostContext);
 
       this.__startPos = startPos;
       this.__endPos = endPos;
 
+      this.__haveTerminalMark = haveTerminalMark;
+
       this._color = new GLBoost$1.Vector4(1, 1, 1, 1);
-      this._vertexData = this._setupVertexData(this.__startPos, this.__endPos);
+      this._vertexData = this._setupVertexData(this.__startPos, this.__endPos, haveTerminalMark);
       this.setVerticesData(this._vertexData, null, GLBoost$1.LINES);
     }
 
-    _setupVertexData(startPos, endPos) {
+    _setupVertexData(startPos, endPos, haveTerminalMark) {
 
       let positions = [];
 
@@ -16806,6 +16987,32 @@ return mat4(
       colors.push(this._color);
       colors.push(this._color);
 
+      if (haveTerminalMark) {
+        const length = startPos.lengthTo(endPos);
+        const markSize = length*0.1;
+
+        positions.push(new Vector3(startPos.x - markSize, startPos.y, startPos.z));
+        positions.push(new Vector3(startPos.x + markSize, startPos.y, startPos.z));
+
+        positions.push(new Vector3(startPos.x, startPos.y, startPos.z - markSize));
+        positions.push(new Vector3(startPos.x, startPos.y, startPos.z + markSize));
+
+        positions.push(new Vector3(endPos.x - markSize, endPos.y, endPos.z));
+        positions.push(new Vector3(endPos.x + markSize, endPos.y, endPos.z));
+
+        positions.push(new Vector3(endPos.x, endPos.y, endPos.z - markSize));
+        positions.push(new Vector3(endPos.x, endPos.y, endPos.z + markSize));
+
+        colors.push(this._color);
+        colors.push(this._color);
+        colors.push(this._color);
+        colors.push(this._color);
+        colors.push(this._color);
+        colors.push(this._color);
+        colors.push(this._color);
+        colors.push(this._color);
+      }
+
       this._vertexData = {
         position: positions,
         color: colors
@@ -16815,7 +17022,7 @@ return mat4(
     }
 
     update() {
-      this._vertexData = this._setupVertexData(this.__startPos, this.__endPos);
+      this._vertexData = this._setupVertexData(this.__startPos, this.__endPos, this.__haveTerminalMark);
       this.updateVerticesData(this._vertexData, true);
     }
 
@@ -16861,11 +17068,12 @@ return mat4(
     }
 
     _init(glBoostContext) {
-      this._primitive = new Line(glBoostContext);
+      this._primitive = new Line(glBoostContext, Vector3.zero(), Vector3.zero(), true);
 
       //    this._mesh.rotate = new Vector3(-Math.PI/2, 0, 0);
       const material = glBoostContext.createClassicMaterial();
       this._mesh = new M_Mesh(glBoostContext, this._primitive, material);
+      this._mesh.isPickable = false;
       this._mesh.masterElement = this;
       this.addChild(this._mesh);
 
@@ -21694,4 +21902,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-72-g9e6c-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-98-g1c09-mod branch: develop';
