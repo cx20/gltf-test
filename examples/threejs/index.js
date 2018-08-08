@@ -63,7 +63,7 @@ function init() {
     var loader = new THREE.GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
-    THREE.DRACOLoader.setDecoderPath( '../../libs/three.js/r90dev/draco/gltf/' );
+    THREE.DRACOLoader.setDecoderPath( '../../libs/three.js/r95dev/draco/gltf/' );
     loader.setDRACOLoader( new THREE.DRACOLoader() );
 
     var scale = modelInfo.scale;
