@@ -75,6 +75,7 @@
             TANGENT: ['tangents', 4],
             TEX_COORD: ['uvs', 2],
             TEXCOORD_0: ['uvs', 2],
+            TEXCOORD_1: ['uvs1', 2],
             COLOR: ['color', 2],
             JOINTS_0: ['skinIndices', 4],
             WEIGHTS_0: ['skinWeights', 4],
@@ -96,6 +97,10 @@
 
         for (var attributeName in attributesMap) {
             var info = dracoAttributesMap[attributeName];
+            if (!info) {
+                console.warn(attributeName + ' not exist');
+                continue;
+            }
             if (attributeUsedMap[info[0]]) {
                 continue;
             }
@@ -165,17 +170,14 @@
     });
 
     Hilo3d.DracoLoader = DracoLoader;
-    Hilo3d.LoadQueue.addLoader('drc', DracoLoader);
+    Hilo3d.Loader.addLoader('drc', DracoLoader);
 
-    window.totalTime = 0;
     Hilo3d.GLTFParser.extensionHandlers.KHR_draco_mesh_compression = {
         parse: function(info, parser) {
-            var startTime = Date.now();
             var bufferView = parser.bufferViews[info.bufferView];
             var uintArray = new Uint8Array(bufferView.buffer, bufferView.byteOffset, bufferView.byteLength);
 
             var geometry = decode(uintArray, info);
-            totalTime += Date.now() - startTime;
             return geometry;
         }
     };
