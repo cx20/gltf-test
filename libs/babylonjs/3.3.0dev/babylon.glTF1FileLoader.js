@@ -118,6 +118,10 @@ var BABYLON;
              */
             this.onCompleteObservable = new BABYLON.Observable();
             /**
+             * Observable raised when an error occurs.
+             */
+            this.onErrorObservable = new BABYLON.Observable();
+            /**
              * Observable raised after the loader is disposed.
              */
             this.onDisposeObservable = new BABYLON.Observable();
@@ -217,12 +221,27 @@ var BABYLON;
         Object.defineProperty(GLTFFileLoader.prototype, "onComplete", {
             /**
              * Callback raised when the asset is completely loaded, immediately before the loader is disposed.
+             * For assets with LODs, raised when all of the LODs are complete.
+             * For assets without LODs, raised when the model is complete, immediately after the loader resolves the returned promise.
              */
             set: function (callback) {
                 if (this._onCompleteObserver) {
                     this.onCompleteObservable.remove(this._onCompleteObserver);
                 }
                 this._onCompleteObserver = this.onCompleteObservable.add(callback);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        Object.defineProperty(GLTFFileLoader.prototype, "onError", {
+            /**
+             * Callback raised when an error occurs.
+             */
+            set: function (callback) {
+                if (this._onErrorObserver) {
+                    this.onErrorObservable.remove(this._onErrorObserver);
+                }
+                this._onErrorObserver = this.onErrorObservable.add(callback);
             },
             enumerable: true,
             configurable: true
@@ -259,9 +278,12 @@ var BABYLON;
          */
         GLTFFileLoader.prototype.whenCompleteAsync = function () {
             var _this = this;
-            return new Promise(function (resolve) {
+            return new Promise(function (resolve, reject) {
                 _this.onCompleteObservable.addOnce(function () {
                     resolve();
+                });
+                _this.onErrorObservable.addOnce(function (reason) {
+                    reject(reason);
                 });
             });
         };
@@ -1879,7 +1901,7 @@ var BABYLON;
                     (sampler.minFilter === GLTF1.ETextureFilterType.LINEAR_MIPMAP_NEAREST) ||
                     (sampler.minFilter === GLTF1.ETextureFilterType.LINEAR_MIPMAP_LINEAR);
                 var samplingMode = BABYLON.Texture.BILINEAR_SAMPLINGMODE;
-                var blob = new Blob([buffer]);
+                var blob = buffer == null ? new Blob() : new Blob([buffer]);
                 var blobURL = URL.createObjectURL(blob);
                 var revokeBlobURL = function () { return URL.revokeObjectURL(blobURL); };
                 var newTexture = new BABYLON.Texture(blobURL, gltfRuntime.scene, !createMipMaps, true, samplingMode, revokeBlobURL, revokeBlobURL);
@@ -2658,9 +2680,12 @@ var BABYLON;
 
 /// <reference path="../../../../dist/preview release/babylon.d.ts"/>
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -2735,9 +2760,12 @@ var BABYLON;
 
 /// <reference path="../../../../dist/preview release/babylon.d.ts"/>
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
