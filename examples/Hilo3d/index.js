@@ -63,7 +63,7 @@ var directionLight = new Hilo3d.DirectionalLight({
 
 var ambientLight = new Hilo3d.AmbientLight({
     color:new Hilo3d.Color(1, 1, 1),
-    amount: .5
+    amount: .2
 }).addTo(stage);
 
 var ticker = new Hilo3d.Ticker(60);
