@@ -13196,7 +13196,7 @@ return mat4(
     }
 
     clone() {
-      let instance = new M_Mesh(this._glBoostContext, this.geometry, this.material);
+      let instance = new M_Mesh(this._glBoostSystem, this.geometry, this.material);
       this._copy(instance);
 
       return instance;
@@ -16523,8 +16523,8 @@ return mat4(
   }
 
   class Arrow extends Geometry {
-    constructor(glBoostContext, length, lineCount = 1) {
-      super(glBoostContext);
+    constructor(glBoostSystem, length, lineCount = 1) {
+      super(glBoostSystem);
 
       this._setupVertexData(length, lineCount);
     }
@@ -16571,19 +16571,19 @@ return mat4(
   GLBoost$1["Arrow"] = Arrow;
 
   class M_DirectionalLightGizmo extends M_Gizmo {
-    constructor(glBoostContext, length) {
-      super(glBoostContext, null, null);
-      this._init(glBoostContext, length);
+    constructor(glBoostSystem, length) {
+      super(glBoostSystem, null, null);
+      this._init(glBoostSystem, length);
 
       this.isVisible = false;
 
       this.baseColor = new Vector4$1(0.8, 0.8, 0, 1);
     }
 
-    _init(glBoostContext, length) {
-      this._material = new ClassicMaterial$1(this._glBoostContext);
-      this._mesh = new M_Mesh(glBoostContext,
-        new Arrow(this._glBoostContext, length, 3),
+    _init(glBoostSystem, length) {
+      this._material = new ClassicMaterial$1(glBoostSystem);
+      this._mesh = new M_Mesh(glBoostSystem,
+        new Arrow(glBoostSystem, length, 3),
         this._material);
 
       this.addChild(this._mesh);
@@ -16616,14 +16616,14 @@ return mat4(
      * The constructor of DirectionalLight class. 
      * @param {Vector4} intensity intensity as Vector4 Color
      */
-    constructor(glBoostContext, intensity, rotate = new Vector3(0, 0, 0), length = 1.0) {
-      super(glBoostContext);
+    constructor(glBoostSystem, intensity, rotate = new Vector3(0, 0, 0), length = 1.0) {
+      super(glBoostSystem);
 
       this._intensity = intensity;
       this._direction = new Vector3(0.0, 1.0, 0.0);
   //    this._direction = direction;
 
-      this._gizmo = new M_DirectionalLightGizmo(glBoostContext, length);
+      this._gizmo = new M_DirectionalLightGizmo(glBoostSystem, length);
       this._gizmos.push(this._gizmo);
 
       //this.direction = direction;
@@ -19321,7 +19321,7 @@ return mat4(
       for (let valueName in materialJson.values) {
         let value = materialJson.values[valueName];
         if (typeof value !== 'string') {
-          material[valueName + 'Color'] = new Vector4$1(value[0], value[1], value[2], value[3]);
+          material[valueName + 'Color'] = MathClassUtil.arrayToVectorOrMatrix(value); //new Vector4(value[0], value[1], value[2], value[3]);
         }
       }
 
@@ -22032,4 +22032,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-114-g040c-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-116-ga2bc6-mod branch: develop';
