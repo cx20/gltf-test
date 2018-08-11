@@ -472,10 +472,6 @@
         throw new TypeError("Cannot construct GLContextImpl instances directly");
       }
 
-      if (!(parent instanceof GLContext)) {
-        throw new Error("This concrete class can only be instantiated from the 'GLContext' class.");
-      }
-
       if (canvas === void 0) {
         throw new Error("Failed to create WebGL Context due to no canvas object.");
       }
@@ -546,7 +542,7 @@
 
   }
 
-  class GLExtensionsManager {
+  class GLExtensionsManager$1 {
 
     constructor(glContext) {
       var gl = glContext.gl;
@@ -569,15 +565,15 @@
         this._extTFL = gl.getExtension("OES_texture_float_linear");
       }
 
-      GLExtensionsManager._instances[glContext.belongingCanvasId] = this;
+      GLExtensionsManager$1._instances[glContext.belongingCanvasId] = this;
 
       this._glContext = glContext;
     }
     static getInstance(glContext) {
-      if (GLExtensionsManager._instances[glContext.belongingCanvasId]) {
-        return GLExtensionsManager._instances[glContext.belongingCanvasId];
+      if (GLExtensionsManager$1._instances[glContext.belongingCanvasId]) {
+        return GLExtensionsManager$1._instances[glContext.belongingCanvasId];
       }
-      return new GLExtensionsManager(glContext);
+      return new GLExtensionsManager$1(glContext);
     }
 
     get extVAO() {
@@ -686,9 +682,9 @@
     }
 
   }
-  GLExtensionsManager._instances = new Object();
+  GLExtensionsManager$1._instances = new Object();
 
-  GLBoost$1['GLExtensionsManager'] = GLExtensionsManager;
+  GLBoost$1['GLExtensionsManager'] = GLExtensionsManager$1;
 
   let singleton = Symbol();
 
@@ -961,7 +957,7 @@
 
     createVertexArray(glBoostObject) {
       var gl = this.gl;
-      var glem = GLExtensionsManager.getInstance(this);
+      var glem = GLExtensionsManager$1.getInstance(this);
       var glResource = glem.createVertexArray(gl);
       if (glResource) {
         this._monitor.registerWebGLResource(glBoostObject, glResource);
@@ -1222,10 +1218,41 @@
   }
   GLContext._instances = new Object();
 
+  class GLBoostSystem {
+
+    constructor(canvas, initParameter, gl, width, height, glBoostContext) {
+      if (gl) {
+        this._glContext = GLContext.getInstance(null, initParameter, gl, width, height);
+      } else {
+        this._glContext = GLContext.getInstance(canvas, initParameter);
+      }
+
+      this._glBoostContext = glBoostContext;
+
+      this._globalStatesUsage = GLBoost$1.GLOBAL_STATES_USAGE_INCLUSIVE;
+
+      this._defaultGlobalStates = [
+        3042, // gl.BLEND
+        2929  // gl.DEPTH_TEST
+      ];
+
+      this._currentGlobalStates = null;
+
+      this._glBoostMonitor = L_GLBoostMonitor.getInstance();
+
+      // effekseer
+      if (typeof effekseer !== "undefined") {
+        effekseer.init(this._glContext.gl);
+      }
+    }
+  }
+
+  //
+
   /*       */
 
   class GLBoostObject {
-                                       
+                                  
                           
                          
                                       
@@ -1234,20 +1261,17 @@
                               
                                
                          
-                        
-                           
-                        
-                           
+                         
                           
 
-    constructor(glBoostContext                  , toRegister         = true) {
+    constructor(glBoostSystem               , toRegister         = true) {
       if (this.constructor === GLBoostObject) {
         throw new TypeError('Cannot construct GLBoostObject instances directly.');
       }
       this._setName();
-      this._glBoostContext = glBoostContext;
-      this._glContext = glBoostContext.glContext;
-      this._glBoostMonitor = glBoostContext._glBoostMonitor;
+      this._glBoostSystem = glBoostSystem;
+      this._glContext = glBoostSystem._glContext;
+      this._glBoostMonitor = glBoostSystem._glBoostMonitor;
       this._toRegister = toRegister;
       if (this._toRegister) {
         this._glBoostMonitor.registerGLBoostObject(this);
@@ -1266,10 +1290,6 @@
 
     setupExistIndexAndArray() {
       this._objectIndex = -1;
-      this._materialIndex = -1;
-      this._lightIndex = -1;
-      this._jointSetIndex = -1;
-      this._morphIndex = -1;
 
       const seekSpaceOfArrayAndSetIndexThere = (typeName)=>{
         let array = GLBoostObject['_' + typeName + 'ExistArray'];
@@ -1286,13 +1306,6 @@
 
       if (this.className.indexOf('Mesh') !== -1) {
         seekSpaceOfArrayAndSetIndexThere('object');
-        if (this.className.indexOf('SkeletalMesh') !== -1) {
-          seekSpaceOfArrayAndSetIndexThere('jointSet');
-        }
-      } else if (this.className.indexOf('Light') !== -1) {
-        seekSpaceOfArrayAndSetIndexThere('light');
-      } else if (this.className.indexOf('Material') !== -1) {
-        seekSpaceOfArrayAndSetIndexThere('material');
       }
 
     }
@@ -1349,7 +1362,7 @@
     }
 
     get belongingCanvasId() {
-      return this._glBoostContext.belongingCanvasId;
+      return this._glBoostSystem.belongingCanvasId;
     }
 
     set userFlavorName(name       ) {
@@ -1385,14 +1398,16 @@
     get objectIndex()        {
       return this._objectIndex;
     }
+
+    get entityUID() {
+      return this.__entity_uid;
+    }
   }
 
   GLBoostObject.classInfoDic = {};
   GLBoostObject._objectExistArray = [];
-  GLBoostObject._materialExistArray = [];
-  GLBoostObject._lightExistArray = [];
-  GLBoostObject._jointSetExistArray = [];
-  GLBoostObject._morphExistArray = [];
+  GLBoostObject.__entities = [];
+
 
   GLBoost$1['GLBoostObject'] = GLBoostObject;
 
@@ -1414,6 +1429,10 @@
 
       this.x = ((x    )       );
       this.y = ((y    )       );
+    }
+
+    get className() {
+      return this.constructor.name;
     }
 
     clone() {
@@ -1454,229 +1473,27 @@
 
   GLBoost$1["Vector2"] = Vector2;
 
-  /*       */
+  class MathUtil {
 
-                                                                             
-                                                                       
+    constructor() {
 
-  class Vector4 {
-                  
-
-    constructor(x                  , y        , z        , w        ) {
-      if (ArrayBuffer.isView(x)) {
-        this.v = ((x    )           );
-        return;
-      } else {
-        this.v = new Float32Array(4);
-      }
-
-      this.x = ((x    )       );
-      this.y = ((y    )       );
-      this.z = ((z    )       );
-      this.w = ((w    )       );
     }
 
-    isEqual(vec        )          {
-      if (this.x === vec.x && this.y === vec.y && this.z === vec.z && this.w === vec.w) {
-        return true;
-      } else {
-        return false;
-      }
+    static radianToDegree(rad) {
+      return rad * 180 / Math.PI;
     }
 
-    clone() {
-      return new Vector4(this.x, this.y, this.z, this.w);
+    static degreeToRadian(deg) {
+      return deg * Math.PI / 180;
     }
 
-    /**
-     * Zero Vector
-     */
-    static zero() {
-      return new Vector4(0, 0, 0, 1);
-    }
-
-    length() {
-      return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z + this.w*this.w);
-    }
-
-    normalize() {
-      var length = this.length();
-      this.divide(length);
-
-      return this;
-    }
-
-    static normalize(vec4        ) {
-      var length = vec4.length();
-      var newVec = new Vector4(vec4.x, vec4.y, vec4.z, vec4.w);
-      newVec.divide(length);
-
-      return newVec;
-    }
-    
-
-    toVector3() {
-      return new Vector3(this.x, this.y, this.z);
-    }
-
-    /**
-     * add value
-     */
-    add(v        ) {
-      this.x += v.x;
-      this.y += v.y;
-      this.z += v.z;
-      this.w += v.w;
-      
-      return this;
-    }
-
-    /**
-     * add value（static version）
-     */
-    static add(lv        , rv        ) {
-      return new Vector4(lv.x + rv.x, lv.y + rv.y, lv.z + rv.z, lv.z + rv.z);
-    }
-
-    /**
-     * add value except w component
-     */
-    addWithOutW(v                ) {
-      this.x += v.x;
-      this.y += v.y;
-      this.z += v.z;
-      
-      return this;
-    }
-
-    subtract(v        ) {
-      this.x -= v.x;
-      this.y -= v.y;
-      this.z -= v.z;
-      this.w -= v.w;
-
-      return this;
-    }
-
-    static subtract(lv        , rv        ) {
-      return new Vector4(lv.x - rv.x, lv.y - rv.y, lv.z - rv.z, lv.w  - rv.w);
-    }
-    /**
-     * add value except w component（static version）
-     */
-    static addWithOutW(lv        , rv        ) {
-      return new Vector4(lv.x + rv.x, lv.y + rv.y, lv.z + rv.z, lv.z);
-    }
-
-    multiply(val       ) {
-      this.x *= val;
-      this.y *= val;
-      this.z *= val;
-      this.w *= val;
-      
-      return this;
-    }
-
-    multiplyVector(vec        ) {
-      this.x *= vec.x;
-      this.y *= vec.y;
-      this.z *= vec.z;
-      this.w *= vec.w;
-      
-      return this;
-    }
-
-    static multiply(vec4        , val       ) {
-      return new Vector4(vec4.x * val, vec4.y * val, vec4.z * val, vec4.w * val);
-    }
-
-    static multiplyVector(vec4        , vec        ) {
-      return new Vector4(vec4.x * vec.x, vec4.y * vec.y, vec4.z * vec.z, vec4.w * vec.w);
-    }
-
-
-    divide(val       ) {
-      if (val !== 0) {
-        this.x /= val;
-        this.y /= val;
-        this.z /= val;
-        this.w /= val;
-      } else {
-        console.warn("0 division occured!");
-        this.x = Infinity;
-        this.y = Infinity;
-        this.z = Infinity;
-        this.w = Infinity;
-      }
-      return this;
-    }
-
-    static divide(vec4        , val       ) {
-      if (val !== 0) {
-        return new Vector4(vec4.x / val, vec4.y / val, vec4.z / val, vec4.w / val);
-      } else {
-        console.warn("0 division occured!");
-        return new Vector4(Infinity, Infinity, Infinity, Infinity);
-      }
-    }
-
-    divideVector(vec4        ) {
-      this.x /= vec4.x;
-      this.y /= vec4.y;
-      this.z /= vec4.z;
-      this.w /= vec4.w;
-
-      return this;
-    }
-
-    static divideVector(lvec4        , rvec4        ) {
-      return new Vector4(lvec4.x / rvec4.x, lvec4.y / rvec4.y, lvec4.z / rvec4.z, lvec4.w / rvec4.w);
-    }
-
-    toString() {
-      return '(' + this.x + ', ' + this.y + ', ' + this.z + ', ' + this.w + ')';
-    }
-
-    get x() {
-      return this.v[0];
-    }
-
-    set x(x       ) {
-      this.v[0] = x;
-    }
-
-    get y() {
-      return this.v[1];
-    }
-
-    set y(y       ) {
-      this.v[1] = y;
-    }
-
-    get z() {
-      return this.v[2];
-    }
-
-    set z(z       ) {
-      this.v[2] = z;
-    }
-
-    get w() {
-      return this.v[3];
-    }
-
-    set w(w       ) {
-      this.v[3] = w;
-    }
-
-    get raw() {
-      return this.v;
-    }
   }
 
-  GLBoost$1["Vector4"] = Vector4;
+  GLBoost$1["MathUtil"] = MathUtil;
 
-  /*       */
+  //      
+                                       
+                                       
 
                                                                              
                                                                        
@@ -1684,7 +1501,7 @@
   class Vector3 {
                   
 
-    constructor(x                  , y        , z        ) {
+    constructor(x                                          , y        , z        ) {
       if (ArrayBuffer.isView(x)) {
         this.v = ((x    )           );
         return;
@@ -1692,9 +1509,27 @@
         this.v = new Float32Array(3);
       }
 
-      this.x = ((x    )       );
-      this.y = ((y    )       );
-      this.z = ((z    )       );
+      if (typeof (x    ).w !== 'undefined') {
+        this.x = (x    ).x;
+        this.y = (x    ).y;
+        this.z = (x    ).z;
+      } else if (typeof (x    ).z !== 'undefined') {
+        this.x = (x    ).x;
+        this.y = (x    ).y;
+        this.z = (x    ).z;
+      } else if (typeof (x    ).y !== 'undefined') {
+        this.x = (x    ).x;
+        this.y = (x    ).y;
+        this.z = 0;
+      } else {
+        this.x = ((x    )       );
+        this.y = ((y    )       );
+        this.z = ((z    )       );
+      }
+    }
+
+    get className() {
+      return this.constructor.name;
     }
 
     isEqual(vec        ) {
@@ -1934,11 +1769,6 @@
       return new Vector3(lvec3.x / rvec3.x, lvec3.y / rvec3.y, lvec3.z / rvec3.z);
     }
 
-
-    toVector4() {
-      return new Vector4(this.x, this.y, this.z, 1.0);
-    }
-
     toString() {
       return '(' + this.x + ', ' + this.y + ', ' + this.z +')';
     }
@@ -1974,6 +1804,246 @@
 
   GLBoost$1['Vector3'] = Vector3;
 
+  //      
+                                       
+                                       
+
+                                                                             
+                                                                       
+
+  class Vector4$1 {
+                  
+
+    constructor(x                                          , y        , z        , w        ) {
+      if (ArrayBuffer.isView(x)) {
+        this.v = ((x    )           );
+        return;
+      } else {
+        this.v = new Float32Array(4);
+      }
+
+      if (typeof (x    ).w !== 'undefined') {
+        this.x = (x    ).x;
+        this.y = (x    ).y;
+        this.z = (x    ).z;
+        this.w = (x    ).w;
+      } else if (typeof (x    ).z !== 'undefined') {
+        this.x = (x    ).x;
+        this.y = (x    ).y;
+        this.z = (x    ).z;
+        this.w = 1;
+      } else if (typeof (x    ).y !== 'undefined') {
+        this.x = (x    ).x;
+        this.y = (x    ).y;
+        this.z = 0;
+        this.w = 1;
+      } else {
+        this.x = ((x    )       );
+        this.y = ((y    )       );
+        this.z = ((z    )       );
+        this.w = ((w    )       );
+      }
+    }
+
+    get className() {
+      return this.constructor.name;
+    }
+
+    isEqual(vec        )          {
+      if (this.x === vec.x && this.y === vec.y && this.z === vec.z && this.w === vec.w) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    clone() {
+      return new Vector4$1(this.x, this.y, this.z, this.w);
+    }
+
+    /**
+     * Zero Vector
+     */
+    static zero() {
+      return new Vector4$1(0, 0, 0, 1);
+    }
+
+    length() {
+      return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z + this.w*this.w);
+    }
+
+    normalize() {
+      var length = this.length();
+      this.divide(length);
+
+      return this;
+    }
+
+    static normalize(vec4        ) {
+      var length = vec4.length();
+      var newVec = new Vector4$1(vec4.x, vec4.y, vec4.z, vec4.w);
+      newVec.divide(length);
+
+      return newVec;
+    }
+    
+    /**
+     * add value
+     */
+    add(v        ) {
+      this.x += v.x;
+      this.y += v.y;
+      this.z += v.z;
+      this.w += v.w;
+      
+      return this;
+    }
+
+    /**
+     * add value（static version）
+     */
+    static add(lv        , rv        ) {
+      return new Vector4$1(lv.x + rv.x, lv.y + rv.y, lv.z + rv.z, lv.z + rv.z);
+    }
+
+    /**
+     * add value except w component
+     */
+    addWithOutW(v                ) {
+      this.x += v.x;
+      this.y += v.y;
+      this.z += v.z;
+      
+      return this;
+    }
+
+    subtract(v        ) {
+      this.x -= v.x;
+      this.y -= v.y;
+      this.z -= v.z;
+      this.w -= v.w;
+
+      return this;
+    }
+
+    static subtract(lv        , rv        ) {
+      return new Vector4$1(lv.x - rv.x, lv.y - rv.y, lv.z - rv.z, lv.w  - rv.w);
+    }
+    /**
+     * add value except w component（static version）
+     */
+    static addWithOutW(lv        , rv        ) {
+      return new Vector4$1(lv.x + rv.x, lv.y + rv.y, lv.z + rv.z, lv.z);
+    }
+
+    multiply(val       ) {
+      this.x *= val;
+      this.y *= val;
+      this.z *= val;
+      this.w *= val;
+      
+      return this;
+    }
+
+    multiplyVector(vec        ) {
+      this.x *= vec.x;
+      this.y *= vec.y;
+      this.z *= vec.z;
+      this.w *= vec.w;
+      
+      return this;
+    }
+
+    static multiply(vec4        , val       ) {
+      return new Vector4$1(vec4.x * val, vec4.y * val, vec4.z * val, vec4.w * val);
+    }
+
+    static multiplyVector(vec4        , vec        ) {
+      return new Vector4$1(vec4.x * vec.x, vec4.y * vec.y, vec4.z * vec.z, vec4.w * vec.w);
+    }
+
+
+    divide(val       ) {
+      if (val !== 0) {
+        this.x /= val;
+        this.y /= val;
+        this.z /= val;
+        this.w /= val;
+      } else {
+        console.warn("0 division occured!");
+        this.x = Infinity;
+        this.y = Infinity;
+        this.z = Infinity;
+        this.w = Infinity;
+      }
+      return this;
+    }
+
+    static divide(vec4        , val       ) {
+      if (val !== 0) {
+        return new Vector4$1(vec4.x / val, vec4.y / val, vec4.z / val, vec4.w / val);
+      } else {
+        console.warn("0 division occured!");
+        return new Vector4$1(Infinity, Infinity, Infinity, Infinity);
+      }
+    }
+
+    divideVector(vec4        ) {
+      this.x /= vec4.x;
+      this.y /= vec4.y;
+      this.z /= vec4.z;
+      this.w /= vec4.w;
+
+      return this;
+    }
+
+    static divideVector(lvec4        , rvec4        ) {
+      return new Vector4$1(lvec4.x / rvec4.x, lvec4.y / rvec4.y, lvec4.z / rvec4.z, lvec4.w / rvec4.w);
+    }
+
+    toString() {
+      return '(' + this.x + ', ' + this.y + ', ' + this.z + ', ' + this.w + ')';
+    }
+
+    get x()        {
+      return this.v[0];
+    }
+
+    set x(x       ) {
+      this.v[0] = x;
+    }
+
+    get y()        {
+      return this.v[1];
+    }
+
+    set y(y       ) {
+      this.v[1] = y;
+    }
+
+    get z()        {
+      return this.v[2];
+    }
+
+    set z(z       ) {
+      this.v[2] = z;
+    }
+
+    get w()        {
+      return this.v[3];
+    }
+
+    set w(w       ) {
+      this.v[3] = w;
+    }
+
+    get raw() {
+      return this.v;
+    }
+  }
+
+  GLBoost$1["Vector4"] = Vector4$1;
+
   class Quaternion {
 
     constructor(x, y, z, w) {
@@ -1989,6 +2059,10 @@
       } else {
         return false;
       }
+    }
+
+    get className() {
+      return this.constructor.name;
     }
 
     clone() {
@@ -2038,43 +2112,6 @@
 
         return q;
       }
-    }
-
-    get rotationMatrix() {
-      var sx = this.x * this.x;
-      var sy = this.y * this.y;
-      var sz = this.z * this.z;
-      var cx = this.y * this.z;
-      var cy = this.x * this.z;
-      var cz = this.x * this.y;
-      var wx = this.w * this.x;
-      var wy = this.w * this.y;
-      var wz = this.w * this.z;
-
-      return new Matrix44$1(
-        1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), 0.0,
-        2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), 0.0,
-        2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), 0.0,
-        0.0, 0.0, 0.0, 1.0
-      );
-    }
-
-    get rotationMatrix33() {
-      var sx = this.x * this.x;
-      var sy = this.y * this.y;
-      var sz = this.z * this.z;
-      var cx = this.y * this.z;
-      var cy = this.x * this.z;
-      var cz = this.x * this.y;
-      var wx = this.w * this.x;
-      var wy = this.w * this.y;
-      var wz = this.w * this.z;
-
-      return new Matrix33(
-        1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy),
-        2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx),
-        2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy)
-      );
     }
 
     axisAngle(axisVec3, angle) {
@@ -2262,731 +2299,6 @@
 
   GLBoost$1["Quaternion"] = Quaternion;
 
-  class Matrix44$1 {
-
-    constructor(m, isColumnMajor = false, notCopyFloat32Array = false
-    ) {
-      if (arguments.length >= 16) {
-        this.m = new Float32Array(16); // Data order is column major
-        if (isColumnMajor === true) {
-          let m = arguments;
-          this.setComponents(
-            m[0], m[4], m[8], m[12],
-            m[1], m[5], m[9], m[13],
-            m[2], m[6], m[10], m[14],
-            m[3], m[7], m[11], m[15]);
-        } else {
-          this.setComponents.apply(this, arguments);  // arguments[0-15] must be row major values if isColumnMajor is false
-        }
-      } else if (Array.isArray(m)) {
-        this.m = new Float32Array(16);
-        if (isColumnMajor === true) {
-          this.setComponents(
-            m[0], m[4], m[8], m[12],
-            m[1], m[5], m[9], m[13],
-            m[2], m[6], m[10], m[14],
-            m[3], m[7], m[11], m[15]);
-        } else {
-          this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
-        }
-      } else if (m instanceof Float32Array) {
-        this.m = new Float32Array(16);
-        if (notCopyFloat32Array) {
-          this.m = m;
-        } else {
-          this.m = new Float32Array(16);
-          if (isColumnMajor === true) {
-            this.setComponents(
-              m[0], m[4], m[8], m[12],
-              m[1], m[5], m[9], m[13],
-              m[2], m[6], m[10], m[14],
-              m[3], m[7], m[11], m[15]);
-          } else {
-            this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
-          }  
-        }
-      } else {
-        this.m = new Float32Array(16);
-        this.identity();
-      }
-    }
-
-    setComponents(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
-      this.m00 = m00; this.m01 = m01; this.m02 = m02; this.m03 = m03;
-      this.m10 = m10; this.m11 = m11; this.m12 = m12; this.m13 = m13;
-      this.m20 = m20; this.m21 = m21; this.m22 = m22; this.m23 = m23;
-      this.m30 = m30; this.m31 = m31; this.m32 = m32; this.m33 = m33;
-
-      return this;
-    }
-
-    copyComponents(mat4) {
-      //this.m.set(mat4.m);
-      this.setComponents.apply(this, mat4.m); // 'm' must be row major array if isColumnMajor is false    
-    }
-
-    clone() {
-      return new Matrix44$1(
-        this.m[0], this.m[4], this.m[8], this.m[12],
-        this.m[1], this.m[5], this.m[9], this.m[13],
-        this.m[2], this.m[6], this.m[10], this.m[14],
-        this.m[3], this.m[7], this.m[11], this.m[15]
-      );
-    }
-
-    /**
-     * 単位行列にする
-     */
-    identity() {
-      this.setComponents(
-          1, 0, 0, 0,
-          0, 1, 0, 0,
-          0, 0, 1, 0,
-          0, 0, 0, 1
-      );
-      return this;
-    }
-
-    /**
-     * 単位行列にする（static版）
-     */
-    static identity() {
-      return new Matrix44$1(
-          1, 0, 0, 0,
-          0, 1, 0, 0,
-          0, 0, 1, 0,
-          0, 0, 0, 1
-      );
-    }
-
-    translate(vec) {
-      return this.setComponents(
-        1, 0, 0, vec.x,
-        0, 1, 0, vec.y,
-        0, 0, 1, vec.z,
-        0, 0, 0, 1
-      );
-    }
-
-    putTranslate(vec) {
-      this.m03 = vec.x;
-      this.m13 = vec.y;
-      this.m23 = vec.z;
-    }
-
-    getTranslate() {
-      return new Vector3(this.m03, this.m13, this.m23);
-    }
-
-    static translate(vec) {
-      return new Matrix44$1(
-        1, 0, 0, vec.x,
-        0, 1, 0, vec.y,
-        0, 0, 1, vec.z,
-        0, 0, 0, 1
-      );
-    }
-
-    scale(vec) {
-      return this.setComponents(
-        vec.x, 0, 0, 0,
-        0, vec.y, 0, 0,
-        0, 0, vec.z, 0,
-        0, 0, 0, 1
-      );
-    }
-
-    static scale(vec) {
-      return new Matrix44$1(
-        vec.x, 0, 0, 0,
-        0, vec.y, 0, 0,
-        0, 0, vec.z, 0,
-        0, 0, 0, 1
-      );
-    }
-
-    addScale(vec) {
-      this.m00 *= vec.x;
-      this.m11 *= vec.y;
-      this.m22 *= vec.z;
-
-      return this;
-    }
-
-    /**
-     * Create X oriented Rotation Matrix
-     */
-    rotateX(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return this.setComponents(
-        1, 0, 0, 0,
-        0, cos, -sin, 0,
-        0, sin, cos, 0,
-        0, 0, 0, 1
-      );
-    }
-    /**
-     * Create X oriented Rotation Matrix
-    */
-    static rotateX(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return new Matrix44$1(
-        1, 0, 0, 0,
-        0, cos, -sin, 0,
-        0, sin, cos, 0,
-        0, 0, 0, 1
-      );
-    }
-
-    /**
-     * Create Y oriented Rotation Matrix
-     */
-    rotateY(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return this.setComponents(
-        cos, 0, sin, 0,
-        0, 1, 0, 0,
-        -sin, 0, cos, 0,
-        0, 0, 0, 1
-      );
-    }
-    /**
-     * Create Y oriented Rotation Matrix
-     */
-    static rotateY(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return new Matrix44$1(
-        cos, 0, sin, 0,
-        0, 1, 0, 0,
-        -sin, 0, cos, 0,
-        0, 0, 0, 1
-      );
-    }
-
-    /**
-     * Create Z oriented Rotation Matrix
-     */
-    rotateZ(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return this.setComponents(
-        cos, -sin, 0, 0,
-        sin, cos, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-      );
-    }
-    /**
-     * Create Z oriented Rotation Matrix
-     */
-    static rotateZ(angle) {
-      var radian = 0;
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        radian = MathUtil.degreeToRadian(angle);
-      } else {
-        radian = angle;
-      }
-
-      var cos = Math.cos(radian);
-      var sin = Math.sin(radian);
-      return new Matrix44$1(
-        cos, -sin, 0, 0,
-        sin, cos, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-      );
-    }
-
-    static rotateXYZ(x, y, z) {
-      return (Matrix33.rotateZ(z).multiply(Matrix33.rotateY(y).multiply(Matrix33.rotateX(x)))).toMatrix44();
-    }
-
-    /**
-     * @return Euler Angles Rotation (x, y, z)
-     */
-    toEulerAngles() {
-      let rotate = null;
-      if (Math.abs(this.m20) != 1.0) {
-        let y   = -Math.asin(this.m20);
-        let x  = Math.atan2(this.m21 / Math.cos(y), this.m22 / Math.cos(y));
-        let z = Math.atan2(this.m10 / Math.cos(y), this.m00 / Math.cos(y));
-        rotate = new Vector3(x, y, z);
-      } else if (this.m20 === -1.0) {
-        rotate = new Vector3(Math.atan2(this.m01, this.m02), Math.PI/2.0, 0.0);
-      } else {
-        rotate = new Vector3(Math.atan2(-this.m01, -this.m02), -Math.PI/2.0, 0.0);
-      }
-
-      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
-        rotate.x = MathUtil.radianToDegree(rotate.x);
-        rotate.y = MathUtil.radianToDegree(rotate.y);
-        rotate.z = MathUtil.radianToDegree(rotate.z);
-      }
-
-      return rotate;
-    }
-
-    /**
-     * ゼロ行列
-     */
-    zero() {
-      this.setComponents(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      return this;
-    }
-
-    static zero() {
-      return new Matrix44$1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-    }
-
-    flatten() {
-      return this.m;
-    }
-
-    flattenAsArray() {
-      return [this.m[0], this.m[1], this.m[2], this.m[3],
-        this.m[4], this.m[5], this.m[6], this.m[7],
-        this.m[8], this.m[9], this.m[10], this.m[11],
-        this.m[12], this.m[13], this.m[14], this.m[15]];
-    }
-
-    _swap(l, r) {
-      this.m[r] = [this.m[l], this.m[l] = this.m[r]][0]; // Swap
-    }
-
-    /**
-     * 転置
-     */
-    transpose() {
-      this._swap(1, 4);
-      this._swap(2, 8);
-      this._swap(3, 12);
-      this._swap(6, 9);
-      this._swap(7, 13);
-      this._swap(11, 14);
-
-      return this;
-    }
-
-    /**
-     * 転置（static版）
-     */
-    static transpose(mat) {
-
-      var mat_t = new Matrix44$1(
-        mat.m00, mat.m10, mat.m20, mat.m30,
-        mat.m01, mat.m11, mat.m21, mat.m31,
-        mat.m02, mat.m12, mat.m22, mat.m32,
-        mat.m03, mat.m13, mat.m23, mat.m33
-      );
-
-      return mat_t;
-    }
-
-    multiplyVector(vec) {
-      var x = this.m00*vec.x + this.m01*vec.y + this.m02*vec.z + this.m03*vec.w;
-      var y = this.m10*vec.x + this.m11*vec.y + this.m12*vec.z + this.m13*vec.w;
-      var z = this.m20*vec.x + this.m21*vec.y + this.m22*vec.z + this.m23*vec.w;
-      var w = this.m30*vec.x + this.m31*vec.y + this.m32*vec.z + this.m33*vec.w;
-
-      return new Vector4(x, y, z, w);
-    }
-
-    /**
-     * 行列同士の乗算
-     */
-    multiply(mat) {
-      var m00 = this.m00*mat.m00 + this.m01*mat.m10 + this.m02*mat.m20 + this.m03*mat.m30;
-      var m01 = this.m00*mat.m01 + this.m01*mat.m11 + this.m02*mat.m21 + this.m03*mat.m31;
-      var m02 = this.m00*mat.m02 + this.m01*mat.m12 + this.m02*mat.m22 + this.m03*mat.m32;
-      var m03 = this.m00*mat.m03 + this.m01*mat.m13 + this.m02*mat.m23 + this.m03*mat.m33;
-
-      var m10 = this.m10*mat.m00 + this.m11*mat.m10 + this.m12*mat.m20 + this.m13*mat.m30;
-      var m11 = this.m10*mat.m01 + this.m11*mat.m11 + this.m12*mat.m21 + this.m13*mat.m31;
-      var m12 = this.m10*mat.m02 + this.m11*mat.m12 + this.m12*mat.m22 + this.m13*mat.m32;
-      var m13 = this.m10*mat.m03 + this.m11*mat.m13 + this.m12*mat.m23 + this.m13*mat.m33;
-
-      var m20 = this.m20*mat.m00 + this.m21*mat.m10 + this.m22*mat.m20 + this.m23*mat.m30;
-      var m21 = this.m20*mat.m01 + this.m21*mat.m11 + this.m22*mat.m21 + this.m23*mat.m31;
-      var m22 = this.m20*mat.m02 + this.m21*mat.m12 + this.m22*mat.m22 + this.m23*mat.m32;
-      var m23 = this.m20*mat.m03 + this.m21*mat.m13 + this.m22*mat.m23 + this.m23*mat.m33;
-
-      var m30 = this.m30*mat.m00 + this.m31*mat.m10 + this.m32*mat.m20 + this.m33*mat.m30;
-      var m31 = this.m30*mat.m01 + this.m31*mat.m11 + this.m32*mat.m21 + this.m33*mat.m31;
-      var m32 = this.m30*mat.m02 + this.m31*mat.m12 + this.m32*mat.m22 + this.m33*mat.m32;
-      var m33 = this.m30*mat.m03 + this.m31*mat.m13 + this.m32*mat.m23 + this.m33*mat.m33;
-
-      return this.setComponents(
-          m00, m01, m02, m03,
-          m10, m11, m12, m13,
-          m20, m21, m22, m23,
-          m30, m31, m32, m33
-      );
-    }
-
-    multiplyByLeft(mat) {
-      var m00 = mat.m00*this.m00 + mat.m01*this.m10 + mat.m02*this.m20 + mat.m03*this.m30;
-      var m01 = mat.m00*this.m01 + mat.m01*this.m11 + mat.m02*this.m21 + mat.m03*this.m31;
-      var m02 = mat.m00*this.m02 + mat.m01*this.m12 + mat.m02*this.m22 + mat.m03*this.m32;
-      var m03 = mat.m00*this.m03 + mat.m01*this.m13 + mat.m02*this.m23 + mat.m03*this.m33;
-
-      var m10 = mat.m10*this.m00 + mat.m11*this.m10 + mat.m12*this.m20 + mat.m13*this.m30;
-      var m11 = mat.m10*this.m01 + mat.m11*this.m11 + mat.m12*this.m21 + mat.m13*this.m31;
-      var m12 = mat.m10*this.m02 + mat.m11*this.m12 + mat.m12*this.m22 + mat.m13*this.m32;
-      var m13 = mat.m10*this.m03 + mat.m11*this.m13 + mat.m12*this.m23 + mat.m13*this.m33;
-
-      var m20 = mat.m20*this.m00 + mat.m21*this.m10 + mat.m22*this.m20 + mat.m23*this.m30;
-      var m21 = mat.m20*this.m01 + mat.m21*this.m11 + mat.m22*this.m21 + mat.m23*this.m31;
-      var m22 = mat.m20*this.m02 + mat.m21*this.m12 + mat.m22*this.m22 + mat.m23*this.m32;
-      var m23 = mat.m20*this.m03 + mat.m21*this.m13 + mat.m22*this.m23 + mat.m23*this.m33;
-
-      var m30 = mat.m30*this.m00 + mat.m31*this.m10 + mat.m32*this.m20 + mat.m33*this.m30;
-      var m31 = mat.m30*this.m01 + mat.m31*this.m11 + mat.m32*this.m21 + mat.m33*this.m31;
-      var m32 = mat.m30*this.m02 + mat.m31*this.m12 + mat.m32*this.m22 + mat.m33*this.m32;
-      var m33 = mat.m30*this.m03 + mat.m31*this.m13 + mat.m32*this.m23 + mat.m33*this.m33;
-
-      return this.setComponents(
-          m00, m01, m02, m03,
-          m10, m11, m12, m13,
-          m20, m21, m22, m23,
-          m30, m31, m32, m33
-      );
-    }
-
-    /**
-     * 行列同士の乗算（static版）
-     */
-    static multiply(l_m, r_m) {
-      var m00 = l_m.m00*r_m.m00 + l_m.m01*r_m.m10 + l_m.m02*r_m.m20 + l_m.m03*r_m.m30;
-      var m10 = l_m.m10*r_m.m00 + l_m.m11*r_m.m10 + l_m.m12*r_m.m20 + l_m.m13*r_m.m30;
-      var m20 = l_m.m20*r_m.m00 + l_m.m21*r_m.m10 + l_m.m22*r_m.m20 + l_m.m23*r_m.m30;
-      var m30 = l_m.m30*r_m.m00 + l_m.m31*r_m.m10 + l_m.m32*r_m.m20 + l_m.m33*r_m.m30;
-
-      var m01 = l_m.m00*r_m.m01 + l_m.m01*r_m.m11 + l_m.m02*r_m.m21 + l_m.m03*r_m.m31;
-      var m11 = l_m.m10*r_m.m01 + l_m.m11*r_m.m11 + l_m.m12*r_m.m21 + l_m.m13*r_m.m31;
-      var m21 = l_m.m20*r_m.m01 + l_m.m21*r_m.m11 + l_m.m22*r_m.m21 + l_m.m23*r_m.m31;
-      var m31 = l_m.m30*r_m.m01 + l_m.m31*r_m.m11 + l_m.m32*r_m.m21 + l_m.m33*r_m.m31;
-
-      var m02 = l_m.m00*r_m.m02 + l_m.m01*r_m.m12 + l_m.m02*r_m.m22 + l_m.m03*r_m.m32;
-      var m12 = l_m.m10*r_m.m02 + l_m.m11*r_m.m12 + l_m.m12*r_m.m22 + l_m.m13*r_m.m32;
-      var m22 = l_m.m20*r_m.m02 + l_m.m21*r_m.m12 + l_m.m22*r_m.m22 + l_m.m23*r_m.m32;
-      var m32 = l_m.m30*r_m.m02 + l_m.m31*r_m.m12 + l_m.m32*r_m.m22 + l_m.m33*r_m.m32;
-
-      var m03 = l_m.m00*r_m.m03 + l_m.m01*r_m.m13 + l_m.m02*r_m.m23 + l_m.m03*r_m.m33;
-      var m13 = l_m.m10*r_m.m03 + l_m.m11*r_m.m13 + l_m.m12*r_m.m23 + l_m.m13*r_m.m33;
-      var m23 = l_m.m20*r_m.m03 + l_m.m21*r_m.m13 + l_m.m22*r_m.m23 + l_m.m23*r_m.m33;
-      var m33 = l_m.m30*r_m.m03 + l_m.m31*r_m.m13 + l_m.m32*r_m.m23 + l_m.m33*r_m.m33;
-
-      return new Matrix44$1(
-          m00, m01, m02, m03,
-          m10, m11, m12, m13,
-          m20, m21, m22, m23,
-          m30, m31, m32, m33
-      );
-    }
-
-    toMatrix33() {
-      return new Matrix33(
-        this.m00, this.m01, this.m02,
-        this.m10, this.m11, this.m12,
-        this.m20, this.m21, this.m22
-      );
-    }
-
-    static toMatrix33(mat) {
-      return new Matrix33(
-        mat.m00, mat.m01, mat.m02,
-        mat.m10, mat.m11, mat.m12,
-        mat.m20, mat.m21, mat.m22
-      );
-    }
-
-    determinant() {
-      return this.m00*this.m11*this.m22*this.m33 + this.m00*this.m12*this.m23*this.m31 + this.m00*this.m13*this.m21*this.m32 +
-        this.m01*this.m10*this.m23*this.m32 + this.m01*this.m12*this.m20*this.m33 + this.m01*this.m13*this.m22*this.m30 +
-        this.m02*this.m10*this.m21*this.m33 + this.m02*this.m11*this.m23*this.m30 + this.m02*this.m13*this.m20*this.m31 +
-        this.m03*this.m10*this.m22*this.m31 + this.m03*this.m11*this.m20*this.m32 + this.m03*this.m12*this.m21*this.m30 -
-
-        this.m00*this.m11*this.m23*this.m32 - this.m00*this.m12*this.m21*this.m33 - this.m00*this.m13*this.m22*this.m31 -
-        this.m01*this.m10*this.m22*this.m33 - this.m01*this.m12*this.m23*this.m30 - this.m01*this.m13*this.m20*this.m32 -
-        this.m02*this.m10*this.m23*this.m31 - this.m02*this.m11*this.m20*this.m33 - this.m02*this.m13*this.m21*this.m30 -
-        this.m03*this.m10*this.m21*this.m32 - this.m03*this.m11*this.m22*this.m30 - this.m03*this.m12*this.m20*this.m31;
-    }
-
-    static determinant(mat) {
-      return mat.m00*mat.m11*mat.m22*mat.m33 + mat.m00*mat.m12*mat.m23*mat.m31 + mat.m00*mat.m13*mat.m21*mat.m32 +
-        mat.m01*mat.m10*mat.m23*mat.m32 + mat.m01*mat.m12*mat.m20*mat.m33 + mat.m01*mat.m13*mat.m22*mat.m30 +
-        mat.m02*mat.m10*mat.m21*mat.m33 + mat.m02*mat.m11*mat.m23*mat.m30 + mat.m02*mat.m13*mat.m20*mat.m31 +
-        mat.m03*mat.m10*mat.m22*mat.m31 + mat.m03*mat.m11*mat.m20*mat.m32 + mat.m03*mat.m12*mat.m21*mat.m30 -
-
-        mat.m00*mat.m11*mat.m23*mat.m32 - mat.m00*mat.m12*mat.m21*mat.m33 - mat.m00*mat.m13*mat.m22*mat.m31 -
-        mat.m01*mat.m10*mat.m22*mat.m33 - mat.m01*mat.m12*mat.m23*mat.m30 - mat.m01*mat.m13*mat.m20*mat.m32 -
-        mat.m02*mat.m10*mat.m23*mat.m31 - mat.m02*mat.m11*mat.m20*mat.m33 - mat.m02*mat.m13*mat.m21*mat.m30 -
-        mat.m03*mat.m10*mat.m21*mat.m32 - mat.m03*mat.m11*mat.m22*mat.m30 - mat.m03*mat.m12*mat.m20*mat.m31;
-    }
-
-    invert() {
-      var det = this.determinant();
-      var m00 = (this.m11*this.m22*this.m33 + this.m12*this.m23*this.m31 + this.m13*this.m21*this.m32 - this.m11*this.m23*this.m32 - this.m12*this.m21*this.m33 - this.m13*this.m22*this.m31) / det;
-      var m01 = (this.m01*this.m23*this.m32 + this.m02*this.m21*this.m33 + this.m03*this.m22*this.m31 - this.m01*this.m22*this.m33 - this.m02*this.m23*this.m31 - this.m03*this.m21*this.m32) / det;
-      var m02 = (this.m01*this.m12*this.m33 + this.m02*this.m13*this.m31 + this.m03*this.m11*this.m32 - this.m01*this.m13*this.m32 - this.m02*this.m11*this.m33 - this.m03*this.m12*this.m31) / det;
-      var m03 = (this.m01*this.m13*this.m22 + this.m02*this.m11*this.m23 + this.m03*this.m12*this.m21 - this.m01*this.m12*this.m23 - this.m02*this.m13*this.m21 - this.m03*this.m11*this.m22) / det;
-      var m10 = (this.m10*this.m23*this.m32 + this.m12*this.m20*this.m33 + this.m13*this.m22*this.m30 - this.m10*this.m22*this.m33 - this.m12*this.m23*this.m30 - this.m13*this.m20*this.m32) / det;
-      var m11 = (this.m00*this.m22*this.m33 + this.m02*this.m23*this.m30 + this.m03*this.m20*this.m32 - this.m00*this.m23*this.m32 - this.m02*this.m20*this.m33 - this.m03*this.m22*this.m30) / det;
-      var m12 = (this.m00*this.m13*this.m32 + this.m02*this.m10*this.m33 + this.m03*this.m12*this.m30 - this.m00*this.m12*this.m33 - this.m02*this.m13*this.m30 - this.m03*this.m10*this.m32) / det;
-      var m13 = (this.m00*this.m12*this.m23 + this.m02*this.m13*this.m20 + this.m03*this.m10*this.m22 - this.m00*this.m13*this.m22 - this.m02*this.m10*this.m23 - this.m03*this.m12*this.m20) / det;
-      var m20 = (this.m10*this.m21*this.m33 + this.m11*this.m23*this.m30 + this.m13*this.m20*this.m31 - this.m10*this.m23*this.m31 - this.m11*this.m20*this.m33 - this.m13*this.m21*this.m30) / det;
-      var m21 = (this.m00*this.m23*this.m31 + this.m01*this.m20*this.m33 + this.m03*this.m21*this.m30 - this.m00*this.m21*this.m33 - this.m01*this.m23*this.m30 - this.m03*this.m20*this.m31) / det;
-      var m22 = (this.m00*this.m11*this.m33 + this.m01*this.m13*this.m30 + this.m03*this.m10*this.m31 - this.m00*this.m13*this.m31 - this.m01*this.m10*this.m33 - this.m03*this.m11*this.m30) / det;
-      var m23 = (this.m00*this.m13*this.m21 + this.m01*this.m10*this.m23 + this.m03*this.m11*this.m20 - this.m00*this.m11*this.m23 - this.m01*this.m13*this.m20 - this.m03*this.m10*this.m21) / det;
-      var m30 = (this.m10*this.m22*this.m31 + this.m11*this.m20*this.m32 + this.m12*this.m21*this.m30 - this.m10*this.m21*this.m32 - this.m11*this.m22*this.m30 - this.m12*this.m20*this.m31) / det;
-      var m31 = (this.m00*this.m21*this.m32 + this.m01*this.m22*this.m30 + this.m02*this.m20*this.m31 - this.m00*this.m22*this.m31 - this.m01*this.m20*this.m32 - this.m02*this.m21*this.m30) / det;
-      var m32 = (this.m00*this.m12*this.m31 + this.m01*this.m10*this.m32 + this.m02*this.m11*this.m30 - this.m00*this.m11*this.m32 - this.m01*this.m12*this.m30 - this.m02*this.m10*this.m31) / det;
-      var m33 = (this.m00*this.m11*this.m22 + this.m01*this.m12*this.m20 + this.m02*this.m10*this.m21 - this.m00*this.m12*this.m21 - this.m01*this.m10*this.m22 - this.m02*this.m11*this.m20) / det;
-
-      return this.setComponents(
-        m00, m01, m02, m03,
-        m10, m11, m12, m13,
-        m20, m21, m22, m23,
-        m30, m31, m32, m33
-      );
-    }
-
-    static invert(mat) {
-      var det = mat.determinant();
-      var m00 = (mat.m11*mat.m22*mat.m33 + mat.m12*mat.m23*mat.m31 + mat.m13*mat.m21*mat.m32 - mat.m11*mat.m23*mat.m32 - mat.m12*mat.m21*mat.m33 - mat.m13*mat.m22*mat.m31) / det;
-      var m01 = (mat.m01*mat.m23*mat.m32 + mat.m02*mat.m21*mat.m33 + mat.m03*mat.m22*mat.m31 - mat.m01*mat.m22*mat.m33 - mat.m02*mat.m23*mat.m31 - mat.m03*mat.m21*mat.m32) / det;
-      var m02 = (mat.m01*mat.m12*mat.m33 + mat.m02*mat.m13*mat.m31 + mat.m03*mat.m11*mat.m32 - mat.m01*mat.m13*mat.m32 - mat.m02*mat.m11*mat.m33 - mat.m03*mat.m12*mat.m31) / det;
-      var m03 = (mat.m01*mat.m13*mat.m22 + mat.m02*mat.m11*mat.m23 + mat.m03*mat.m12*mat.m21 - mat.m01*mat.m12*mat.m23 - mat.m02*mat.m13*mat.m21 - mat.m03*mat.m11*mat.m22) / det;
-      var m10 = (mat.m10*mat.m23*mat.m32 + mat.m12*mat.m20*mat.m33 + mat.m13*mat.m22*mat.m30 - mat.m10*mat.m22*mat.m33 - mat.m12*mat.m23*mat.m30 - mat.m13*mat.m20*mat.m32) / det;
-      var m11 = (mat.m00*mat.m22*mat.m33 + mat.m02*mat.m23*mat.m30 + mat.m03*mat.m20*mat.m32 - mat.m00*mat.m23*mat.m32 - mat.m02*mat.m20*mat.m33 - mat.m03*mat.m22*mat.m30) / det;
-      var m12 = (mat.m00*mat.m13*mat.m32 + mat.m02*mat.m10*mat.m33 + mat.m03*mat.m12*mat.m30 - mat.m00*mat.m12*mat.m33 - mat.m02*mat.m13*mat.m30 - mat.m03*mat.m10*mat.m32) / det;
-      var m13 = (mat.m00*mat.m12*mat.m23 + mat.m02*mat.m13*mat.m20 + mat.m03*mat.m10*mat.m22 - mat.m00*mat.m13*mat.m22 - mat.m02*mat.m10*mat.m23 - mat.m03*mat.m12*mat.m20) / det;
-      var m20 = (mat.m10*mat.m21*mat.m33 + mat.m11*mat.m23*mat.m30 + mat.m13*mat.m20*mat.m31 - mat.m10*mat.m23*mat.m31 - mat.m11*mat.m20*mat.m33 - mat.m13*mat.m21*mat.m30) / det;
-      var m21 = (mat.m00*mat.m23*mat.m31 + mat.m01*mat.m20*mat.m33 + mat.m03*mat.m21*mat.m30 - mat.m00*mat.m21*mat.m33 - mat.m01*mat.m23*mat.m30 - mat.m03*mat.m20*mat.m31) / det;
-      var m22 = (mat.m00*mat.m11*mat.m33 + mat.m01*mat.m13*mat.m30 + mat.m03*mat.m10*mat.m31 - mat.m00*mat.m13*mat.m31 - mat.m01*mat.m10*mat.m33 - mat.m03*mat.m11*mat.m30) / det;
-      var m23 = (mat.m00*mat.m13*mat.m21 + mat.m01*mat.m10*mat.m23 + mat.m03*mat.m11*mat.m20 - mat.m00*mat.m11*mat.m23 - mat.m01*mat.m13*mat.m20 - mat.m03*mat.m10*mat.m21) / det;
-      var m30 = (mat.m10*mat.m22*mat.m31 + mat.m11*mat.m20*mat.m32 + mat.m12*mat.m21*mat.m30 - mat.m10*mat.m21*mat.m32 - mat.m11*mat.m22*mat.m30 - mat.m12*mat.m20*mat.m31) / det;
-      var m31 = (mat.m00*mat.m21*mat.m32 + mat.m01*mat.m22*mat.m30 + mat.m02*mat.m20*mat.m31 - mat.m00*mat.m22*mat.m31 - mat.m01*mat.m20*mat.m32 - mat.m02*mat.m21*mat.m30) / det;
-      var m32 = (mat.m00*mat.m12*mat.m31 + mat.m01*mat.m10*mat.m32 + mat.m02*mat.m11*mat.m30 - mat.m00*mat.m11*mat.m32 - mat.m01*mat.m12*mat.m30 - mat.m02*mat.m10*mat.m31) / det;
-      var m33 = (mat.m00*mat.m11*mat.m22 + mat.m01*mat.m12*mat.m20 + mat.m02*mat.m10*mat.m21 - mat.m00*mat.m12*mat.m21 - mat.m01*mat.m10*mat.m22 - mat.m02*mat.m11*mat.m20) / det;
-
-      return new Matrix44$1(
-        m00, m01, m02, m03,
-        m10, m11, m12, m13,
-        m20, m21, m22, m23,
-        m30, m31, m32, m33
-      );
-    }
-
-    set m00(val) {
-      this.m[0] = val;
-    }
-
-    get m00() {
-      return this.m[0];
-    }
-
-    set m10(val) {
-      this.m[1] = val;
-    }
-
-    get m10() {
-      return this.m[1];
-    }
-
-    set m20(val) {
-      this.m[2] = val;
-    }
-
-    get m20() {
-      return this.m[2];
-    }
-
-    set m30(val) {
-      this.m[3] = val;
-    }
-
-    get m30() {
-      return this.m[3];
-    }
-
-    set m01(val) {
-      this.m[4] = val;
-    }
-
-    get m01() {
-      return this.m[4];
-    }
-
-    set m11(val) {
-      this.m[5] = val;
-    }
-
-    get m11() {
-      return this.m[5];
-    }
-
-    set m21(val) {
-      this.m[6] = val;
-    }
-
-    get m21() {
-      return this.m[6];
-    }
-
-    set m31(val) {
-      this.m[7] = val;
-    }
-
-    get m31() {
-      return this.m[7];
-    }
-
-    set m02(val) {
-      this.m[8] = val;
-    }
-
-    get m02() {
-      return this.m[8];
-    }
-
-    set m12(val) {
-      this.m[9] = val;
-    }
-
-    get m12() {
-      return this.m[9];
-    }
-
-    set m22(val) {
-      this.m[10] = val;
-    }
-
-    get m22() {
-      return this.m[10];
-    }
-
-    set m32(val) {
-      this.m[11] = val;
-    }
-
-    get m32() {
-      return this.m[11];
-    }
-
-    set m03(val) {
-      this.m[12] = val;
-    }
-
-    get m03() {
-      return this.m[12];
-    }
-
-    set m13(val) {
-      this.m[13] = val;
-    }
-
-    get m13() {
-      return this.m[13];
-    }
-
-    set m23(val) {
-      this.m[14] = val;
-    }
-
-    get m23() {
-      return this.m[14];
-    }
-
-    set m33(val) {
-      this.m[15] = val;
-    }
-
-    get m33() {
-      return this.m[15];
-    }
-
-    toString() {
-      return this.m00 + ' ' + this.m01 + ' ' + this.m02 + ' ' + this.m03 + ' \n' +
-        this.m10 + ' ' + this.m11 + ' ' + this.m12 + ' ' + this.m13 + ' \n' +
-        this.m20 + ' ' + this.m21 + ' ' + this.m22 + ' ' + this.m23 + ' \n' +
-        this.m30 + ' ' + this.m31 + ' ' + this.m32 + ' ' + this.m33 + ' \n';
-    }
-
-    nearZeroToZero(value) {
-      if (Math.abs(value) < 0.00001) {
-        value = 0;
-      } else if (0.99999 < value && value < 1.00001) {
-        value = 1;
-      } else if (-1.00001 < value && value < -0.99999) {
-        value = -1;
-      }
-      return value;
-    }
-
-    toStringApproximately() {
-      return this.nearZeroToZero(this.m00) + ' ' + this.nearZeroToZero(this.m01) + ' ' + this.nearZeroToZero(this.m02) + ' ' + this.nearZeroToZero(this.m03) + ' \n' +
-        this.nearZeroToZero(this.m10) + ' ' + this.nearZeroToZero(this.m11) + ' ' + this.nearZeroToZero(this.m12) + ' ' + this.nearZeroToZero(this.m13) + ' \n' +
-        this.nearZeroToZero(this.m20) + ' ' + this.nearZeroToZero(this.m21) + ' ' + this.nearZeroToZero(this.m22) + ' ' + this.nearZeroToZero(this.m23) + ' \n' +
-        this.nearZeroToZero(this.m30) + ' ' + this.nearZeroToZero(this.m31) + ' ' + this.nearZeroToZero(this.m32) + ' ' + this.nearZeroToZero(this.m33) + ' \n';
-    }
-
-    getScale() {
-      return new Vector3(
-        Math.sqrt(this.m00 * this.m00 + this.m01 * this.m01 + this.m02 * this.m02),
-        Math.sqrt(this.m10 * this.m10 + this.m11 * this.m11 + this.m12 * this.m12),
-        Math.sqrt(this.m20 * this.m20 + this.m21 * this.m21 + this.m22 * this.m22)
-      );
-    }
-
-    getRotate() {
-      const quat = Quaternion.fromMatrix(this);
-      const rotateMat = quat.rotationMatrix;
-      return rotateMat;
-    }
-  }
-
-  GLBoost$1["Matrix44"] = Matrix44$1;
-
   class Matrix33 {
 
     constructor(m, isColumnMajor = false,
@@ -3021,6 +2333,31 @@
         } else {
           this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
         }
+      } else if (!!m && typeof m.m22 !== 'undefined') {
+        if (isColumnMajor === true) {
+          this.setComponents(
+            m.m00, m.m01, m.m02,
+            m.m10, m.m11, m.m12,
+            m.m20, m.m21, m.m22);
+        } else {
+          this.setComponents(m.m00, m.m01, m.m02, m.m10, m.m11, m.m12, m.m20, m.m21, m.m22); // 'm' must be row major array if isColumnMajor is false
+        }
+      } else if (!!m && typeof m.className !== 'undefined' && m.className === 'Quaternion') {
+        const sx = m.x * m.x;
+        const sy = m.y * m.y;
+        const sz = m.z * m.z;
+        const cx = m.y * m.z;
+        const cy = m.x * m.z;
+        const cz = m.x * m.y;
+        const wx = m.w * m.x;
+        const wy = m.w * m.y;
+        const wz = m.w * m.z;
+    
+        this.setComponents(
+          1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy),
+          2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx),
+          2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy)
+        );
       } else {
         this.identity();
       }
@@ -3034,9 +2371,10 @@
       return this;
     }
 
-    /**
-     * 単位行列にする
-     */
+    get className() {
+      return this.constructor.name;
+    }
+
     identity() {
       this.setComponents(
         1, 0, 0,
@@ -3457,24 +2795,6 @@
         this.nearZeroToZero(this.m20) + ' ' + this.nearZeroToZero(this.m21) + ' ' + this.nearZeroToZero(this.m22) + '\n';
     }
 
-    toMatrix44() {
-      return new Matrix44$1(
-        this.m00, this.m01, this.m02, 0,
-        this.m10, this.m11, this.m12, 0,
-        this.m20, this.m21, this.m22, 0,
-        0, 0, 0, 1
-      );
-    }
-
-    static toMatrix44(mat) {
-      return new Matrix44$1(
-        mat.m00, mat.m01, mat.m02, 0,
-        mat.m10, mat.m11, mat.m12, 0,
-        mat.m20, mat.m21, mat.m22, 0,
-        0, 0, 0, 1
-      );
-    }
-
     getScale() {
       return new Vector3(
         Math.sqrt(this.m00 * this.m00 + this.m01 * this.m01 + this.m02 * this.m02),
@@ -3494,24 +2814,762 @@
 
   GLBoost$1['Matrix33'] = Matrix33;
 
-  class MathUtil {
+  class Matrix44$1 {
 
+    constructor(m, isColumnMajor = false, notCopyFloat32Array = false
+    ) {
+      if (arguments.length >= 16) {
+        this.m = new Float32Array(16); // Data order is column major
+        if (isColumnMajor === true) {
+          let m = arguments;
+          this.setComponents(
+            m[0], m[4], m[8], m[12],
+            m[1], m[5], m[9], m[13],
+            m[2], m[6], m[10], m[14],
+            m[3], m[7], m[11], m[15]);
+        } else {
+          this.setComponents.apply(this, arguments);  // arguments[0-15] must be row major values if isColumnMajor is false
+        }
+      } else if (Array.isArray(m)) {
+        this.m = new Float32Array(16);
+        if (isColumnMajor === true) {
+          this.setComponents(
+            m[0], m[4], m[8], m[12],
+            m[1], m[5], m[9], m[13],
+            m[2], m[6], m[10], m[14],
+            m[3], m[7], m[11], m[15]);
+        } else {
+          this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
+        }
+      } else if (m instanceof Float32Array) {
+        if (notCopyFloat32Array) {
+          this.m = m;
+        } else {
+          this.m = new Float32Array(16);
+          if (isColumnMajor === true) {
+            this.setComponents(
+              m[0], m[4], m[8], m[12],
+              m[1], m[5], m[9], m[13],
+              m[2], m[6], m[10], m[14],
+              m[3], m[7], m[11], m[15]);
+          } else {
+            this.setComponents.apply(this, m); // 'm' must be row major array if isColumnMajor is false
+          }  
+        }
+      } else if (!!m && typeof m.m33 === 'undefined' && typeof m.m22 !== 'undefined') {
+        if (notCopyFloat32Array) {
+          this.m = m.m;
+        } else {
+          this.m = new Float32Array(16);
+          if (isColumnMajor === true) {
+            this.setComponents(
+              m.m00, m.m01, m.m02, 0,
+              m.m10, m.m11, m.m12, 0,
+              m.m20, m.m21, m.m22, 0,
+              0, 0, 0, 1);
+          } else {
+            this.setComponents(m.m00, m.m01, m.m02, 0, m.m10, m.m11, m.m12, 0, m.m20, m.m21, m.m22, 0, 0, 0, 0, 1); // 'm' must be row major array if isColumnMajor is false
+          }  
+        }
+      } else if (!!m && typeof m.className !== 'undefined' && m.className === 'Quaternion') {
+        this.m = new Float32Array(16);
+
+        const sx = m.x * m.x;
+        const sy = m.y * m.y;
+        const sz = m.z * m.z;
+        const cx = m.y * m.z;
+        const cy = m.x * m.z;
+        const cz = m.x * m.y;
+        const wx = m.w * m.x;
+        const wy = m.w * m.y;
+        const wz = m.w * m.z;
+    
+        this.setComponents(
+          1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), 0.0,
+          2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), 0.0,
+          2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), 0.0,
+          0.0, 0.0, 0.0, 1.0
+        );
+      } else {
+        this.m = new Float32Array(16);
+        this.identity();
+      }
+    }
+
+    setComponents(m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
+      this.m00 = m00; this.m01 = m01; this.m02 = m02; this.m03 = m03;
+      this.m10 = m10; this.m11 = m11; this.m12 = m12; this.m13 = m13;
+      this.m20 = m20; this.m21 = m21; this.m22 = m22; this.m23 = m23;
+      this.m30 = m30; this.m31 = m31; this.m32 = m32; this.m33 = m33;
+
+      return this;
+    }
+
+    copyComponents(mat4) {
+      //this.m.set(mat4.m);
+      this.setComponents.apply(this, mat4.m); // 'm' must be row major array if isColumnMajor is false    
+    }
+
+    get className() {
+      return this.constructor.name;
+    }
+
+    clone() {
+      return new Matrix44$1(
+        this.m[0], this.m[4], this.m[8], this.m[12],
+        this.m[1], this.m[5], this.m[9], this.m[13],
+        this.m[2], this.m[6], this.m[10], this.m[14],
+        this.m[3], this.m[7], this.m[11], this.m[15]
+      );
+    }
+
+    /**
+     * 単位行列にする
+     */
+    identity() {
+      this.setComponents(
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1
+      );
+      return this;
+    }
+
+    /**
+     * 単位行列にする（static版）
+     */
+    static identity() {
+      return new Matrix44$1(
+          1, 0, 0, 0,
+          0, 1, 0, 0,
+          0, 0, 1, 0,
+          0, 0, 0, 1
+      );
+    }
+
+    translate(vec) {
+      return this.setComponents(
+        1, 0, 0, vec.x,
+        0, 1, 0, vec.y,
+        0, 0, 1, vec.z,
+        0, 0, 0, 1
+      );
+    }
+
+    putTranslate(vec) {
+      this.m03 = vec.x;
+      this.m13 = vec.y;
+      this.m23 = vec.z;
+    }
+
+    getTranslate() {
+      return new Vector3(this.m03, this.m13, this.m23);
+    }
+
+    static translate(vec) {
+      return new Matrix44$1(
+        1, 0, 0, vec.x,
+        0, 1, 0, vec.y,
+        0, 0, 1, vec.z,
+        0, 0, 0, 1
+      );
+    }
+
+    scale(vec) {
+      return this.setComponents(
+        vec.x, 0, 0, 0,
+        0, vec.y, 0, 0,
+        0, 0, vec.z, 0,
+        0, 0, 0, 1
+      );
+    }
+
+    static scale(vec) {
+      return new Matrix44$1(
+        vec.x, 0, 0, 0,
+        0, vec.y, 0, 0,
+        0, 0, vec.z, 0,
+        0, 0, 0, 1
+      );
+    }
+
+    addScale(vec) {
+      this.m00 *= vec.x;
+      this.m11 *= vec.y;
+      this.m22 *= vec.z;
+
+      return this;
+    }
+
+    /**
+     * Create X oriented Rotation Matrix
+     */
+    rotateX(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return this.setComponents(
+        1, 0, 0, 0,
+        0, cos, -sin, 0,
+        0, sin, cos, 0,
+        0, 0, 0, 1
+      );
+    }
+    /**
+     * Create X oriented Rotation Matrix
+    */
+    static rotateX(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return new Matrix44$1(
+        1, 0, 0, 0,
+        0, cos, -sin, 0,
+        0, sin, cos, 0,
+        0, 0, 0, 1
+      );
+    }
+
+    /**
+     * Create Y oriented Rotation Matrix
+     */
+    rotateY(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return this.setComponents(
+        cos, 0, sin, 0,
+        0, 1, 0, 0,
+        -sin, 0, cos, 0,
+        0, 0, 0, 1
+      );
+    }
+    /**
+     * Create Y oriented Rotation Matrix
+     */
+    static rotateY(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return new Matrix44$1(
+        cos, 0, sin, 0,
+        0, 1, 0, 0,
+        -sin, 0, cos, 0,
+        0, 0, 0, 1
+      );
+    }
+
+    /**
+     * Create Z oriented Rotation Matrix
+     */
+    rotateZ(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return this.setComponents(
+        cos, -sin, 0, 0,
+        sin, cos, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      );
+    }
+    /**
+     * Create Z oriented Rotation Matrix
+     */
+    static rotateZ(angle) {
+      var radian = 0;
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        radian = MathUtil.degreeToRadian(angle);
+      } else {
+        radian = angle;
+      }
+
+      var cos = Math.cos(radian);
+      var sin = Math.sin(radian);
+      return new Matrix44$1(
+        cos, -sin, 0, 0,
+        sin, cos, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      );
+    }
+
+    static rotateXYZ(x, y, z) {
+      return new Matrix44$1(Matrix33.rotateZ(z).multiply(Matrix33.rotateY(y).multiply(Matrix33.rotateX(x))));
+    }
+
+    /**
+     * @return Euler Angles Rotation (x, y, z)
+     */
+    toEulerAngles() {
+      let rotate = null;
+      if (Math.abs(this.m20) != 1.0) {
+        let y   = -Math.asin(this.m20);
+        let x  = Math.atan2(this.m21 / Math.cos(y), this.m22 / Math.cos(y));
+        let z = Math.atan2(this.m10 / Math.cos(y), this.m00 / Math.cos(y));
+        rotate = new Vector3(x, y, z);
+      } else if (this.m20 === -1.0) {
+        rotate = new Vector3(Math.atan2(this.m01, this.m02), Math.PI/2.0, 0.0);
+      } else {
+        rotate = new Vector3(Math.atan2(-this.m01, -this.m02), -Math.PI/2.0, 0.0);
+      }
+
+      if (GLBoost$1["VALUE_ANGLE_UNIT"] === GLBoost$1.DEGREE) {
+        rotate.x = MathUtil.radianToDegree(rotate.x);
+        rotate.y = MathUtil.radianToDegree(rotate.y);
+        rotate.z = MathUtil.radianToDegree(rotate.z);
+      }
+
+      return rotate;
+    }
+
+    /**
+     * ゼロ行列
+     */
+    zero() {
+      this.setComponents(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      return this;
+    }
+
+    static zero() {
+      return new Matrix44$1(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    flatten() {
+      return this.m;
+    }
+
+    flattenAsArray() {
+      return [this.m[0], this.m[1], this.m[2], this.m[3],
+        this.m[4], this.m[5], this.m[6], this.m[7],
+        this.m[8], this.m[9], this.m[10], this.m[11],
+        this.m[12], this.m[13], this.m[14], this.m[15]];
+    }
+
+    _swap(l, r) {
+      this.m[r] = [this.m[l], this.m[l] = this.m[r]][0]; // Swap
+    }
+
+    /**
+     * 転置
+     */
+    transpose() {
+      this._swap(1, 4);
+      this._swap(2, 8);
+      this._swap(3, 12);
+      this._swap(6, 9);
+      this._swap(7, 13);
+      this._swap(11, 14);
+
+      return this;
+    }
+
+    /**
+     * 転置（static版）
+     */
+    static transpose(mat) {
+
+      var mat_t = new Matrix44$1(
+        mat.m00, mat.m10, mat.m20, mat.m30,
+        mat.m01, mat.m11, mat.m21, mat.m31,
+        mat.m02, mat.m12, mat.m22, mat.m32,
+        mat.m03, mat.m13, mat.m23, mat.m33
+      );
+
+      return mat_t;
+    }
+
+    multiplyVector(vec) {
+      var x = this.m00*vec.x + this.m01*vec.y + this.m02*vec.z + this.m03*vec.w;
+      var y = this.m10*vec.x + this.m11*vec.y + this.m12*vec.z + this.m13*vec.w;
+      var z = this.m20*vec.x + this.m21*vec.y + this.m22*vec.z + this.m23*vec.w;
+      var w = this.m30*vec.x + this.m31*vec.y + this.m32*vec.z + this.m33*vec.w;
+
+      return new Vector4$1(x, y, z, w);
+    }
+
+    /**
+     * 行列同士の乗算
+     */
+    multiply(mat) {
+      var m00 = this.m00*mat.m00 + this.m01*mat.m10 + this.m02*mat.m20 + this.m03*mat.m30;
+      var m01 = this.m00*mat.m01 + this.m01*mat.m11 + this.m02*mat.m21 + this.m03*mat.m31;
+      var m02 = this.m00*mat.m02 + this.m01*mat.m12 + this.m02*mat.m22 + this.m03*mat.m32;
+      var m03 = this.m00*mat.m03 + this.m01*mat.m13 + this.m02*mat.m23 + this.m03*mat.m33;
+
+      var m10 = this.m10*mat.m00 + this.m11*mat.m10 + this.m12*mat.m20 + this.m13*mat.m30;
+      var m11 = this.m10*mat.m01 + this.m11*mat.m11 + this.m12*mat.m21 + this.m13*mat.m31;
+      var m12 = this.m10*mat.m02 + this.m11*mat.m12 + this.m12*mat.m22 + this.m13*mat.m32;
+      var m13 = this.m10*mat.m03 + this.m11*mat.m13 + this.m12*mat.m23 + this.m13*mat.m33;
+
+      var m20 = this.m20*mat.m00 + this.m21*mat.m10 + this.m22*mat.m20 + this.m23*mat.m30;
+      var m21 = this.m20*mat.m01 + this.m21*mat.m11 + this.m22*mat.m21 + this.m23*mat.m31;
+      var m22 = this.m20*mat.m02 + this.m21*mat.m12 + this.m22*mat.m22 + this.m23*mat.m32;
+      var m23 = this.m20*mat.m03 + this.m21*mat.m13 + this.m22*mat.m23 + this.m23*mat.m33;
+
+      var m30 = this.m30*mat.m00 + this.m31*mat.m10 + this.m32*mat.m20 + this.m33*mat.m30;
+      var m31 = this.m30*mat.m01 + this.m31*mat.m11 + this.m32*mat.m21 + this.m33*mat.m31;
+      var m32 = this.m30*mat.m02 + this.m31*mat.m12 + this.m32*mat.m22 + this.m33*mat.m32;
+      var m33 = this.m30*mat.m03 + this.m31*mat.m13 + this.m32*mat.m23 + this.m33*mat.m33;
+
+      return this.setComponents(
+          m00, m01, m02, m03,
+          m10, m11, m12, m13,
+          m20, m21, m22, m23,
+          m30, m31, m32, m33
+      );
+    }
+
+    multiplyByLeft(mat) {
+      var m00 = mat.m00*this.m00 + mat.m01*this.m10 + mat.m02*this.m20 + mat.m03*this.m30;
+      var m01 = mat.m00*this.m01 + mat.m01*this.m11 + mat.m02*this.m21 + mat.m03*this.m31;
+      var m02 = mat.m00*this.m02 + mat.m01*this.m12 + mat.m02*this.m22 + mat.m03*this.m32;
+      var m03 = mat.m00*this.m03 + mat.m01*this.m13 + mat.m02*this.m23 + mat.m03*this.m33;
+
+      var m10 = mat.m10*this.m00 + mat.m11*this.m10 + mat.m12*this.m20 + mat.m13*this.m30;
+      var m11 = mat.m10*this.m01 + mat.m11*this.m11 + mat.m12*this.m21 + mat.m13*this.m31;
+      var m12 = mat.m10*this.m02 + mat.m11*this.m12 + mat.m12*this.m22 + mat.m13*this.m32;
+      var m13 = mat.m10*this.m03 + mat.m11*this.m13 + mat.m12*this.m23 + mat.m13*this.m33;
+
+      var m20 = mat.m20*this.m00 + mat.m21*this.m10 + mat.m22*this.m20 + mat.m23*this.m30;
+      var m21 = mat.m20*this.m01 + mat.m21*this.m11 + mat.m22*this.m21 + mat.m23*this.m31;
+      var m22 = mat.m20*this.m02 + mat.m21*this.m12 + mat.m22*this.m22 + mat.m23*this.m32;
+      var m23 = mat.m20*this.m03 + mat.m21*this.m13 + mat.m22*this.m23 + mat.m23*this.m33;
+
+      var m30 = mat.m30*this.m00 + mat.m31*this.m10 + mat.m32*this.m20 + mat.m33*this.m30;
+      var m31 = mat.m30*this.m01 + mat.m31*this.m11 + mat.m32*this.m21 + mat.m33*this.m31;
+      var m32 = mat.m30*this.m02 + mat.m31*this.m12 + mat.m32*this.m22 + mat.m33*this.m32;
+      var m33 = mat.m30*this.m03 + mat.m31*this.m13 + mat.m32*this.m23 + mat.m33*this.m33;
+
+      return this.setComponents(
+          m00, m01, m02, m03,
+          m10, m11, m12, m13,
+          m20, m21, m22, m23,
+          m30, m31, m32, m33
+      );
+    }
+
+    /**
+     * 行列同士の乗算（static版）
+     */
+    static multiply(l_m, r_m) {
+      var m00 = l_m.m00*r_m.m00 + l_m.m01*r_m.m10 + l_m.m02*r_m.m20 + l_m.m03*r_m.m30;
+      var m10 = l_m.m10*r_m.m00 + l_m.m11*r_m.m10 + l_m.m12*r_m.m20 + l_m.m13*r_m.m30;
+      var m20 = l_m.m20*r_m.m00 + l_m.m21*r_m.m10 + l_m.m22*r_m.m20 + l_m.m23*r_m.m30;
+      var m30 = l_m.m30*r_m.m00 + l_m.m31*r_m.m10 + l_m.m32*r_m.m20 + l_m.m33*r_m.m30;
+
+      var m01 = l_m.m00*r_m.m01 + l_m.m01*r_m.m11 + l_m.m02*r_m.m21 + l_m.m03*r_m.m31;
+      var m11 = l_m.m10*r_m.m01 + l_m.m11*r_m.m11 + l_m.m12*r_m.m21 + l_m.m13*r_m.m31;
+      var m21 = l_m.m20*r_m.m01 + l_m.m21*r_m.m11 + l_m.m22*r_m.m21 + l_m.m23*r_m.m31;
+      var m31 = l_m.m30*r_m.m01 + l_m.m31*r_m.m11 + l_m.m32*r_m.m21 + l_m.m33*r_m.m31;
+
+      var m02 = l_m.m00*r_m.m02 + l_m.m01*r_m.m12 + l_m.m02*r_m.m22 + l_m.m03*r_m.m32;
+      var m12 = l_m.m10*r_m.m02 + l_m.m11*r_m.m12 + l_m.m12*r_m.m22 + l_m.m13*r_m.m32;
+      var m22 = l_m.m20*r_m.m02 + l_m.m21*r_m.m12 + l_m.m22*r_m.m22 + l_m.m23*r_m.m32;
+      var m32 = l_m.m30*r_m.m02 + l_m.m31*r_m.m12 + l_m.m32*r_m.m22 + l_m.m33*r_m.m32;
+
+      var m03 = l_m.m00*r_m.m03 + l_m.m01*r_m.m13 + l_m.m02*r_m.m23 + l_m.m03*r_m.m33;
+      var m13 = l_m.m10*r_m.m03 + l_m.m11*r_m.m13 + l_m.m12*r_m.m23 + l_m.m13*r_m.m33;
+      var m23 = l_m.m20*r_m.m03 + l_m.m21*r_m.m13 + l_m.m22*r_m.m23 + l_m.m23*r_m.m33;
+      var m33 = l_m.m30*r_m.m03 + l_m.m31*r_m.m13 + l_m.m32*r_m.m23 + l_m.m33*r_m.m33;
+
+      return new Matrix44$1(
+          m00, m01, m02, m03,
+          m10, m11, m12, m13,
+          m20, m21, m22, m23,
+          m30, m31, m32, m33
+      );
+    }
+
+    determinant() {
+      return this.m00*this.m11*this.m22*this.m33 + this.m00*this.m12*this.m23*this.m31 + this.m00*this.m13*this.m21*this.m32 +
+        this.m01*this.m10*this.m23*this.m32 + this.m01*this.m12*this.m20*this.m33 + this.m01*this.m13*this.m22*this.m30 +
+        this.m02*this.m10*this.m21*this.m33 + this.m02*this.m11*this.m23*this.m30 + this.m02*this.m13*this.m20*this.m31 +
+        this.m03*this.m10*this.m22*this.m31 + this.m03*this.m11*this.m20*this.m32 + this.m03*this.m12*this.m21*this.m30 -
+
+        this.m00*this.m11*this.m23*this.m32 - this.m00*this.m12*this.m21*this.m33 - this.m00*this.m13*this.m22*this.m31 -
+        this.m01*this.m10*this.m22*this.m33 - this.m01*this.m12*this.m23*this.m30 - this.m01*this.m13*this.m20*this.m32 -
+        this.m02*this.m10*this.m23*this.m31 - this.m02*this.m11*this.m20*this.m33 - this.m02*this.m13*this.m21*this.m30 -
+        this.m03*this.m10*this.m21*this.m32 - this.m03*this.m11*this.m22*this.m30 - this.m03*this.m12*this.m20*this.m31;
+    }
+
+    static determinant(mat) {
+      return mat.m00*mat.m11*mat.m22*mat.m33 + mat.m00*mat.m12*mat.m23*mat.m31 + mat.m00*mat.m13*mat.m21*mat.m32 +
+        mat.m01*mat.m10*mat.m23*mat.m32 + mat.m01*mat.m12*mat.m20*mat.m33 + mat.m01*mat.m13*mat.m22*mat.m30 +
+        mat.m02*mat.m10*mat.m21*mat.m33 + mat.m02*mat.m11*mat.m23*mat.m30 + mat.m02*mat.m13*mat.m20*mat.m31 +
+        mat.m03*mat.m10*mat.m22*mat.m31 + mat.m03*mat.m11*mat.m20*mat.m32 + mat.m03*mat.m12*mat.m21*mat.m30 -
+
+        mat.m00*mat.m11*mat.m23*mat.m32 - mat.m00*mat.m12*mat.m21*mat.m33 - mat.m00*mat.m13*mat.m22*mat.m31 -
+        mat.m01*mat.m10*mat.m22*mat.m33 - mat.m01*mat.m12*mat.m23*mat.m30 - mat.m01*mat.m13*mat.m20*mat.m32 -
+        mat.m02*mat.m10*mat.m23*mat.m31 - mat.m02*mat.m11*mat.m20*mat.m33 - mat.m02*mat.m13*mat.m21*mat.m30 -
+        mat.m03*mat.m10*mat.m21*mat.m32 - mat.m03*mat.m11*mat.m22*mat.m30 - mat.m03*mat.m12*mat.m20*mat.m31;
+    }
+
+    invert() {
+      var det = this.determinant();
+      var m00 = (this.m11*this.m22*this.m33 + this.m12*this.m23*this.m31 + this.m13*this.m21*this.m32 - this.m11*this.m23*this.m32 - this.m12*this.m21*this.m33 - this.m13*this.m22*this.m31) / det;
+      var m01 = (this.m01*this.m23*this.m32 + this.m02*this.m21*this.m33 + this.m03*this.m22*this.m31 - this.m01*this.m22*this.m33 - this.m02*this.m23*this.m31 - this.m03*this.m21*this.m32) / det;
+      var m02 = (this.m01*this.m12*this.m33 + this.m02*this.m13*this.m31 + this.m03*this.m11*this.m32 - this.m01*this.m13*this.m32 - this.m02*this.m11*this.m33 - this.m03*this.m12*this.m31) / det;
+      var m03 = (this.m01*this.m13*this.m22 + this.m02*this.m11*this.m23 + this.m03*this.m12*this.m21 - this.m01*this.m12*this.m23 - this.m02*this.m13*this.m21 - this.m03*this.m11*this.m22) / det;
+      var m10 = (this.m10*this.m23*this.m32 + this.m12*this.m20*this.m33 + this.m13*this.m22*this.m30 - this.m10*this.m22*this.m33 - this.m12*this.m23*this.m30 - this.m13*this.m20*this.m32) / det;
+      var m11 = (this.m00*this.m22*this.m33 + this.m02*this.m23*this.m30 + this.m03*this.m20*this.m32 - this.m00*this.m23*this.m32 - this.m02*this.m20*this.m33 - this.m03*this.m22*this.m30) / det;
+      var m12 = (this.m00*this.m13*this.m32 + this.m02*this.m10*this.m33 + this.m03*this.m12*this.m30 - this.m00*this.m12*this.m33 - this.m02*this.m13*this.m30 - this.m03*this.m10*this.m32) / det;
+      var m13 = (this.m00*this.m12*this.m23 + this.m02*this.m13*this.m20 + this.m03*this.m10*this.m22 - this.m00*this.m13*this.m22 - this.m02*this.m10*this.m23 - this.m03*this.m12*this.m20) / det;
+      var m20 = (this.m10*this.m21*this.m33 + this.m11*this.m23*this.m30 + this.m13*this.m20*this.m31 - this.m10*this.m23*this.m31 - this.m11*this.m20*this.m33 - this.m13*this.m21*this.m30) / det;
+      var m21 = (this.m00*this.m23*this.m31 + this.m01*this.m20*this.m33 + this.m03*this.m21*this.m30 - this.m00*this.m21*this.m33 - this.m01*this.m23*this.m30 - this.m03*this.m20*this.m31) / det;
+      var m22 = (this.m00*this.m11*this.m33 + this.m01*this.m13*this.m30 + this.m03*this.m10*this.m31 - this.m00*this.m13*this.m31 - this.m01*this.m10*this.m33 - this.m03*this.m11*this.m30) / det;
+      var m23 = (this.m00*this.m13*this.m21 + this.m01*this.m10*this.m23 + this.m03*this.m11*this.m20 - this.m00*this.m11*this.m23 - this.m01*this.m13*this.m20 - this.m03*this.m10*this.m21) / det;
+      var m30 = (this.m10*this.m22*this.m31 + this.m11*this.m20*this.m32 + this.m12*this.m21*this.m30 - this.m10*this.m21*this.m32 - this.m11*this.m22*this.m30 - this.m12*this.m20*this.m31) / det;
+      var m31 = (this.m00*this.m21*this.m32 + this.m01*this.m22*this.m30 + this.m02*this.m20*this.m31 - this.m00*this.m22*this.m31 - this.m01*this.m20*this.m32 - this.m02*this.m21*this.m30) / det;
+      var m32 = (this.m00*this.m12*this.m31 + this.m01*this.m10*this.m32 + this.m02*this.m11*this.m30 - this.m00*this.m11*this.m32 - this.m01*this.m12*this.m30 - this.m02*this.m10*this.m31) / det;
+      var m33 = (this.m00*this.m11*this.m22 + this.m01*this.m12*this.m20 + this.m02*this.m10*this.m21 - this.m00*this.m12*this.m21 - this.m01*this.m10*this.m22 - this.m02*this.m11*this.m20) / det;
+
+      return this.setComponents(
+        m00, m01, m02, m03,
+        m10, m11, m12, m13,
+        m20, m21, m22, m23,
+        m30, m31, m32, m33
+      );
+    }
+
+    static invert(mat) {
+      var det = mat.determinant();
+      var m00 = (mat.m11*mat.m22*mat.m33 + mat.m12*mat.m23*mat.m31 + mat.m13*mat.m21*mat.m32 - mat.m11*mat.m23*mat.m32 - mat.m12*mat.m21*mat.m33 - mat.m13*mat.m22*mat.m31) / det;
+      var m01 = (mat.m01*mat.m23*mat.m32 + mat.m02*mat.m21*mat.m33 + mat.m03*mat.m22*mat.m31 - mat.m01*mat.m22*mat.m33 - mat.m02*mat.m23*mat.m31 - mat.m03*mat.m21*mat.m32) / det;
+      var m02 = (mat.m01*mat.m12*mat.m33 + mat.m02*mat.m13*mat.m31 + mat.m03*mat.m11*mat.m32 - mat.m01*mat.m13*mat.m32 - mat.m02*mat.m11*mat.m33 - mat.m03*mat.m12*mat.m31) / det;
+      var m03 = (mat.m01*mat.m13*mat.m22 + mat.m02*mat.m11*mat.m23 + mat.m03*mat.m12*mat.m21 - mat.m01*mat.m12*mat.m23 - mat.m02*mat.m13*mat.m21 - mat.m03*mat.m11*mat.m22) / det;
+      var m10 = (mat.m10*mat.m23*mat.m32 + mat.m12*mat.m20*mat.m33 + mat.m13*mat.m22*mat.m30 - mat.m10*mat.m22*mat.m33 - mat.m12*mat.m23*mat.m30 - mat.m13*mat.m20*mat.m32) / det;
+      var m11 = (mat.m00*mat.m22*mat.m33 + mat.m02*mat.m23*mat.m30 + mat.m03*mat.m20*mat.m32 - mat.m00*mat.m23*mat.m32 - mat.m02*mat.m20*mat.m33 - mat.m03*mat.m22*mat.m30) / det;
+      var m12 = (mat.m00*mat.m13*mat.m32 + mat.m02*mat.m10*mat.m33 + mat.m03*mat.m12*mat.m30 - mat.m00*mat.m12*mat.m33 - mat.m02*mat.m13*mat.m30 - mat.m03*mat.m10*mat.m32) / det;
+      var m13 = (mat.m00*mat.m12*mat.m23 + mat.m02*mat.m13*mat.m20 + mat.m03*mat.m10*mat.m22 - mat.m00*mat.m13*mat.m22 - mat.m02*mat.m10*mat.m23 - mat.m03*mat.m12*mat.m20) / det;
+      var m20 = (mat.m10*mat.m21*mat.m33 + mat.m11*mat.m23*mat.m30 + mat.m13*mat.m20*mat.m31 - mat.m10*mat.m23*mat.m31 - mat.m11*mat.m20*mat.m33 - mat.m13*mat.m21*mat.m30) / det;
+      var m21 = (mat.m00*mat.m23*mat.m31 + mat.m01*mat.m20*mat.m33 + mat.m03*mat.m21*mat.m30 - mat.m00*mat.m21*mat.m33 - mat.m01*mat.m23*mat.m30 - mat.m03*mat.m20*mat.m31) / det;
+      var m22 = (mat.m00*mat.m11*mat.m33 + mat.m01*mat.m13*mat.m30 + mat.m03*mat.m10*mat.m31 - mat.m00*mat.m13*mat.m31 - mat.m01*mat.m10*mat.m33 - mat.m03*mat.m11*mat.m30) / det;
+      var m23 = (mat.m00*mat.m13*mat.m21 + mat.m01*mat.m10*mat.m23 + mat.m03*mat.m11*mat.m20 - mat.m00*mat.m11*mat.m23 - mat.m01*mat.m13*mat.m20 - mat.m03*mat.m10*mat.m21) / det;
+      var m30 = (mat.m10*mat.m22*mat.m31 + mat.m11*mat.m20*mat.m32 + mat.m12*mat.m21*mat.m30 - mat.m10*mat.m21*mat.m32 - mat.m11*mat.m22*mat.m30 - mat.m12*mat.m20*mat.m31) / det;
+      var m31 = (mat.m00*mat.m21*mat.m32 + mat.m01*mat.m22*mat.m30 + mat.m02*mat.m20*mat.m31 - mat.m00*mat.m22*mat.m31 - mat.m01*mat.m20*mat.m32 - mat.m02*mat.m21*mat.m30) / det;
+      var m32 = (mat.m00*mat.m12*mat.m31 + mat.m01*mat.m10*mat.m32 + mat.m02*mat.m11*mat.m30 - mat.m00*mat.m11*mat.m32 - mat.m01*mat.m12*mat.m30 - mat.m02*mat.m10*mat.m31) / det;
+      var m33 = (mat.m00*mat.m11*mat.m22 + mat.m01*mat.m12*mat.m20 + mat.m02*mat.m10*mat.m21 - mat.m00*mat.m12*mat.m21 - mat.m01*mat.m10*mat.m22 - mat.m02*mat.m11*mat.m20) / det;
+
+      return new Matrix44$1(
+        m00, m01, m02, m03,
+        m10, m11, m12, m13,
+        m20, m21, m22, m23,
+        m30, m31, m32, m33
+      );
+    }
+
+    set m00(val) {
+      this.m[0] = val;
+    }
+
+    get m00() {
+      return this.m[0];
+    }
+
+    set m10(val) {
+      this.m[1] = val;
+    }
+
+    get m10() {
+      return this.m[1];
+    }
+
+    set m20(val) {
+      this.m[2] = val;
+    }
+
+    get m20() {
+      return this.m[2];
+    }
+
+    set m30(val) {
+      this.m[3] = val;
+    }
+
+    get m30() {
+      return this.m[3];
+    }
+
+    set m01(val) {
+      this.m[4] = val;
+    }
+
+    get m01() {
+      return this.m[4];
+    }
+
+    set m11(val) {
+      this.m[5] = val;
+    }
+
+    get m11() {
+      return this.m[5];
+    }
+
+    set m21(val) {
+      this.m[6] = val;
+    }
+
+    get m21() {
+      return this.m[6];
+    }
+
+    set m31(val) {
+      this.m[7] = val;
+    }
+
+    get m31() {
+      return this.m[7];
+    }
+
+    set m02(val) {
+      this.m[8] = val;
+    }
+
+    get m02() {
+      return this.m[8];
+    }
+
+    set m12(val) {
+      this.m[9] = val;
+    }
+
+    get m12() {
+      return this.m[9];
+    }
+
+    set m22(val) {
+      this.m[10] = val;
+    }
+
+    get m22() {
+      return this.m[10];
+    }
+
+    set m32(val) {
+      this.m[11] = val;
+    }
+
+    get m32() {
+      return this.m[11];
+    }
+
+    set m03(val) {
+      this.m[12] = val;
+    }
+
+    get m03() {
+      return this.m[12];
+    }
+
+    set m13(val) {
+      this.m[13] = val;
+    }
+
+    get m13() {
+      return this.m[13];
+    }
+
+    set m23(val) {
+      this.m[14] = val;
+    }
+
+    get m23() {
+      return this.m[14];
+    }
+
+    set m33(val) {
+      this.m[15] = val;
+    }
+
+    get m33() {
+      return this.m[15];
+    }
+
+    toString() {
+      return this.m00 + ' ' + this.m01 + ' ' + this.m02 + ' ' + this.m03 + ' \n' +
+        this.m10 + ' ' + this.m11 + ' ' + this.m12 + ' ' + this.m13 + ' \n' +
+        this.m20 + ' ' + this.m21 + ' ' + this.m22 + ' ' + this.m23 + ' \n' +
+        this.m30 + ' ' + this.m31 + ' ' + this.m32 + ' ' + this.m33 + ' \n';
+    }
+
+    nearZeroToZero(value) {
+      if (Math.abs(value) < 0.00001) {
+        value = 0;
+      } else if (0.99999 < value && value < 1.00001) {
+        value = 1;
+      } else if (-1.00001 < value && value < -0.99999) {
+        value = -1;
+      }
+      return value;
+    }
+
+    toStringApproximately() {
+      return this.nearZeroToZero(this.m00) + ' ' + this.nearZeroToZero(this.m01) + ' ' + this.nearZeroToZero(this.m02) + ' ' + this.nearZeroToZero(this.m03) + ' \n' +
+        this.nearZeroToZero(this.m10) + ' ' + this.nearZeroToZero(this.m11) + ' ' + this.nearZeroToZero(this.m12) + ' ' + this.nearZeroToZero(this.m13) + ' \n' +
+        this.nearZeroToZero(this.m20) + ' ' + this.nearZeroToZero(this.m21) + ' ' + this.nearZeroToZero(this.m22) + ' ' + this.nearZeroToZero(this.m23) + ' \n' +
+        this.nearZeroToZero(this.m30) + ' ' + this.nearZeroToZero(this.m31) + ' ' + this.nearZeroToZero(this.m32) + ' ' + this.nearZeroToZero(this.m33) + ' \n';
+    }
+
+    getScale() {
+      return new Vector3(
+        Math.sqrt(this.m00 * this.m00 + this.m01 * this.m01 + this.m02 * this.m02),
+        Math.sqrt(this.m10 * this.m10 + this.m11 * this.m11 + this.m12 * this.m12),
+        Math.sqrt(this.m20 * this.m20 + this.m21 * this.m21 + this.m22 * this.m22)
+      );
+    }
+
+    getRotate() {
+      const quat = Quaternion.fromMatrix(this);
+      const rotateMat = new Matrix44$1(quat);
+      return rotateMat;
+    }
+  }
+
+  GLBoost$1["Matrix44"] = Matrix44$1;
+
+  class MathClassUtil {
     constructor() {
 
     }
 
-    static radianToDegree(rad) {
-      return rad * 180 / Math.PI;
-    }
-
-    static degreeToRadian(deg) {
-      return deg * Math.PI / 180;
-    }
 
     static arrayToVector(element) {
       if (Array.isArray(element)) {
         if(typeof(element[3]) !== 'undefined') {
-          return new Vector4(element[0], element[1], element[2], element[3]);
+          return new Vector4$1(element[0], element[1], element[2], element[3]);
         } else if (typeof(element[2]) !== 'undefined') {
           return new Vector3(element[0], element[1], element[2]);
         } else {
@@ -3529,7 +3587,7 @@
         } else if(typeof(element[8]) !== 'undefined') {
           return new Matrix33(element);
         } else if(typeof(element[3]) !== 'undefined') {
-          return new Vector4(element[0], element[1], element[2], element[3]);
+          return new Vector4$1(element[0], element[1], element[2], element[3]);
         } else if (typeof(element[2]) !== 'undefined') {
           return new Vector3(element[0], element[1], element[2]);
         } else {
@@ -3538,6 +3596,23 @@
       } else {
         return element;
       }
+    }
+
+    static cloneOfMathObjects(element) {
+      if(element instanceof Matrix44$1) {
+        return element.clone();
+      } else if (element instanceof Matrix33) {
+        return element.clone();
+      } else if (element instanceof Vector4$1) {
+        return element.clone();
+      } else if (element instanceof Vector3) {
+        return element.clone();
+      } else if (element instanceof Vector2) {
+        return element.clone();
+      } else {
+        return element;
+      }
+
     }
 
     static arrayToQuaternion(element) {
@@ -3567,7 +3642,7 @@
         return [element.x, element.y];
       } else if (element instanceof Vector3) {
         return [element.x, element.y, element.z];
-      } else if (element instanceof Vector4 || element instanceof Quaternion) {
+      } else if (element instanceof Vector4$1 || element instanceof Quaternion) {
         return [element.x, element.y, element.z, element.w];
       } else {
         return element;
@@ -3579,7 +3654,7 @@
         return 2;
       } else if (element instanceof Vector3) {
         return 3;
-      } else if (element instanceof Vector4 || element instanceof Quaternion) {
+      } else if (element instanceof Vector4$1 || element instanceof Quaternion) {
         return 4;
       } else if (Array.isArray(element)) {
         return element.length;
@@ -3612,7 +3687,7 @@
     }
 
     static unProject(windowPosVec3, inversePVMat44, viewportVec4, zNear, zFar) {
-      const input = new Vector4(
+      const input = new Vector4$1(
         (windowPosVec3.x - viewportVec4.x) / viewportVec4.z * 2 - 1.0,
         (windowPosVec3.y - viewportVec4.y) / viewportVec4.w * 2 - 1.0,
   //      (windowPosVec3.z - zNear) / (zFar - zNear),
@@ -3630,13 +3705,13 @@
         console.warn("Zero division!");
       }
 
-      const output = out.multiply(1/out.w).toVector3();
+      const output = new Vector3(out.multiply(1/out.w));
 
       return output;
     }
   }
 
-  GLBoost$1["MathUtil"] = MathUtil;
+  GLBoost$1["MathClassUtil"] = MathClassUtil;
 
   class AnimationUtil {
 
@@ -3768,7 +3843,7 @@
         outputComponentN = 2;
       } else if (outputArray[0] instanceof Vector3) {
         outputComponentN = 3;
-      } else if (outputArray[0] instanceof Vector4) {
+      } else if (outputArray[0] instanceof Vector4$1) {
         outputComponentN = 4;
       } else if (outputArray[0] instanceof Quaternion) {
         outputComponentN = 4;
@@ -3930,7 +4005,7 @@
       } else if (this._is_trs_matrix_updated) {
         this._rotate = this._matrix.toEulerAngles();
       } else if (this._is_quaternion_updated) {
-        this._rotate = this._quaternion.rotationMatrix.toEulerAngles();
+        this._rotate = (new Matrix44$1(this._quaternion)).toEulerAngles();
       }
 
       this._is_euler_angles_updated = true;
@@ -4019,8 +4094,7 @@
         return this._matrix.clone();
       }
 
-      let rotationMatrix = Matrix44$1.identity();
-      rotationMatrix = this.getQuaternionNotAnimated().rotationMatrix;
+      const rotationMatrix = new Matrix44$1(this.getQuaternionNotAnimated());
 
       let scale = this.getScaleNotAnimated();
 
@@ -4066,9 +4140,8 @@
         return this.getMatrixNotAnimated();
       } else {
 
-        let rotationMatrix = Matrix44$1.identity();
         let quaternion = this.getQuaternionAtOrStatic(lineName, input);
-        rotationMatrix = quaternion.rotationMatrix;
+        const rotationMatrix = new Matrix44$1(quaternion);
 
         let scale = this.getScaleAtOrStatic(lineName, input);
         
@@ -4144,7 +4217,7 @@
     }
 
     get normalMatrix() {
-      return Matrix44$1.invert(this.transformMatrix).transpose().toMatrix33();
+      return new Matrix33(Matrix44$1.invert(this.transformMatrix).transpose());
     }
 
     __updateTransform() {
@@ -4160,7 +4233,7 @@
         this._quaternion = Quaternion.fromMatrix(Matrix44$1.rotateXYZ(this._rotate.x, this._rotate.y, this._rotate.z));
         this._is_quaternion_updated = true;
       } else if (!this._is_euler_angles_updated && this._is_quaternion_updated) {
-        this._rotate = this._quaternion.rotationMatrix.toEulerAngles();
+        this._rotate = (new Matrix44$1(this._quaternion)).toEulerAngles();
         this._is_euler_angles_updated = true;
       } else if (!this._is_euler_angles_updated && !this._is_quaternion_updated && this._is_trs_matrix_updated) {
         const m = this._matrix;
@@ -4193,8 +4266,7 @@
 
     __updateMatrix() {
       if (!this._is_trs_matrix_updated && this._is_translate_updated && this._is_quaternion_updated && this._is_scale_updated) {
-        let rotationMatrix = Matrix44$1.identity();
-        rotationMatrix = this.getQuaternionNotAnimated().rotationMatrix;
+        const rotationMatrix = new Matrix44$1(this.getQuaternionNotAnimated());
     
         let scale = this.getScaleNotAnimated();
     
@@ -4250,7 +4322,7 @@
       instance._updateCountAsElement = this._updateCountAsElement;
     }
 
-    setPropertiesFromJson(arg        ) {
+    setPropertiesFromJson(arg) {
       let json = arg;
       if (typeof arg === "string") {
         json = JSON.parse(arg);
@@ -4258,9 +4330,9 @@
       for(let key in json) {
         if(json.hasOwnProperty(key) && key in this) {
           if (key === "quaternion") {
-            this[key] = MathUtil.arrayToQuaternion(json[key]);
+            this[key] = MathClassUtil.arrayToQuaternion(json[key]);
           } else {
-            this[key] = MathUtil.arrayToVectorOrMatrix(json[key]);
+            this[key] = MathClassUtil.arrayToVectorOrMatrix(json[key]);
           }
         }
       }
@@ -4305,7 +4377,7 @@
     }
 
     get rotateMatrix33() {
-      return this.quaternion.rotationMatrix33();
+      return new Matrix33(this.quaternion);
     }
   }
 
@@ -4324,7 +4396,7 @@
                                                                 
                                                         
                      
-                                
+                                  
                             
                          
                                       
@@ -4332,7 +4404,6 @@
                                      
                                            
                                                   
-                                     
                             
                                      
                            
@@ -4347,7 +4418,7 @@
       this._accumulatedAncestryObjectUpdateNumberNormal = -Number.MAX_VALUE;
       this._accumulatedAncestryObjectUpdateNumberInv = -Number.MAX_VALUE;
       this._accumulatedAncestryObjectUpdateNumberJoint = -Number.MAX_VALUE;
-      this._transparentByUser = false;
+      this._isTransparentForce = null;
       this._opacity = 1.0;
       this._isAffectedByWorldMatrix = true;
       this._isAffectedByWorldMatrixAccumulatedAncestry = true;
@@ -4356,7 +4427,6 @@
 
       this._toInheritCurrentAnimationInputValue = true;
 
-      this._customFunction = null;
       this._isVisible = true;
 
       this._gizmos = [];
@@ -4454,7 +4524,7 @@
       //console.log(tempNumber);
       if (this._accumulatedAncestryObjectUpdateNumberNormal !== tempNumber || typeof this._normalMatrix === 'undefined') {
         let world_m = this._multiplyMyAndParentTransformMatrices(true, null);
-        this._normalMatrix = Matrix44$1.invert(world_m).transpose().toMatrix33();
+        this._normalMatrix = new Matrix33(Matrix44$1.invert(world_m).transpose());
         this._accumulatedAncestryObjectUpdateNumberNormal = tempNumber;
       }
 
@@ -4511,11 +4581,11 @@
     }
 
     get isTransparent() {
-      return this._transparentByUser;
+      return this._isTransparentForce;
     }
 
-    set isTransparent(flg         ) {
-      this._transparentByUser = flg;
+    set isTransparentForce(flg         ) {
+      this._isTransparentForce = flg;
     }
 
     set dirty(flg        ) {
@@ -4538,14 +4608,6 @@
       return this._instanceName + this._updateCountAsElement;                // faster
     }
 
-    set customFunction(func          ) {
-      this._customFunction = func;
-    }
-
-    get customFunction() {
-      return this._customFunction;
-    }
-
     prepareToRender() {
 
     }
@@ -4561,7 +4623,7 @@
       instance._accumulatedAncestryObjectUpdateNumberInv = this._accumulatedAncestryObjectUpdateNumberInv;
 
 
-      instance._transparentByUser = this._transparentByUser;
+      instance._isTransparentForce = this._isTransparentForce;
       instance.opacity = this.opacity;
       instance._activeAnimationLineName = this._activeAnimationLineName;
 
@@ -4571,8 +4633,6 @@
       }
 
       instance._toInheritCurrentAnimationInputValue = this._toInheritCurrentAnimationInputValue;
-
-      instance._customFunction = this._customFunction;
     }
 
     set isVisible(flg         ) {
@@ -4936,556 +4996,6 @@
   }
 
   Hash._crc32table = "00000000 77073096 EE0E612C 990951BA 076DC419 706AF48F E963A535 9E6495A3 0EDB8832 79DCB8A4 E0D5E91E 97D2D988 09B64C2B 7EB17CBD E7B82D07 90BF1D91 1DB71064 6AB020F2 F3B97148 84BE41DE 1ADAD47D 6DDDE4EB F4D4B551 83D385C7 136C9856 646BA8C0 FD62F97A 8A65C9EC 14015C4F 63066CD9 FA0F3D63 8D080DF5 3B6E20C8 4C69105E D56041E4 A2677172 3C03E4D1 4B04D447 D20D85FD A50AB56B 35B5A8FA 42B2986C DBBBC9D6 ACBCF940 32D86CE3 45DF5C75 DCD60DCF ABD13D59 26D930AC 51DE003A C8D75180 BFD06116 21B4F4B5 56B3C423 CFBA9599 B8BDA50F 2802B89E 5F058808 C60CD9B2 B10BE924 2F6F7C87 58684C11 C1611DAB B6662D3D 76DC4190 01DB7106 98D220BC EFD5102A 71B18589 06B6B51F 9FBFE4A5 E8B8D433 7807C9A2 0F00F934 9609A88E E10E9818 7F6A0DBB 086D3D2D 91646C97 E6635C01 6B6B51F4 1C6C6162 856530D8 F262004E 6C0695ED 1B01A57B 8208F4C1 F50FC457 65B0D9C6 12B7E950 8BBEB8EA FCB9887C 62DD1DDF 15DA2D49 8CD37CF3 FBD44C65 4DB26158 3AB551CE A3BC0074 D4BB30E2 4ADFA541 3DD895D7 A4D1C46D D3D6F4FB 4369E96A 346ED9FC AD678846 DA60B8D0 44042D73 33031DE5 AA0A4C5F DD0D7CC9 5005713C 270241AA BE0B1010 C90C2086 5768B525 206F85B3 B966D409 CE61E49F 5EDEF90E 29D9C998 B0D09822 C7D7A8B4 59B33D17 2EB40D81 B7BD5C3B C0BA6CAD EDB88320 9ABFB3B6 03B6E20C 74B1D29A EAD54739 9DD277AF 04DB2615 73DC1683 E3630B12 94643B84 0D6D6A3E 7A6A5AA8 E40ECF0B 9309FF9D 0A00AE27 7D079EB1 F00F9344 8708A3D2 1E01F268 6906C2FE F762575D 806567CB 196C3671 6E6B06E7 FED41B76 89D32BE0 10DA7A5A 67DD4ACC F9B9DF6F 8EBEEFF9 17B7BE43 60B08ED5 D6D6A3E8 A1D1937E 38D8C2C4 4FDFF252 D1BB67F1 A6BC5767 3FB506DD 48B2364B D80D2BDA AF0A1B4C 36034AF6 41047A60 DF60EFC3 A867DF55 316E8EEF 4669BE79 CB61B38C BC66831A 256FD2A0 5268E236 CC0C7795 BB0B4703 220216B9 5505262F C5BA3BBE B2BD0B28 2BB45A92 5CB36A04 C2D7FFA7 B5D0CF31 2CD99E8B 5BDEAE1D 9B64C2B0 EC63F226 756AA39C 026D930A 9C0906A9 EB0E363F 72076785 05005713 95BF4A82 E2B87A14 7BB12BAE 0CB61B38 92D28E9B E5D5BE0D 7CDCEFB7 0BDBDF21 86D3D2D4 F1D4E242 68DDB3F8 1FDA836E 81BE16CD F6B9265B 6FB077E1 18B74777 88085AE6 FF0F6A70 66063BCA 11010B5C 8F659EFF F862AE69 616BFFD3 166CCF45 A00AE278 D70DD2EE 4E048354 3903B3C2 A7672661 D06016F7 4969474D 3E6E77DB AED16A4A D9D65ADC 40DF0B66 37D83BF0 A9BCAE53 DEBB9EC5 47B2CF7F 30B5FFE9 BDBDF21C CABAC28A 53B39330 24B4A3A6 BAD03605 CDD70693 54DE5729 23D967BF B3667A2E C4614AB8 5D681B02 2A6F2B94 B40BBE37 C30C8EA1 5A05DF1B 2D02EF8D".split(' ');
-
-  class SkeletalShaderSource {
-
-    VSDefine_SkeletalShaderSource(in_, out_, f, lights, material, extraData) {
-      var shaderText = '';
-      shaderText += `${in_} vec4 aVertex_joint;\n`;
-      shaderText += `${in_} vec4 aVertex_weight;\n`;
-
-      if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
-        shaderText += 'uniform mat4 skinTransformMatrices[' + extraData.jointN  + '];\n';
-      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1){
-        shaderText += 'uniform vec4 quatArray[' + extraData.jointN  + '];\n';
-        shaderText += 'uniform vec4 transArray[' + extraData.jointN  + '];\n';
-        //    shaderText += 'uniform vec2 quatArray[' + extraData.jointN  + '];\n';
-
-      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
-        // `OneVec4` Version [Begin]
-        shaderText += 'uniform vec4 quatTranslationArray[' + extraData.jointN  + '];\n';
-        shaderText += 'uniform vec3 translationScale;\n';
-        // `OneVec4` Version [End]
-      }
-      
-      return shaderText;
-    }
-
-    VSMethodDefine_SkeletalShaderSource(f, lights, material, extraData) {
-      let shaderText = '';
-      shaderText += `
-    mat3 toNormalMatrix(mat4 m) {
-      float a00 = m[0][0], a01 = m[0][1], a02 = m[0][2], a03 = m[0][3],
-      a10 = m[1][0], a11 = m[1][1], a12 = m[1][2], a13 = m[1][3],
-      a20 = m[2][0], a21 = m[2][1], a22 = m[2][2], a23 = m[2][3],
-      a30 = m[3][0], a31 = m[3][1], a32 = m[3][2], a33 = m[3][3];
-    
-      float b00 = a00 * a11 - a01 * a10,
-      b01 = a00 * a12 - a02 * a10,
-      b02 = a00 * a13 - a03 * a10,
-      b03 = a01 * a12 - a02 * a11,
-      b04 = a01 * a13 - a03 * a11,
-      b05 = a02 * a13 - a03 * a12,
-      b06 = a20 * a31 - a21 * a30,
-      b07 = a20 * a32 - a22 * a30,
-      b08 = a20 * a33 - a23 * a30,
-      b09 = a21 * a32 - a22 * a31,
-      b10 = a21 * a33 - a23 * a31,
-      b11 = a22 * a33 - a23 * a32;
-    
-      float determinantVal = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
-    
-      return mat3(
-        a11 * b11 - a12 * b10 + a13 * b09, a12 * b08 - a10 * b11 - a13 * b07, a10 * b10 - a11 * b08 + a13 * b06,
-        a02 * b10 - a01 * b11 - a03 * b09, a00 * b11 - a02 * b08 + a03 * b07, a01 * b08 - a00 * b10 - a03 * b06,
-        a31 * b05 - a32 * b04 + a33 * b03, a32 * b02 - a30 * b05 - a33 * b01, a30 * b04 - a31 * b02 + a33 * b00) / determinantVal;
-    }
-
-    mat4 transposeMatrix(mat4 m) {
-      return mat4(m[0][0], m[1][0], m[2][0], m[3][0],
-                  m[0][1], m[1][1], m[2][1], m[3][1],
-                  m[0][2], m[1][2], m[2][2], m[3][2],
-                  m[0][3], m[1][3], m[2][3], m[3][3]);
-    }
-
-    mat4 createMatrixFromQuaternionTransform( vec4 quaternion, vec3 translation ) {
-      vec4 q = quaternion;
-      vec3 t = translation;
-
-      float sx = q.x * q.x;
-      float sy = q.y * q.y;
-      float sz = q.z * q.z;
-      float cx = q.y * q.z;
-      float cy = q.x * q.z;
-      float cz = q.x * q.y;
-      float wx = q.w * q.x;
-      float wy = q.w * q.y;
-      float wz = q.w * q.z;
-
-      
-      return mat4(
-        1.0 - 2.0 * (sy + sz), 2.0 * (cz + wz), 2.0 * (cy - wy), 0.0,
-        2.0 * (cz - wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx + wx), 0.0,
-        2.0 * (cy + wy), 2.0 * (cx - wx), 1.0 - 2.0 * (sx + sy), 0.0,
-        t.x, t.y, t.z, 1.0
-      );
-      /*
-     return mat4(
-      1.0 - 2.0 * (sy + sz), 2.0 * (cz + wz), 2.0 * (cy - wy), t.x,
-      2.0 * (cz - wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx + wx), t.y,
-      2.0 * (cy + wy), 2.0 * (cx - wx), 1.0 - 2.0 * (sx + sy), t.z,
-      0.0, 0.0, 0.0, 1.0
-    );
-
-   return mat4(
-    1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), 0.0,
-    2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), 0.0,
-    2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), 0.0,
-    t.x, t.y, t.z, 1.0
-  );
-
-    return mat4(
-      1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), t.x,
-      2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), t.y,
-      2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), t.z,
-      0.0, 0.0, 0.0, 1.0
-    );
-    */
-  }
-
-  mat4 createMatrixFromQuaternionTransformUniformScale( vec4 quaternion, vec4 translationUniformScale ) {
-    vec4 q = quaternion;
-    vec3 t = translationUniformScale.xyz;
-    float scale = translationUniformScale.w;
-
-    float sx = q.x * q.x;
-    float sy = q.y * q.y;
-    float sz = q.z * q.z;
-    float cx = q.y * q.z;
-    float cy = q.x * q.z;
-    float cz = q.x * q.y;
-    float wx = q.w * q.x;
-    float wy = q.w * q.y;
-    float wz = q.w * q.z;
-
-    
-    mat4 mat = mat4(
-      1.0 - 2.0 * (sy + sz), 2.0 * (cz + wz), 2.0 * (cy - wy), 0.0,
-      2.0 * (cz - wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx + wx), 0.0,
-      2.0 * (cy + wy), 2.0 * (cx - wx), 1.0 - 2.0 * (sx + sy), 0.0,
-      t.x, t.y, t.z, 1.0
-    );
-    /*
-    mat4 mat = mat4(
-    1.0 - 2.0 * (sy + sz), 2.0 * (cz + wz), 2.0 * (cy - wy), t.x,
-    2.0 * (cz - wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx + wx), t.y,
-    2.0 * (cy + wy), 2.0 * (cx - wx), 1.0 - 2.0 * (sx + sy), t.z,
-    0.0, 0.0, 0.0, 1.0
-  );
-
-  mat4 mat = mat4(
-  1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), 0.0,
-  2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), 0.0,
-  2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), 0.0,
-  t.x, t.y, t.z, 1.0
-);
-
-  mat4 mat = mat4(
-    1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), t.x,
-    2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), t.y,
-    2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), t.z,
-    0.0, 0.0, 0.0, 1.0
-  );
-  */
-
-  mat4 uniformScaleMat = mat4(
-    scale, 0.0, 0.0, 0.0,
-    0.0, scale, 0.0, 0.0,
-    0.0, 0.0, scale, 0.0,
-    0.0, 0.0, 0.0, 1.0
-  );
- 
-//  mat[0][0] *= scale;
-//  mat[0][1] *= scale;
-//  mat[0][2] *= scale;
-//  mat[1][0] *= scale;
-//  mat[1][1] *= scale;
-//  mat[1][2] *= scale;
-//  mat[2][0] *= scale;
-//  mat[2][1] *= scale;
-//  mat[2][2] *= scale;
-  
-  return mat*uniformScaleMat;
-}
-
-/*
-  mat4 createMatrixFromQuaternionTransform( vec4 quaternion, vec3 translation ) {
-    vec4 q = quaternion;
-    vec3 t = translation;
-    float x = q.x;
-    float y = q.y;
-    float z = q.z;
-    float w = q.w;
-    float x2 = x + x;
-    float y2 = y + y;
-    float z2 = z + z;
-    float xx = x * x2;
-    float yx = y * x2;
-    float yy = y * y2;
-    float zx = z * x2;
-    float zy = z * y2;
-    float zz = z * z2;
-    float wx = w * x2;
-    float wy = w * y2;
-    float wz = w * z2;
-    float m_0 = 1.0 - yy - zz;
-    float m_3 = yx - wz;
-    float m_6 = zx + wy;
-    float m_1 = yx + wz;
-    float m_4 = 1.0 - xx - zz;
-    float m_7 = zy - wx;
-    float m_2 = zx - wy;
-    float m_5 = zy + wx;
-    float m_8 = 1.0 - xx - yy;
-
-    return mat4(
-      m_0, m_3, m_6, 0.0,
-      m_1, m_4, m_7, 0.0,
-      m_2, m_5, m_8, 0.0,
-      t.x, t.y, t.z, 0.0
-    );
-
-    return mat4(
-    m_0, m_3, m_6, t.x,
-    m_1, m_4, m_7, t.y,
-    m_2, m_5, m_8, t.z,
-    0.0, 0.0, 0.0, 0.0
-  );
-
- 
-   return mat4(
-    m_0, m_1, m_2, 0.0,
-    m_3, m_4, m_5, 0.0,
-    m_6, m_7, m_8, 0.0,
-    t.x, t.y, t.z, 0.0
-  );
-
-return mat4(
-  m_0, m_1, m_2, t.x,
-  m_3, m_4, m_5, t.y,
-  m_6, m_7, m_8, t.z,
-  0.0, 0.0, 0.0, 0.0
-);
-
-  }
-  */
-
-    vec4 unpackedVec2ToNormalizedVec4(vec2 vec_xy, float criteria){
-
-      float r;
-      float g;
-      float b;
-      float a;
-      
-      float ix = floor(vec_xy.x * criteria);
-      float v1x = ix / criteria;
-      float v1y = ix - floor(v1x) * criteria;
-  
-      r = ( v1x + 1.0 ) / (criteria-1.0);
-      g = ( v1y + 1.0 ) / (criteria-1.0);
-  
-      float iy = floor( vec_xy.y * criteria);
-      float v2x = iy / criteria;
-      float v2y = iy - floor(v2x) * criteria;
-  
-      b = ( v2x + 1.0 ) / (criteria-1.0);
-      a = ( v2y + 1.0 ) / (criteria-1.0);
-  
-      r -= 1.0/criteria;
-      g -= 1.0/criteria;
-      b -= 1.0/criteria;
-      a -= 1.0/criteria;
-        
-      r = r*2.0-1.0;
-      g = g*2.0-1.0;
-      b = b*2.0-1.0;
-      a = a*2.0-1.0;
-  
-      return vec4(r, g, b, a);
-    }
-    `;
-
-      return shaderText;
-    }
-
-    /**
-     * @return {string}
-     */
-    VSPreProcess_SkeletalShaderSource(existCamera_f, f, lights, material, extraData) {
-      let shaderText = '';
-
-      shaderText += 'vec4 weightVec = aVertex_weight;\n'; // DO NOT normalize as vec4!
-
-      if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
-        shaderText += 'mat4 skinMat = weightVec.x * skinTransformMatrices[int(aVertex_joint.x)];\n';
-        shaderText += 'skinMat += weightVec.y * skinTransformMatrices[int(aVertex_joint.y)];\n';
-        shaderText += 'skinMat += weightVec.z * skinTransformMatrices[int(aVertex_joint.z)];\n';
-        shaderText += 'skinMat += weightVec.w * skinTransformMatrices[int(aVertex_joint.w)];\n';
-      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
-
-        // `Quaterion (Vec4) Transform(Vec3)` Version
-        shaderText += 'mat4 skinMat = weightVec.x * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.x)], transArray[int(aVertex_joint.x)]);\n';
-        shaderText += 'skinMat += weightVec.y * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.y)], transArray[int(aVertex_joint.y)]);\n';
-        shaderText += 'skinMat += weightVec.z * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.z)], transArray[int(aVertex_joint.z)]);\n';
-        shaderText += 'skinMat += weightVec.w * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.w)], transArray[int(aVertex_joint.w)]);\n';
-      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
-
-        // `OneVec4` Version
-        shaderText += `vec2 criteria = vec2(4096.0, 4096.0);\n`;
-        shaderText += `mat4 skinMat = weightVec.x * createMatrixFromQuaternionTransform(
-        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.x)].xy, criteria.x),
-        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.x)].zw, criteria.y).xyz*translationScale);\n`;
-        shaderText += `skinMat += weightVec.y * createMatrixFromQuaternionTransform(
-        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.y)].xy, criteria.x),
-        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.y)].zw, criteria.y).xyz*translationScale);\n`;
-        shaderText += `skinMat += weightVec.z * createMatrixFromQuaternionTransform(
-        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.z)].xy, criteria.x),
-        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.z)].zw, criteria.y).xyz*translationScale);\n`;
-        shaderText += `skinMat += weightVec.w * createMatrixFromQuaternionTransform(
-        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.w)].xy, criteria.x),
-        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.w)].zw, criteria.y).xyz*translationScale);\n`;
-      
-      }
-
-      // Calc the following...
-      // * position_world
-      // * normal_world
-      // * normalMatrix
-      // * tangent_world
-      shaderText += 'position_world = skinMat * position_local;\n';    
-      if (Shader._exist(f, GLBoost$1.NORMAL)) {
-        shaderText += 'mat3 normalMatrix = toNormalMatrix(skinMat);\n';
-        shaderText += 'normal_world = normalize(normalMatrix * normal_local);\n';
-        if (Shader._exist(f, GLBoost$1.TANGENT)) {
-          shaderText += 'tangent_world = normalize(normalMatrix * tangent_local);\n';
-        }
-      }
-      // So, you should not recompute the items in the list above. Check the isSkinning flag to avoid recalculation.
-      shaderText += 'isSkinning = true;\n';
-
-
-      return shaderText;
-    }
-
-    prepare_SkeletalShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
-      let vertexAttribsAsResult = [];
-
-      vertexAttribs.forEach((attribName)=>{
-        if (attribName === 'joint' || attribName === 'weight') {
-          vertexAttribsAsResult.push(attribName);
-          shaderProgram['vertexAttribute_' + attribName] = gl.getAttribLocation(shaderProgram, 'aVertex_' + attribName);
-          gl.enableVertexAttribArray(shaderProgram['vertexAttribute_' + attribName]);
-        }
-      });
-
-      if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
-        let skinTransformMatricesUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'skinTransformMatrices');
-        material.setUniform(shaderProgram, 'uniform_skinTransformMatrices', skinTransformMatricesUniformLocation);
-        material._semanticsDic['JOINTMATRIX'] = 'skinTransformMatrices';
-      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
-        
-        let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatArray');
-        material.setUniform(shaderProgram, 'uniform_quatArray', quatArrayUniformLocation);
-        material._semanticsDic['JOINT_QUATERNION'] = 'quatArray';
-        let transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'transArray');
-        material.setUniform(shaderProgram, 'uniform_transArray', transArrayUniformLocation);
-        material._semanticsDic['JOINT_TRANSLATION'] = 'transArray';
-        
-      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
-        
-        // `OneVec4` Version [Begin]
-        let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatTranslationArray');
-        material.setUniform(shaderProgram, 'uniform_quatTranslationArray', quatArrayUniformLocation);
-        material._semanticsDic['JOINT_QUATTRANSLATION'] = 'quatTranslationArray';
-        let transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'translationScale');
-        material.setUniform(shaderProgram, 'uniform_translationScale', transArrayUniformLocation);
-        // `OneVec4` Version [End]
-        
-      }
-      
-      /*
-      // とりあえず単位行列で初期化
-      let identityMatrices = [];
-      for (let i=0; i<extraData.jointN; i++) {
-        Array.prototype.push.apply(identityMatrices,
-          [1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1]
-        );
-      }
-      //gl.uniformMatrix4fv(skinTransformMatricesUniformLocation, false, new Float32Array(identityMatrices));
-      */
-
-      return vertexAttribsAsResult;
-    }
-  }
-
-  class VertexWorldShaderSource {
-    // In the context within these member methods,
-    // this is the instance of the corresponding shader class.
-
-    VSDefine_VertexWorldShaderSource(in_, out_, f, lights, material, extraData) {
-      let shaderText = '';
-
-      if (Shader._exist(f, GLBoost.NORMAL)) {
-        shaderText += `${in_} vec3 aVertex_normal;\n`;
-        shaderText += `${out_} vec3 v_normal_world;\n`;
-        
-        if (Shader._exist(f, GLBoost.TANGENT)) {
-          shaderText += `${in_} vec3 aVertex_tangent;\n`;
-          if (material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_NORMAL)) {
-            shaderText += `${out_} vec3 v_tangent_world;\n`;
-            shaderText += `${out_} vec3 v_binormal_world;\n`;  
-          }
-        }
-      }
-      shaderText +=      'uniform mat4 worldMatrix;\n';
-      shaderText +=      'uniform mat4 viewMatrix;\n';
-      shaderText +=      'uniform mat4 projectionMatrix;\n';
-      shaderText +=      'uniform mat3 normalMatrix;\n';
-      shaderText += `     uniform highp ivec3 objectIds;\n`;
-
-      shaderText += `${out_} vec3 v_position_world;\n`;
-
-      return shaderText;
-    }
-
-    VSPreProcess_VertexWorldShaderSource(existCamera_f, f, lights, material, extraData) {
-      var shaderText = '';
-      shaderText += '  vec4 position_world;\n';
-      shaderText += '  vec3 normal_world;\n';
-      shaderText += '  vec3 tangent_world;\n';
-      return shaderText;
-    }
-
-    VSTransform_VertexWorldShaderSource(existCamera_f, f, lights, material, extraData) {
-      var shaderText = '';
-
-      // calc Projection * View * World matrix
-      shaderText += '  mat4 pvwMatrix = projectionMatrix * viewMatrix * worldMatrix;\n';
-      if (Shader._exist(f, GLBoost.NORMAL)) {
-  //      shaderText += '  vec4 position_proj =  pvwMatrix * position_local;\n';
-  //      shaderText += '  float borderWidth = 1000.0 / position_proj.w;\n';
-        shaderText += '  float borderWidth = 2.0;\n';
-        shaderText += '  position_local.xyz = position_local.xyz + normalize(normal_local)*borderWidth * float(objectIds.z);\n';
-      }
-      
-      // Calculate only when No skinning. If skinning, these have already been calculated by SkeletalShader.
-      shaderText += '  if (!isSkinning) {\n';
-      shaderText += '    position_world = worldMatrix * position_local;\n';
-      if (Shader._exist(f, GLBoost.NORMAL)) {
-        shaderText += '  normal_world = normalMatrix * normal_local;\n';
-      }
-      shaderText += '  }\n';
-
-      // calc vertex position in world space
-      shaderText += '  v_position_world = position_world.xyz;\n';
-
-      let normalTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_NORMAL);
-
-      // Send normal, tangent, binormal vectors in world space to the rasterizer
-      if (Shader._exist(f, GLBoost.NORMAL)) {
-        // calc Normal vector in world space
-        shaderText += '  v_normal_world = normal_world;\n';
-        if (Shader._exist(f, GLBoost.TANGENT) && !material.isFlatShading && normalTexture) {
-          // calc BiNormal vector and Tangent vector in world space
-          
-          {
-            // Calculate only when No skinning. If skinning, it has already been calculated by SkeletalShader.
-            shaderText += '  if (!isSkinning) {\n';
-            shaderText += '    tangent_world = normalMatrix * tangent_local;\n';
-            shaderText += '  }\n';
-          }
-
-          shaderText += '  v_binormal_world = cross(normal_world, tangent_world);\n';
-          shaderText += '  v_tangent_world = cross(v_binormal_world, normal_world);\n';
-
-        }
-      }
-
-      // Calc vertex positions in clip coordinate space.
-      // (These will be converted in Normalized Device Coordinates by divided gl_Posiiton.w in after stage.)
-      shaderText += '  gl_Position =  pvwMatrix * position_local;\n';
-
-      return shaderText;
-    }
-
-    FSDefine_VertexWorldShaderSource(in_, f, lights, material, extraData) {
-      let shaderText = '';
-
-      shaderText += `uniform highp ivec3 objectIds;\n`;
-      shaderText += `uniform vec3 viewPosition_world;\n`;
-
-      let lightNumExceptAmbient = lights.filter((light)=>{return !light.isTypeAmbient();}).length;    
-      if(lightNumExceptAmbient > 0) {
-        shaderText += `uniform vec4 lightDiffuse[${lightNumExceptAmbient}];\n`;
-        shaderText += `uniform vec3 lightSpotInfo[${lightNumExceptAmbient}];\n`;
-        shaderText += `uniform vec3 lightPosition_world[${lightNumExceptAmbient}];\n`;
-        shaderText += `uniform vec3 lightDirection_world[${lightNumExceptAmbient}];\n`;
-      }
-
-      if (Shader._exist(f, GLBoost.NORMAL)) {
-        shaderText += `${in_} vec3 v_normal_world;\n`;
-        if (Shader._exist(f, GLBoost.TANGENT) && material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_NORMAL)) {
-          shaderText += `${in_} vec3 v_tangent_world;\n`;
-          shaderText += `${in_} vec3 v_binormal_world;\n`;
-        }
-      }
-
-      shaderText += `${in_} vec3 v_position_world;\n`;
-
-      return shaderText;
-    }
-
-
-    FSShade_VertexWorldShaderSource(f, gl, lights) {
-      var shaderText = '';
-      return shaderText;
-    }
-
-    prepare_VertexWorldShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
-
-      var vertexAttribsAsResult = [];
-
-      vertexAttribs.forEach((attribName)=>{
-        if (attribName === 'position' || attribName === 'normal' || attribName === 'tangent') {
-          shaderProgram['vertexAttribute_' + attribName] = gl.getAttribLocation(shaderProgram, 'aVertex_' + attribName);
-          if (shaderProgram['vertexAttribute_' + attribName] !== -1) {
-            gl.enableVertexAttribArray(shaderProgram['vertexAttribute_' + attribName]);
-            vertexAttribsAsResult.push(attribName);
-          }
-        }
-      });
-
-      material.setUniform(shaderProgram, 'uniform_objectIdsAndOutlineFlag', this._glContext.getUniformLocation(shaderProgram, 'objectIds'));
-
-      material.setUniform(shaderProgram, 'uniform_worldMatrix', this._glContext.getUniformLocation(shaderProgram, 'worldMatrix'));
-      material._semanticsDic['WORLD'] = 'worldMatrix';
-      material.setUniform(shaderProgram, 'uniform_normalMatrix', this._glContext.getUniformLocation(shaderProgram, 'normalMatrix'));
-      material._semanticsDic['MODELVIEWINVERSETRANSPOSE'] = 'normalMatrix';
-      if (existCamera_f) {
-        material.setUniform(shaderProgram, 'uniform_viewMatrix', this._glContext.getUniformLocation(shaderProgram, 'viewMatrix'));
-        material._semanticsDic['VIEW'] = 'viewMatrix';
-        material.setUniform(shaderProgram, 'uniform_projectionMatrix', this._glContext.getUniformLocation(shaderProgram, 'projectionMatrix'));
-        material._semanticsDic['PROJECTION'] = 'projectionMatrix';
-      }
-
-      material.setUniform(shaderProgram, 'uniform_viewPosition', this._glContext.getUniformLocation(shaderProgram, 'viewPosition_world'));
-
-      for(let i=0; i<lights.length; i++) {
-        material.setUniform(shaderProgram, 'uniform_lightPosition_'+i, this._glContext.getUniformLocation(shaderProgram, `lightPosition_world[${i}]`));
-        material.setUniform(shaderProgram, 'uniform_lightDirection_'+i, this._glContext.getUniformLocation(shaderProgram, `lightDirection_world[${i}]`));
-        material.setUniform(shaderProgram, 'uniform_lightDiffuse_'+i, this._glContext.getUniformLocation(shaderProgram, `lightDiffuse[${i}]`));
-        material.setUniform(shaderProgram, 'uniform_lightSpotInfo_'+i, this._glContext.getUniformLocation(shaderProgram, `lightSpotInfo[${i}]`));
-      }
-
-
-      return vertexAttribsAsResult;
-    }
-  }
-
-  GLBoost['VertexWorldShaderSource'] = VertexWorldShaderSource;
 
   class Shader extends GLBoostObject {
     constructor(glBoostContext) {
@@ -6044,16 +5554,11 @@ return mat4(
       return programToReturn;
     }
 
-    static _createShaderInstance(glBoostContext, shaderClass) {
-      let shaderInstance = new shaderClass(glBoostContext, VertexWorldShaderSource);
-      return shaderInstance;
-    }
-
     getDefaultPointLightIfNotExist(lights) {
 
       if (lights.length === 0) {
         if (Shader._defaultLight === null) {
-          Shader._defaultLight = this._glBoostContext.createPointLight(GLBoost$1.VALUE_DEFAULT_POINTLIGHT_INTENSITY);
+          Shader._defaultLight = this._glBoostSystem._glBoostContext.createPointLight(GLBoost$1.VALUE_DEFAULT_POINTLIGHT_INTENSITY);
         }
         return [Shader._defaultLight];
       } else {
@@ -6073,7 +5578,7 @@ return mat4(
         return gl.getParameter(gl.MAX_DRAW_BUFFERS);
       }
 
-      var glem = GLExtensionsManager.getInstance(this._glContext);
+      var glem = GLExtensionsManager$1.getInstance(this._glContext);
       if (glem.extDBs) {
         return gl.getParameter(glem.extDBs.MAX_DRAW_BUFFERS_WEBGL);
       } else {
@@ -6336,10 +5841,10 @@ return mat4(
   Shader._shaderHashTable = {};
   Shader._defaultLight = null;
 
-  let singleton$1 = Symbol();
+  let singleton$2 = Symbol();
   let singletonEnforcer = Symbol();
 
-  class DrawKickerLocal {
+  class DrawKickerWorld {
     constructor(enforcer) {
       if (enforcer !== singletonEnforcer) {
         throw new Error('This is a Singleton class. get the instance using \'getInstance\' static method.');
@@ -6348,154 +5853,8 @@ return mat4(
     }
 
     static getInstance() {
-      if (!this[singleton$1]) {
-        this[singleton$1] = new DrawKickerLocal(singletonEnforcer);
-      }
-      return this[singleton$1];
-    }
-
-    draw(gl, glem, expression, mesh, materials, camera, lights, lightsExceptAmbient, scene, vertices, vaoDic, vboDic, iboArrayDic, geometry, geometryName, primitiveType, vertexN, renderPassIndex) {
-      var isVAOBound = false;
-      if (DrawKickerLocal._lastGeometry !== geometryName) {
-        isVAOBound = glem.bindVertexArray(gl, vaoDic[geometryName]);
-      }
-
-      for (let i=0; i<materials.length;i++) {
-        let material = materials[i];
-        if (!material.isVisible) {
-          continue;
-        }
-
-        let materialUpdateStateString = material.getUpdateStateString();
-        if (materialUpdateStateString !== DrawKickerLocal._lastMaterialUpdateStateString) {
-          this._glslProgram = material.shaderInstance.glslProgram;
-          material._glContext.useProgram(this._glslProgram);
-        }
-        let glslProgram = this._glslProgram;
-
-        if (!isVAOBound) {
-          if (DrawKickerLocal._lastGeometry !== geometryName) {
-            for (let attribName in vboDic) {
-              gl.bindBuffer(gl.ARRAY_BUFFER, vboDic[attribName]);
-              geometry.setUpVertexAttribs(gl, glslProgram, geometry._allVertexAttribs(vertices));
-            }
-          }
-        }
-
-        let opacity = mesh.opacityAccumulatedAncestry * scene.opacity;
-        material._glContext.uniform1f(material.getUniform(glslProgram, 'uniform_opacity'), opacity, true);
-
-        if (camera) {
-          let world_m;
-          if (mesh.isAffectedByWorldMatrix) {
-            if (mesh.isAffectedByWorldMatrixAccumulatedAncestry) {
-              world_m = mesh.worldMatrix;
-            } else {
-              world_m = mesh.transformMatrix;
-            }
-          } else {
-            world_m = Matrix44.identity();
-          }
-          let viewMatrix;
-          if (mesh.isAffectedByViewMatrix) {
-            viewMatrix = camera.lookAtRHMatrix();
-          } else {
-            viewMatrix = Matrix44.identity();
-          }
-          let projectionMatrix;
-          if (mesh.isAffectedByProjectionMatrix) {
-            projectionMatrix = camera.projectionRHMatrix();
-          } else {
-            projectionMatrix = Matrix44.identity();
-          }
-          let pvm_m = projectionMatrix.multiply(viewMatrix).multiply(camera.inverseWorldMatrixWithoutMySelf).multiply(world_m);
-          Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, glslProgram._semanticsDic, 'MODELVIEW', Matrix44.multiply(viewMatrix, world_m.flatten()));
-          Shader.trySettingMatrix44ToUniform(gl, glslProgram, material, glslProgram._semanticsDic, 'MODELVIEWPROJECTION',pvm_m.flatten());
-        }
-
-        if (material.getUniform(glslProgram, 'uniform_lightPosition_0')) {
-          lights = material.shaderInstance.getDefaultPointLightIfNotExist(lights);
-          if (material.getUniform(glslProgram, 'uniform_viewPosition')) {
-            let cameraPosInLocalCoord = null;
-            if (camera) {
-              let cameraPos = camera.worldMatrixWithoutMySelf.multiplyVector(new Vector4(camera.eyeInner.x, camera.eyeInner.y, camera.eyeInner.z, 1.0));
-              cameraPosInLocalCoord = mesh.inverseWorldMatrix.multiplyVector(new Vector4(cameraPos.x, cameraPos.y, cameraPos.z, 1));
-            } else {
-              cameraPosInLocalCoord = mesh.inverseWorldMatrix.multiplyVector(new Vector4(0, 0, 1, 1));
-            }
-            material._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_viewPosition'), cameraPosInLocalCoord.x, cameraPosInLocalCoord.y, cameraPosInLocalCoord.z, true);
-          }
-
-          for (let j = 0; j < lights.length; j++) {
-            if (material.getUniform(glslProgram, `uniform_lightPosition_${j}`) && material.getUniform(glslProgram, `uniform_lightDiffuse_${j}`)) {
-              let lightVec = null;
-              let isPointLight = -9999;
-              if (lights[j] instanceof M_PointLight) {
-                lightVec = new Vector4(0, 0, 0, 1);
-                lightVec = lights[j].worldMatrix.multiplyVector(lightVec);
-                isPointLight = 1.0;
-              } else if (lights[j].className === 'M_DirectionalLight') {
-                lightVec = new Vector4(lights[j].direction.x, lights[j].direction.y, lights[j].direction.z, 1);
-                lightVec = lights[j].rotateMatrixAccumulatedAncestry.multiplyVector(lightVec);
-                lightVec.w = 0.0;
-                isPointLight = 0.0;
-              }
-
-              let lightVecInLocalCoord = mesh.inverseWorldMatrix.multiplyVector(lightVec);
-              material._glContext.uniform4f(material.getUniform(glslProgram, `uniform_lightPosition_${j}`), lightVecInLocalCoord.x, lightVecInLocalCoord.y, lightVecInLocalCoord.z, isPointLight, true);
-
-              material._glContext.uniform4f(material.getUniform(glslProgram, `uniform_lightDiffuse_${j}`), lights[j].intensity.x, lights[j].intensity.y, lights[j].intensity.z, 1.0, true);
-            }
-          }
-        }
-
-        let isMaterialSetupDone = true;
-
-        {
-          var needTobeStillDirty = material.shaderInstance.setUniforms(gl, glslProgram, scene, material, camera, mesh);
-          material.shaderInstance.dirty = needTobeStillDirty ? true : false;
-
-          isMaterialSetupDone = material.setUpTexture();
-          return;
-        }
-
-        if (geometry.isIndexed()) {
-          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboArrayDic[geometryName][i]);
-          gl.drawElements(primitiveType, material.getVertexN(geometry), glem.elementIndexBitSize(gl), 0);
-          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-        } else {
-          gl.drawArrays(primitiveType, 0, vertexN);
-        }
-
-
-        DrawKickerLocal._lastMaterialUpdateStateString = isMaterialSetupDone ? materialUpdateStateString : null;
-      }
-
-      //gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-      DrawKickerLocal._lastGeometry = geometryName;
-      DrawKickerLocal._lastRenderPassIndex = renderPassIndex;
-    }
-  }
-
-  DrawKickerLocal._lastMaterialUpdateStateString = null;
-  DrawKickerLocal._lastGeometry = null;
-  DrawKickerLocal._lastRenderPassIndex = -1;
-
-  let singleton$2 = Symbol();
-  let singletonEnforcer$1 = Symbol();
-
-  class DrawKickerWorld {
-    constructor(enforcer) {
-      if (enforcer !== singletonEnforcer$1) {
-        throw new Error('This is a Singleton class. get the instance using \'getInstance\' static method.');
-      }
-      this._glslProgram = null;
-    }
-
-    static getInstance() {
       if (!this[singleton$2]) {
-        this[singleton$2] = new DrawKickerWorld(singletonEnforcer$1);
+        this[singleton$2] = new DrawKickerWorld(singletonEnforcer);
       }
       return this[singleton$2];
     }
@@ -6615,10 +5974,10 @@ return mat4(
         let glslProgram = this._glslProgram;
 
         if (!isVAOBound) {
-          if (DrawKickerWorld._lastGeometry !== geometryName) {
+        if (DrawKickerWorld._lastGeometry !== geometryName) {
             for (let attribName in vboDic) {
               gl.bindBuffer(gl.ARRAY_BUFFER, vboDic[attribName]);
-              geometry.setUpVertexAttribs(gl, glslProgram, Geometry._allVertexAttribs(vertices));
+              geometry.setUpVertexAttribs(gl, glslProgram, geometry._allVertexAttribs(vertices));
             }
           }
         }
@@ -6648,9 +6007,9 @@ return mat4(
           lights = material.shaderInstance.getDefaultPointLightIfNotExist(lights);
           
           if (material.getUniform(glslProgram, 'uniform_viewPosition')) {
-            let cameraPos = new Vector4(0, 0, 1, 1);
+            let cameraPos = new Vector4$1(0, 0, 1, 1);
             if (camera) {
-              cameraPos = camera.worldMatrixWithoutMySelf.multiplyVector(new Vector4(camera.eyeInner.x, camera.eyeInner.y, camera.eyeInner.z, 1.0));
+              cameraPos = camera.worldMatrixWithoutMySelf.multiplyVector(new Vector4$1(camera.eyeInner.x, camera.eyeInner.y, camera.eyeInner.z, 1.0));
             //  console.log(cameraPos);
             }
             material._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_viewPosition'), cameraPos.x, cameraPos.y, cameraPos.z, true);
@@ -6659,8 +6018,8 @@ return mat4(
           for (let j = 0; j < lights.length; j++) {
             let light = lights[j];
             if (material.getUniform(glslProgram, `uniform_lightPosition_${j}`) && material.getUniform(glslProgram, `uniform_lightDiffuse_${j}`)) {
-              let lightPosition = new Vector4(0, 0, 0, 1);            
-              let lightDirection = new Vector4(0, 0, 0, 1);
+              let lightPosition = new Vector4$1(0, 0, 0, 1);            
+              let lightDirection = new Vector4$1(0, 0, 0, 1);
               let lightIntensity = light.intensity;
               if (!light.isVisible) {
                 lightIntensity = Vector3.zero();
@@ -6802,76 +6161,561 @@ return mat4(
   //DrawKickerWorld._lastGeometry = null;
   //DrawKickerWorld._lastRenderPassIndex = -1;
 
-  class VertexLocalShaderSource {
-    VSDefine_VertexLocalShaderSource(in_, out_, f) {
+  class SkeletalShaderSource {
+
+    VSDefine_SkeletalShaderSource(in_, out_, f, lights, material, extraData) {
+      var shaderText = '';
+      shaderText += `${in_} vec4 aVertex_joint;\n`;
+      shaderText += `${in_} vec4 aVertex_weight;\n`;
+
+      if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
+        shaderText += 'uniform mat4 skinTransformMatrices[' + extraData.jointN  + '];\n';
+      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1){
+        shaderText += 'uniform vec4 quatArray[' + extraData.jointN  + '];\n';
+        shaderText += 'uniform vec4 transArray[' + extraData.jointN  + '];\n';
+        //    shaderText += 'uniform vec2 quatArray[' + extraData.jointN  + '];\n';
+
+      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
+        // `OneVec4` Version [Begin]
+        shaderText += 'uniform vec4 quatTranslationArray[' + extraData.jointN  + '];\n';
+        shaderText += 'uniform vec3 translationScale;\n';
+        // `OneVec4` Version [End]
+      }
+      
+      return shaderText;
+    }
+
+    VSMethodDefine_SkeletalShaderSource(f, lights, material, extraData) {
+      let shaderText = '';
+      shaderText += `
+    mat3 toNormalMatrix(mat4 m) {
+      float a00 = m[0][0], a01 = m[0][1], a02 = m[0][2], a03 = m[0][3],
+      a10 = m[1][0], a11 = m[1][1], a12 = m[1][2], a13 = m[1][3],
+      a20 = m[2][0], a21 = m[2][1], a22 = m[2][2], a23 = m[2][3],
+      a30 = m[3][0], a31 = m[3][1], a32 = m[3][2], a33 = m[3][3];
+    
+      float b00 = a00 * a11 - a01 * a10,
+      b01 = a00 * a12 - a02 * a10,
+      b02 = a00 * a13 - a03 * a10,
+      b03 = a01 * a12 - a02 * a11,
+      b04 = a01 * a13 - a03 * a11,
+      b05 = a02 * a13 - a03 * a12,
+      b06 = a20 * a31 - a21 * a30,
+      b07 = a20 * a32 - a22 * a30,
+      b08 = a20 * a33 - a23 * a30,
+      b09 = a21 * a32 - a22 * a31,
+      b10 = a21 * a33 - a23 * a31,
+      b11 = a22 * a33 - a23 * a32;
+    
+      float determinantVal = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
+    
+      return mat3(
+        a11 * b11 - a12 * b10 + a13 * b09, a12 * b08 - a10 * b11 - a13 * b07, a10 * b10 - a11 * b08 + a13 * b06,
+        a02 * b10 - a01 * b11 - a03 * b09, a00 * b11 - a02 * b08 + a03 * b07, a01 * b08 - a00 * b10 - a03 * b06,
+        a31 * b05 - a32 * b04 + a33 * b03, a32 * b02 - a30 * b05 - a33 * b01, a30 * b04 - a31 * b02 + a33 * b00) / determinantVal;
+    }
+
+    mat4 transposeMatrix(mat4 m) {
+      return mat4(m[0][0], m[1][0], m[2][0], m[3][0],
+                  m[0][1], m[1][1], m[2][1], m[3][1],
+                  m[0][2], m[1][2], m[2][2], m[3][2],
+                  m[0][3], m[1][3], m[2][3], m[3][3]);
+    }
+
+    mat4 createMatrixFromQuaternionTransform( vec4 quaternion, vec3 translation ) {
+      vec4 q = quaternion;
+      vec3 t = translation;
+
+      float sx = q.x * q.x;
+      float sy = q.y * q.y;
+      float sz = q.z * q.z;
+      float cx = q.y * q.z;
+      float cy = q.x * q.z;
+      float cz = q.x * q.y;
+      float wx = q.w * q.x;
+      float wy = q.w * q.y;
+      float wz = q.w * q.z;
+
+      
+      return mat4(
+        1.0 - 2.0 * (sy + sz), 2.0 * (cz + wz), 2.0 * (cy - wy), 0.0,
+        2.0 * (cz - wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx + wx), 0.0,
+        2.0 * (cy + wy), 2.0 * (cx - wx), 1.0 - 2.0 * (sx + sy), 0.0,
+        t.x, t.y, t.z, 1.0
+      );
+      /*
+     return mat4(
+      1.0 - 2.0 * (sy + sz), 2.0 * (cz + wz), 2.0 * (cy - wy), t.x,
+      2.0 * (cz - wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx + wx), t.y,
+      2.0 * (cy + wy), 2.0 * (cx - wx), 1.0 - 2.0 * (sx + sy), t.z,
+      0.0, 0.0, 0.0, 1.0
+    );
+
+   return mat4(
+    1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), 0.0,
+    2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), 0.0,
+    2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), 0.0,
+    t.x, t.y, t.z, 1.0
+  );
+
+    return mat4(
+      1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), t.x,
+      2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), t.y,
+      2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), t.z,
+      0.0, 0.0, 0.0, 1.0
+    );
+    */
+  }
+
+  mat4 createMatrixFromQuaternionTransformUniformScale( vec4 quaternion, vec4 translationUniformScale ) {
+    vec4 q = quaternion;
+    vec3 t = translationUniformScale.xyz;
+    float scale = translationUniformScale.w;
+
+    float sx = q.x * q.x;
+    float sy = q.y * q.y;
+    float sz = q.z * q.z;
+    float cx = q.y * q.z;
+    float cy = q.x * q.z;
+    float cz = q.x * q.y;
+    float wx = q.w * q.x;
+    float wy = q.w * q.y;
+    float wz = q.w * q.z;
+
+    
+    mat4 mat = mat4(
+      1.0 - 2.0 * (sy + sz), 2.0 * (cz + wz), 2.0 * (cy - wy), 0.0,
+      2.0 * (cz - wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx + wx), 0.0,
+      2.0 * (cy + wy), 2.0 * (cx - wx), 1.0 - 2.0 * (sx + sy), 0.0,
+      t.x, t.y, t.z, 1.0
+    );
+    /*
+    mat4 mat = mat4(
+    1.0 - 2.0 * (sy + sz), 2.0 * (cz + wz), 2.0 * (cy - wy), t.x,
+    2.0 * (cz - wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx + wx), t.y,
+    2.0 * (cy + wy), 2.0 * (cx - wx), 1.0 - 2.0 * (sx + sy), t.z,
+    0.0, 0.0, 0.0, 1.0
+  );
+
+  mat4 mat = mat4(
+  1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), 0.0,
+  2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), 0.0,
+  2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), 0.0,
+  t.x, t.y, t.z, 1.0
+);
+
+  mat4 mat = mat4(
+    1.0 - 2.0 * (sy + sz), 2.0 * (cz - wz), 2.0 * (cy + wy), t.x,
+    2.0 * (cz + wz), 1.0 - 2.0 * (sx + sz), 2.0 * (cx - wx), t.y,
+    2.0 * (cy - wy), 2.0 * (cx + wx), 1.0 - 2.0 * (sx + sy), t.z,
+    0.0, 0.0, 0.0, 1.0
+  );
+  */
+
+  mat4 uniformScaleMat = mat4(
+    scale, 0.0, 0.0, 0.0,
+    0.0, scale, 0.0, 0.0,
+    0.0, 0.0, scale, 0.0,
+    0.0, 0.0, 0.0, 1.0
+  );
+ 
+//  mat[0][0] *= scale;
+//  mat[0][1] *= scale;
+//  mat[0][2] *= scale;
+//  mat[1][0] *= scale;
+//  mat[1][1] *= scale;
+//  mat[1][2] *= scale;
+//  mat[2][0] *= scale;
+//  mat[2][1] *= scale;
+//  mat[2][2] *= scale;
+  
+  return mat*uniformScaleMat;
+}
+
+/*
+  mat4 createMatrixFromQuaternionTransform( vec4 quaternion, vec3 translation ) {
+    vec4 q = quaternion;
+    vec3 t = translation;
+    float x = q.x;
+    float y = q.y;
+    float z = q.z;
+    float w = q.w;
+    float x2 = x + x;
+    float y2 = y + y;
+    float z2 = z + z;
+    float xx = x * x2;
+    float yx = y * x2;
+    float yy = y * y2;
+    float zx = z * x2;
+    float zy = z * y2;
+    float zz = z * z2;
+    float wx = w * x2;
+    float wy = w * y2;
+    float wz = w * z2;
+    float m_0 = 1.0 - yy - zz;
+    float m_3 = yx - wz;
+    float m_6 = zx + wy;
+    float m_1 = yx + wz;
+    float m_4 = 1.0 - xx - zz;
+    float m_7 = zy - wx;
+    float m_2 = zx - wy;
+    float m_5 = zy + wx;
+    float m_8 = 1.0 - xx - yy;
+
+    return mat4(
+      m_0, m_3, m_6, 0.0,
+      m_1, m_4, m_7, 0.0,
+      m_2, m_5, m_8, 0.0,
+      t.x, t.y, t.z, 0.0
+    );
+
+    return mat4(
+    m_0, m_3, m_6, t.x,
+    m_1, m_4, m_7, t.y,
+    m_2, m_5, m_8, t.z,
+    0.0, 0.0, 0.0, 0.0
+  );
+
+ 
+   return mat4(
+    m_0, m_1, m_2, 0.0,
+    m_3, m_4, m_5, 0.0,
+    m_6, m_7, m_8, 0.0,
+    t.x, t.y, t.z, 0.0
+  );
+
+return mat4(
+  m_0, m_1, m_2, t.x,
+  m_3, m_4, m_5, t.y,
+  m_6, m_7, m_8, t.z,
+  0.0, 0.0, 0.0, 0.0
+);
+
+  }
+  */
+
+    vec4 unpackedVec2ToNormalizedVec4(vec2 vec_xy, float criteria){
+
+      float r;
+      float g;
+      float b;
+      float a;
+      
+      float ix = floor(vec_xy.x * criteria);
+      float v1x = ix / criteria;
+      float v1y = ix - floor(v1x) * criteria;
+  
+      r = ( v1x + 1.0 ) / (criteria-1.0);
+      g = ( v1y + 1.0 ) / (criteria-1.0);
+  
+      float iy = floor( vec_xy.y * criteria);
+      float v2x = iy / criteria;
+      float v2y = iy - floor(v2x) * criteria;
+  
+      b = ( v2x + 1.0 ) / (criteria-1.0);
+      a = ( v2y + 1.0 ) / (criteria-1.0);
+  
+      r -= 1.0/criteria;
+      g -= 1.0/criteria;
+      b -= 1.0/criteria;
+      a -= 1.0/criteria;
+        
+      r = r*2.0-1.0;
+      g = g*2.0-1.0;
+      b = b*2.0-1.0;
+      a = a*2.0-1.0;
+  
+      return vec4(r, g, b, a);
+    }
+    `;
+
+      return shaderText;
+    }
+
+    /**
+     * @return {string}
+     */
+    VSPreProcess_SkeletalShaderSource(existCamera_f, f, lights, material, extraData) {
       let shaderText = '';
 
-      if (Shader._exist(f, GLBoost.NORMAL)) {
-        shaderText += `${in_} vec3 aVertex_normal;\n`;
-        shaderText += `${out_} vec3 v_normal;\n`;
+      shaderText += 'vec4 weightVec = aVertex_weight;\n'; // DO NOT normalize as vec4!
+
+      if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
+        shaderText += 'mat4 skinMat = weightVec.x * skinTransformMatrices[int(aVertex_joint.x)];\n';
+        shaderText += 'skinMat += weightVec.y * skinTransformMatrices[int(aVertex_joint.y)];\n';
+        shaderText += 'skinMat += weightVec.z * skinTransformMatrices[int(aVertex_joint.z)];\n';
+        shaderText += 'skinMat += weightVec.w * skinTransformMatrices[int(aVertex_joint.w)];\n';
+      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
+
+        // `Quaterion (Vec4) Transform(Vec3)` Version
+        shaderText += 'mat4 skinMat = weightVec.x * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.x)], transArray[int(aVertex_joint.x)]);\n';
+        shaderText += 'skinMat += weightVec.y * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.y)], transArray[int(aVertex_joint.y)]);\n';
+        shaderText += 'skinMat += weightVec.z * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.z)], transArray[int(aVertex_joint.z)]);\n';
+        shaderText += 'skinMat += weightVec.w * createMatrixFromQuaternionTransformUniformScale(quatArray[int(aVertex_joint.w)], transArray[int(aVertex_joint.w)]);\n';
+      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
+
+        // `OneVec4` Version
+        shaderText += `vec2 criteria = vec2(4096.0, 4096.0);\n`;
+        shaderText += `mat4 skinMat = weightVec.x * createMatrixFromQuaternionTransform(
+        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.x)].xy, criteria.x),
+        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.x)].zw, criteria.y).xyz*translationScale);\n`;
+        shaderText += `skinMat += weightVec.y * createMatrixFromQuaternionTransform(
+        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.y)].xy, criteria.x),
+        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.y)].zw, criteria.y).xyz*translationScale);\n`;
+        shaderText += `skinMat += weightVec.z * createMatrixFromQuaternionTransform(
+        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.z)].xy, criteria.x),
+        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.z)].zw, criteria.y).xyz*translationScale);\n`;
+        shaderText += `skinMat += weightVec.w * createMatrixFromQuaternionTransform(
+        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.w)].xy, criteria.x),
+        unpackedVec2ToNormalizedVec4(quatTranslationArray[int(aVertex_joint.w)].zw, criteria.y).xyz*translationScale);\n`;
+      
       }
-      shaderText += `${out_} vec4 position;\n`;
-      shaderText +=      'uniform mat4 modelViewProjectionMatrix;\n';
+
+      // Calc the following...
+      // * position_world
+      // * normal_world
+      // * normalMatrix
+      // * tangent_world
+      shaderText += 'position_world = skinMat * position_local;\n';    
+      if (Shader._exist(f, GLBoost$1.NORMAL)) {
+        shaderText += 'mat3 normalMatrix = toNormalMatrix(skinMat);\n';
+        shaderText += 'normal_world = normalize(normalMatrix * normal_local);\n';
+        if (Shader._exist(f, GLBoost$1.TANGENT)) {
+          shaderText += 'tangent_world = normalize(normalMatrix * tangent_local);\n';
+        }
+      }
+      // So, you should not recompute the items in the list above. Check the isSkinning flag to avoid recalculation.
+      shaderText += 'isSkinning = true;\n';
+
+
       return shaderText;
     }
 
-    VSTransform_VertexLocalShaderSource(existCamera_f, f) {
-      var shaderText = '';
-      if (existCamera_f) {
-        shaderText +=   '  gl_Position = modelViewProjectionMatrix * position_local;\n';
-        shaderText +=   '  mat4 pvwMatrix = modelViewProjectionMatrix;\n';
-      } else {
-        shaderText +=   '  gl_Position = position_local;\n';
-      }
-      if (Shader._exist(f, GLBoost.NORMAL)) {
-        shaderText += '  v_normal = aVertex_normal;\n';
-      }
-      shaderText += '  position = vec4(aVertex_position, 1.0);\n';
-
-      return shaderText;
-    }
-
-    FSDefine_VertexLocalShaderSource(in_, f, lights, material, extraData) {
-      var shaderText = '';
-      if(lights.length > 0) {
-        shaderText += `uniform vec4 lightPosition[${lights.length}];\n`;
-        shaderText += `uniform vec4 lightDiffuse[${lights.length}];\n`;
-      }
-      if (Shader._exist(f, GLBoost.NORMAL)) {
-        shaderText += `${in_} vec3 v_normal;\n`;
-      }
-      shaderText += `${in_} vec4 position;\n`;
-
-      return shaderText;
-    }
-
-    prepare_VertexLocalShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
-
-      var vertexAttribsAsResult = [];
+    prepare_SkeletalShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
+      let vertexAttribsAsResult = [];
 
       vertexAttribs.forEach((attribName)=>{
-        if (attribName === 'position' || attribName === 'normal') {
+        if (attribName === 'joint' || attribName === 'weight') {
+          vertexAttribsAsResult.push(attribName);
           shaderProgram['vertexAttribute_' + attribName] = gl.getAttribLocation(shaderProgram, 'aVertex_' + attribName);
           gl.enableVertexAttribArray(shaderProgram['vertexAttribute_' + attribName]);
-          vertexAttribsAsResult.push(attribName);
         }
       });
 
-      if (existCamera_f) {
-        material.setUniform(shaderProgram, 'uniform_modelViewProjectionMatrix', this._glContext.getUniformLocation(shaderProgram, 'modelViewProjectionMatrix'));
-        material._semanticsDic['MODELVIEWPROJECTION'] = 'modelViewProjectionMatrix';
+      if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
+        let skinTransformMatricesUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'skinTransformMatrices');
+        material.setUniform(shaderProgram, 'uniform_skinTransformMatrices', skinTransformMatricesUniformLocation);
+        material._semanticsDic['JOINTMATRIX'] = 'skinTransformMatrices';
+      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
+        
+        let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatArray');
+        material.setUniform(shaderProgram, 'uniform_quatArray', quatArrayUniformLocation);
+        material._semanticsDic['JOINT_QUATERNION'] = 'quatArray';
+        let transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'transArray');
+        material.setUniform(shaderProgram, 'uniform_transArray', transArrayUniformLocation);
+        material._semanticsDic['JOINT_TRANSLATION'] = 'transArray';
+        
+      } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
+        
+        // `OneVec4` Version [Begin]
+        let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatTranslationArray');
+        material.setUniform(shaderProgram, 'uniform_quatTranslationArray', quatArrayUniformLocation);
+        material._semanticsDic['JOINT_QUATTRANSLATION'] = 'quatTranslationArray';
+        let transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'translationScale');
+        material.setUniform(shaderProgram, 'uniform_translationScale', transArrayUniformLocation);
+        // `OneVec4` Version [End]
+        
       }
-
-      for(let i=0; i<lights.length; i++) {
-        material.setUniform(shaderProgram, 'uniform_lightPosition_'+i, this._glContext.getUniformLocation(shaderProgram, `lightPosition[${i}]`));
-        material.setUniform(shaderProgram, 'uniform_lightDiffuse_'+i, this._glContext.getUniformLocation(shaderProgram, `lightDiffuse[${i}]`));
+      
+      /*
+      // とりあえず単位行列で初期化
+      let identityMatrices = [];
+      for (let i=0; i<extraData.jointN; i++) {
+        Array.prototype.push.apply(identityMatrices,
+          [1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 1, 0,
+            0, 0, 0, 1]
+        );
       }
+      //gl.uniformMatrix4fv(skinTransformMatricesUniformLocation, false, new Float32Array(identityMatrices));
+      */
 
       return vertexAttribsAsResult;
     }
   }
 
-  GLBoost['VertexLocalShaderSource'] = VertexLocalShaderSource;
+  class VertexWorldShaderSource {
+    // In the context within these member methods,
+    // this is the instance of the corresponding shader class.
+
+    VSDefine_VertexWorldShaderSource(in_, out_, f, lights, material, extraData) {
+      let shaderText = '';
+
+      if (Shader._exist(f, GLBoost.NORMAL)) {
+        shaderText += `${in_} vec3 aVertex_normal;\n`;
+        shaderText += `${out_} vec3 v_normal_world;\n`;
+        
+        if (Shader._exist(f, GLBoost.TANGENT)) {
+          shaderText += `${in_} vec3 aVertex_tangent;\n`;
+          if (material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_NORMAL)) {
+            shaderText += `${out_} vec3 v_tangent_world;\n`;
+            shaderText += `${out_} vec3 v_binormal_world;\n`;  
+          }
+        }
+      }
+      shaderText +=      'uniform mat4 worldMatrix;\n';
+      shaderText +=      'uniform mat4 viewMatrix;\n';
+      shaderText +=      'uniform mat4 projectionMatrix;\n';
+      shaderText +=      'uniform mat3 normalMatrix;\n';
+      shaderText +=      'uniform highp ivec3 objectIds;\n';
+      shaderText +=      'uniform float AABBLengthCenterToCorner;\n';
+
+      shaderText += `${out_} vec3 v_position_world;\n`;
+
+      return shaderText;
+    }
+
+    VSPreProcess_VertexWorldShaderSource(existCamera_f, f, lights, material, extraData) {
+      var shaderText = '';
+      shaderText += '  vec4 position_world;\n';
+      shaderText += '  vec3 normal_world;\n';
+      shaderText += '  vec3 tangent_world;\n';
+      return shaderText;
+    }
+
+    VSTransform_VertexWorldShaderSource(existCamera_f, f, lights, material, extraData) {
+      var shaderText = '';
+
+      // calc Projection * View * World matrix
+      shaderText += '  mat4 pvwMatrix = projectionMatrix * viewMatrix * worldMatrix;\n';
+      if (Shader._exist(f, GLBoost.NORMAL)) {
+  //      shaderText += '  vec4 position_proj =  pvwMatrix * position_local;\n';
+  //      shaderText += '  float borderWidth = 1000.0 / position_proj.w;\n';
+        shaderText += '  float borderWidth = AABBLengthCenterToCorner * 0.01;\n';
+        shaderText += '  position_local.xyz = position_local.xyz + normalize(normal_local)*borderWidth * float(objectIds.z);\n';
+      }
+      
+      // Calculate only when No skinning. If skinning, these have already been calculated by SkeletalShader.
+      shaderText += '  if (!isSkinning) {\n';
+      shaderText += '    position_world = worldMatrix * position_local;\n';
+      if (Shader._exist(f, GLBoost.NORMAL)) {
+        shaderText += '  normal_world = normalMatrix * normal_local;\n';
+      }
+      shaderText += '  }\n';
+
+      // calc vertex position in world space
+      shaderText += '  v_position_world = position_world.xyz;\n';
+
+      let normalTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_NORMAL);
+
+      // Send normal, tangent, binormal vectors in world space to the rasterizer
+      if (Shader._exist(f, GLBoost.NORMAL)) {
+        // calc Normal vector in world space
+        shaderText += '  v_normal_world = normal_world;\n';
+        if (Shader._exist(f, GLBoost.TANGENT) && !material.isFlatShading && normalTexture) {
+          // calc BiNormal vector and Tangent vector in world space
+          
+          {
+            // Calculate only when No skinning. If skinning, it has already been calculated by SkeletalShader.
+            shaderText += '  if (!isSkinning) {\n';
+            shaderText += '    tangent_world = normalMatrix * tangent_local;\n';
+            shaderText += '  }\n';
+          }
+
+          shaderText += '  v_binormal_world = cross(normal_world, tangent_world);\n';
+          shaderText += '  v_tangent_world = cross(v_binormal_world, normal_world);\n';
+
+        }
+      }
+
+      // Calc vertex positions in clip coordinate space.
+      // (These will be converted in Normalized Device Coordinates by divided gl_Posiiton.w in after stage.)
+      shaderText += '  gl_Position =  pvwMatrix * position_local;\n';
+
+      return shaderText;
+    }
+
+    FSDefine_VertexWorldShaderSource(in_, f, lights, material, extraData) {
+      let shaderText = '';
+
+      shaderText += `uniform highp ivec3 objectIds;\n`;
+      shaderText += `uniform vec3 viewPosition_world;\n`;
+
+      let lightNumExceptAmbient = lights.filter((light)=>{return !light.isTypeAmbient();}).length;    
+      if(lightNumExceptAmbient > 0) {
+        shaderText += `uniform vec4 lightDiffuse[${lightNumExceptAmbient}];\n`;
+        shaderText += `uniform vec3 lightSpotInfo[${lightNumExceptAmbient}];\n`;
+        shaderText += `uniform vec3 lightPosition_world[${lightNumExceptAmbient}];\n`;
+        shaderText += `uniform vec3 lightDirection_world[${lightNumExceptAmbient}];\n`;
+      }
+
+      if (Shader._exist(f, GLBoost.NORMAL)) {
+        shaderText += `${in_} vec3 v_normal_world;\n`;
+        if (Shader._exist(f, GLBoost.TANGENT) && material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_NORMAL)) {
+          shaderText += `${in_} vec3 v_tangent_world;\n`;
+          shaderText += `${in_} vec3 v_binormal_world;\n`;
+        }
+      }
+
+      shaderText += `${in_} vec3 v_position_world;\n`;
+
+      return shaderText;
+    }
+
+
+    FSShade_VertexWorldShaderSource(f, gl, lights) {
+      var shaderText = '';
+      return shaderText;
+    }
+
+    prepare_VertexWorldShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
+
+      var vertexAttribsAsResult = [];
+
+      vertexAttribs.forEach((attribName)=>{
+        if (attribName === 'position' || attribName === 'normal' || attribName === 'tangent') {
+          shaderProgram['vertexAttribute_' + attribName] = gl.getAttribLocation(shaderProgram, 'aVertex_' + attribName);
+          if (shaderProgram['vertexAttribute_' + attribName] !== -1) {
+            gl.enableVertexAttribArray(shaderProgram['vertexAttribute_' + attribName]);
+            vertexAttribsAsResult.push(attribName);
+          }
+        }
+      });
+
+      material.setUniform(shaderProgram, 'uniform_objectIdsAndOutlineFlag', this._glContext.getUniformLocation(shaderProgram, 'objectIds'));
+
+      material.setUniform(shaderProgram, 'uniform_worldMatrix', this._glContext.getUniformLocation(shaderProgram, 'worldMatrix'));
+      material._semanticsDic['WORLD'] = 'worldMatrix';
+      material.setUniform(shaderProgram, 'uniform_normalMatrix', this._glContext.getUniformLocation(shaderProgram, 'normalMatrix'));
+      material._semanticsDic['MODELVIEWINVERSETRANSPOSE'] = 'normalMatrix';
+      if (existCamera_f) {
+        material.setUniform(shaderProgram, 'uniform_viewMatrix', this._glContext.getUniformLocation(shaderProgram, 'viewMatrix'));
+        material._semanticsDic['VIEW'] = 'viewMatrix';
+        material.setUniform(shaderProgram, 'uniform_projectionMatrix', this._glContext.getUniformLocation(shaderProgram, 'projectionMatrix'));
+        material._semanticsDic['PROJECTION'] = 'projectionMatrix';
+      }
+
+      material.setUniform(shaderProgram, 'uniform_viewPosition', this._glContext.getUniformLocation(shaderProgram, 'viewPosition_world'));
+
+      for(let i=0; i<lights.length; i++) {
+        material.setUniform(shaderProgram, 'uniform_lightPosition_'+i, this._glContext.getUniformLocation(shaderProgram, `lightPosition_world[${i}]`));
+        material.setUniform(shaderProgram, 'uniform_lightDirection_'+i, this._glContext.getUniformLocation(shaderProgram, `lightDirection_world[${i}]`));
+        material.setUniform(shaderProgram, 'uniform_lightDiffuse_'+i, this._glContext.getUniformLocation(shaderProgram, `lightDiffuse[${i}]`));
+        material.setUniform(shaderProgram, 'uniform_lightSpotInfo_'+i, this._glContext.getUniformLocation(shaderProgram, `lightSpotInfo[${i}]`));
+      }
+
+      material.setUniform(shaderProgram, 'uniform_AABBLengthCenterToCorner', this._glContext.getUniformLocation(shaderProgram, 'AABBLengthCenterToCorner'));
+
+      return vertexAttribsAsResult;
+    }
+    
+  }
+
+
+
+
+  GLBoost['VertexWorldShaderSource'] = VertexWorldShaderSource;
 
   class AABB {
 
@@ -7014,22 +6858,22 @@ return mat4(
        }
       var newAabb = new AABB();
 
-      let AABB_0 = new Vector4(aabb._AABB_min.x, aabb._AABB_min.y, aabb._AABB_min.z, 1);
-      let AABB_1 = new Vector4(aabb._AABB_max.x, aabb._AABB_min.y, aabb._AABB_min.z, 1);
-      let AABB_2 = new Vector4(aabb._AABB_min.x, aabb._AABB_max.y, aabb._AABB_min.z, 1);
-      let AABB_3 = new Vector4(aabb._AABB_min.x, aabb._AABB_min.y, aabb._AABB_max.z, 1);
-      let AABB_4 = new Vector4(aabb._AABB_min.x, aabb._AABB_max.y, aabb._AABB_max.z, 1);
-      let AABB_5 = new Vector4(aabb._AABB_max.x, aabb._AABB_min.y, aabb._AABB_max.z, 1);
-      let AABB_6 = new Vector4(aabb._AABB_max.x, aabb._AABB_max.y, aabb._AABB_min.z, 1);
-      let AABB_7 = new Vector4(aabb._AABB_max.x, aabb._AABB_max.y, aabb._AABB_max.z, 1);
-      newAabb.addPosition(matrix.multiplyVector(AABB_0).toVector3());
-      newAabb.addPosition(matrix.multiplyVector(AABB_1).toVector3());
-      newAabb.addPosition(matrix.multiplyVector(AABB_2).toVector3());
-      newAabb.addPosition(matrix.multiplyVector(AABB_3).toVector3());
-      newAabb.addPosition(matrix.multiplyVector(AABB_4).toVector3());
-      newAabb.addPosition(matrix.multiplyVector(AABB_5).toVector3());
-      newAabb.addPosition(matrix.multiplyVector(AABB_6).toVector3());
-      newAabb.addPosition(matrix.multiplyVector(AABB_7).toVector3());
+      let AABB_0 = new Vector4$1(aabb._AABB_min.x, aabb._AABB_min.y, aabb._AABB_min.z, 1);
+      let AABB_1 = new Vector4$1(aabb._AABB_max.x, aabb._AABB_min.y, aabb._AABB_min.z, 1);
+      let AABB_2 = new Vector4$1(aabb._AABB_min.x, aabb._AABB_max.y, aabb._AABB_min.z, 1);
+      let AABB_3 = new Vector4$1(aabb._AABB_min.x, aabb._AABB_min.y, aabb._AABB_max.z, 1);
+      let AABB_4 = new Vector4$1(aabb._AABB_min.x, aabb._AABB_max.y, aabb._AABB_max.z, 1);
+      let AABB_5 = new Vector4$1(aabb._AABB_max.x, aabb._AABB_min.y, aabb._AABB_max.z, 1);
+      let AABB_6 = new Vector4$1(aabb._AABB_max.x, aabb._AABB_max.y, aabb._AABB_min.z, 1);
+      let AABB_7 = new Vector4$1(aabb._AABB_max.x, aabb._AABB_max.y, aabb._AABB_max.z, 1);
+      newAabb.addPosition(new Vector3(matrix.multiplyVector(AABB_0)));
+      newAabb.addPosition(new Vector3(matrix.multiplyVector(AABB_1)));
+      newAabb.addPosition(new Vector3(matrix.multiplyVector(AABB_2)));
+      newAabb.addPosition(new Vector3(matrix.multiplyVector(AABB_3)));
+      newAabb.addPosition(new Vector3(matrix.multiplyVector(AABB_4)));
+      newAabb.addPosition(new Vector3(matrix.multiplyVector(AABB_5)));
+      newAabb.addPosition(new Vector3(matrix.multiplyVector(AABB_6)));
+      newAabb.addPosition(new Vector3(matrix.multiplyVector(AABB_7)));
       newAabb.updateAllInfo();
 
       return newAabb;
@@ -7156,7 +7000,7 @@ return mat4(
           this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_' + uniformName), value.x, value.y, true);
         } else if (value instanceof Vector3) {
           this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_' + uniformName), value.x, value.y, value.z, true);
-        } else if (value instanceof Vector4) {
+        } else if (value instanceof Vector4$1) {
           this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_' + uniformName), value.x, value.y, value.z, value.w, true);
         }
       }
@@ -7170,7 +7014,7 @@ return mat4(
           this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_' + parameterName), value.x, value.y, true);
         } else if (value instanceof Vector3) {
           this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_' + parameterName), value.x, value.y, value.z, true);
-        } else if (value instanceof Vector4) {
+        } else if (value instanceof Vector4$1) {
           this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_' + parameterName), value.x, value.y, value.z, value.w, true);
         }
       }
@@ -7196,13 +7040,17 @@ return mat4(
       this._AABB = new AABB();
       this._drawKicker = DrawKickerWorld.getInstance();
 
-      if (this._drawKicker instanceof DrawKickerWorld) ; else if (this._drawKicker instanceof DrawKickerLocal) ;
+    }
+
+    _createShaderInstance(glBoostContext, shaderClass) {
+      let shaderInstance = new shaderClass(glBoostContext, VertexWorldShaderSource);
+      return shaderInstance;
     }
 
     /**
      * 全ての頂点属性のリストを返す
      */
-    static _allVertexAttribs(vertices) {
+    _allVertexAttribs(vertices) {
       var attribNameArray = [];
       for (var attribName in vertices) {
         if (attribName !== 'components' && attribName !== 'componentBytes' && attribName !== 'componentType') {
@@ -7216,7 +7064,7 @@ return mat4(
     _checkAndSetVertexComponentNumber(allVertexAttribs) {
       allVertexAttribs.forEach((attribName)=> {
         let element = this._vertices[attribName][0];
-        let componentN = MathUtil.compomentNumberOfVector(element);
+        let componentN = MathClassUtil.compomentNumberOfVector(element);
         if (componentN === 0) {
           // if 0, it must be a number. so users must set components info.
           return;
@@ -7403,7 +7251,7 @@ return mat4(
       }
       if ( this._vertices.texcoord ) {
         if (!this._indicesArray) {
-          for (let i=0; i<vertexNum; i+=incrementNum) {
+          for (let i=0; i<vertexNum-2; i+=incrementNum) {
             let pos0IndexBase = i * positionElementNumPerVertex;
             let pos1IndexBase = (i + 1) * positionElementNumPerVertex;
             let pos2IndexBase = (i + 2) * positionElementNumPerVertex;
@@ -7417,7 +7265,7 @@ return mat4(
         } else {
           for (let i=0; i<this._indicesArray.length; i++) {
             let vertexIndices = this._indicesArray[i];
-            for (let j=0; j<vertexIndices.length; j+=incrementNum) {
+            for (let j=0; j<vertexIndices.length-2; j+=incrementNum) {
               let pos0IndexBase = vertexIndices[j    ] * positionElementNumPerVertex; /// ０つ目の頂点
               let pos1IndexBase = vertexIndices[j + 1] * positionElementNumPerVertex; /// １つ目の頂点
               let pos2IndexBase = vertexIndices[j + 2] * positionElementNumPerVertex; /// ２つ目の頂点
@@ -7439,7 +7287,7 @@ return mat4(
       this._vertices = vertices;
       this._indicesArray = indicesArray;
 
-      let allVertexAttribs = Geometry._allVertexAttribs(this._vertices);
+      let allVertexAttribs = this._allVertexAttribs(this._vertices);
       this._checkAndSetVertexComponentNumber(allVertexAttribs);
 
       let vertexNum = 0;
@@ -7458,7 +7306,7 @@ return mat4(
       // for Wireframe
       this._calcBaryCentricCoord(vertexNum, positionElementNumPerVertex);
 
-      allVertexAttribs = Geometry._allVertexAttribs(this._vertices);
+      allVertexAttribs = this._allVertexAttribs(this._vertices);
       this._checkAndSetVertexComponentNumber(allVertexAttribs);
 
       // vector to array
@@ -7475,7 +7323,7 @@ return mat4(
         let vertexAttribArray = [];
         this._vertices[attribName].forEach((elem, index) => {
           let element = this._vertices[attribName][index];
-          Array.prototype.push.apply(vertexAttribArray, MathUtil.vectorToArray(element));
+          Array.prototype.push.apply(vertexAttribArray, MathClassUtil.vectorToArray(element));
         });
         this._vertices[attribName] = vertexAttribArray;
 
@@ -7517,7 +7365,7 @@ return mat4(
         let vertexAttribArray = [];
         this._vertices[attribName].forEach((elem, index) => {
           let element = vertices[attribName][index];
-          Array.prototype.push.apply(vertexAttribArray, MathUtil.vectorToArray(element));
+          Array.prototype.push.apply(vertexAttribArray, MathClassUtil.vectorToArray(element));
 
           if (attribName === 'position' && !(skipUpdateAABB === true)) {
             let componentN = this._vertices.components[attribName];
@@ -7592,22 +7440,22 @@ return mat4(
     }
 
     _getAllVertexAttribs() {
-      return Geometry._allVertexAttribs(this._vertices);
+      return this._allVertexAttribs(this._vertices);
     } 
 
     prepareGLSLProgram(expression, material, existCamera_f, lights, shaderClass = void 0, argShaderInstance = void 0) {
       let vertices = this._vertices;
 
-      let _optimizedVertexAttribs = Geometry._allVertexAttribs(vertices, material);
+      let _optimizedVertexAttribs = this._allVertexAttribs(vertices, material);
 
       let shaderInstance = null;
       if (argShaderInstance) {
         shaderInstance = argShaderInstance;
       } else {
         if (shaderClass) {
-          shaderInstance = Shader._createShaderInstance(this._glBoostContext, shaderClass);
+          shaderInstance = this._createShaderInstance(this._glBoostSystem, shaderClass);
         } else {
-          shaderInstance = Shader._createShaderInstance(this._glBoostContext, material.shaderClass);
+          shaderInstance = this._createShaderInstance(this._glBoostSystem, material.shaderClass);
         }  
       }
 
@@ -7634,7 +7482,7 @@ return mat4(
       } else if (mesh.material){
         materials = [mesh.material];
       } else {
-        mesh.material = this._glBoostContext._defaultMaterial;
+        mesh.material = this._glBoostSystem._defaultMaterial;
         materials = [mesh.material];
       }
       return materials;
@@ -7649,11 +7497,11 @@ return mat4(
       var vertices = this._vertices;
       var gl = this._glContext.gl;
 
-      var glem = GLExtensionsManager.getInstance(this._glContext);
+      var glem = GLExtensionsManager$1.getInstance(this._glContext);
 
       this._vertexN = vertices.position.length / vertices.components.position;
 
-      var allVertexAttribs = Geometry._allVertexAttribs(vertices);
+      var allVertexAttribs = this._allVertexAttribs(vertices);
 
 
       // create VAO
@@ -7756,7 +7604,7 @@ return mat4(
 
     draw(data) {
       const gl = this._glContext.gl;
-      const glem = GLExtensionsManager.getInstance(this._glContext);
+      const glem = GLExtensionsManager$1.getInstance(this._glContext);
 
       let materials = this._getAppropriateMaterials(data.mesh);
 
@@ -7794,7 +7642,7 @@ return mat4(
     merge(geometrys) {
       if (Array.isArray(geometrys)) {
         let typedArrayDic = {};
-        let allVertexAttribs = Geometry._allVertexAttribs(this._vertices);
+        let allVertexAttribs = this._allVertexAttribs(this._vertices);
         allVertexAttribs.forEach((attribName)=> {
           let thisLength = this._vertices[attribName].length;
 
@@ -7827,7 +7675,7 @@ return mat4(
       } else {
         let geometry = geometrys;
         let typedArrayDic = {};
-        let allVertexAttribs = Geometry._allVertexAttribs(this._vertices);
+        let allVertexAttribs = this._allVertexAttribs(this._vertices);
         allVertexAttribs.forEach((attribName)=> {
           let thisLength = this._vertices[attribName].length;
           let geomLength = geometry._vertices[attribName].length;
@@ -7850,7 +7698,7 @@ return mat4(
         console.assert('don\'t merge same geometry!');
       }
 
-      let allVertexAttribs = Geometry._allVertexAttribs(this._vertices);
+      let allVertexAttribs = this._allVertexAttribs(this._vertices);
 
       allVertexAttribs.forEach((attribName)=> {
         let thisLength = this._vertices[attribName].length;
@@ -7888,7 +7736,7 @@ return mat4(
     mergeHarder(geometrys) {
       if (Array.isArray(geometrys)) {
         let typedArrayDic = {};
-        let allVertexAttribs = Geometry._allVertexAttribs(this._vertices);
+        let allVertexAttribs = this._allVertexAttribs(this._vertices);
         allVertexAttribs.forEach((attribName)=> {
           let thisLength = this._vertices[attribName].length;
 
@@ -7921,7 +7769,7 @@ return mat4(
       } else {
         let geometry = geometrys;
         let typedArrayDic = {};
-        let allVertexAttribs = Geometry._allVertexAttribs(this._vertices);
+        let allVertexAttribs = this._allVertexAttribs(this._vertices);
         allVertexAttribs.forEach((attribName)=> {
           let thisLength = this._vertices[attribName].length;
           let geomLength = geometry._vertices[attribName].length;
@@ -7945,7 +7793,7 @@ return mat4(
         console.assert('don\'t merge same geometry!');
       }
 
-      let allVertexAttribs = Geometry._allVertexAttribs(this._vertices);
+      let allVertexAttribs = this._allVertexAttribs(this._vertices);
 
       allVertexAttribs.forEach((attribName)=> {
         let thisLength = this._vertices[attribName].length;
@@ -8057,7 +7905,7 @@ return mat4(
       return count;
     }
 
-    rayCast(origVec3, dirVec3) {
+    rayCast(origVec3, dirVec3, isFrontFacePickable, isBackFacePickable) {
       let currentShortestT = Number.MAX_VALUE;
       let currentShortestIntersectedPosVec3 = null;
 
@@ -8073,7 +7921,7 @@ return mat4(
             let pos0IndexBase = j * positionElementNumPerVertex;
             let pos1IndexBase = (j + 1) * positionElementNumPerVertex;
             let pos2IndexBase = (j + 2) * positionElementNumPerVertex;
-            const result = this._rayCastInner(origVec3, dirVec3, j, pos0IndexBase, pos1IndexBase, pos2IndexBase);
+            const result = this._rayCastInner(origVec3, dirVec3, j, pos0IndexBase, pos1IndexBase, pos2IndexBase, isFrontFacePickable, isBackFacePickable);
             if (result === null) {
               continue;
             }
@@ -8095,7 +7943,7 @@ return mat4(
               if (vertexIndices[k + 2] === void 0) {
                 break;
               }
-              const result = this._rayCastInner(origVec3, dirVec3, vertexIndices[k], pos0IndexBase, pos1IndexBase, pos2IndexBase);
+              const result = this._rayCastInner(origVec3, dirVec3, vertexIndices[k], pos0IndexBase, pos1IndexBase, pos2IndexBase, isFrontFacePickable, isBackFacePickable);
               if (result === null) {
                 continue;
               }
@@ -8112,10 +7960,20 @@ return mat4(
       return [currentShortestIntersectedPosVec3, currentShortestT];
     }
 
-    _rayCastInner(origVec3, dirVec3, i, pos0IndexBase, pos1IndexBase, pos2IndexBase) {
+    _rayCastInner(origVec3, dirVec3, i, pos0IndexBase, pos1IndexBase, pos2IndexBase, isFrontFacePickable, isBackFacePickable) {
       if (!this._vertices.arenberg3rdPosition[i]) {
         return null;
       }
+
+      const faceNormal = this._vertices.faceNormal[i];
+      if (faceNormal.dotProduct(dirVec3) < 0 && !isFrontFacePickable) { // ---> <---
+        return null;
+      }
+      if (faceNormal.dotProduct(dirVec3) > 0 && !isBackFacePickable) { // ---> --->
+        return null;
+      }
+      
+
       const vec3 = Vector3.subtract(origVec3, this._vertices.arenberg3rdPosition[i]);
       const convertedOrigVec3 = this._vertices.inverseArenbergMatrix[i].multiplyVector(vec3);
       const convertedDirVec3 = this._vertices.inverseArenbergMatrix[i].multiplyVector(dirVec3);
@@ -8175,9 +8033,10 @@ return mat4(
       }
       this._vertices.inverseArenbergMatrix = [];
       this._vertices.arenberg3rdPosition = [];
+      this._vertices.faceNormal = [];
       if ( this._vertices.texcoord ) {
         if (!this._indicesArray) {
-          for (let i=0; i<vertexNum; i+=incrementNum) {
+          for (let i=0; i<this._vertexN-2; i+=incrementNum) {
             let pos0IndexBase = i * positionElementNumPerVertex;
             let pos1IndexBase = (i + 1) * positionElementNumPerVertex;
             let pos2IndexBase = (i + 2) * positionElementNumPerVertex;
@@ -8188,7 +8047,7 @@ return mat4(
         } else {
           for (let i=0; i<this._indicesArray.length; i++) {
             let vertexIndices = this._indicesArray[i];
-            for (let j=0; j<vertexIndices.length; j+=incrementNum) {
+            for (let j=0; j<vertexIndices.length-2; j+=incrementNum) {
               let pos0IndexBase = vertexIndices[j    ] * positionElementNumPerVertex;
               let pos1IndexBase = vertexIndices[j + 1] * positionElementNumPerVertex;
               let pos2IndexBase = vertexIndices[j + 2] * positionElementNumPerVertex;
@@ -8264,6 +8123,7 @@ return mat4(
   //    const triangleIdx = i/incrementNum;
       this._vertices.inverseArenbergMatrix[arenberg0IndexBase] = inverseArenbergMatrix;
       this._vertices.arenberg3rdPosition[arenberg0IndexBase] = pos2Vec3;
+      this._vertices.faceNormal[arenberg0IndexBase] = new Vector3(nx, ny, nz);
     }
 
   }
@@ -8548,7 +8408,7 @@ return mat4(
       this._textureUnitIndex = 0;
 
       // x,y are uv scale, zw are uv transform. calculation is applied as first scale, second transform
-      this._uvTransform = new Vector4(1, 1, 0, 0);
+      this._uvTransform = new Vector4$1(1, 1, 0, 0);
 
       this._toMultiplyAlphaToColorPreviously = false; // same result when UNPACK_PREMULTIPLY_ALPHA_WEBGL is true
     }
@@ -8638,7 +8498,7 @@ return mat4(
         byteArray = this.getTexturePixelData();
       }
 
-      let color = new Vector4(
+      let color = new Vector4$1(
         byteArray[(y*this.width + x) * 4+0],
         byteArray[(y*this.width + x) * 4+1],
         byteArray[(y*this.width + x) * 4+2],
@@ -8794,6 +8654,13 @@ return mat4(
       super.setUniforms(gl, glslProgram, scene, material, camera, mesh, lights);
 
       this._glContext.uniform1i(material.getUniform(glslProgram, 'uniform_isNeededToMultiplyAlphaToColorOfPixelOutput'), this._isNeededToMultiplyAlphaToColorOfPixelOutput, true);
+    
+      let AABB = (this._AABB !== null) ? this._AABB : mesh.geometry.AABB;
+
+      let uniformLocationAABBLengthCenterToCorner = material.getUniform(glslProgram, 'uniform_AABBLengthCenterToCorner');
+      if (uniformLocationAABBLengthCenterToCorner) {
+        this._glContext.uniform1f(uniformLocationAABBLengthCenterToCorner, AABB.lengthCenterToCorner, true);
+      }
 
     }
 
@@ -8945,7 +8812,6 @@ return mat4(
 
       // for Unfold UV
       if (Shader._exist(f, GLBoost.TEXCOORD)) {
-        shaderText +=      'uniform float AABBLengthCenterToCorner;\n';
         shaderText +=      'uniform vec4 AABBCenterPositionAndRatio;\n';
       }
       return shaderText;
@@ -9068,7 +8934,6 @@ return mat4(
       this._glContext.uniform1f( uniform_wireframeWidthRelativeScale, 1.0, true);
 
       if (Shader._exist(vertexAttribs, GLBoost.TEXCOORD)) {
-        material.setUniform(shaderProgram, 'uniform_AABBLengthCenterToCorner', this._glContext.getUniformLocation(shaderProgram, 'AABBLengthCenterToCorner'));
         material.setUniform(shaderProgram, 'uniform_AABBCenterPositionAndRatio', this._glContext.getUniformLocation(shaderProgram, 'AABBCenterPositionAndRatio'));
       }
 
@@ -9125,10 +8990,6 @@ return mat4(
 
       let AABB = (this._AABB !== null) ? this._AABB : mesh.geometry.AABB;
 
-      let uniformLocationAABBLengthCenterToCorner = material.getUniform(glslProgram, 'uniform_AABBLengthCenterToCorner');
-      if (uniformLocationAABBLengthCenterToCorner) {
-        this._glContext.uniform1f(uniformLocationAABBLengthCenterToCorner, AABB.lengthCenterToCorner, true);
-      }
       let uniformLocationAABBCenterPositionAndRatio = material.getUniform(glslProgram, 'uniform_AABBCenterPositionAndRatio');
       if (uniformLocationAABBCenterPositionAndRatio) {
         let unfoldUVRatioParameter = this.getShaderParameter(material, 'unfoldUVRatio', 0.0);
@@ -9257,7 +9118,7 @@ return mat4(
 
       let diffuseTexture = material.getTextureFromPurpose(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
       if (!diffuseTexture) {
-        diffuseTexture = this._glBoostContext.defaultDummyTexture;
+        diffuseTexture = this._glBoostSystem._glBoostContext.defaultDummyTexture;
       }
 
       if (diffuseTexture.toMultiplyAlphaToColorPreviously) {
@@ -9382,10 +9243,10 @@ return mat4(
       this._texturePurposeDic = [];
       this._textureContributionRateDic = {};
       this._gl = this._glContext.gl;
-      this._baseColor = new Vector4(1.0, 1.0, 1.0, 1.0);
-      this._diffuseColor = new Vector4(1.0, 1.0, 1.0, 1.0);
-      this._specularColor = new Vector4(0.5, 0.5, 0.5, 1.0);
-      this._ambientColor = new Vector4(0.25, 0.25, 0.25, 1.0);
+      this._baseColor = new Vector4$1(1.0, 1.0, 1.0, 1.0);
+      this._diffuseColor = new Vector4$1(1.0, 1.0, 1.0, 1.0);
+      this._specularColor = new Vector4$1(0.5, 0.5, 0.5, 1.0);
+      this._ambientColor = new Vector4$1(0.25, 0.25, 0.25, 1.0);
       this._name = '';
       this._shaderClass = DecalShader;
       this._shaderInstance = null;
@@ -9480,7 +9341,7 @@ return mat4(
       let _purpose = (typeof purpose !== 'undefined' ? purpose:GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
       this._texturePurposeDic[_purpose] = texture.userFlavorName;
       texture.purpose = _purpose;
-      this._textureContributionRateDic[texture.userFlavorName] = new Vector4(1.0, 1.0, 1.0, 1.0);
+      this._textureContributionRateDic[texture.userFlavorName] = new Vector4$1(1.0, 1.0, 1.0, 1.0);
       this._updateCount();
     }
 
@@ -9668,7 +9529,7 @@ return mat4(
         isCalledWebGLBindTexture = texture.setUp(textureUnitIndex);
         return isCalledWebGLBindTexture;
       } else {
-        this._glBoostContext.defaultDummyTexture.setUp(0);
+        this._glBoostSystem._glBoostContext.defaultDummyTexture.setUp(0);
 
   //      gl.bindTexture(gl.TEXTURE_2D, null);
         isCalledWebGLBindTexture = true;
@@ -9701,7 +9562,7 @@ return mat4(
     }
 
     setUpStates() {
-      let globalStatesUsage = this._glBoostContext.globalStatesUsage;
+      let globalStatesUsage = this._glBoostSystem._glBoostContext.globalStatesUsage;
       if (this._globalStatesUsage) {
         globalStatesUsage = this._globalStatesUsage;
       }
@@ -9712,11 +9573,11 @@ return mat4(
           this._setUpMaterialStates(this._states);
           break;
         case GLBoost$1.GLOBAL_STATES_USAGE_INCLUSIVE:
-          this._glBoostContext.reflectGlobalGLState();
+          this._glBoostSystem._glBoostContext.reflectGlobalGLState();
           this._setUpMaterialStates(this._states);
           break;
         case GLBoost$1.GLOBAL_STATES_USAGE_EXCLUSIVE:
-          this._glBoostContext.reflectGlobalGLState();
+          this._glBoostSystem._glBoostContext.reflectGlobalGLState();
           break;
         default:
           break;
@@ -9724,7 +9585,7 @@ return mat4(
     }
 
     tearDownStates() {
-      this._glBoostContext.disableAllGLState();
+      this._glBoostSystem._glBoostContext.disableAllGLState();
       this._setUpMaterialStates({
         functions : this._stateFunctionsToReset
       });
@@ -9991,6 +9852,35 @@ return mat4(
     get texture() {
       return this._texture;
     }
+
+    get allInfo() {
+      const info = {};
+
+      info.translate = this.translate;
+      //info.translateInner = this.translateInner;
+      info.center = this.center;
+      //info.centerInner = this.centerInner;
+      info.up = this.up;
+      //info.upInner = this.upInner;
+
+      return info;
+    }
+
+    set allInfo(arg) {
+      let json = arg;
+      if (typeof arg === "string") {
+        json = JSON.parse(arg);
+      }
+      for(let key in json) {
+        if(json.hasOwnProperty(key) && key in this) {
+          if (key === "quaternion") {
+            this[key] = MathClassUtil.cloneOfMathObjects(MathClassUtil.arrayToQuaternion(json[key]));
+          } else {
+            this[key] = MathClassUtil.cloneOfMathObjects(MathClassUtil.arrayToVectorOrMatrix(json[key]));
+          }
+        }
+      }
+    }
   }
 
   L_AbstractCamera._mainCamera = {};
@@ -10101,6 +9991,22 @@ return mat4(
       return this._zFar;
     }
 
+    get allInfo() {
+      const info = super.allInfo;
+
+      info.fovy = this.fovy;
+      info.aspect = this.aspect;
+      info.zFar = this.zFar;
+  //    info.zFarInner = this.zFarInner;
+      info.zNear = this.zNear;
+  //    info.zNearInner = this.zNearInner;
+
+      return info;
+    }
+
+    set allInfo(info) {
+      super.allInfo = info;
+    }
   }
 
   class L_FrustumCamera extends L_AbstractCamera {
@@ -10223,6 +10129,25 @@ return mat4(
 
     get aspect() {
       return (this.right - this.left) / (this.top - this.bottom);
+    }
+
+    get allInfo() {
+      const info = super.allInfo;
+
+      info.left = this.left;
+      info.right = this.right;
+      info.top = this.top;
+      info.bottom = this.bottom;
+      info.zFar = this.zFar;
+  //    info.zFarInner = this.zFarInner;
+      info.zNear = this.zNear;
+  //    info.zNearInner = this.zNearInner;
+
+      return info;
+    }
+
+    set allInfo(info) {
+      super.allInfo = info;
     }
   }
 
@@ -10380,6 +10305,27 @@ return mat4(
     get aspect() {
       return (this.right - this.left) / (this.top - this.bottom);
     }
+
+    get allInfo() {
+      const info = super.allInfo;
+
+      info.left = this.left;
+      info.right = this.right;
+      info.top = this.top;
+      info.bottom = this.bottom;
+      info.zFar = this.zFar;
+  //    info.zFarInner = this.zFarInner;
+      info.zNear = this.zNear;
+  //    info.zNearInner = this.zNearInner;
+      info.xmag = this.xmag;
+      info.ymag = this.ymag;
+
+      return info;
+    }
+
+    set allInfo(info) {
+      super.allInfo = info;
+    }
   }
 
   class M_AbstractCamera extends M_Element {
@@ -10489,6 +10435,13 @@ return mat4(
       return this._lowLevelCamera.upInner;
     }
 
+    get allInfo() {
+      return this._lowLevelCamera.allInfo;
+    }
+
+    set allInfo(info) {
+      this._lowLevelCamera.allInfo = info;
+    }
 
   }
 
@@ -10856,9 +10809,9 @@ return mat4(
       let newUpVec = null;
       if (camera instanceof M_AbstractCamera) {
         let mat = camera.inverseWorldMatrixWithoutMySelf;
-        newEyeVec = mat.multiplyVector(new Vector4(newEyeVec.x, newEyeVec.y, newEyeVec.z, 1)).toVector3();
-        newCenterVec = mat.multiplyVector(new Vector4(newCenterVec.x, newCenterVec.y, newCenterVec.z, 1)).toVector3();
-        newUpVec = mat.multiplyVector(new Vector4(upVec.x, upVec.y, upVec.z, 1)).toVector3();
+        newEyeVec = new Vector3(mat.multiplyVector(new Vector4$1(newEyeVec.x, newEyeVec.y, newEyeVec.z, 1)));
+        newCenterVec = new Vector3(mat.multiplyVector(new Vector4$1(newCenterVec.x, newCenterVec.y, newCenterVec.z, 1)));
+        newUpVec = new Vector3(mat.multiplyVector(new Vector4$1(upVec.x, upVec.y, upVec.z, 1)));
       } else {
         newUpVec = upVec;
       }
@@ -10913,6 +10866,10 @@ return mat4(
     set target(object) {
       this._target = object;
       this.updateTargeting();
+    }
+
+    get target() {
+      return this._target;
     }
 
     set zFarAdjustingFactorBasedOnAABB(value) {
@@ -10975,6 +10932,35 @@ return mat4(
       });
     }
 
+
+    get allInfo() {
+      const info = {};
+
+      info.rotY = this.rotY;
+      info.rotX = this.rotX;
+      info.dolly = this.dolly;
+      info.shiftCameraTo = this.shiftCameraTo;
+      info.zFarAdjustingFactorBasedOnAABB = this.zFarAdjustingFactorBasedOnAABB;
+      info.target = this.target;
+
+      return info;
+    }
+
+    set allInfo(arg) {
+      let json = arg;
+      if (typeof arg === "string") {
+        json = JSON.parse(arg);
+      }
+      for(let key in json) {
+        if(json.hasOwnProperty(key) && key in this) {
+          if (key === "quaternion") {
+            this[key] = MathClassUtil.cloneOfMathObjects(MathClassUtil.arrayToQuaternion(json[key]));
+          } else {
+            this[key] = MathClassUtil.cloneOfMathObjects(MathClassUtil.arrayToVectorOrMatrix(json[key]));
+          }
+        }
+      }
+    }
   }
 
   GLBoost$1['L_CameraController'] = L_CameraController;
@@ -11229,6 +11215,46 @@ return mat4(
 
     get virticalSpeed() {
       return this._virticalSpeed;
+    }
+
+    get allInfo() {
+      const info = {};
+
+      info.virticalSpeed = this.virticalSpeed;
+      info.horizontalSpeed = this.horizontalSpeed;
+      info._turnSpeed = this._turnSpeed;
+      info.shiftCameraTo = this.shiftCameraTo;
+      info.zFarAdjustingFactorBasedOnAABB = this.zFarAdjustingFactorBasedOnAABB;
+      info.target = this.target;
+      if (this._currentPos) {
+        info._currentPos = this._currentPos.clone();
+      }
+      if (this._currentCenter) {
+        info._currentCenter = this._currentCenter.clone();
+      }
+      if (this._currentDir) {
+        info._currentDir = this._currentDir.clone();
+      }
+      info._deltaY = this._deltaY;
+      info._newDir = this._newDir.clone();
+
+      return info;
+    }
+
+    set allInfo(arg) {
+      let json = arg;
+      if (typeof arg === "string") {
+        json = JSON.parse(arg);
+      }
+      for(let key in json) {
+        if(json.hasOwnProperty(key) && key in this) {
+          if (key === "quaternion") {
+            this[key] = MathClassUtil.cloneOfMathObjects(MathClassUtil.arrayToQuaternion(json[key]));
+          } else {
+            this[key] = MathClassUtil.cloneOfMathObjects(MathClassUtil.arrayToVectorOrMatrix(json[key]));
+          }
+        }
+      }
     }
   }
 
@@ -11578,7 +11604,7 @@ return mat4(
 
     _generateTextureFromImageData(imageData) {
       var gl = this._glContext.gl;
-      var glem = GLExtensionsManager.getInstance(this._glContext);
+      var glem = GLExtensionsManager$1.getInstance(this._glContext);
 
       var imgCanvas = this._getResizedCanvas(imageData);
       this._width = imgCanvas.width;
@@ -11596,7 +11622,7 @@ return mat4(
 
     _generateTextureInnerWithArrayBufferView(imgCanvas, width, height, isKeepBound) {
       var gl = this._glContext.gl;
-      var glem = GLExtensionsManager.getInstance(this._glContext);
+      var glem = GLExtensionsManager$1.getInstance(this._glContext);
       var texture = this._glContext.createTexture(this);
       gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -11621,7 +11647,7 @@ return mat4(
 
     _generateTextureInner(imgCanvas, isKeepBound) {
       var gl = this._glContext.gl;
-      var glem = GLExtensionsManager.getInstance(this._glContext);
+      var glem = GLExtensionsManager$1.getInstance(this._glContext);
       var texture = this._glContext.createTexture(this);
       gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -11726,8 +11752,8 @@ return mat4(
       super(glBoostContext);
 
       // if array, convert to vector[2/3/4]
-      widthVector = MathUtil.arrayToVector(widthVector);
-      vertexColor = MathUtil.arrayToVector(vertexColor);
+      widthVector = MathClassUtil.arrayToVector(widthVector);
+      vertexColor = MathClassUtil.arrayToVector(vertexColor);
 
       this._setupVertexData(widthVector.divide(2.0), vertexColor);
     }
@@ -11776,35 +11802,35 @@ return mat4(
         new Vector3(-widthVector.x, widthVector.y, -widthVector.z)
       ];
       var colors = [
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-        new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w)
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+        new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w)
       ];
       var texcoords = [
         new Vector2(0.0, 0.0),
@@ -11944,7 +11970,7 @@ return mat4(
       }
 
       var colors = [];
-      var vertexColor = new Vector4(1, 1, 1, 1);
+      var vertexColor = new Vector4$1(1, 1, 1, 1);
       for(let i=0; i<=vSpan; i++) {
         for(let j=0; j<=uSpan; j++) {
           colors.push(vertexColor);
@@ -12005,7 +12031,7 @@ return mat4(
       var normals = [];
 
       if (!vertexColor) {
-        vertexColor = new Vector4(1, 1, 1, 1);
+        vertexColor = new Vector4$1(1, 1, 1, 1);
       }
 
       let shiftValue = 0.00001; // for avoid Singular point
@@ -12098,16 +12124,16 @@ return mat4(
 
       let colors = [
         // X Axis
-        new Vector4(1, 0, 0, 1),
-        new Vector4(1, 0, 0, 1),
+        new Vector4$1(1, 0, 0, 1),
+        new Vector4$1(1, 0, 0, 1),
 
         // Y Axis
-        new Vector4(0, 1, 0, 1),
-        new Vector4(0, 1, 0, 1),
+        new Vector4$1(0, 1, 0, 1),
+        new Vector4$1(0, 1, 0, 1),
 
         // Z Axis
-        new Vector4(0, 0, 1, 1),
-        new Vector4(0, 0, 1, 1),
+        new Vector4$1(0, 0, 1, 1),
+        new Vector4$1(0, 0, 1, 1),
       ];
 
       this.setVerticesData({
@@ -12204,7 +12230,7 @@ return mat4(
 
       // if array, convert to vector[2/3/4]
       for (let i=0; i<positionArray.length; i++) {
-        positionArray[i] = MathUtil.arrayToVector(positionArray[i]);
+        positionArray[i] = MathClassUtil.arrayToVector(positionArray[i]);
       }
 
       for (let i=0; i<positionArray.length; i++) {
@@ -12263,7 +12289,7 @@ return mat4(
       if (needDefaultWhiteColor) {
         this.colors = [];
         let colors = this.colors;
-        var vertexColor = new Vector4(1, 1, 1, 1);
+        var vertexColor = new Vector4$1(1, 1, 1, 1);
         for (let i=0; i<positionArray.length; i++) {
           for (let j=0; j<4; j++) {
             colors.push(vertexColor);
@@ -12503,7 +12529,7 @@ return mat4(
         indices.push(degenerate_left_index);
       }
 
-      let vertexColor = new Vector4(1, 1, 1, 1);
+      let vertexColor = new Vector4$1(1, 1, 1, 1);
       for(let i=0; i<=vSpan; i++) {
         for(let j=0; j<=uSpan; j++) {
           colors.push(vertexColor);
@@ -12527,19 +12553,32 @@ return mat4(
 
   GLBoost$1["Screen"] = Screen;
 
+  //import GLContext from './GLContext';
+
   class GLBoostLowContext {
     constructor(canvas, initParameter, gl, width, height) {
       this._setName();
 
+      this.__system = new GLBoostSystem(canvas, initParameter, gl, width, height, this);
       console.log('*** GLBoost ' + GLBoost$1.VERSION + ' ***');
 
+
+      let dummyWhite1x1ImageDataUrl = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyhpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNi1jMTM4IDc5LjE1OTgyNCwgMjAxNi8wOS8xNC0wMTowOTowMSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENDIDIwMTcgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6REY4MUVGRjk0QzMyMTFFN0I2REJDQTc4QjEyOEY2RTgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6REY4MUVGRkE0QzMyMTFFN0I2REJDQTc4QjEyOEY2RTgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpERjgxRUZGNzRDMzIxMUU3QjZEQkNBNzhCMTI4RjZFOCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDpERjgxRUZGODRDMzIxMUU3QjZEQkNBNzhCMTI4RjZFOCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PvTp+QkAAAAPSURBVHjaYvj//z9AgAEABf4C/i3Oie4AAAAASUVORK5CYII=';
+      this.__system._defaultDummyTexture = this.createTexture(dummyWhite1x1ImageDataUrl, "GLBoost_dummyWhite1x1Texture");
+
+      this.__system._defaultMaterial = this.createClassicMaterial();
+      this.__system._defaultMaterial.userFlavorName = 'GLBoostSystemDefaultMaterial';
+
+      this.restoreGlobalStatesToDefault();
+
+  /*
       if (gl) {
         this._glContext = GLContext.getInstance(null, initParameter, gl, width, height);
       } else {
         this._glContext = GLContext.getInstance(canvas, initParameter);
       }
 
-      this._globalStatesUsage = GLBoost$1.GLOBAL_STATES_USAGE_INCLUSIVE;
+      this._globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_INCLUSIVE;
 
       this._defaultGlobalStates = [
         3042, // gl.BLEND
@@ -12558,16 +12597,17 @@ return mat4(
 
       // effekseer
       if (typeof effekseer !== "undefined") {
-        effekseer.init(this._glContext.gl);
+        effekseer.init(this.__system._glContext.gl);
       }
+      */
     }
 
     get defaultDummyTexture() {
-      return this._defaultDummyTexture;
+      return this.__system._defaultDummyTexture;
     }
 
     _setName() {
-      this.constructor._instanceCount = (typeof this.constructor._instanceCount === 'undefined') ? 0 : (this.constructor._instanceCount + 1);
+      this.constructor._instanceCount = (typeof this.constructor._instanceCount === 'undefined') ? 0 : (this.__system.constructor._instanceCount + 1);
       this._instanceName = this.constructor.name + '_' + this.constructor._instanceCount;
     }
 
@@ -12576,71 +12616,71 @@ return mat4(
     }
 
     get glContext() {
-      return this._glContext;
+      return this.__system._glContext;
     }
 
     createGeometry() {
-      return new Geometry(this);
+      return new Geometry(this.__system);
     }
 
     createBlendShapeGeometry() {
-      return new BlendShapeGeometry(this);
+      return new BlendShapeGeometry(this.__system);
     }
 
     createCube(widthVector, vertexColor) {
-      return new Cube(this, widthVector, vertexColor);
+      return new Cube(this.__system, widthVector, vertexColor);
     }
 
     createPlane(width, height, uSpan, vSpan, customVertexAttributes, isUVRepeat) {
-      return new Plane(this, width, height, uSpan, vSpan, customVertexAttributes, isUVRepeat);
+      return new Plane(this.__system, width, height, uSpan, vSpan, customVertexAttributes, isUVRepeat);
     }
 
     createSphere(radius, widthSegments, heightSegments, vertexColor) {
-      return new Sphere(this, radius, widthSegments, heightSegments, vertexColor);
+      return new Sphere(this.__system, radius, widthSegments, heightSegments, vertexColor);
     }
 
     createAxis(length) {
-      return new Axis(length);
+      return new Axis(this.__system, length);
     }
 
     createParticle(centerPointData, particleWidth, particleHeight, customVertexAttributes, performanceHint) {
-      return new Particle(this, centerPointData, particleWidth, particleHeight, customVertexAttributes, performanceHint);
+      return new Particle(this.__system, centerPointData, particleWidth, particleHeight, customVertexAttributes, performanceHint);
     }
 
     createClassicMaterial() {
-      return new ClassicMaterial$1(this);
+      return new ClassicMaterial$1(this.__system);
     }
 
     createPerspectiveCamera(lookat, perspective) {
-      return new L_PerspectiveCamera(this, true, lookat, perspective);
+      return new L_PerspectiveCamera(this.__system, true, lookat, perspective);
     }
 
     createFrustumCamera(lookat, perspective) {
-      return new L_FrustumCamera(this, true, lookat, perspective);
+      return new L_FrustumCamera(this.__system, true, lookat, perspective);
     }
 
     createOrthoCamera(lookat, ortho) {
-      return new L_OrthoCamera(this, true, lookat, ortho);
+      return new L_OrthoCamera(this.__system, true, lookat, ortho);
     }
 
     createCameraController(options) {
-      return new L_CameraController(this, options);
+      return new L_CameraController(this.__system, options);
     }
 
     createWalkThroughCameraController(options) {
-      return new L_WalkThroughCameraController(this, options);
+      return new L_WalkThroughCameraController(this.__system, options);
     }
 
     createTexture(src, userFlavorName, parameters = null) {
-      return new Texture(this, src, userFlavorName, parameters);
+      return new Texture(this.__system, src, userFlavorName, parameters);
     }
 
     createPhinaTexture(width, height, fillStyle, parameters = null) {
-      return new PhinaTexture(this, width, height, fillStyle, parameters);
+      return new PhinaTexture(this.__system, width, height, fillStyle, parameters);
     }
 
     createScreen(screen, customVertexAttributes) {
-      return new Screen(this, screen, customVertexAttributes);
+      return new Screen(this.__system, screen, customVertexAttributes);
     }
 
     /**
@@ -12653,26 +12693,26 @@ return mat4(
      * @returns {Array} en: an array of created textures. ja:作成されたテクスチャの配列
      */
     createTexturesForRenderTarget(width, height, textureNum) {
-      var glContext = this._glContext;
+      var glContext = this.__system._glContext;
       var gl = glContext.gl;
 
       var glem = GLExtensionsManager.getInstance(glContext);
 
       // Create FBO
-      var fbo = glContext.createFramebuffer(this);
+      var fbo = glContext.createFramebuffer(this.__system);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
       fbo.width = width;
       fbo.height = height;
       fbo._glboostTextures = [];
 
       for(let i=0; i<textureNum; i++) {
-        let texture = new MutableTexture(this, fbo.width, fbo.height);
+        let texture = new MutableTexture(this.__system, fbo.width, fbo.height);
         texture.fbo = fbo;
         fbo._glboostTextures.push(texture);
       }
 
       // Create RenderBuffer
-      var renderBuffer = glContext.createRenderbuffer(this);
+      var renderBuffer = glContext.createRenderbuffer(this.__system);
       gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, fbo.width, fbo.height);
       fbo.renderBuffer = renderBuffer;
@@ -12693,14 +12733,14 @@ return mat4(
     }
 
     createDepthTexturesForRenderTarget(width, height) {
-      var glContext = this._glContext;
+      var glContext = this.__system._glContext;
 
       var gl = glContext.gl;
 
       var glem = GLExtensionsManager.getInstance(glContext);
 
       // Create FBO
-      var fbo = glContext.createFramebuffer(this);
+      var fbo = glContext.createFramebuffer(this.__system);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
       fbo.width = width;
       fbo.height = height;
@@ -12726,7 +12766,7 @@ return mat4(
         internalFormat = gl.DEPTH_STENCIL;
       }
 
-      let depthTexture = new MutableTexture(this, fbo.width, fbo.height, 0,
+      let depthTexture = new MutableTexture(this.__system, fbo.width, fbo.height, 0,
         internalFormat, format, type,
         gl.LINEAR, gl.LINEAR, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE);
       depthTexture.fbo = fbo;
@@ -12755,19 +12795,19 @@ return mat4(
     }
 
     get belongingCanvasId() {
-      return this._glContext.belongingCanvasId;
+      return this.__system._glContext.belongingCanvasId;
     }
 
     set globalStatesUsage(usageMode) {
-      this._globalStatesUsage = usageMode;
+      this.__system._globalStatesUsage = usageMode;
     }
 
     get globalStatesUsage() {
-      return this._globalStatesUsage;
+      return this.__system._globalStatesUsage;
     }
 
     reflectGlobalGLState() {
-      let gl = this._glContext.gl;
+      let gl = this.__system._glContext.gl;
 
       this.currentGlobalStates.forEach((state)=>{
         gl.enable(state);
@@ -12791,7 +12831,7 @@ return mat4(
         32926, // gl.SAMPLE_ALPHA_TO_COVERAGE
       ];
 
-      let glContext = this._glContext;
+      let glContext = this.__system._glContext;
       let gl = glContext.gl;
 
       states.forEach((state)=>{
@@ -12800,19 +12840,19 @@ return mat4(
     }
 
     set currentGlobalStates(states) {
-      this._currentGlobalStates = states.concat();
+      this.__system._currentGlobalStates = states.concat();
     }
 
     get currentGlobalStates() {
-      return this._currentGlobalStates;
+      return this.__system._currentGlobalStates;
     }
 
     restoreGlobalStatesToDefault() {
-      this._currentGlobalStates = this._defaultGlobalStates.concat();
+      this.__system._currentGlobalStates = this.__system._defaultGlobalStates.concat();
     }
 
     get glBoostMonitor() {
-      return this._glBoostMonitor;
+      return this.__system._glBoostMonitor;
     }
 
     setPropertiesFromJson(arg) {
@@ -12824,7 +12864,7 @@ return mat4(
         console.warn(`Faild! This json doesn't include targetInstanceName field!`);
         return;
       }
-      const object = this._glBoostMonitor.getGLBoostObject(json.targetInstanceName);
+      const object = this.__system._glBoostMonitor.getGLBoostObject(json.targetInstanceName);
       object.setPropertiesFromJson(json);
 
       return object;
@@ -12903,7 +12943,7 @@ return mat4(
       let componentN = this._geometry._vertices.components.position;
       let length = positions.length / componentN;
       for (let i=0; i<length; i++) {
-        let posVector4 = new Vector4(positions[i*componentN], positions[i*componentN+1], positions[i*componentN+2], 1);
+        let posVector4 = new Vector4$1(positions[i*componentN], positions[i*componentN+1], positions[i*componentN+2], 1);
         let transformedPosVec = mat.multiplyVector(posVector4);
         positions[i*componentN] = transformedPosVec.x;
         positions[i*componentN+1] = transformedPosVec.y;
@@ -12919,7 +12959,7 @@ return mat4(
         length = normals.length / 3;
         for (let i=0; i<length; i++) {
           let normalVector3 = new Vector3(normals[i*3], normals[i*3+1], normals[i*3+2]);
-          let transformedNormalVec = Matrix44$1.invert(mat).transpose().toMatrix33().multiplyVector(normalVector3).normalize();
+          let transformedNormalVec = this.normalMatrix.multiplyVector(normalVector3).normalize();
           normals[i*3] = transformedNormalVec.x;
           normals[i*3+1] = transformedNormalVec.y;
           normals[i*3+2] = transformedNormalVec.z;
@@ -12935,7 +12975,7 @@ return mat4(
       let componentN = this._geometry._vertices.components.position;
       let length = positions.length / componentN;
       for (let i=0; i<length; i++) {
-        let posVector4 = new Vector4(positions[i*componentN], positions[i*componentN+1], positions[i*componentN+2], 1);
+        let posVector4 = new Vector4$1(positions[i*componentN], positions[i*componentN+1], positions[i*componentN+2], 1);
         let transformedPosVec = invMat.multiplyVector(posVector4);
         positions[i*componentN] = transformedPosVec.x;
         positions[i*componentN+1] = transformedPosVec.y;
@@ -12952,7 +12992,8 @@ return mat4(
         length = normals.length / 3;
         for (let i=0; i<length; i++) {
           let normalVector3 = new Vector3(normals[i*3], normals[i*3+1], normals[i*3+2]);
-          let transformedNormalVec = Matrix44$1.invert(mat).transpose().invert().toMatrix33().multiplyVector(normalVector3).normalize();
+          const invNormalMat = new Matrix33(Matrix44$1.invert(mat).transpose().invert());
+          let transformedNormalVec = invNormalMat.multiplyVector(normalVector3).normalize();
           normals[i*3] = transformedNormalVec.x;
           normals[i*3+1] = transformedNormalVec.y;
           normals[i*3+2] = transformedNormalVec.z;
@@ -13045,7 +13086,7 @@ return mat4(
       }
       var mv_m = viewMatrix.multiply(camera.inverseWorldMatrix).multiply(m_m);
 
-      var centerPosition = this.geometry.centerPosition.toVector4();
+      var centerPosition = new Vector4$1(this.geometry.centerPosition);
       //console.log(this.userFlavorName + " centerPosition: " + centerPosition);
       var transformedCenterPosition = mv_m.multiplyVector(centerPosition);
 
@@ -13057,13 +13098,17 @@ return mat4(
     }
 
     get isTransparent() {
-      let isTransparent = (this._opacity < 1.0 || this._transparentByUser) ? true : false;
+      let isTransparent = (this._opacity < 1.0) ? true : false;
       isTransparent |= this.geometry.isTransparent(this);
       return isTransparent;
     }
 
-    set isTransparent(flg) {
-      this._transparentByUser = flg;
+    set isTransparentForce(flg) {
+      this._isTransparentForce = flg;
+    }
+
+    get isTransparentForce() {
+      return this._isTransparentForce;
     }
 
     get AABBInWorld() {
@@ -13086,14 +13131,30 @@ return mat4(
     rayCast(x, y, camera, viewport) {
 
       const invPVW = GLBoost$1.Matrix44.multiply(camera.projectionRHMatrix(), GLBoost$1.Matrix44.multiply(camera.lookAtRHMatrix(), this.worldMatrix)).invert();
-      const origVecInLocal = GLBoost$1.MathUtil.unProject(new GLBoost$1.Vector3(x, y, 0), invPVW, viewport);
-      const distVecInLocal = GLBoost$1.MathUtil.unProject(new GLBoost$1.Vector3(x, y, 1), invPVW, viewport);
+      const origVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 0), invPVW, viewport);
+      const distVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 1), invPVW, viewport);
       const dirVecInLocal = GLBoost$1.Vector3.subtract(distVecInLocal, origVecInLocal).normalize();
 
-      const result = this.geometry.rayCast(origVecInLocal, dirVecInLocal);
+      const gl = this._glContext.gl;
+      const isCulling = gl.isEnabled(gl.CULL_FACE);
+      const cullMode = gl.getParameter(gl.CULL_FACE_MODE);
+
+      let isFrontFacePickable = true;
+      let isBackFacePickable = true;
+      if (isCulling) {
+        if (cullMode === gl.FRONT) {
+          isFrontFacePickable = false;
+        } else if (cullMode === gl.Back) {
+          isBackFacePickable = false;
+        } else {
+          isFrontFacePickable = false;
+          isBackFacePickable = false;
+        }
+      }
+      const result = this.geometry.rayCast(origVecInLocal, dirVecInLocal, isFrontFacePickable, isBackFacePickable);
       let intersectPositionInWorld = null;
       if (result[0]) {
-        intersectPositionInWorld = this.worldMatrix.multiplyVector(result[0].toVector4()).toVector3();
+        intersectPositionInWorld = new Vector3(this.worldMatrix.multiplyVector(new Vector4$1(result[0])));
       }
       return [intersectPositionInWorld, result[1]];
     }
@@ -13220,35 +13281,35 @@ return mat4(
       ];
       if (vertexColor) {
         const colors = [
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
 
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
-          new Vector4(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w)
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w),
+          new Vector4$1(vertexColor.x, vertexColor.y, vertexColor.z, vertexColor.w)
         ];
       }
 
@@ -13797,6 +13858,9 @@ return mat4(
       let currentShortestIntersectedPosVec3 = null;
       let selectedMesh = null;
       for (let mesh of meshes) {
+        if (!mesh.isVisible) {
+          continue;
+        }
         if (!mesh.isPickable) {
           continue;
         }
@@ -14162,7 +14226,7 @@ return mat4(
         height = this._renderTargetDepthTexture.height;
       }
       if (typeof width !== 'undefined' && typeof height !== 'undefined') {
-        this._viewport = new Vector4(0, 0, width, height);
+        this._viewport = new Vector4$1(0, 0, width, height);
         return true;
       } else {
         return false;
@@ -14452,10 +14516,17 @@ return mat4(
       this._opacityMeshes = [];
       this._transparentMeshes = [];
       this._meshes.forEach((mesh)=>{
-        if (mesh.isTransparent) {
+        if (mesh.isTransparentForce === false) {
+          this._opacityMeshes.push(mesh);
+        } else if (mesh.isTransparentForce === true) {
           this._transparentMeshes.push(mesh);
         } else {
-          this._opacityMeshes.push(mesh);
+          if (!mesh.isTransparent) {
+            this._opacityMeshes.push(mesh);
+          } else {
+            this._transparentMeshes.push(mesh);
+          }
+
         }
       });
 
@@ -14565,9 +14636,9 @@ return mat4(
       super(glBoostContext);
       var _clearColor = parameters.clearColor;
 
-      var gl = this._glContext.gl;
-
-      this._glBoostContext.reflectGlobalGLState();
+      this._glBoostSystem._glBoostContext.reflectGlobalGLState();
+      const glContext = this._glContext;
+      const gl = glContext.gl;
 
       if (_clearColor) {
         gl.clearColor( _clearColor.red, _clearColor.green, _clearColor.blue, _clearColor.alpha );
@@ -14644,7 +14715,7 @@ return mat4(
 
         var glContext = this._glContext;
         var gl = glContext.gl;
-        var glem = GLExtensionsManager.getInstance(this._glContext);
+        var glem = GLExtensionsManager$1.getInstance(this._glContext);
 
 
         // set render target buffers for each RenderPass.
@@ -14751,13 +14822,13 @@ return mat4(
     }
 
     _drawGizmos(gizmos, expression, lights, camera, renderPass, index, viewport, isDepthTest) {
-      const globalStatesUsageBackup = this._glBoostContext.globalStatesUsage;
-      this._glBoostContext.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_INCLUSIVE;
-      this._glBoostContext.currentGlobalStates = [
+      const globalStatesUsageBackup = this._glBoostSystem._glBoostContext.globalStatesUsage;
+      this._glBoostSystem._glBoostContext.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_INCLUSIVE;
+      this._glBoostSystem._glBoostContext.currentGlobalStates = [
         3042, // gl.BLEND
       ];
       if (isDepthTest) {
-        this._glBoostContext.currentGlobalStates.push(2929); // gl.DEPTH_TEST
+        this._glBoostSystem._glBoostContext.currentGlobalStates.push(2929); // gl.DEPTH_TEST
       }
 
       for (let gizmo of gizmos) {
@@ -14776,8 +14847,8 @@ return mat4(
         }
       }
 
-      this._glBoostContext.globalStatesUsage = globalStatesUsageBackup;
-      this._glBoostContext.restoreGlobalStatesToDefault();
+      this._glBoostSystem._glBoostContext.globalStatesUsage = globalStatesUsageBackup;
+      this._glBoostSystem._glBoostContext.restoreGlobalStatesToDefault();
 
     }
 
@@ -14815,8 +14886,7 @@ return mat4(
      * @param {boolean} stencil_flg  true: clear stencil, false: don't clear stencil
      */
     clearCanvas( color_flg, depth_flg, stencil_flg ) {
-
-      var gl = this._glContext.gl;
+      const gl = this._glContext.gl;
 
       var bufferBits = 0;
 
@@ -15060,7 +15130,7 @@ return mat4(
       this._lightsExceptAmbient = [];
       this._ambientLights = [];    
       this._cameras = [];
-      this._accumulatedAmbientIntensity = Vector4.zero();
+      this._accumulatedAmbientIntensity = Vector4$1.zero();
     }
 
     _getCurrentAnimationInputValue(inputName       ) {
@@ -15235,7 +15305,7 @@ return mat4(
     }
 
     updateAmountOfAmbientLightsIntensity() {
-      this._accumulatedAmbientIntensity = Vector4.zero();
+      this._accumulatedAmbientIntensity = Vector4$1.zero();
       for (let light of this._ambientLights) {
         this._accumulatedAmbientIntensity.add(light.intensity);
       }
@@ -15331,7 +15401,7 @@ return mat4(
       super(glBoostContext);
 
       this._colors = [];
-      this.color = new Vector4(1, 1, 1, 1);
+      this.color = new Vector4$1(1, 1, 1, 1);
       this._worldPositionOfThisJoint = new Vector3(0, 0, 1);
       this._worldPositionOfParentJoint = new Vector3(0, 0, 0);
       this._vertexData = this._setupVertexData();
@@ -15481,7 +15551,7 @@ return mat4(
 
       this.isVisible = false;
 
-      this.baseColor = new Vector4(0.0, 1.0, 1.0, 0.25);
+      this.baseColor = new Vector4$1(0.0, 1.0, 1.0, 0.25);
     }
 
     _init(glBoostContext, joint, length) {
@@ -15878,7 +15948,7 @@ return mat4(
     get rootJointsWorldPosition() {
       if (this._joints.length > 0) {
         const rootJointMatrix = this._joints[0].worldMatrix;
-        let rootJointPosWorld = rootJointMatrix.multiplyVector(Vector4.zero()).toVector3();
+        let rootJointPosWorld = new Vector3(rootJointMatrix.multiplyVector(Vector4$1.zero()));
         return rootJointPosWorld;
       }
       return Vector3.zero();
@@ -15888,7 +15958,7 @@ return mat4(
     getRootJointsWorldPositionAt(inputValue) {
       if (this._joints.length > 0) {
         const rootJointMatrix = this._joints[0].getWorldMatrixAt(inputValue);
-        let rootJointPosWorld = rootJointMatrix.multiplyVector(Vector4.zero()).toVector3();
+        let rootJointPosWorld = new Vector3(rootJointMatrix.multiplyVector(Vector4$1.zero()));
         return rootJointPosWorld;
       }
 
@@ -15981,7 +16051,7 @@ return mat4(
         let q = (Quaternion.fromMatrix(matrices[i]));
         q.normalize();
         let t = matrices[i].getTranslate();
-        let matrix = q.rotationMatrix;
+        let matrix = new Matrix44(q);
         
         matrix.m00 *= s.x;
         matrix.m01 *= s.x;
@@ -16274,6 +16344,13 @@ return mat4(
       return this._lowLevelCamera.zFar;
     }
 
+    get allInfo() {
+      return this._lowLevelCamera.allInfo;
+    }
+
+    set allInfo(info) {
+      this._lowLevelCamera.allInfo = info;
+    }
   }
 
   GLBoost$1['M_PerspectiveCamera'] = M_PerspectiveCamera;
@@ -16351,6 +16428,14 @@ return mat4(
     get aspect() {
       return (this._lowLevelCamera.right - this._lowLevelCamera.left) / (this._lowLevelCamera.top - this._lowLevelCamera.bottom);
     }
+
+    get allInfo() {
+      return this._lowLevelCamera.allInfo;
+    }
+
+    set allInfo(info) {
+      this._lowLevelCamera.allInfo = info;
+    }
   }
 
   class M_OrthoCamera extends M_AbstractCamera {
@@ -16426,6 +16511,15 @@ return mat4(
     get aspect() {
       return (this._lowLevelCamera.right - this._lowLevelCamera.left) / (this._lowLevelCamera.top - this._lowLevelCamera.bottom);
     }
+
+    get allInfo() {
+      return this._lowLevelCamera.allInfo;
+    }
+
+    set allInfo(info) {
+      this._lowLevelCamera.allInfo = info;
+    }
+
   }
 
   class Arrow extends Geometry {
@@ -16483,7 +16577,7 @@ return mat4(
 
       this.isVisible = false;
 
-      this.baseColor = new Vector4(0.8, 0.8, 0, 1);
+      this.baseColor = new Vector4$1(0.8, 0.8, 0, 1);
     }
 
     _init(glBoostContext, length) {
@@ -16652,12 +16746,12 @@ return mat4(
 
     get direction() {
       //return Matrix33.rotate(super.rotate).multiplyVector(this._direction);
-      let result = super.quaternion.rotationMatrix33.multiplyVector(this._direction);
+      let result = (new Matrix33(super.quaternion)).multiplyVector(this._direction);
       return result;
     }
 
     get directionInWorld() {
-      let direction = this.worldMatrixWithoutMySelf.getRotate().multiplyVector(this.direction.toVector4()).toVector3();
+      let direction = new Vector3(this.worldMatrixWithoutMySelf.getRotate().multiplyVector(new Vector4$1(this.direction)));
       return direction;
     }
 
@@ -16812,12 +16906,12 @@ return mat4(
     }
 
     get direction() {
-      let result = this.quaternion.rotationMatrix33.multiplyVector(this._direction);
+      let result = (new Matrix33(this.quaternion)).multiplyVector(this._direction);
       return result;
     }
 
     get directionInWorld() {
-      let direction = this.worldMatrixWithoutMySelf.getRotate().multiplyVector(this.direction.toVector4()).toVector3();
+      let direction = new Vector3(this.worldMatrixWithoutMySelf.getRotate().multiplyVector(new Vector4(this.direction)));
       return direction;
     }
 
@@ -16912,7 +17006,7 @@ return mat4(
   GLBoost$1["Grid"] = Grid;
 
   class M_GridGizmo extends M_Gizmo {
-    constructor(glBoostContext, length, division, isXZ = true, isXY = false, isYZ = false, colorVec = new Vector4(0.5, 0.5, 0.5, 1)) {
+    constructor(glBoostContext, length, division, isXZ = true, isXY = false, isYZ = false, colorVec = new Vector4$1(0.5, 0.5, 0.5, 1)) {
       super(glBoostContext, null, null);
       this._init(glBoostContext, length, division, isXZ, isXY, isYZ, colorVec);
     }
@@ -16936,7 +17030,7 @@ return mat4(
       this._mesh = mesh.clone();
       this.isPreDraw = true;
       this._material = new ClassicMaterial$1(glBoostContext);
-      this._material.baseColor = new Vector4(0, 1, 0, 1);
+      this._material.baseColor = new Vector4$1(0, 1, 0, 1);
 
       
       this._material.states.enable = [2884]; // gl.CULL_FACE
@@ -17071,7 +17165,7 @@ return mat4(
       this._primitive = new Line(glBoostContext, Vector3.zero(), Vector3.zero(), true);
 
       //    this._mesh.rotate = new Vector3(-Math.PI/2, 0, 0);
-      const material = glBoostContext.createClassicMaterial();
+      const material = glBoostContext._glBoostContext.createClassicMaterial();
       this._mesh = new M_Mesh(glBoostContext, this._primitive, material);
       this._mesh.isPickable = false;
       this._mesh.masterElement = this;
@@ -17241,27 +17335,27 @@ return mat4(
     }
 
     createScene() {
-      return new M_Scene(this);
+      return new M_Scene(this.__system);
     }
 
     createGroup() {
-      return new M_Group(this);
+      return new M_Group(this.__system);
     }
 
     createMesh(geometry, material) {
-      return new M_Mesh(this, geometry, material);
+      return new M_Mesh(this.__system, geometry, material);
     }
 
     createSkeletalMesh(geometry, material, rootJointName) {
-      return new M_SkeletalMesh(this, geometry, material, rootJointName);
+      return new M_SkeletalMesh(this.__system, geometry, material, rootJointName);
     }
 
     createSkeletalGeometry() {
-      return new M_SkeletalGeometry(this);
+      return new M_SkeletalGeometry(this.__system);
     }
 
     createRenderer(parameters) {
-      return new Renderer(this, parameters);
+      return new Renderer(this.__system, parameters);
     }
 
     createExpression() {
@@ -17269,7 +17363,7 @@ return mat4(
     }
 
     createExpressionAndRenderPasses(number) {
-      var expression = new Expression(this);
+      var expression = new Expression(this.__system);
       var renderPasses = this.createRenderPasses(number);
       expression.addRenderPasses(renderPasses);
 
@@ -17279,67 +17373,67 @@ return mat4(
     createRenderPasses(number) {
       var renderPasses = [];
       for (let i=0; i<number; i++) {
-        renderPasses.push(new RenderPass(this));
+        renderPasses.push(new RenderPass(this.__system));
       }
 
       return renderPasses;
     }
 
     createPerspectiveCamera(lookat, perspective) {
-      return new M_PerspectiveCamera(this, true, lookat, perspective);
+      return new M_PerspectiveCamera(this.__system, true, lookat, perspective);
     }
 
     createFrustumCamera(lookat, perspective) {
-      return new M_FrustumCamera(this, true, lookat, perspective);
+      return new M_FrustumCamera(this.__system, true, lookat, perspective);
     }
 
     createOrthoCamera(lookat, ortho) {
-      return new M_OrthoCamera(this, true, lookat, ortho);
+      return new M_OrthoCamera(this.__system, true, lookat, ortho);
     }
 
     createDirectionalLight(intensity, rotate, length) {
-      return new M_DirectionalLight(this, intensity, rotate, length);
+      return new M_DirectionalLight(this.__system, intensity, rotate, length);
     }
 
     createPointLight(intensity) {
-      return new M_PointLight(this, intensity);
+      return new M_PointLight(this.__system, intensity);
     }
 
     createAmbientLight(intensity) {
-      return new M_AmbientLight(this, intensity);
+      return new M_AmbientLight(this.__system, intensity);
     }
 
     createSpotLight(intensity, rotate) {
-      return new M_SpotLight(this, intensity, rotate);
+      return new M_SpotLight(this.__system, intensity, rotate);
     }
 
     createJoint(isExistJointGizmo) {
-      return new M_Joint(this, isExistJointGizmo);
+      return new M_Joint(this.__system, isExistJointGizmo);
     }
 
     createAxisGizmo(length) {
-      return new M_AxisGizmo(this, length);
+      return new M_AxisGizmo(this.__system, length);
     }
 
     createGridGizmo(length, division, isXZ, isXY, isYZ, colorVec) {
-      return new M_GridGizmo(this, length, division, isXZ, isXY, isYZ, colorVec);
+      return new M_GridGizmo(this.__system, length, division, isXZ, isXY, isYZ, colorVec);
     }
 
     createOutlineGizmo(mesh) {
-      return new M_OutlineGizmo(this, mesh);
+      return new M_OutlineGizmo(this.__system, mesh);
     }
 
 
     createHeightLineGizmo(startPos, endPos) {
-      return new M_HeightLineGizmo(this, startPos, endPos);
+      return new M_HeightLineGizmo(this.__system, startPos, endPos);
     }
 
     createEffekseerElement() {
-      return new EffekseerElement(this);
+      return new EffekseerElement(this.__system);
     }
 
     createScreenMesh(customVertexAttributes) {
-      return new M_ScreenMesh(this, customVertexAttributes);
+      return new M_ScreenMesh(this.__system, customVertexAttributes);
     }
 
   }
@@ -17442,7 +17536,7 @@ return mat4(
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_Ks'), Ks.x, Ks.y, Ks.z, Ks.w, true);
       this._glContext.uniform1f(material.getUniform(glslProgram, 'uniform_power'), this._power, true);
 
-      let ambient = Vector4.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
+      let ambient = Vector4$1.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_ambient'), ambient.x, ambient.y, ambient.z, ambient.w, true);    
 
     }
@@ -17475,7 +17569,7 @@ return mat4(
   GLBoost['PhongShader'] = PhongShader;
 
   let singleton$4 = Symbol();
-  let singletonEnforcer$2 = Symbol();
+  let singletonEnforcer$1 = Symbol();
 
   /**
    * [en] This is a loader class of Obj file format.<br>
@@ -17489,7 +17583,7 @@ return mat4(
      * @param {Symbol} enforcer [en] a Symbol to forbid calling this constructor directly [ja] このコンストラクタの直接呼び出しを禁止するためのシンボル
      */
     constructor(enforcer) {
-      if (enforcer !== singletonEnforcer$2) {
+      if (enforcer !== singletonEnforcer$1) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -17501,7 +17595,7 @@ return mat4(
      */
     static getInstance() {
       if (!this[singleton$4]) {
-        this[singleton$4] = new ObjLoader(singletonEnforcer$2);
+        this[singleton$4] = new ObjLoader(singletonEnforcer$1);
       }
       return this[singleton$4];
     }
@@ -18213,7 +18307,7 @@ return mat4(
       let Ka = material.ambientColor;    
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_Kd'), Kd.x, Kd.y, Kd.z, Kd.w, true);
       
-      let ambient = Vector4.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
+      let ambient = Vector4$1.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_ambient'), ambient.x, ambient.y, ambient.z, ambient.w, true);
 
     }
@@ -18223,7 +18317,7 @@ return mat4(
   GLBoost['LambertShader'] = LambertShader;
 
   let singleton$5 = Symbol();
-  let singletonEnforcer$3 = Symbol();
+  let singletonEnforcer$2 = Symbol();
 
   /**
    * [en] This is a loader class of glTF file format. You can see more detail of glTF format at https://github.com/KhronosGroup/glTF .<br>
@@ -18237,7 +18331,7 @@ return mat4(
      * @param {Symbol} enforcer [en] a Symbol to forbid calling this constructor directly [ja] このコンストラクタの直接呼び出しを禁止するためのシンボル
      */
     constructor(enforcer) {
-      if (enforcer !== singletonEnforcer$3) {
+      if (enforcer !== singletonEnforcer$2) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -18249,7 +18343,7 @@ return mat4(
      */
     static getInstance() {
       if (!this[singleton$5]) {
-        this[singleton$5] = new GLTFLoader(singletonEnforcer$3);
+        this[singleton$5] = new GLTFLoader(singletonEnforcer$2);
       }
       return this[singleton$5];
     }
@@ -18315,13 +18409,28 @@ return mat4(
         isDepthTest: true,
         defaultShaderClass: null,
         isMeshTransparentAsDefault: false,
+        defaultStates: {
+          states: {
+            enable: [
+              // 3042,  // BLEND
+            ],
+            functions: {
+              //"blendFuncSeparate": [1, 0, 1, 0],
+            }
+          },
+          isTransparent: true,
+          opacity: 1.0,
+          shaderClass: DecalShader, // LambertShader // PhongShader
+          isTextureImageToLoadPreMultipliedAlpha: false,
+          globalStatesUsage: GLBoost$1.GLOBAL_STATES_USAGE_IGNORE // GLBoost.GLOBAL_STATES_USAGE_DO_NOTHING // GLBoost.GLOBAL_STATES_USAGE_INCLUSIVE // GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE
+        },
         statesOfElements: [
           {
             targets: [], //["name_foo", "name_boo"],
             specifyMethod: GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME, // GLBoost.QUERY_TYPE_INSTANCE_NAME // GLBoost.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR
             states: {
               enable: [
-                  // 3042,  // BLEND
+                // 3042,  // BLEND
               ],
               functions: {
                 //"blendFuncSeparate": [1, 0, 1, 0],
@@ -18662,9 +18771,7 @@ return mat4(
             rootJointStr = nodeJson.skeletons[0];
             skinStr = nodeJson.skin;
           }
-          let mesh = this._loadMesh(glBoostContext, meshJson, buffers, json, defaultShader, rootJointStr, skinStr, shaders, textures, glTFVer, group, options);
-          mesh.userFlavorName = meshStr;
-          group.addChild(mesh);
+          this._loadMesh(glBoostContext, meshJson, meshStr, buffers, json, defaultShader, rootJointStr, skinStr, shaders, textures, glTFVer, group, options);
         }
       } else if (nodeJson.jointName) {
         let joint = glBoostContext.createJoint(options.isExistJointGizmo);
@@ -18753,7 +18860,7 @@ return mat4(
       return group;
     }
 
-    _loadMesh(glBoostContext, meshJson, buffers, json, defaultShader, rootJointStr, skinStr, shaders, textures, glTFVer, group, options) {
+    _loadMesh(glBoostContext, meshJson, meshStr, buffers, json, defaultShader, rootJointStr, skinStr, shaders, textures, glTFVer, group, options) {
       var mesh = null;
       var geometry = null;
       if (rootJointStr) {
@@ -18770,9 +18877,11 @@ return mat4(
         geometry = glBoostContext.createGeometry();
         mesh = glBoostContext.createMesh(geometry);
       }
+      mesh.userFlavorName = meshStr;
+      group.addChild(mesh);
 
       if (options && options.isMeshTransparentAsDefault) {
-        mesh.isTransparent = true;
+        mesh.isTransparentForce = true;
       }
 
       let _indicesArray = [];
@@ -18890,25 +18999,35 @@ return mat4(
           }
           this._materials.push(material);
 
+          if (options && options.defaultStates) {
+            if (options.defaultStates.states) {
+              material.states = options.defaultStates.states;
+            }
+            material.globalStatesUsage = options.defaultStates.globalStatesUsage !== void 0 ? options.defaultStates.globalStatesUsage : GLBoost$1.GLOBAL_STATES_USAGE_IGNORE;
+          }
           if (options && options.statesOfElements) {
+
             for (let statesInfo of options.statesOfElements) {
               if (statesInfo.targets) {
                 for (let target of statesInfo.targets) {
-                  let isMatch = false;
-                  let specifyMethod = statesInfo.specifyMethod !== void 0 ? statesInfo.specifyMethod : GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME;
-                  switch (specifyMethod) {
-                    case GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME:
-                      isMatch = group.userFlavorName === target; break;
-                    case GLBoost$1.QUERY_TYPE_INSTANCE_NAME:
-                      isMatch = group.instanceName === target; break;
-                    case GLBoost$1.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR:
-                      isMatch = group.instanceNameWithUserFlavor === target; break;                      
-                  }
+                  let isMatch = this.isTargetMatch(statesInfo, group, target);
                   if (isMatch) {
-                    material.states = statesInfo.states;
-                    group.isTransparent = statesInfo.isTransparent !== void 0 ? statesInfo.isTransparent : false;
-                    material.globalStatesUsage = statesInfo.globalStatesUsage !== void 0 ? statesInfo.globalStatesUsage : GLBoost$1.GLOBAL_STATES_USAGE_IGNORE;
+                    if (statesInfo.states) {
+                      material.states = statesInfo.states;
+                    }
+                    material.globalStatesUsage = statesInfo.globalStatesUsage !== void 0 ? statesInfo.globalStatesUsage : GLBoost$1.GLOBAL_STATES_USAGE_IGNORE;  
                   }
+
+                  group.getChildren().forEach((elem)=>{
+                    let isMatch = this.isTargetMatch(statesInfo, elem, target);
+                    if (isMatch) {
+                      elem.isTransparentForce = statesInfo.isTransparent !== void 0 ? statesInfo.isTransparent : false;
+                      if (statesInfo.states) {
+                        material.states = statesInfo.states;
+                      }
+                      material.globalStatesUsage = statesInfo.globalStatesUsage !== void 0 ? statesInfo.globalStatesUsage : GLBoost$1.GLOBAL_STATES_USAGE_IGNORE;  
+                    }
+                  });
                 }
               }
             }
@@ -18927,7 +19046,7 @@ return mat4(
           if (defaultShader) {
             material.shaderClass = defaultShader;
           } else {
-            material.baseColor = new Vector4(0.5, 0.5, 0.5, 1);
+            material.baseColor = new Vector4$1(0.5, 0.5, 0.5, 1);
           }
           materials.push(material);
         }
@@ -19151,15 +19270,7 @@ return mat4(
                   if (statesInfo.targets) {
                     for (let target of statesInfo.targets) {
                       let isMatch = false;
-                      let specifyMethod = statesInfo.specifyMethod !== void 0 ? statesInfo.specifyMethod : GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME;
-                      switch (specifyMethod) {
-                        case GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME:
-                          isMatch = group.userFlavorName === target; break;
-                        case GLBoost$1.QUERY_TYPE_INSTANCE_NAME:
-                          isMatch = group.instanceName === target; break;
-                        case GLBoost$1.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR:
-                          isMatch = group.instanceNameWithUserFlavor === target; break;                      
-                      }
+                      isMatch = this.isTargetMatch(statesInfo, group, target);
 
                       if (isMatch) {
                         if (options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
@@ -19210,7 +19321,7 @@ return mat4(
       for (let valueName in materialJson.values) {
         let value = materialJson.values[valueName];
         if (typeof value !== 'string') {
-          material[valueName + 'Color'] = new Vector4(value[0], value[1], value[2], value[3]);
+          material[valueName + 'Color'] = new Vector4$1(value[0], value[1], value[2], value[3]);
         }
       }
 
@@ -19262,15 +19373,7 @@ return mat4(
           if (statesInfo.targets) {
             for (let target of statesInfo.targets) {
               let isMatch = false;
-              let specifyMethod = statesInfo.specifyMethod !== void 0 ? statesInfo.specifyMethod : GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME;
-              switch (specifyMethod) {
-                case GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME:
-                  isMatch = group.userFlavorName === target; break;
-                case GLBoost$1.QUERY_TYPE_INSTANCE_NAME:
-                  isMatch = group.instanceName === target; break;
-                case GLBoost$1.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR:
-                  isMatch = group.instanceNameWithUserFlavor === target; break;                      
-              }
+              isMatch = this.isTargetMatch(statesInfo, group, target);
 
               if (isMatch) {
                 if (statesInfo.shaderClass) {
@@ -19284,6 +19387,33 @@ return mat4(
       }
 
       return texcoords;
+    }
+
+    isTargetMatch(statesInfo, element, target) {
+      let specifyMethod = statesInfo.specifyMethod !== void 0 ? statesInfo.specifyMethod : GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME;
+      if (typeof statesInfo.specifyMethod === 'string') {
+        statesInfo.specifyMethod = GLBoost$1[statesInfo.specifyMethod];
+      }
+
+      const isTargetMatchInner = function(specifyMethod, element, target) {
+        let isMatch = false;
+        switch (specifyMethod) {
+        case GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME:
+          isMatch = element.userFlavorName === target;
+          break;
+        case GLBoost$1.QUERY_TYPE_INSTANCE_NAME:
+          isMatch = element.instanceName === target;
+          break;
+        case GLBoost$1.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR:
+          isMatch = element.instanceNameWithUserFlavor === target;
+          break;
+        }
+        return isMatch;
+      };
+
+      let isMatch = isTargetMatchInner(specifyMethod, element, target);
+
+      return isMatch;
     }
 
     _loadTechnique(glBoostContext, json, techniqueStr, material, materialJson, shaders, glTFVer) {
@@ -19328,7 +19458,7 @@ return mat4(
               uniforms[uniformName] = new Vector3(value[0], value[1], value[2]);
               break;
             case 35666:
-              uniforms[uniformName] = new Vector4(value[0], value[1], value[2], value[3]);
+              uniforms[uniformName] = new Vector4$1(value[0], value[1], value[2], value[3]);
               break;
             case 5124:
               uniforms[uniformName] = (glTFVer < 1.1) ? value : value[0];
@@ -19340,7 +19470,7 @@ return mat4(
               uniforms[uniformName] = new Vector3(value[0], value[1], value[2]);
               break;
             case 35669:
-              uniforms[uniformName] = new Vector4(value[0], value[1], value[2], value[3]);
+              uniforms[uniformName] = new Vector4$1(value[0], value[1], value[2], value[3]);
               break;
             case 35678:
               uniforms[uniformName] = 'TEXTURE';
@@ -19374,7 +19504,7 @@ return mat4(
       let fragmentShaderText = shaders[fragmentShaderStr].shaderText;
       let vertexShaderText = shaders[vertexShaderStr].shaderText;
 
-      material.shaderInstance = new FreeShader(glBoostContext, vertexShaderText, fragmentShaderText, attributes, uniforms, textureNames);
+      material.shaderInstance = new FreeShader(glBoostContext.__system, vertexShaderText, fragmentShaderText, attributes, uniforms, textureNames);
     }
 
     _loadAnimation(element, buffers, json, glTFVer, options) {
@@ -19698,7 +19828,7 @@ return mat4(
                   dataView[dataViewMethod](pos+bytesPerComponent*3, littleEndian)
                 ));
               } else {
-                vertexAttributeArray.push(new Vector4(
+                vertexAttributeArray.push(new Vector4$1(
                   dataView[dataViewMethod](pos, littleEndian),
                   dataView[dataViewMethod](pos+bytesPerComponent, littleEndian),
                   dataView[dataViewMethod](pos+bytesPerComponent*2, littleEndian),
@@ -19729,7 +19859,7 @@ return mat4(
   GLBoost$1["GLTFLoader"] = GLTFLoader;
 
   let singleton$6 = Symbol();
-  let singletonEnforcer$4 = Symbol();
+  let singletonEnforcer$3 = Symbol();
 
   /**
    * This is a loader class of glTF2 file format. You can see more detail of glTF2 format at https://github.com/KhronosGroup/glTF .
@@ -19741,7 +19871,7 @@ return mat4(
      * @param {Symbol} enforcer a Symbol to forbid calling this constructor directly
      */
     constructor(enforcer) {
-      if (enforcer !== singletonEnforcer$4) {
+      if (enforcer !== singletonEnforcer$3) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -19778,7 +19908,7 @@ return mat4(
      */
     static getInstance() {
       if (!this[singleton$6]) {
-        this[singleton$6] = new GLTF2Loader(singletonEnforcer$4);
+        this[singleton$6] = new GLTF2Loader(singletonEnforcer$3);
       }
       return this[singleton$6];
     }
@@ -20373,7 +20503,7 @@ return mat4(
   GLBoost$1["GLTF2Loader"] = GLTF2Loader;
 
   let singleton$7 = Symbol();
-  let singletonEnforcer$5 = Symbol();
+  let singletonEnforcer$4 = Symbol();
 
   /**
    * 
@@ -20385,7 +20515,7 @@ return mat4(
      * @param {Symbol} enforcer a Symbol to forbid calling this constructor directly
      */
     constructor(enforcer) {
-      if (enforcer !== singletonEnforcer$5) {
+      if (enforcer !== singletonEnforcer$4) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -20396,7 +20526,7 @@ return mat4(
      */
     static getInstance() {
       if (!this[singleton$7]) {
-        this[singleton$7] = new ModelConverter(singletonEnforcer$5);
+        this[singleton$7] = new ModelConverter(singletonEnforcer$4);
       }
       return this[singleton$7];
     }
@@ -20580,7 +20710,7 @@ return mat4(
 
         let options = gltfModel.asset.extras.glboostOptions;
         if (options.isMeshTransparentAsDefault) {
-          glboostMeshes.isTransparent = true;
+          glboostMeshes.isTransparentForce = true;
         }
 
         let _indicesArray = [];
@@ -20699,7 +20829,7 @@ return mat4(
             if (defaultShader) {
               glboostMaterial.shaderClass = defaultShader;
             } else {
-              glboostMaterial.baseColor = new Vector4(0.5, 0.5, 0.5, 1);
+              glboostMaterial.baseColor = new Vector4$1(0.5, 0.5, 0.5, 1);
             }
             materials.push(glboostMaterial);
           }
@@ -20931,7 +21061,7 @@ return mat4(
 
       if (materialJson.pbrMetallicRoughness && materialJson.pbrMetallicRoughness.baseColorFactor) {
         let value = materialJson.pbrMetallicRoughness.baseColorFactor;
-        gltfMaterial.baseColor = new Vector4(value[0], value[1], value[2], value[3]);
+        gltfMaterial.baseColor = new Vector4$1(value[0], value[1], value[2], value[3]);
       }
 
       if (indices !== null) {
@@ -21154,7 +21284,7 @@ return mat4(
                   dataView[dataViewMethod](pos+componentBytes*3, littleEndian)
                 ));
               } else {
-                vertexAttributeArray.push(new Vector4(
+                vertexAttributeArray.push(new Vector4$1(
                   dataView[dataViewMethod](pos, littleEndian),
                   dataView[dataViewMethod](pos+componentBytes, littleEndian),
                   dataView[dataViewMethod](pos+componentBytes*2, littleEndian),
@@ -21260,7 +21390,7 @@ return mat4(
 
         if (params.fillStyle instanceof Vector3) {
           this.fillStyle = `rgb(${params.fillStyle.x * 255},${params.fillStyle.y * 255},${params.fillStyle.z * 255},1)`;
-        } else if (params.fillStyle instanceof Vector4) {
+        } else if (params.fillStyle instanceof Vector4$1) {
           this.fillStyle = `rgba(${params.fillStyle.x * 255},${params.fillStyle.y * 255},${params.fillStyle.z * 255},${params.fillStyle.w})`;
         } else {
           this.fillStyle = params.fillStyle;
@@ -21385,7 +21515,7 @@ return mat4(
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_Ks'), Ks.x, Ks.y, Ks.z, Ks.w, true);
       this._glContext.uniform1f(material.getUniform(glslProgram, 'uniform_power'), this._power, true);
 
-      let ambient = Vector4.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
+      let ambient = Vector4$1.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_ambient'), ambient.x, ambient.y, ambient.z, ambient.w, true);    
 
     }
@@ -21486,7 +21616,7 @@ return mat4(
       let Ka = material.ambientColor;
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_Kd'), Kd.x, Kd.y, Kd.z, Kd.w, true);
 
-      let ambient = Vector4.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
+      let ambient = Vector4$1.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_ambient'), ambient.x, ambient.y, ambient.z, ambient.w, true);
     }
   }
@@ -21566,7 +21696,7 @@ return mat4(
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_Kd'), Kd.x, Kd.y, Kd.z, Kd.w, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_wrap'), this._wrap.x, this._wrap.y, this._wrap.z, true);
 
-      let ambient = Vector4.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
+      let ambient = Vector4$1.multiplyVector(Ka, scene.getAmountOfAmbientLightsIntensity());
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_ambient'), ambient.x, ambient.y, ambient.z, ambient.w, true);
     }
 
@@ -21902,4 +22032,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-98-g1c09-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-114-g040c-mod branch: develop';
