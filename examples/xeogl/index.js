@@ -30,11 +30,8 @@ var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 
 // Load glTF
 var model = new xeogl.GLTFModel({
-    //src: "../../" + modelInfo.category + "/" + modelInfo.path,
     src: url,
-    transform: new xeogl.Scale({
-        xyz: [scale,scale,scale]
-    })
+    scale: [scale,scale,scale]
 });
 
 var skybox = new xeogl.Skybox({
@@ -44,12 +41,6 @@ var skybox = new xeogl.Skybox({
 
 // Get the default Scene off the Skybox
 var scene = skybox.scene;
-
-scene.lights.lights = [
-    new xeogl.AmbientLight({
-        color: [1.0, 0.7, 0.7]
-    })
-];
 
 var camera = scene.camera;
 if (modelInfo.name == "GearboxAssy" ) {
@@ -61,50 +52,6 @@ if (modelInfo.name == "GearboxAssy" ) {
     camera.look = [0.0, 0.0, 0.0];
     camera.up = [0.0, 1.0, 0.0];
 }
-
-var dirLights = [
-    new xeogl.DirLight({
-        id: "keyLight",
-        dir: [0.8, -0.6, -0.8],
-        color: [0.8, 0.8, 0.8],
-        intensity: 1.0,
-        space: "world"
-    }),
-
-    new xeogl.DirLight({
-        id: "fillLight",
-        dir: [-0.8, -0.4, -0.4],
-        color: [0.4, 0.4, 0.5],
-        intensity: 1.0,
-        space: "world"
-    }),
-
-    new xeogl.DirLight({
-        id: "rimLight",
-        dir: [0.2, -0.8, 0.8],
-        color: [0.8, 0.8, 0.8],
-        intensity: 1.0,
-        space: "world"
-    })
-];
-
-var reflectionMap = new xeogl.CubeTexture({
-    src: [
-        "../../textures/cube/skybox/px.jpg",
-        "../../textures/cube/skybox/nx.jpg",
-        "../../textures/cube/skybox/py.jpg",
-        "../../textures/cube/skybox/ny.jpg",
-        "../../textures/cube/skybox/pz.jpg",
-        "../../textures/cube/skybox/nz.jpg"
-    ],
-    encoding: "linear"
-});
-
-var lights = scene.lights;
-lights.lights = dirLights;
-
-lights.reflectionMap = reflectionMap;
- 
 
 new xeogl.CameraControl();
 scene.on("tick",
