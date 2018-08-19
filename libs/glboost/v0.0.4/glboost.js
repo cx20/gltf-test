@@ -404,6 +404,22 @@
       c.define('GLOBAL_STATES_USAGE_INCLUSIVE');
       c.define('GLOBAL_STATES_USAGE_EXCLUSIVE');
 
+      c.define('LIFECYCLE_FHASE_CREATE');
+      c.define('LIFECYCLE_FHASE_LOAD');
+      c.define('LIFECYCLE_FHASE_MOUNT');
+      c.define('LIFECYCLE_FHASE_UPDATE_LOGIC');
+      c.define('LIFECYCLE_FHASE_UPDATE_FOR_RENDERING');
+      c.define('LIFECYCLE_FHASE_RENDER');
+      c.define('LIFECYCLE_FHASE_DISCARD');
+
+      c.define('LIFECYCLE_EVENT_CREATED');
+      c.define('LIFECYCLE_EVENT_LOADED');
+      c.define('LIFECYCLE_EVENT_MOUNTED');
+      c.define('LIFECYCLE_EVENT_UPDATED_LOGIC');
+      c.define('LIFECYCLE_EVENT_UPDATED_FOR_RENDERING');
+      c.define('LIFECYCLE_EVENT_RENDERED');
+      c.define('LIFECYCLE_EVENT_DISCARDED');
+
       c.define('LOG_GENERAL');
       c.define('LOG_SHADER_CODE');
       c.define('LOG_GLBOOST_OBJECT_LIFECYCLE');
@@ -432,117 +448,7 @@
 
   var GLBoost$1 = global.GLBoost;
 
-  class MiscUtil {
-
-    constructor() {
-
-    }
-
-    static isDefinedAndTrue(value) {
-      return !!(typeof value !== 'undefined' && value);
-    }
-
-    static getTheValueOrAlternative(value, alternativeIfTheValueIsNullOrUndefined) {
-      if (typeof value !== 'undefined' && value != null) {
-        return value;
-      } else {
-        return alternativeIfTheValueIsNullOrUndefined;
-      }
-    }
-
-    static isJavaScriptObjectType(type, obj) {
-      var clas = Object.prototype.toString.call(obj).slice(8, -1);
-      return obj !== undefined && obj !== null && clas === type;
-    }
-    
-    static consoleLog(logType, text) {
-      if (GLBoost$1.VALUE_CONSOLE_OUT_FOR_DEBUGGING && GLBoost$1.valueOfGLBoostConstants[logType]) {
-        console.log(text);
-      }
-    }
-  }
-
-  GLBoost$1['MiscUtil'] = MiscUtil;
-
-  class GLContextImpl {
-
-    constructor(canvas, parent, initParameter) {
-  //    if (new.target === GLContextImpl) {
-      if (this.constructor === GLContextImpl) {
-        throw new TypeError("Cannot construct GLContextImpl instances directly");
-      }
-
-      if (canvas === void 0) {
-        throw new Error("Failed to create WebGL Context due to no canvas object.");
-      }
-
-      this._canvas = canvas;
-
-    }
-
-    init(glVersionString, ContextType, initParameter = { antialias: true, premultipliedAlpha: true }, gl) {
-
-      if (gl) {
-        this._gl = gl;
-      } else {
-
-        let gl = this._canvas.getContext(glVersionString, initParameter);
-
-        if (!gl) {
-          gl = this._canvas.getContext('experimental-' + glVersionString);
-          if (!gl) {
-            throw new Error("This platform doesn't support WebGL.");
-          }
-        }
-
-        if (!gl instanceof ContextType) {
-          throw new Error("Unexpected rendering context.");
-        }
-
-        this._gl = gl;
-      }
-    }
-
-    get gl() {
-      return this._gl;
-    }
-
-    set gl(gl) {
-      this._gl = gl;
-    }
-
-    get canvas() {
-      return this._canvas;
-    }
-
-  }
-
-  class GLContextWebGL1Impl extends GLContextImpl {
-
-    constructor(canvas, parent, initParameter, gl) {
-      super(canvas, parent, initParameter);
-
-      if (gl) {
-        super.init('webgl', null, initParameter, gl);
-      } else {
-        super.init('webgl', WebGLRenderingContext, initParameter, gl);
-      }
-    }
-
-  }
-
-  class GLContextWebGL2Impl extends GLContextImpl {
-
-    constructor(canvas, parent, initParameter, gl) {
-      super(canvas, parent, initParameter);
-
-      super.init('webgl2', WebGL2RenderingContext, initParameter, gl);
-
-    }
-
-  }
-
-  class GLExtensionsManager$1 {
+  class GLExtensionsManager {
 
     constructor(glContext) {
       var gl = glContext.gl;
@@ -565,15 +471,15 @@
         this._extTFL = gl.getExtension("OES_texture_float_linear");
       }
 
-      GLExtensionsManager$1._instances[glContext.belongingCanvasId] = this;
+      GLExtensionsManager._instances[glContext.belongingCanvasId] = this;
 
       this._glContext = glContext;
     }
     static getInstance(glContext) {
-      if (GLExtensionsManager$1._instances[glContext.belongingCanvasId]) {
-        return GLExtensionsManager$1._instances[glContext.belongingCanvasId];
+      if (GLExtensionsManager._instances[glContext.belongingCanvasId]) {
+        return GLExtensionsManager._instances[glContext.belongingCanvasId];
       }
-      return new GLExtensionsManager$1(glContext);
+      return new GLExtensionsManager(glContext);
     }
 
     get extVAO() {
@@ -682,9 +588,115 @@
     }
 
   }
-  GLExtensionsManager$1._instances = new Object();
+  GLExtensionsManager._instances = new Object();
 
-  GLBoost$1['GLExtensionsManager'] = GLExtensionsManager$1;
+  GLBoost$1['GLExtensionsManager'] = GLExtensionsManager;
+
+  class MiscUtil {
+
+    constructor() {
+
+    }
+
+    static getTheValueOrAlternative(value, alternativeIfTheValueIsNullOrUndefined) {
+      if (typeof value !== 'undefined' && value != null) {
+        return value;
+      } else {
+        return alternativeIfTheValueIsNullOrUndefined;
+      }
+    }
+
+    static isJavaScriptObjectType(type, obj) {
+      var clas = Object.prototype.toString.call(obj).slice(8, -1);
+      return obj !== undefined && obj !== null && clas === type;
+    }
+    
+    static consoleLog(logType, text) {
+      if (GLBoost$1.VALUE_CONSOLE_OUT_FOR_DEBUGGING && GLBoost$1.valueOfGLBoostConstants[logType]) {
+        console.log(text);
+      }
+    }
+  }
+
+  GLBoost$1['MiscUtil'] = MiscUtil;
+
+  class GLContextImpl {
+
+    constructor(canvas, parent, initParameter) {
+  //    if (new.target === GLContextImpl) {
+      if (this.constructor === GLContextImpl) {
+        throw new TypeError("Cannot construct GLContextImpl instances directly");
+      }
+
+      if (canvas === void 0) {
+        throw new Error("Failed to create WebGL Context due to no canvas object.");
+      }
+
+      this._canvas = canvas;
+
+    }
+
+    init(glVersionString, ContextType, initParameter = { antialias: true, premultipliedAlpha: true }, gl) {
+
+      if (gl) {
+        this._gl = gl;
+      } else {
+
+        let gl = this._canvas.getContext(glVersionString, initParameter);
+
+        if (!gl) {
+          gl = this._canvas.getContext('experimental-' + glVersionString);
+          if (!gl) {
+            throw new Error("This platform doesn't support WebGL.");
+          }
+        }
+
+        if (!gl instanceof ContextType) {
+          throw new Error("Unexpected rendering context.");
+        }
+
+        this._gl = gl;
+      }
+    }
+
+    get gl() {
+      return this._gl;
+    }
+
+    set gl(gl) {
+      this._gl = gl;
+    }
+
+    get canvas() {
+      return this._canvas;
+    }
+
+  }
+
+  class GLContextWebGL1Impl extends GLContextImpl {
+
+    constructor(canvas, parent, initParameter, gl) {
+      super(canvas, parent, initParameter);
+
+      if (gl) {
+        super.init('webgl', null, initParameter, gl);
+      } else {
+        super.init('webgl', WebGLRenderingContext, initParameter, gl);
+      }
+    }
+
+  }
+
+  class GLContextWebGL2Impl extends GLContextImpl {
+
+    constructor(canvas, parent, initParameter, gl) {
+      super(canvas, parent, initParameter);
+
+      super.init('webgl2', WebGL2RenderingContext, initParameter, gl);
+
+    }
+
+  }
 
   let singleton = Symbol();
 
@@ -957,7 +969,7 @@
 
     createVertexArray(glBoostObject) {
       var gl = this.gl;
-      var glem = GLExtensionsManager$1.getInstance(this);
+      var glem = GLExtensionsManager.getInstance(this);
       var glResource = glem.createVertexArray(gl);
       if (glResource) {
         this._monitor.registerWebGLResource(glBoostObject, glResource);
@@ -1247,7 +1259,81 @@
     }
   }
 
-  //
+  //      
+
+                             
+                             
+
+  class Entity {
+                                                     
+                         
+                       
+
+    constructor(entityUID        , isAlive         ) {
+      this.__entity_uid = entityUID;
+      this.__isAlive = isAlive;
+    }
+
+  }
+
+  //      
+
+                          
+  let singleton$1     = Symbol();
+
+  class EntityRepository {
+                                       
+                                  
+    //__entities: Array<GLBoostObject>;
+                                       
+                                                    
+
+    constructor(enforcer        ) {
+      if (enforcer !== EntityRepository.__singletonEnforcer || !(this instanceof EntityRepository)) {
+        throw new Error('This is a Singleton class. get the instance using \'getInstance\' static method.');
+      }
+
+      EntityRepository.__singletonEnforcer = Symbol();
+
+      this.__entity_uid_count = 0;
+      this.__entities = new Map();
+      this.__lifeStatusOfEntities = new Map();
+    }
+
+    static getInstance() {
+      if (!this[singleton$1]) {
+        this[singleton$1] = new EntityRepository(EntityRepository.__singletonEnforcer);
+      }
+      return this[singleton$1];
+    }
+
+    
+    // assignEntityId(glBoostObject: GLBoostObject) {
+    //   if (glBoostObject.entityUID !== 0) {
+    //     console.warn('This GLBoostObject has been assigned entityUID already!');
+    //     return false;
+    //   }
+
+    //   glBoostObject._entity_uid = ++this.__entity_uid_count;
+    //   this.__entities.push(glBoostObject);
+
+    //   return true;
+    // }
+
+
+    createEntity() {
+      this.__entity_uid_count++;
+
+      const alive = new Boolean(true);
+      const entity = new Entity(this.__entity_uid_count, alive);
+
+      this.__entities.set(this.__entity_uid_count, entity);
+      this.__lifeStatusOfEntities.set(this.__entity_uid_count, alive);
+      
+      return entity;
+    }
+
+  }
 
   /*       */
 
@@ -1261,14 +1347,19 @@
                               
                                
                          
-                         
+                        
                           
 
     constructor(glBoostSystem               , toRegister         = true) {
       if (this.constructor === GLBoostObject) {
         throw new TypeError('Cannot construct GLBoostObject instances directly.');
       }
+      this._entity_uid = 0;
       this._setName();
+      
+      const entityRepository = EntityRepository.getInstance();
+      //entityRepository.assignEntityId(this);
+
       this._glBoostSystem = glBoostSystem;
       this._glContext = glBoostSystem._glContext;
       this._glBoostMonitor = glBoostSystem._glBoostMonitor;
@@ -1400,13 +1491,14 @@
     }
 
     get entityUID() {
-      return this.__entity_uid;
+      return this._entity_uid;
     }
   }
 
   GLBoostObject.classInfoDic = {};
   GLBoostObject._objectExistArray = [];
   GLBoostObject.__entities = [];
+
 
 
   GLBoost$1['GLBoostObject'] = GLBoostObject;
@@ -1509,7 +1601,11 @@
         this.v = new Float32Array(3);
       }
 
-      if (typeof (x    ).w !== 'undefined') {
+      if (typeof x === 'undefined') {
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
+      } else if (typeof (x    ).w !== 'undefined') {
         this.x = (x    ).x;
         this.y = (x    ).y;
         this.z = (x    ).z;
@@ -1822,7 +1918,12 @@
         this.v = new Float32Array(4);
       }
 
-      if (typeof (x    ).w !== 'undefined') {
+      if (typeof x === 'undefined') {
+        this.x = 0;
+        this.y = 0;
+        this.z = 0;
+        this.w = 1;
+      } else if (typeof (x    ).w !== 'undefined') {
         this.x = (x    ).x;
         this.y = (x    ).y;
         this.z = (x    ).z;
@@ -3765,6 +3866,7 @@
   }
 
   /*       */
+                                                         
 
   class L_Element extends GLBoostObject {
                            
@@ -3775,6 +3877,7 @@
                     
                             
                       
+                         
                                   
                                     
                                    
@@ -3784,8 +3887,8 @@
                                             
 
 
-    constructor(glBoostContext, toRegister          = true) {
-      super(glBoostContext, toRegister);
+    constructor(glBoostSystem               , toRegister          = true) {
+      super(glBoostSystem, toRegister);
 
       // Live (Static or Animation)
       this._translate = Vector3.zero();
@@ -4062,6 +4165,8 @@
       this._is_euler_angles_updated = false;
       this._is_quaternion_updated = false;
       this._is_scale_updated = false;
+      this._is_inverse_trs_matrix_updated = false;
+
       this.__updateTransform();
 
     }
@@ -4151,12 +4256,13 @@
         this._matrix.m13 = translateVec.y;
         this._matrix.m23 = translateVec.z;
 
+        this._is_trs_matrix_updated = true;
+   
         return this._matrix.clone();
 
       }
 
-      this._is_trs_matrix_updated = true;
-    }
+   }
 
 
     set quaternion(quat            ) {
@@ -4192,20 +4298,20 @@
     getQuaternionNotAnimated() {
       let value = null;
       if (this._is_quaternion_updated) {
-        return this._quaternion;
+        return this._quaternion.clone();
       } else if (!this._is_quaternion_updated) {
         if (this._is_trs_matrix_updated) {
           value = Quaternion.fromMatrix(this._matrix);
         } else if (this._is_euler_angles_updated) {
           value = Quaternion.fromMatrix(Matrix44$1.rotateXYZ(this._rotate.x, this._rotate.y, this._rotate.z));
         } else {
-          console.log('jojjeoe');
+          console.log('Not Quaternion Updated in error!');
         }
         this._quaternion = value;
         this._is_quaternion_updated = true;
       }
 
-      return this._quaternion;
+      return this._quaternion.clone();
     }
 
     get inverseTransformMatrix() {
@@ -5578,7 +5684,7 @@
         return gl.getParameter(gl.MAX_DRAW_BUFFERS);
       }
 
-      var glem = GLExtensionsManager$1.getInstance(this._glContext);
+      var glem = GLExtensionsManager.getInstance(this._glContext);
       if (glem.extDBs) {
         return gl.getParameter(glem.extDBs.MAX_DRAW_BUFFERS_WEBGL);
       } else {
@@ -7497,7 +7603,7 @@ return mat4(
       var vertices = this._vertices;
       var gl = this._glContext.gl;
 
-      var glem = GLExtensionsManager$1.getInstance(this._glContext);
+      var glem = GLExtensionsManager.getInstance(this._glContext);
 
       this._vertexN = vertices.position.length / vertices.components.position;
 
@@ -7604,7 +7710,7 @@ return mat4(
 
     draw(data) {
       const gl = this._glContext.gl;
-      const glem = GLExtensionsManager$1.getInstance(this._glContext);
+      const glem = GLExtensionsManager.getInstance(this._glContext);
 
       let materials = this._getAppropriateMaterials(data.mesh);
 
@@ -7914,14 +8020,35 @@ return mat4(
       if (this._primitiveType === GLBoost$1.TRIANGLE_STRIP) { // gl.TRIANGLE_STRIP
         incrementNum = 1;
       }
-      if ( this._vertices.texcoord ) {
-        if (!this._indicesArray) {
-          for (let i=0; i<vertexNum; i++) {
-            const j = i * incrementNum;
-            let pos0IndexBase = j * positionElementNumPerVertex;
-            let pos1IndexBase = (j + 1) * positionElementNumPerVertex;
-            let pos2IndexBase = (j + 2) * positionElementNumPerVertex;
-            const result = this._rayCastInner(origVec3, dirVec3, j, pos0IndexBase, pos1IndexBase, pos2IndexBase, isFrontFacePickable, isBackFacePickable);
+      if (!this._indicesArray) {
+        for (let i=0; i<vertexNum; i++) {
+          const j = i * incrementNum;
+          let pos0IndexBase = j * positionElementNumPerVertex;
+          let pos1IndexBase = (j + 1) * positionElementNumPerVertex;
+          let pos2IndexBase = (j + 2) * positionElementNumPerVertex;
+          const result = this._rayCastInner(origVec3, dirVec3, j, pos0IndexBase, pos1IndexBase, pos2IndexBase, isFrontFacePickable, isBackFacePickable);
+          if (result === null) {
+            continue;
+          }
+          const t = result[0];
+          if (result[0] < currentShortestT) {
+            currentShortestT = t;
+            currentShortestIntersectedPosVec3 = result[1];
+          }
+        }
+      } else {
+        for (let i=0; i<this._indicesArray.length; i++) {
+          let vertexIndices = this._indicesArray[i];
+          for (let j=0; j<vertexIndices.length; j++) {
+            const k = j * incrementNum;
+            let pos0IndexBase = vertexIndices[k    ] * positionElementNumPerVertex;
+            let pos1IndexBase = vertexIndices[k + 1] * positionElementNumPerVertex;
+            let pos2IndexBase = vertexIndices[k + 2] * positionElementNumPerVertex;
+
+            if (vertexIndices[k + 2] === void 0) {
+              break;
+            }
+            const result = this._rayCastInner(origVec3, dirVec3, vertexIndices[k], pos0IndexBase, pos1IndexBase, pos2IndexBase, isFrontFacePickable, isBackFacePickable);
             if (result === null) {
               continue;
             }
@@ -7931,32 +8058,9 @@ return mat4(
               currentShortestIntersectedPosVec3 = result[1];
             }
           }
-        } else {
-          for (let i=0; i<this._indicesArray.length; i++) {
-            let vertexIndices = this._indicesArray[i];
-            for (let j=0; j<vertexIndices.length; j++) {
-              const k = j * incrementNum;
-              let pos0IndexBase = vertexIndices[k    ] * positionElementNumPerVertex;
-              let pos1IndexBase = vertexIndices[k + 1] * positionElementNumPerVertex;
-              let pos2IndexBase = vertexIndices[k + 2] * positionElementNumPerVertex;
-
-              if (vertexIndices[k + 2] === void 0) {
-                break;
-              }
-              const result = this._rayCastInner(origVec3, dirVec3, vertexIndices[k], pos0IndexBase, pos1IndexBase, pos2IndexBase, isFrontFacePickable, isBackFacePickable);
-              if (result === null) {
-                continue;
-              }
-              const t = result[0];
-              if (result[0] < currentShortestT) {
-                currentShortestT = t;
-                currentShortestIntersectedPosVec3 = result[1];
-              }
-            }
-          }
         }
       }
-      
+    
       return [currentShortestIntersectedPosVec3, currentShortestT];
     }
 
@@ -8034,30 +8138,28 @@ return mat4(
       this._vertices.inverseArenbergMatrix = [];
       this._vertices.arenberg3rdPosition = [];
       this._vertices.faceNormal = [];
-      if ( this._vertices.texcoord ) {
-        if (!this._indicesArray) {
-          for (let i=0; i<this._vertexN-2; i+=incrementNum) {
-            let pos0IndexBase = i * positionElementNumPerVertex;
-            let pos1IndexBase = (i + 1) * positionElementNumPerVertex;
-            let pos2IndexBase = (i + 2) * positionElementNumPerVertex;
+      if (!this._indicesArray) {
+        for (let i=0; i<this._vertexN-2; i+=incrementNum) {
+          let pos0IndexBase = i * positionElementNumPerVertex;
+          let pos1IndexBase = (i + 1) * positionElementNumPerVertex;
+          let pos2IndexBase = (i + 2) * positionElementNumPerVertex;
 
-            this._calcArenbergMatrixFor3Vertices(null, i, pos0IndexBase, pos1IndexBase, pos2IndexBase, incrementNum);
+          this._calcArenbergMatrixFor3Vertices(null, i, pos0IndexBase, pos1IndexBase, pos2IndexBase, incrementNum);
 
-          }
-        } else {
-          for (let i=0; i<this._indicesArray.length; i++) {
-            let vertexIndices = this._indicesArray[i];
-            for (let j=0; j<vertexIndices.length-2; j+=incrementNum) {
-              let pos0IndexBase = vertexIndices[j    ] * positionElementNumPerVertex;
-              let pos1IndexBase = vertexIndices[j + 1] * positionElementNumPerVertex;
-              let pos2IndexBase = vertexIndices[j + 2] * positionElementNumPerVertex;
+        }
+      } else {
+        for (let i=0; i<this._indicesArray.length; i++) {
+          let vertexIndices = this._indicesArray[i];
+          for (let j=0; j<vertexIndices.length-2; j+=incrementNum) {
+            let pos0IndexBase = vertexIndices[j    ] * positionElementNumPerVertex;
+            let pos1IndexBase = vertexIndices[j + 1] * positionElementNumPerVertex;
+            let pos2IndexBase = vertexIndices[j + 2] * positionElementNumPerVertex;
 
-              if (vertexIndices[j + 2] === void 0) {
-                break;
-              }
-              this._calcArenbergMatrixFor3Vertices(vertexIndices, j, pos0IndexBase, pos1IndexBase, pos2IndexBase, incrementNum);
-
+            if (vertexIndices[j + 2] === void 0) {
+              break;
             }
+            this._calcArenbergMatrixFor3Vertices(vertexIndices, j, pos0IndexBase, pos1IndexBase, pos2IndexBase, incrementNum);
+
           }
         }
       }
@@ -9607,8 +9709,6 @@ return mat4(
         return this._shaderUniformLocationsOfExpressions[glslProgram.hashId][uniformLocationName];
       }
 
-  //    MiscUtil.consoleLog(GLBoost.LOG_GENERAL, 'this._shaderUniformLocationsOfExpressions[hashIdOfGLSLProgram] became undefined. Are you sure of it?');
-
       return void 0;
     }
 
@@ -10619,14 +10719,14 @@ return mat4(
       this._onMouseDblClick = (evt) => {
         if (evt.shiftKey) {
           this._mouseTranslateVec = new Vector3(0, 0, 0);
-        } else {
+        } else if (evt.ctrlKey) {
           this._rot_y = 0;
           this._rot_x = 0;
           this._rot_bgn_y = 0;
           this._rot_bgn_x = 0;
         }
-        this.updateCamera();
 
+        this.updateCamera();
       };
 
       this.registerEventListeners(eventTargetDom);
@@ -11604,7 +11704,7 @@ return mat4(
 
     _generateTextureFromImageData(imageData) {
       var gl = this._glContext.gl;
-      var glem = GLExtensionsManager$1.getInstance(this._glContext);
+      var glem = GLExtensionsManager.getInstance(this._glContext);
 
       var imgCanvas = this._getResizedCanvas(imageData);
       this._width = imgCanvas.width;
@@ -11622,7 +11722,7 @@ return mat4(
 
     _generateTextureInnerWithArrayBufferView(imgCanvas, width, height, isKeepBound) {
       var gl = this._glContext.gl;
-      var glem = GLExtensionsManager$1.getInstance(this._glContext);
+      var glem = GLExtensionsManager.getInstance(this._glContext);
       var texture = this._glContext.createTexture(this);
       gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -11647,7 +11747,7 @@ return mat4(
 
     _generateTextureInner(imgCanvas, isKeepBound) {
       var gl = this._glContext.gl;
-      var glem = GLExtensionsManager$1.getInstance(this._glContext);
+      var glem = GLExtensionsManager.getInstance(this._glContext);
       var texture = this._glContext.createTexture(this);
       gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -12607,7 +12707,7 @@ return mat4(
     }
 
     _setName() {
-      this.constructor._instanceCount = (typeof this.constructor._instanceCount === 'undefined') ? 0 : (this.__system.constructor._instanceCount + 1);
+      this.constructor._instanceCount = (typeof this.constructor._instanceCount === 'undefined') ? 0 : (this.constructor._instanceCount + 1);
       this._instanceName = this.constructor.name + '_' + this.constructor._instanceCount;
     }
 
@@ -12874,6 +12974,70 @@ return mat4(
 
   GLBoost$1['GLBoostLowContext'] = GLBoostLowContext;
 
+  const IsUtil = {
+    not: {},
+    all: {},
+    any: {},
+
+    _not(fn) {
+      return function() {
+        return !fn.apply(null, [...arguments]);
+      };
+    },
+
+    _all(fn) {
+      return function() {
+        if (Array.isArray(arguments[0])) {
+          return arguments[0].every(fn);
+        }
+        return [...arguments].every(fn);
+      };
+    },
+
+    _any(fn) {
+      return function() {
+        if (Array.isArray(arguments[0])) {
+          return arguments[0].some(fn);
+        }
+        return [...arguments].some(fn);
+      };
+    },
+
+    defined(val) {
+      return val !== void 0;
+    },
+
+    undefined(val) {
+      return val === void 0;
+    },
+
+    null(val) {
+      return val === null;
+    },
+
+    // is NOT null or undefined
+    exist(val) {
+      return val != null;
+    },
+
+    function(val) {
+      return typeof val === 'function';
+    }
+
+  };
+
+  for (let fn in IsUtil) {
+    if (IsUtil.hasOwnProperty(fn)) {
+      const interfaces = ['not', 'all', 'any'];
+      if (fn.indexOf('_') === -1 && !interfaces.includes(fn)) {
+        interfaces.forEach((itf)=>{
+          const op = '_' + itf;
+          IsUtil[itf][fn] = IsUtil[op](IsUtil[fn]);
+        });
+      }
+    }
+  }
+
   class M_Mesh extends M_Element {
     constructor(glBoostContext, geometry, material) {
       super(glBoostContext);
@@ -13135,16 +13299,18 @@ return mat4(
       const distVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 1), invPVW, viewport);
       const dirVecInLocal = GLBoost$1.Vector3.subtract(distVecInLocal, origVecInLocal).normalize();
 
+      const material = this.getAppropriateMaterials()[0];
+
       const gl = this._glContext.gl;
-      const isCulling = gl.isEnabled(gl.CULL_FACE);
-      const cullMode = gl.getParameter(gl.CULL_FACE_MODE);
+      const isCulling = material.states.enable.includes(gl.CULL_FACE);
+      const cullMode = IsUtil.exist(material.states.functions.cullFace) ? material.states.functions.cullFace: gl.BACK;
 
       let isFrontFacePickable = true;
       let isBackFacePickable = true;
       if (isCulling) {
         if (cullMode === gl.FRONT) {
           isFrontFacePickable = false;
-        } else if (cullMode === gl.Back) {
+        } else if (cullMode === gl.BACK) {
           isBackFacePickable = false;
         } else {
           isFrontFacePickable = false;
@@ -13169,7 +13335,7 @@ return mat4(
 
     set isOutlineVisible(flg) {
       if (flg && this._outlineGizmo === null) {
-        this._outlineGizmo = this._glBoostContext.createOutlineGizmo(this);
+        this._outlineGizmo = this._glBoostSystem._glBoostContext.createOutlineGizmo(this);
       }
 
       if (this._outlineGizmo) {
@@ -13777,14 +13943,14 @@ return mat4(
     }
 
     clone(clonedOriginalRootElement = this, clonedRootElement = null, onCompleteFuncs = []) {
-      let instance = new M_Group(this._glBoostContext);
+      let instance = new M_Group(this._glBoostSystem);
       if (clonedRootElement === null) {
         clonedRootElement = instance;
       }
       this._copy(instance);
 
       this._elements.forEach((element)=>{
-        if (typeof element.clone !== 'undefined') {// && !MiscUtil.isDefinedAndTrue(element._isRootJointGroup)) {
+        if (typeof element.clone !== 'undefined') {
           instance._elements.push(element.clone(clonedOriginalRootElement, clonedRootElement, onCompleteFuncs));
         } else {
           instance._elements.push(element);
@@ -14060,9 +14226,9 @@ return mat4(
       this._transparentMeshes = [];
       this._transparentMeshesAsManualOrder = null;
       this._drawBuffers = [this._glContext.gl.NONE];
-      this._clearColor = null;
+      this._clearColor = null; // webgl default is [0, 0, 0, 0]
       this._clearDepth = null;  // webgl default is 1.0
-      this._colorMask = null; // webgl defalult is [true, true, true, true];
+      this._colorMask = null; // webgl defalult is [true, true, true, true]
       this._renderTargetColorTextures = [];
       this._renderTargetDepthTexture = [];
       this._expression = null;
@@ -14550,7 +14716,7 @@ return mat4(
         for (let obj of dic.instances) {
           let renderSpecificMaterials = [];
           obj.getAppropriateMaterials().forEach((material, index) => {
-            let newMaterial = this._glBoostContext.createClassicMaterial();
+            let newMaterial = this._glBoostSystem._glBoostContext.createClassicMaterial();
             //newMaterial._originalMaterial = material;
             renderSpecificMaterials.push(newMaterial);
           });
@@ -14715,7 +14881,7 @@ return mat4(
 
         var glContext = this._glContext;
         var gl = glContext.gl;
-        var glem = GLExtensionsManager$1.getInstance(this._glContext);
+        var glem = GLExtensionsManager.getInstance(this._glContext);
 
 
         // set render target buffers for each RenderPass.
@@ -15737,7 +15903,7 @@ return mat4(
     }
 
     clone() {
-      let instance = new M_Joint(this._glBoostContext);
+      let instance = new M_Joint(this._glBoostSystem);
       this._copy(instance);
       return instance;
     }
@@ -15910,7 +16076,7 @@ return mat4(
     }
 
     clone(clonedOriginalRootElement = this, clonedRootElement = null, onCompleteFuncs = []) {
-      let instance = new M_SkeletalMesh(this._glBoostContext, this.geometry, this.material, this._rootJointName);
+      let instance = new M_SkeletalMesh(this._glBoostSystem, this.geometry, this.material, this._rootJointName);
       this._copy(instance, clonedOriginalRootElement, clonedRootElement, onCompleteFuncs);
 
       return instance;
@@ -16941,14 +17107,14 @@ return mat4(
   GLBoost$1['M_SpotLight'] = M_SpotLight;
 
   class M_AxisGizmo extends M_Gizmo {
-    constructor(glBoostContext, length) {
-      super(glBoostContext);
+    constructor(glBoostSystem, length) {
+      super(glBoostSystem);
 
-      this._init(glBoostContext, length);
+      this._init(glBoostSystem, length);
     }
 
-    _init(glBoostContext, length) {
-      let mesh = new M_Mesh(glBoostContext, new Axis(this._glBoostContext, length));
+    _init(glBoostSystem, length) {
+      let mesh = new M_Mesh(glBoostSystem, new Axis(glBoostSystem, length));
       this.addChild(mesh);
     }
   }
@@ -17019,17 +17185,17 @@ return mat4(
   }
 
   class M_OutlineGizmo extends M_Gizmo {
-    constructor(glBoostContext, mesh, scale = 0.05) {
-      super(glBoostContext, null, null);
+    constructor(glBoostSystem, mesh, scale = 0.05) {
+      super(glBoostSystem, null, null);
 
-      this._init(glBoostContext, mesh, scale);
+      this._init(glBoostSystem, mesh, scale);
     }
 
-    _init(glBoostContext, mesh, scale) {
+    _init(glBoostSystem, mesh, scale) {
 
       this._mesh = mesh.clone();
       this.isPreDraw = true;
-      this._material = new ClassicMaterial$1(glBoostContext);
+      this._material = new ClassicMaterial$1(glBoostSystem);
       this._material.baseColor = new Vector4$1(0, 1, 0, 1);
 
       
@@ -17041,7 +17207,7 @@ return mat4(
       this._forceThisMaterial = this._material;
 
       //this._mesh.material = this._material;
-      this._group = this._glBoostContext.createGroup();
+      this._group = glBoostSystem._glBoostContext.createGroup();
       this.updateMatrix(mesh);
       this._group.addChild(this._mesh);
       this.addChild(this._group);
@@ -17436,6 +17602,9 @@ return mat4(
       return new M_ScreenMesh(this.__system, customVertexAttributes);
     }
 
+    createFreeShader(vertexShaderText, fragmentShaderText, attributes, uniforms, textureNames) {
+      return new FreeShader(this.__system, vertexShaderText, fragmentShaderText, attributes, uniforms, textureNames); 
+    }
   }
 
   GLBoost['GLBoostMiddleContext'] = GLBoostMiddleContext;
@@ -19251,6 +19420,8 @@ return mat4(
               let texturePurpose;
               if (valueName === 'diffuse' || (materialJson.technique === "CONSTANT" && valueName === 'ambient')) {
                 texturePurpose = GLBoost$1.TEXTURE_PURPOSE_DIFFUSE;
+              } else if (valueName === 'emission' && textureStr.match(/_normal$/)) {
+                texturePurpose = GLBoost$1.TEXTURE_PURPOSE_NORMAL;
               }
 
               let texture = textures[textureStr];
@@ -19321,7 +19492,7 @@ return mat4(
       for (let valueName in materialJson.values) {
         let value = materialJson.values[valueName];
         if (typeof value !== 'string') {
-          material[valueName + 'Color'] = MathClassUtil.arrayToVectorOrMatrix(value); //new Vector4(value[0], value[1], value[2], value[3]);
+          material[valueName + 'Color'] = MathClassUtil.arrayToVectorOrMatrix(value);
         }
       }
 
@@ -22032,4 +22203,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-116-ga2bc6-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-162-gaad3-mod branch: develop';
