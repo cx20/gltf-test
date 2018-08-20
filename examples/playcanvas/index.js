@@ -99,7 +99,7 @@ function init(){
     var scale = modelInfo.scale;
     var basePath = url.substring(0, url.lastIndexOf("/")) + "/";
     var ext = url.split(".").pop();
-    var isGlb = ext == "glb" ? true : false;
+    var isGlb = (ext == "glb") ? true : false;
 
     // create directional light entity
     var light = new pc.Entity('light');
@@ -118,19 +118,38 @@ function init(){
     gltfRoot.script.create('rotate');
     app.root.addChild(gltfRoot);
 
-    app.assets.loadFromUrl(url, 'json', function (err, asset) {
-        var json = asset.resource;
-        var gltf = JSON.parse(json);
-        loadGltf(gltf, app.graphicsDevice, function (model, textures, animationClips) {
-            // add the loaded scene to the hierarchy
-            gltfRoot.addComponent('model');
-            gltfRoot.model.model = model;
-            // focus the camera on the newly loaded scene
-            camera.script.orbitCamera.focusEntity = gltfRoot;
-        }, {
-            basePath: basePath
+    if ( isGlb ) {
+        var req = new XMLHttpRequest();
+        req.open("get", url, true);
+        req.responseType = isGlb ? "arraybuffer" : "";
+        req.send(null);
+
+        req.onload = function(){
+            var arrayBuffer = req.response;
+            loadGlb(arrayBuffer, app.graphicsDevice, function (model) {
+                // add the loaded scene to the hierarchy
+                gltfRoot.addComponent('model');
+                gltfRoot.model.model = model;
+
+                // focus the camera on the newly loaded scene
+                camera.script.orbitCamera.focusEntity = gltfRoot;
+            });
+        }
+    } else {
+        app.assets.loadFromUrl(url, 'json', function (err, asset) {
+            var json = asset.resource;
+            var gltf = JSON.parse(json);
+            loadGltf(gltf, app.graphicsDevice, function (model, textures, animationClips) {
+                // add the loaded scene to the hierarchy
+                gltfRoot.addComponent('model');
+                gltfRoot.model.model = model;
+                // focus the camera on the newly loaded scene
+                camera.script.orbitCamera.focusEntity = gltfRoot;
+            }, {
+                basePath: basePath
+            });
         });
-    });
+    }
 }
 
 init();
