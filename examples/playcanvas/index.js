@@ -42,7 +42,7 @@ app.root.addChild(camera);
 camera.setLocalPosition(0, 0, 1);
 
 // make the camera interactive
-app.assets.loadFromUrl('../../libs/playcanvas/v0.222.0-dev/orbit-camera.js', 'script', function (err, asset) {
+app.assets.loadFromUrl('../../libs/playcanvas/v1.6.4-dev/orbit-camera.js', 'script', function (err, asset) {
     camera.script.create('orbitCamera', {
         attributes: {
             inertiaFactor: 0,
@@ -86,11 +86,6 @@ cubemapAsset.ready(function () {
     app.scene.skyboxMip = 2;
     app.scene.setSkybox(cubemapAsset.resources);
 });
-// create directional light entity
-var light = new pc.Entity('light');
-light.addComponent('light');
-light.setEulerAngles(45, 0, 0);
-app.root.addChild(light);
 
 // root entity for loaded gltf scenes which can have more than one root entity
 var gltfRoot = new pc.Entity('gltf');
@@ -101,51 +96,41 @@ function init(){
     if(modelInfo.url) {
         url = modelInfo.url;
     }
+    var scale = modelInfo.scale;
     var basePath = url.substring(0, url.lastIndexOf("/")) + "/";
     var ext = url.split(".").pop();
     var isGlb = ext == "glb" ? true : false;
 
-    if ( isGlb ) {
-        var req = new XMLHttpRequest();
-        req.open("get", url, true);
-        req.responseType = isGlb ? "arraybuffer" : "";
-        req.send(null);
-
-        req.onload = function(){
-            var arrayBuffer = req.response;
-            loadGlb(arrayBuffer, app.graphicsDevice, function (roots) {
-                initScene(roots);
-            });
-        }
-    } else {
-        app.assets.loadFromUrl(url, 'json', function (err, asset) {
-            var json = asset.resource;
-            var gltf = JSON.parse(json);
-            loadGltf(gltf, app.graphicsDevice, function (roots) {
-                initScene(roots);
-            }, {
-                basePath: basePath
-            });
-        });
-    }
-
-    var initScene = function (roots) {
-        // add the loaded scene to the hierarchy
-        roots.forEach(function (root) {
-            gltfRoot.addChild(root);
-        });
-
-        // focus the camera on the newly loaded scene
-        camera.script.orbitCamera.focusEntity = gltfRoot;
+    // create directional light entity
+    var light = new pc.Entity('light');
+    light.addComponent('light',);
+    app.root.addChild(light);
+    light.setEulerAngles(45, 0, 45);
+ 
+    // rotator script
+    var Rotate = pc.createScript('rotate');
+    Rotate.prototype.update = function (deltaTime) {
+        this.entity.rotate(0, -deltaTime * 20, 0);
     };
+    // glTF scene root that rotates
+    var gltfRoot = new pc.Entity();
+    gltfRoot.addComponent('script');
+    gltfRoot.script.create('rotate');
+    app.root.addChild(gltfRoot);
+
+    app.assets.loadFromUrl(url, 'json', function (err, asset) {
+        var json = asset.resource;
+        var gltf = JSON.parse(json);
+        loadGltf(gltf, app.graphicsDevice, function (model, textures, animationClips) {
+            // add the loaded scene to the hierarchy
+            gltfRoot.addComponent('model');
+            gltfRoot.model.model = model;
+            // focus the camera on the newly loaded scene
+            camera.script.orbitCamera.focusEntity = gltfRoot;
+        }, {
+            basePath: basePath
+        });
+    });
 }
-
-
-var timer = 0;
-app.on("update", function (deltaTime) {
-    timer += deltaTime;
-    // code executed on every frame
-    gltfRoot.rotate(0, -0.2, 0);
-});
 
 init();
