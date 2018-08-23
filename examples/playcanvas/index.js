@@ -143,6 +143,17 @@ function init(){
                 // add the loaded scene to the hierarchy
                 gltfRoot.addComponent('model');
                 gltfRoot.model.model = model;
+                if ( animationClips && animationClips.length > 0 ) {
+                    gltfRoot.animComponent = new AnimationComponent();
+                }
+                if ( gltfRoot.animComponent ) {
+                    // Add all animations to the model's animation component
+                    for (var i = 0; i < animationClips.length; i++) {
+                        animationClips[i].transferToRoot(gltfRoot);
+                        gltfRoot.animComponent.addClip(animationClips[i]);
+                    }
+                    gltfRoot.animComponent.playClip(animationClips[0].name);
+                }
                 // focus the camera on the newly loaded scene
                 camera.script.orbitCamera.focusEntity = gltfRoot;
             }, {
