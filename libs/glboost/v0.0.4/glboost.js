@@ -10545,7 +10545,7 @@ return mat4(
 
   }
 
-  GLBoost['M_AbstractCamera'] = M_AbstractCamera;
+  GLBoost$1['M_AbstractCamera'] = M_AbstractCamera;
 
   class L_CameraController extends GLBoostObject {
     constructor(glBoostContext, 
@@ -16604,6 +16604,8 @@ return mat4(
     }
   }
 
+  GLBoost$1['M_FrustumCamera'] = M_FrustumCamera;
+
   class M_OrthoCamera extends M_AbstractCamera {
     constructor(glBoostContext, toRegister, lookat, ortho) {
       super(glBoostContext, toRegister);
@@ -16674,6 +16676,22 @@ return mat4(
       return this._lowLevelCamera.zFar;
     }
 
+    set xmag(value) {
+      this._lowLevelCamera.xmag = value;
+    }
+
+    get xmag() {
+      return this._lowLevelCamera.xmag;
+    }
+
+    set ymag(value) {
+      this._lowLevelCamera.ymag = value;
+    }
+
+    get ymag() {
+      return this._lowLevelCamera.ymag;
+    }
+
     get aspect() {
       return (this._lowLevelCamera.right - this._lowLevelCamera.left) / (this._lowLevelCamera.top - this._lowLevelCamera.bottom);
     }
@@ -16687,6 +16705,8 @@ return mat4(
     }
 
   }
+
+  GLBoost$1['M_OrthoCamera'] = M_OrthoCamera;
 
   class Arrow extends Geometry {
     constructor(glBoostSystem, length, lineCount = 1) {
@@ -18981,7 +19001,7 @@ return mat4(
             }
           );
         }
-        camera.userFlavorName = cameraStr;
+        camera.userFlavorName = cameraStr + 'Shape';
         group.addChild(camera);
       } else if (nodeJson.extensions) {
         if (nodeJson.extensions.KHR_materials_common) {
@@ -22203,4 +22223,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-162-gaad3-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-171-gee08-mod branch: develop';
