@@ -816,17 +816,12 @@
             if (indices !== null) {
                 accessor = gltf.accessors[primitive.indices];
                 var indexFormat;
-                switch (accessor.componentType) {
-                    case 5121:
-                        indexFormat = pc.INDEXFORMAT_UINT8;
-                        break;
-                    default:
-                    case 5123:
-                        indexFormat = pc.INDEXFORMAT_UINT16;
-                        break;
-                    case 5125:
-                        indexFormat = pc.INDEXFORMAT_UINT32;
-                        break;
+                if (indices instanceof Uint8Array) {
+                    indexFormat = pc.INDEXFORMAT_UINT8;
+                } else if (indices instanceof Uint16Array) {
+                    indexFormat = pc.INDEXFORMAT_UINT16;
+                } else {
+                    indexFormat = pc.INDEXFORMAT_UINT32;
                 }
                 var numIndices = indices.length;
                 var indexBuffer = new pc.IndexBuffer(resources.device, indexFormat, numIndices, pc.BUFFER_STATIC, indices);
@@ -923,12 +918,9 @@
         if (data.hasOwnProperty('camera')) {
             var gltf = resources.gltf;
             var camera = gltf.cameras[data.camera];
-
             var options = {};
-
             if (camera.type === 'perspective') {
                 options.type = pc.PROJECTION_PERSPECTIVE;
-
                 if (camera.hasOwnProperty('perspective')) {
                     var perspective = camera.perspective;
                     if (perspective.hasOwnProperty('aspectRatio')) {
@@ -942,19 +934,15 @@
                 }
             } else if (camera.type === 'orthographic') {
                 options.type = pc.PROJECTION_ORTHOGRAPHIC;
-
                 if (camera.hasOwnProperty('orthographic')) {
                     var orthographic = camera.orthographic;
-
                     options.aspectRatio = orthographic.xmag / orthographic.ymag;
                     options.orthoHeight = orthographic.ymag * 0.5;
                     options.farClip = orthographic.zfar;
                     options.nearClip = orthographic.znear;
                 }
             }
-
             entity.addComponent('camera', options);
-
             // Diable loaded cameras by default and leave it to the application to enable them
             entity.camera.enabled = false;
         }

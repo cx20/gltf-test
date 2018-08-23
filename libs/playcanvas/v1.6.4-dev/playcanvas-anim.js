@@ -298,7 +298,7 @@ AnimationTarget.prototype.updateToTarget = function (value) {
 };
 
 // static function
-AnimationTarget.constructTargetNodes = function (root, vec3Scale) {
+AnimationTarget.constructTargetNodes = function (root, vec3Scale, output) {
     if (!root)
         return;
 
@@ -307,13 +307,10 @@ AnimationTarget.constructTargetNodes = function (root, vec3Scale) {
     if (root.localScale)
         rootTargetNode.vScale = new pc.Vec3(root.localScale.x * vScale.x, root.localScale.y * vScale.y, root.localScale.z * vScale.z);
 
-    var arTargetsAll = [rootTargetNode];
+    output[rootTargetNode.targetNode.name] = rootTargetNode;
     for (var i = 0; i < root.children.length; i ++) {
-        var arTargets = AnimationTarget.constructTargetNodes(root.children[i], rootTargetNode.vScale);
-        if (arTargets)
-            arTargetsAll = arTargetsAll.concat(arTargets);
+        var arTargets = AnimationTarget.constructTargetNodes(root.children[i], rootTargetNode.vScale, output);
     }
-    return arTargetsAll;
 };
 
 // static function
@@ -1066,37 +1063,29 @@ AnimationClip.prototype.constructFromRoot = function (root) {
 //         newTarget.vScale = NS / AS = vScale * NS / RS;
 //
 */
-AnimationClip.prototype.transferToRoot = function (root) {
-    var arTarget = AnimationTarget.constructTargetNodes(root);// contains localScale information
+AnimationClip.prototype.transferToRoot = function (root) { 
+    var dictTarget = {};
+    AnimationTarget.constructTargetNodes(root, null, dictTarget);// contains localScale information
 
     var curveNames = Object.keys(this.animCurves);
     for (var i = 0; i < curveNames.length; i++) { // for each curve in clip
         if (!curveNames[i] || !this.animCurves[curveNames[i]])
             continue;
-
         var curve = this.animCurves[curveNames[i]];
-        for (var t = 0; t < curve.animTargets.length; t ++) { // for all targets
-            var ctarget = curve.animTargets[t];
-            var bFound = false;
-            for (var a = 0; a < arTarget.length; a ++) { // find matching under root
-                var atarget = arTarget[a];
-
-                if (ctarget.targetNode.name === atarget.targetNode.name) { // match by target name
-                    bFound = true;
-                    var cScale = AnimationTarget.getLocalScale(ctarget.targetNode);
-                    ctarget.targetNode = atarget.targetNode; // atarget contains scale information
-                    if (cScale && atarget.vScale) {
-                        ctarget.vScale = new pc.Vec3(cScale.x, cScale.y, cScale.z);
-                        if (atarget.vScale.x) ctarget.vScale.x /= atarget.vScale.x;
-                        if (atarget.vScale.y) ctarget.vScale.y /= atarget.vScale.y;
-                        if (atarget.vScale.z) ctarget.vScale.z /= atarget.vScale.z;
-                    }
-                }
+        var ctarget = curve.animTargets[0];
+        var atarget = dictTarget[ctarget.targetNode.name];
+        if (atarget) { // match by target name
+            var cScale = AnimationTarget.getLocalScale(ctarget.targetNode);
+            ctarget.targetNode = atarget.targetNode; // atarget contains scale information
+            if (cScale && atarget.vScale) {
+                ctarget.vScale = new pc.Vec3(cScale.x, cScale.y, cScale.z);
+                if (atarget.vScale.x) ctarget.vScale.x /= atarget.vScale.x;
+                if (atarget.vScale.y) ctarget.vScale.y /= atarget.vScale.y;
+                if (atarget.vScale.z) ctarget.vScale.z /= atarget.vScale.z;
             }
-            if (!bFound)
-                console.warn("transferToRoot: " + ctarget.targetNode.name + "in animation clip " + this.name + " has no transferred target under " + root.name);
-
         }
+        else //not found
+            console.warn("transferToRoot: " + ctarget.targetNode.name + "in animation clip " + this.name + " has no transferred target under " + root.name);
     }
 };
 
