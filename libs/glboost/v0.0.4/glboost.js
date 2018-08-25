@@ -9953,8 +9953,8 @@ vec3 diffuseMatAverageF0 = vec3(0.04);
 vec3 F0 = mix(diffuseMatAverageF0, baseColor.rgb, metallic);
 
 // Albedo
-//vec3 albedo = baseColor.rgb * (vec3(1.0) - F0);
-vec3 albedo = baseColor.rgb * (1.0 - metallic);
+vec3 albedo = baseColor.rgb * (vec3(1.0) - diffuseMatAverageF0);
+albedo.rgb *= (1.0 - metallic);
 
 `;
       for (let i=0; i<lights.length; i++) {
@@ -22558,4 +22558,4 @@ vec3 albedo = baseColor.rgb * (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-185-g79f17-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-189-gabe1-mod branch: develop';
