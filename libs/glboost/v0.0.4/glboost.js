@@ -9921,6 +9921,12 @@ return mat4(
       }
     `;
 
+      shaderText += `
+    vec3 linearToSrgb(vec3 linearColor) {
+      return pow(linearColor, vec3(1.0/2.2));
+    }
+  `;
+
       return shaderText;
     }
 
@@ -9987,7 +9993,8 @@ vec3 albedo = baseColor.rgb * (1.0 - metallic);
         shaderText += `  }\n`;
       }
       shaderText += '  rt0.xyz += ambient.xyz;\n';
-      
+      shaderText += '  rt0.xyz = linearToSrgb(rt0.xyz);\n';
+       
       shaderText += '  rt0.a = 1.0;\n';
 
 
@@ -22551,4 +22558,4 @@ vec3 albedo = baseColor.rgb * (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-182-gce125-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-185-g79f17-mod branch: develop';
