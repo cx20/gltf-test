@@ -4049,7 +4049,7 @@
       return this.getTranslateAtOrStatic(this._activeAnimationLineName, this._getCurrentAnimationInputValue(this._activeAnimationLineName));
     }
 
-    getTranslateAt(lineName        , inputValue         )          {
+    getTranslateAt(lineName        , inputValue        )          {
       let value = this._getAnimatedTransformValue(inputValue, this._animationLine[lineName], 'translate');
       if (value !== null) {
         this._translate = value;
@@ -4058,7 +4058,7 @@
       return value;
     }
 
-    getTranslateAtOrStatic(lineName        , inputValue         ) {
+    getTranslateAtOrStatic(lineName        , inputValue        ) {
       let value = this.getTranslateAt(lineName, inputValue);
       if (value === null) {
         return this.getTranslateNotAnimated();
@@ -4127,7 +4127,7 @@
       return this.getScaleAtOrStatic(this._activeAnimationLineName, this._getCurrentAnimationInputValue(this._activeAnimationLineName));
     }
 
-    getScaleAt(lineName        , inputValue         ) {
+    getScaleAt(lineName        , inputValue        ) {
       let value = this._getAnimatedTransformValue(inputValue, this._animationLine[lineName], 'scale');
       if (value !== null) {
         this._scale = value.clone();
@@ -4136,7 +4136,7 @@
       return value;
     }
 
-    getScaleAtOrStatic(lineName        , inputValue         ) {
+    getScaleAtOrStatic(lineName        , inputValue        ) {
       let value = this.getScaleAt(lineName, inputValue);
       if (value === null) {
         return this.getScaleNotAnimated();
@@ -9276,7 +9276,12 @@ return mat4(
     setUniforms(gl, glslProgram, scene, material, camera, mesh, lights) {
       super.setUniforms(gl, glslProgram, scene, material, camera, mesh, lights);
 
-      let baseColor = material.baseColor;
+      let baseColor = null;
+      if (material.className.indexOf('ClassicMaterial') !== -1) {
+        baseColor = material.baseColor;
+      } else {
+        baseColor = new Vector4$1(1.0, 1.0, 1.0, 1.0);
+      }
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_materialBaseColor'), baseColor.x, baseColor.y, baseColor.z, baseColor.w, true);
 
       let diffuseTexture = material.getTextureFromPurpose(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
@@ -9345,10 +9350,7 @@ return mat4(
       this._texturePurposeDic = [];
       this._textureContributionRateDic = {};
       this._gl = this._glContext.gl;
-      this._baseColor = new Vector4$1(1.0, 1.0, 1.0, 1.0);
-      this._diffuseColor = new Vector4$1(1.0, 1.0, 1.0, 1.0);
-      this._specularColor = new Vector4$1(0.5, 0.5, 0.5, 1.0);
-      this._ambientColor = new Vector4$1(0.25, 0.25, 0.25, 1.0);
+
       this._name = '';
       this._shaderClass = DecalShader;
       this._shaderInstance = null;
@@ -9385,10 +9387,7 @@ return mat4(
 
     clone() {
       var material = new ClassicMaterial(this._glBoostContext);
-      material._baseColor = this._baseColor;
-      material._diffuseColor = this._diffuseColor;
-      material._specularColor = this._specularColor;
-      material._ambientColor = this._ambientColor;
+
       material._shaderClass = this._shaderClass;
       material._shaderInstance = this._shaderInstance;
 
@@ -9518,57 +9517,6 @@ return mat4(
       return result;
     }
 
-    set baseColor(vec) {
-      if (!vec) {
-        return;
-      }
-
-      this._baseColor = vec;
-      this._updateCount();
-    }
-
-    get baseColor() {
-      return this._baseColor;
-    }
-
-    set diffuseColor(vec) {
-      if (!vec) {
-        return;
-      }
-
-      this._diffuseColor = vec;
-      this._updateCount();
-    }
-
-    get diffuseColor() {
-      return this._diffuseColor;
-    }
-
-    set specularColor(vec) {
-      if (!vec) {
-        return;
-      }
-
-      this._specularColor = vec;
-      this._updateCount();
-    }
-
-    get specularColor() {
-      return this._specularColor;
-    }
-
-    set ambientColor(vec) {
-      if (!vec) {
-        return;
-      }
-
-      this._ambientColor = vec;
-      this._updateCount();
-    }
-
-    get ambientColor() {
-      return this._ambientColor;
-    }
 
     set states(states) {
       if (typeof states.functions === 'undefined') {
@@ -9590,7 +9538,7 @@ return mat4(
       if (this._states) {
         if (this._states.enable) {
           this._states.enable.forEach((state) => {
-            if (state === 3042) {
+            if (state === 3042) { // gl.BLEND
               isTransparent = true;
             }
           });
@@ -9774,15 +9722,366 @@ return mat4(
       super(glBoostContext);
 
       this._wireframeWidthRelativeScale = 1.0;
-
+      this._baseColor = new Vector4$1(1.0, 1.0, 1.0, 1.0);
+      this._diffuseColor = new Vector4$1(1.0, 1.0, 1.0, 1.0);
+      this._specularColor = new Vector4$1(0.5, 0.5, 0.5, 1.0);
+      this._ambientColor = new Vector4$1(0.25, 0.25, 0.25, 1.0);
     }
 
     get wireframeWidthRelativeScale() {
       return this._wireframeWidthRelativeScale;
     }
+
+    clone() {
+      super.clone();
+
+      material._baseColor = this._baseColor;
+      material._diffuseColor = this._diffuseColor;
+      material._specularColor = this._specularColor;
+      material._ambientColor = this._ambientColor;
+    }
+
+
+    set baseColor(vec) {
+      if (!vec) {
+        return;
+      }
+
+      this._baseColor = vec;
+      this._updateCount();
+    }
+
+    get baseColor() {
+      return this._baseColor;
+    }
+
+    set diffuseColor(vec) {
+      if (!vec) {
+        return;
+      }
+
+      this._diffuseColor = vec;
+      this._updateCount();
+    }
+
+    get diffuseColor() {
+      return this._diffuseColor;
+    }
+
+    set specularColor(vec) {
+      if (!vec) {
+        return;
+      }
+
+      this._specularColor = vec;
+      this._updateCount();
+    }
+
+    get specularColor() {
+      return this._specularColor;
+    }
+
+    set ambientColor(vec) {
+      if (!vec) {
+        return;
+      }
+
+      this._ambientColor = vec;
+      this._updateCount();
+    }
+
+    get ambientColor() {
+      return this._ambientColor;
+    }
   }
 
   GLBoost$1['ClassicMaterial'] = ClassicMaterial$1;
+
+  class PBRPrincipledShaderSource {
+
+    FSDefine_PBRPrincipledShaderSource(in_, f, lights) {
+      
+      var shaderText = '';
+      shaderText += 'uniform vec2 uMetallicRoughnessFactors;\n';
+      shaderText += 'uniform vec3 uBaseColorFactor;\n';
+
+      shaderText += 'uniform vec4 ambient;\n'; // Ka * amount of ambient lights
+
+      var sampler2D = this._sampler2DShadow_func();
+      let lightNumExceptAmbient = lights.filter((light)=>{return !light.isTypeAmbient();}).length;    
+      if (lightNumExceptAmbient > 0) {
+        shaderText += `uniform highp ${sampler2D} uDepthTexture[${lightNumExceptAmbient}];\n`;
+        shaderText += `${in_} vec4 v_shadowCoord[${lightNumExceptAmbient}];\n`;
+        shaderText += `uniform int isShadowCasting[${lightNumExceptAmbient}];\n`;
+      }
+
+      return shaderText;
+    }
+
+    FSMethodDefine_PBRPrincipledShaderSource(f, lights, material, extraData) {
+      let shaderText = '';
+
+      shaderText += `
+      const float M_PI = 3.141592653589793;
+      const float c_MinRoughness = 0.04;
+    `;
+
+      shaderText += `
+    float angular_n_h(float NH) {
+      return acos(NH);
+    }
+    `;
+
+      shaderText += `
+    float sqr(float x) {
+      return x*x;
+    }
+    `;
+
+
+      shaderText += `
+    float d_phong(float NH, float c1) {
+      return pow(
+        cos(acos(NH))
+        , c1
+      );
+    }
+    `;
+
+      shaderText += `
+    // GGX NDF
+    float d_ggx(float NH, float alphaRoughness) {
+      float roughnessSqr = alphaRoughness * alphaRoughness;
+      float f = (roughnessSqr - 1.0) * NH * NH + 1.0;
+      return roughnessSqr / (M_PI * f * f);
+    }
+    `;
+
+      shaderText += `
+    float d_torrance_reiz(float NH, float c3) {
+      float CosSquared = NH*NH;
+      float TanSquared = (1.0 - CosSquared)/CosSquared;
+      //return (1.0/M_PI) * sqr(c3/(CosSquared * (c3*c3 + TanSquared)));  // gamma = 2, aka GGX
+      return (1.0/sqrt(M_PI)) * (sqr(c3)/(CosSquared * (c3*c3 + TanSquared))); // gamma = 1, D_Berry
+    }
+    `;
+
+      shaderText += `
+    float d_beckmann(float NH, float m) {
+      float co = 1.0 / (4.0 * m * m * NH * NH * NH * NH);
+      float expx = exp((NH * NH - 1.0) / (m * m * NH * NH));
+      return co * expx; 
+    }
+    `;
+
+      shaderText += `
+    // the same as glTF WebGL sample
+    // https://github.com/KhronosGroup/glTF-WebGL-PBR/blob/88eda8c5358efe03128b72b6c5f5f6e5b6d023e1/shaders/pbr-frag.glsl#L188
+    // That is, Unreal Engine based approach, but modified to use alphaRoughness (squared artist's roughness parameter),
+    // and based on 'Separable Masking and Shadowing' approximation (propesed by Christophe Schlick)
+    // https://www.cs.virginia.edu/~jdl/bib/appearance/analytic%20models/schlick94b.pdf
+    float g_shielding(float NL, float NV, float alphaRoughness) {
+      float r = alphaRoughness;
+
+      // Local Shadowing using "Schlick-Smith" Masking Function
+      float localShadowing = 2.0 * NL / (NL + sqrt(r * r + (1.0 - r * r) * (NL * NL)));
+      
+      // Local Masking using "Schlick-Smith" Masking Function
+      float localMasking = 2.0 * NV / (NV + sqrt(r * r + (1.0 - r * r) * (NV * NV)));
+      
+      return localShadowing * localMasking;
+    }
+    `;
+
+      shaderText += `
+    // The Schlick Approximation to Fresnel
+    vec3 fresnel(vec3 f0, float LH) {
+      return vec3(f0) + (vec3(1.0) - f0) * pow(1.0 - LH, 5.0);
+    }
+    `;
+
+      shaderText += `
+    vec3 cook_torrance_specular_brdf(float NH, float NL, float NV, vec3 F, float alphaRoughness) {    
+      float D = d_ggx(NH, alphaRoughness);
+      float G = g_shielding(NL, NV, alphaRoughness);
+      return vec3(D)*vec3(G)*F/vec3(4.0*NL*NV);
+    }
+    `;
+
+      shaderText += `
+    vec3 diffuse_brdf(vec3 albedo)
+    {
+      return albedo / M_PI;
+    }
+    `;
+
+      shaderText += `
+      vec3 srgbToLinear(vec3 srgbColor) {
+        return pow(srgbColor, vec3(2.2));
+      }
+    `;
+
+      return shaderText;
+    }
+
+    FSShade_PBRPrincipledShaderSource(f, gl, lights) {
+      var shaderText = '';
+
+      shaderText += `
+vec3 surfaceColor = rt0.rgb;
+rt0 = vec4(0.0, 0.0, 0.0, 0.0);
+
+// BaseColor
+vec3 baseColor = srgbToLinear(surfaceColor) * uBaseColorFactor.rgb;
+
+// Metallic & Roughness
+float userRoughness = uMetallicRoughnessFactors.y;
+float metallic = uMetallicRoughnessFactors.x;
+
+userRoughness = clamp(userRoughness, c_MinRoughness, 1.0);
+metallic = clamp(metallic, 0.0, 1.0);
+float alphaRoughness = userRoughness * userRoughness;
+
+// F0
+vec3 diffuseMatAverageF0 = vec3(0.04);
+vec3 F0 = mix(diffuseMatAverageF0, baseColor.rgb, metallic);
+
+// Albedo
+//vec3 albedo = baseColor.rgb * (vec3(1.0) - F0);
+vec3 albedo = baseColor.rgb * (1.0 - metallic);
+
+`;
+      for (let i=0; i<lights.length; i++) {
+        let light = lights[i];
+        let isShadowEnabledAsTexture = (light.camera && light.camera.texture) ? true:false;
+        shaderText += `  {\n`;
+        shaderText +=      Shader._generateLightStr(i);
+        // Light
+        shaderText += `    vec4 incidentLight = spotEffect * lightDiffuse[${i}];\n`;
+        shaderText += `    incidentLight.rgb *= M_PI;\n`; // This light is assumed as punctual light
+
+        // Fresnel
+        shaderText += `    vec3 viewDirection = normalize(viewPosition_world - v_position_world);\n`;
+        shaderText += '    vec3 halfVector = normalize(lightDirection + viewDirection);\n';
+        shaderText += '    float LH = clamp(dot(lightDirection, halfVector), 0.0, 1.0);\n';
+        shaderText += '    vec3 F = fresnel(F0, LH);\n';
+
+        // Diffuse
+        shaderText += `    vec3 diffuseContrib = (vec3(1.0) - F) * diffuse_brdf(albedo);\n`;
+         
+        // Specular
+        shaderText += '    float NL = clamp(dot(normal, lightDirection), 0.001, 1.0);\n';
+        shaderText += '    float NV = clamp(dot(normal, viewDirection), 0.001, 1.0);\n';
+        shaderText += '    float NH = clamp(dot(normal, halfVector), 0.0, 1.0);\n';
+        shaderText += '    float VH = clamp(dot(viewDirection, halfVector), 0.0, 1.0);\n';
+        shaderText += `    vec3 specularContrib = cook_torrance_specular_brdf(NH, NL, NV, F, alphaRoughness);\n`;
+
+        shaderText += `    vec3 reflect = (diffuseContrib + specularContrib) * vec3(NL) * incidentLight.rgb;\n`;
+
+        // Light Visibility (Shadow Effect)
+        shaderText +=      Shader._generateShadowingStr(gl, i, isShadowEnabledAsTexture);
+
+        // Add this light contribute to the amount of light
+        shaderText += `    rt0.xyz += reflect * visibility;\n`;
+
+        shaderText += `  }\n`;
+      }
+      shaderText += '  rt0.xyz += ambient.xyz;\n';
+      
+      shaderText += '  rt0.a = 1.0;\n';
+
+
+
+      return shaderText;
+    }
+
+    prepare_PBRPrincipledShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
+
+      var vertexAttribsAsResult = [];
+
+      material.setUniform(shaderProgram, 'uniform_MetallicRoughnessFactors', this._glContext.getUniformLocation(shaderProgram, 'uMetallicRoughnessFactors'));
+      material.setUniform(shaderProgram, 'uniform_BaseColorFactor', this._glContext.getUniformLocation(shaderProgram, 'uBaseColorFactor'));
+      material.setUniform(shaderProgram, 'uniform_ambient', this._glContext.getUniformLocation(shaderProgram, 'ambient'));
+      
+      return vertexAttribsAsResult;
+    }
+  }
+
+
+  class PBRPrincipledShader extends DecalShader {
+    constructor(glBoostContext, basicShader) {
+
+      super(glBoostContext, basicShader);
+      PBRPrincipledShader.mixin(PBRPrincipledShaderSource);
+    }
+
+    setUniforms(gl, glslProgram, scene, material, camera, mesh, lights) {
+      super.setUniforms(gl, glslProgram, scene, material, camera, mesh, lights);
+
+      var baseColor = material.baseColor;
+      var metallic = material.metallic;
+      let roughness = material.roughness;
+      this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_MetallicRoughnessFactors'), metallic, roughness, true);
+      this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_BaseColorFactor'), baseColor.x, baseColor.y, baseColor.z, true);
+
+      let ambient = Vector4$1.multiplyVector(new Vector4$1(1.0, 1.0, 1.0, 1.0), scene.getAmountOfAmbientLightsIntensity());
+      this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_ambient'), ambient.x, ambient.y, ambient.z, ambient.w, true);    
+
+    }
+
+  }
+
+  GLBoost['PBRPrincipledShader'] = PBRPrincipledShader;
+
+  //      
+
+  class PBRMetallicRoughnessMaterial extends L_AbstractMaterial {
+                                         
+                        
+                                       
+                                      
+
+    constructor(glBoostSystem               ) {
+      super(glBoostSystem);
+
+      this._wireframeWidthRelativeScale = 1.0;
+
+      this._baseColor = new Vector3(1.0, 1.0, 1.0);
+      this._metallicRoughnessFactors = new Vector2(0.0, 0.5);
+
+      this._shaderClass = PBRPrincipledShader;
+    }
+
+    get wireframeWidthRelativeScale() {
+      return this._wireframeWidthRelativeScale;
+    }
+
+    set baseColor(val         ) {
+      this._baseColor = val.clone();
+    }
+
+    get baseColor() {
+      return this._baseColor.clone();
+    }
+
+    set metallic(val        ) {
+      this._metallicRoughnessFactors.x = val;
+    }
+
+    get metallic() {
+      return this._metallicRoughnessFactors.x;
+    }
+
+    set roughness(val        ) {
+      this._metallicRoughnessFactors.y = val;
+    }
+
+    get roughness() {
+      return this._metallicRoughnessFactors.y;
+    }
+  }
+
+  GLBoost$1['PBRMetallicRoughnessMaterial'] = PBRMetallicRoughnessMaterial;
 
   class L_AbstractCamera extends L_Element {
     constructor(glBoostContext, toRegister, lookat) {
@@ -12113,8 +12412,8 @@ return mat4(
   GLBoost$1["Plane"] = Plane;
 
   class Sphere extends Geometry {
-    constructor(glBoostContext, radius, widthSegments, heightSegments, vertexColor) {
-      super(glBoostContext);
+    constructor(glBoostSystem, radius, widthSegments, heightSegments, vertexColor) {
+      super(glBoostSystem);
 
       this._setupVertexData(radius, widthSegments, heightSegments, vertexColor);
     }
@@ -12751,6 +13050,10 @@ return mat4(
       return new ClassicMaterial$1(this.__system);
     }
 
+    createPBRMetallicRoughnessMaterial() {
+      return new PBRMetallicRoughnessMaterial(this.__system);
+    }
+
     createPerspectiveCamera(lookat, perspective) {
       return new L_PerspectiveCamera(this.__system, true, lookat, perspective);
     }
@@ -13326,7 +13629,7 @@ return mat4(
     }
 
     get gizmos() {
-      if (this.isOutlineVisible) {
+      if (this.isOutlineVisible && this.className === 'M_Mesh') {
         return this._gizmos.concat([this._outlineGizmo]);
       } else {
         return this._gizmos;
@@ -13334,7 +13637,7 @@ return mat4(
     }
 
     set isOutlineVisible(flg) {
-      if (flg && this._outlineGizmo === null) {
+      if (flg && this._outlineGizmo === null && this.className === 'M_Mesh') {
         this._outlineGizmo = this._glBoostSystem._glBoostContext.createOutlineGizmo(this);
       }
 
@@ -17208,7 +17511,9 @@ return mat4(
     constructor(glBoostSystem, mesh, scale = 0.05) {
       super(glBoostSystem, null, null);
 
-      this._init(glBoostSystem, mesh, scale);
+      if (mesh.className === 'M_Mesh') {
+        this._init(glBoostSystem, mesh, scale);
+      }
     }
 
     _init(glBoostSystem, mesh, scale) {
@@ -17237,7 +17542,9 @@ return mat4(
     }
 
     updateMatrix(mesh) {
-      this._group.matrix = mesh.worldMatrix;
+      if (mesh.className === 'M_Mesh') {
+        this._group.matrix = mesh.worldMatrix;
+      }
     }
   }
 
@@ -18574,6 +18881,24 @@ return mat4(
         }
       }
 
+      if (options && typeof options.defaultMaterial !== "undefined") {
+        if (typeof options.defaultMaterial === "string") {
+          defaultOptions.defaultMaterial = GLBoost$1[options.defaultMaterial];
+        } else {
+          defaultOptions.defaultMaterial = options.defaultMaterial;
+        }
+      }
+
+      if (defaultOptions.defaultMaterial != null && defaultOptions.defaultMaterial.name.indexOf('PBR') !== -1) {
+        defaultOptions.defaultShaderClass = defaultOptions.defaultMaterial.shaderClass;
+      } else if (options && typeof options.defaultShaderClass !== "undefined") {
+        if (typeof options.defaultShaderClass === "string") {
+          defaultOptions.defaultShaderClass = GLBoost$1[options.defaultShaderClass];
+        } else {
+          defaultOptions.defaultShaderClass = options.defaultShaderClass;
+        }
+      }
+
       return defaultOptions;
     }
 
@@ -18596,6 +18921,7 @@ return mat4(
         isExistJointGizmo: false,
         isBlend: false,
         isDepthTest: true,
+        defaultMaterial: ClassicMaterial$1,
         defaultShaderClass: null,
         isMeshTransparentAsDefault: false,
         defaultStates: {
@@ -18696,7 +19022,7 @@ return mat4(
       let arrayBufferBinary = arrayBuffer.slice(20 + lengthOfContent);
       let glTFVer = this._checkGLTFVersion(json);
       options = this.getOptions(defaultOptions, json, options);
-      const defaultShader = this.getDefaultShader(options);
+      const defaultShader = options.defaultShaderClass;
       this._loadResourcesAndScene(glBoostContext, arrayBufferBinary, null, json, defaultShader, glTFVer, resolve, options);
       return { options, defaultShader };
     }
@@ -18717,7 +19043,7 @@ return mat4(
       let json = JSON.parse(gotText);
       let glTFVer = this._checkGLTFVersion(json);
       options = this.getOptions(defaultOptions, json, options);
-      const defaultShader = this.getDefaultShader(options);
+      const defaultShader = options.defaultShaderClass;
       this._loadResourcesAndScene(glBoostContext, null, basePath, json, defaultShader, glTFVer, resolve, options);
       return { options, defaultShader };
     }
@@ -18801,7 +19127,7 @@ return mat4(
               fulfilled();
             })
           );
-        } else if (bufferInfo.uri === 'data:,') {
+        } else if (bufferInfo.uri === '' || bufferInfo.uri === 'data:,') {
           buffers[bufferName] = arrayBufferBinary;
         } else if (options.files && options.files[filename]) {
           const arrayBuffer = options.files[filename];
@@ -19178,7 +19504,9 @@ return mat4(
           }
   */
           let material = null;
-          if (options && options.loaderExtension && options.loaderExtension.createClassicMaterial) {
+          if (options.defaultMaterial != null) {
+            material = new options.defaultMaterial(glBoostContext.__system);
+          } else if (options && options.loaderExtension && options.loaderExtension.createClassicMaterial) {
             material = options.loaderExtension.createClassicMaterial(glBoostContext);
           } else {
             material = glBoostContext.createClassicMaterial();
@@ -19523,7 +19851,7 @@ return mat4(
       let techniqueStr = materialJson.technique;
       if (defaultShader) {
         material.shaderClass = defaultShader;
-      } else if (this._isKHRMaterialsCommon(originalMaterialJson)) {
+      } else if (this._isKHRMaterialsCommon(originalMaterialJson) && material.className.indexOf('PBR') === -1) {
         switch (techniqueStr) {
           case 'CONSTANT':
             if (options.loaderExtension && options.loaderExtension.getDecalShader) {
@@ -19550,7 +19878,7 @@ return mat4(
       } else {
         if (typeof json.techniques !== 'undefined') {
           this._loadTechnique(glBoostContext, json, techniqueStr, material, materialJson, shaders, glTFVer);
-        } else {
+        } else if (material.className.indexOf('PBR') === -1) {
           if (options.loaderExtension && options.loaderExtension.getDecalShader) {
             material.shaderClass = options.loaderExtension.getDecalShader();
           } else {
@@ -22223,4 +22551,4 @@ return mat4(
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-171-gee08-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-182-gce125-mod branch: develop';
