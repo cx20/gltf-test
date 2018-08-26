@@ -13602,12 +13602,18 @@ albedo.rgb *= (1.0 - metallic);
       return this.geometry._getAppropriateMaterials(this);
     }
 
-    rayCast(x, y, camera, viewport) {
 
-      const invPVW = GLBoost$1.Matrix44.multiply(camera.projectionRHMatrix(), GLBoost$1.Matrix44.multiply(camera.lookAtRHMatrix(), this.worldMatrix)).invert();
-      const origVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 0), invPVW, viewport);
-      const distVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 1), invPVW, viewport);
-      const dirVecInLocal = GLBoost$1.Vector3.subtract(distVecInLocal, origVecInLocal).normalize();
+    rayCast(arg, y, camera, viewport) {
+      let dirVecInLocal = null;
+      if (arg instanceof Vector3 && y != null) {
+        const invPVW = GLBoost$1.Matrix44.multiply(camera.projectionRHMatrix(), GLBoost$1.Matrix44.multiply(camera.lookAtRHMatrix(), this.worldMatrix)).invert();
+        const origVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 0), invPVW, viewport);
+        const distVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 1), invPVW, viewport);
+        dirVecInLocal = GLBoost$1.Vector3.subtract(distVecInLocal, origVecInLocal).normalize();
+      } else {
+        const invVW = GLBoost$1.Matrix44.multiply(camera.lookAtRHMatrix(), this.worldMatrix).invert();
+        dirVecInLocal = invVW.multiplyVector(dirVecInWorld);
+      }
 
       const material = this.getAppropriateMaterials()[0];
 
@@ -14328,7 +14334,7 @@ albedo.rgb *= (1.0 - metallic);
       this.removeAll();
     }
 
-    rayCast(x, y, camera, viewport) {
+    rayCast(arg, y, camera, viewport) {
       const meshes = this.searchElementsByType(M_Mesh);
       let currentShortestT = Number.MAX_VALUE;
       let currentShortestIntersectedPosVec3 = null;
@@ -14340,8 +14346,13 @@ albedo.rgb *= (1.0 - metallic);
         if (!mesh.isPickable) {
           continue;
         }
-        const result = mesh.rayCast(x, y, camera, viewport);
-        if (result === null) {
+        let result = null;
+        if (arg instanceof Vector3 && y != null) {
+          mesh.rayCast(arg);
+        } else {
+          mesh.rayCast(arg, y, camera, viewport);
+        }
+        {
           return [null, null];
         }
         const t = result[1];
@@ -22558,4 +22569,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-189-gabe1-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-192-g0aa1-mod branch: develop';
