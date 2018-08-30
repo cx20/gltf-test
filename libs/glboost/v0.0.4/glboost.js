@@ -385,6 +385,7 @@
 
       c.define('TEXTURE_PURPOSE_DIFFUSE', void 0, 'diffuse');
       c.define('TEXTURE_PURPOSE_NORMAL', void 0, 'normal');
+      c.define('TEXTURE_PURPOSE_METALLIC_ROUGHNESS', void 0, 'metallic_roughness');
       c.define('QUERY_TYPE_INSTANCE_NAME');
       c.define('QUERY_TYPE_USER_FLAVOR_NAME');
       c.define('QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR');
@@ -1601,10 +1602,14 @@
         this.v = new Float32Array(3);
       }
 
-      if (typeof x === 'undefined') {
+      if (typeof x == null) {
         this.x = 0;
         this.y = 0;
         this.z = 0;
+      } else if (Array.isArray(x)) {
+        this.x = x[0];
+        this.y = x[1];
+        this.z = x[2];
       } else if (typeof (x    ).w !== 'undefined') {
         this.x = (x    ).x;
         this.y = (x    ).y;
@@ -1918,11 +1923,16 @@
         this.v = new Float32Array(4);
       }
 
-      if (typeof x === 'undefined') {
+      if (typeof x == null) {
         this.x = 0;
         this.y = 0;
         this.z = 0;
         this.w = 1;
+      } else if (Array.isArray(x)) {
+        this.x = x[0];
+        this.y = x[1];
+        this.z = x[2];
+        this.w = x[3];
       } else if (typeof (x    ).w !== 'undefined') {
         this.x = (x    ).x;
         this.y = (x    ).y;
@@ -10054,7 +10064,7 @@ albedo.rgb *= (1.0 - metallic);
       this._wireframeWidthRelativeScale = 1.0;
 
       this._baseColor = new Vector3(1.0, 1.0, 1.0);
-      this._metallicRoughnessFactors = new Vector2(0.0, 0.5);
+      this._metallicRoughnessFactors = new Vector2(1.0, 1.0);
 
       this._shaderClass = PBRPrincipledShader;
     }
@@ -11416,9 +11426,17 @@ albedo.rgb *= (1.0 - metallic);
       if (eventTargetDom) {
         document.addEventListener('keydown', this._onKeydown);
         document.addEventListener('keyup', this._onKeyup);
-        eventTargetDom.addEventListener('mousedown', this._mouseDown.bind(this));
-        eventTargetDom.addEventListener('mousemove', this._mouseMove.bind(this));
-        eventTargetDom.addEventListener('mouseup', this._mouseUp.bind(this));
+
+        if ('ontouchend' in document) {
+          eventTargetDom.addEventListener('touchstart', this._mouseDown.bind(this));
+          eventTargetDom.addEventListener('touchend', this._mouseUp.bind(this));
+          eventTargetDom.addEventListener('touchmove', this._mouseMove.bind(this));          
+        }
+        if ('onmouseup' in document) {
+          eventTargetDom.addEventListener('mousedown', this._mouseDown.bind(this));
+          eventTargetDom.addEventListener('mouseup', this._mouseUp.bind(this));
+          eventTargetDom.addEventListener('mousemove', this._mouseMove.bind(this));          
+        }
       }
     }
 
@@ -11426,32 +11444,48 @@ albedo.rgb *= (1.0 - metallic);
       if (eventTargetDom) {
         document.removeEventListener('keydown', this._onKeydown);
         document.removeEventListener('keyup', this._onKeyup);
-        eventTargetDom.removeEventListener('mousedown', this._mouseDown.bind(this));
-        eventTargetDom.removeEventListener('mousemove', this._mouseMove.bind(this));
-        eventTargetDom.removeEventListener('mouseup', this._mouseUp.bind(this));
+        
+        if ('ontouchend' in document) {
+          eventTargetDom.removeEventListener('touchstart', this._mouseDown.bind(this));
+          eventTargetDom.removeEventListener('touchend', this._mouseUp.bind(this));
+          eventTargetDom.removeEventListener('touchmove', this._mouseMove).bind(this);          
+        }
+        if ('onmouseup' in document) {
+          eventTargetDom.removeEventListener('mousedown', this._mouseDown.bind(this));
+          eventTargetDom.removeEventListener('mouseup', this._mouseUp.bind(this));
+          eventTargetDom.removeEventListener('mousemove', this._mouseMove.bind(this));          
+        }
       }
     }
 
     _mouseDown(evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
       this._isMouseDown = true;
 
       let rect = evt.target.getBoundingClientRect();
       this._clickedMouseXOnCanvas = evt.clientX - rect.left;
       this._clickedMouseYOnCanvas = evt.clientY - rect.top;
 
+      return false;
     }
 
     _mouseMove(evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
+      if (!this._isMouseDown) {
+        return;
+      }
+
       let rect = evt.target.getBoundingClientRect();
       this._draggedMouseXOnCanvas = evt.clientX - rect.left;
       this._draggedMouseYOnCanvas = evt.clientY - rect.top;
-      if (this._isMouseDown) {
-        this._isMouseDrag = true;
-      }
 
       this._deltaMouseXOnCanvas = this._draggedMouseXOnCanvas - this._clickedMouseXOnCanvas;
       this._deltaMouseYOnCanvas = this._draggedMouseYOnCanvas - this._clickedMouseYOnCanvas;
 
+      
+      this._isMouseDrag = true;
       this.updateCamera();
 
     }
@@ -11485,6 +11519,7 @@ albedo.rgb *= (1.0 - metallic);
       this._mouseXAdjustScale = 0.1;
       this._mouseYAdjustScale = 0.1;
       this._deltaY = 0;
+      this._deltaX = 0;
       this._newDir = Vector3.zero();
 
       this._camaras.forEach(function (camera) {
@@ -11576,21 +11611,26 @@ albedo.rgb *= (1.0 - metallic);
 
 
       if (this._isMouseDrag) {
-        const deltaX = -this._deltaMouseXOnCanvas * this._mouseXAdjustScale;
+
+        this._deltaX = -this._deltaMouseXOnCanvas * this._mouseXAdjustScale;
         this._deltaY += -this._deltaMouseYOnCanvas * this._mouseYAdjustScale;
         this._deltaY = Math.max(-120, Math.min(50, this._deltaY));
-        this._currentDir = Matrix33.rotateY(deltaX).multiplyVector(this._currentDir);
 
-        newEyeToCenter = Matrix33.rotateY(deltaX).multiplyVector(Vector3.subtract(this._currentCenter, this._currentPos));
+
+        this._currentDir = Matrix33.rotateY(this._deltaX).multiplyVector(this._currentDir);
+
+        newEyeToCenter = Matrix33.rotateY(this._deltaX).multiplyVector(Vector3.subtract(this._currentCenter, this._currentPos));
         newEyeToCenter.x = newEyeToCenter.x * (1 - t);
         newEyeToCenter.y = t;
         newEyeToCenter.z = newEyeToCenter.z * (1 - t);
         newEyeToCenter.normalize();
         this._currentCenter = Vector3.add(this._currentPos, newEyeToCenter);
 
+
         this._clickedMouseXOnCanvas = this._draggedMouseXOnCanvas;
         this._clickedMouseYOnCanvas = this._draggedMouseYOnCanvas;
-    
+        this._deltaMouseXOnCanvas = 0;
+        this._deltaMouseYOnCanvas = 0; 
       }
 
       let newLeft = camera.left;
@@ -13603,16 +13643,24 @@ albedo.rgb *= (1.0 - metallic);
     }
 
 
-    rayCast(arg, y, camera, viewport) {
+    rayCast(arg1, arg2, camera, viewport) {
+      let origVecInLocal = null;
       let dirVecInLocal = null;
-      if (arg instanceof Vector3 && y != null) {
-        const invPVW = GLBoost$1.Matrix44.multiply(camera.projectionRHMatrix(), GLBoost$1.Matrix44.multiply(camera.lookAtRHMatrix(), this.worldMatrix)).invert();
-        const origVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 0), invPVW, viewport);
-        const distVecInLocal = GLBoost$1.MathClassUtil.unProject(new GLBoost$1.Vector3(x, y, 1), invPVW, viewport);
-        dirVecInLocal = GLBoost$1.Vector3.subtract(distVecInLocal, origVecInLocal).normalize();
+      if (arg1 instanceof Vector3 && arg2 instanceof Vector3) {
+        const origVecInWorld = arg1;
+        const dirVec = arg2;
+        const invWorldMatrix = Matrix44$1.invert(this.worldMatrix);
+        origVecInLocal = new Vector3(invWorldMatrix.multiplyVector(new Vector4$1(origVecInWorld)));
+        const distVecInWorld = Vector3.add(origVecInWorld, dirVec);
+        const distVecInLocal = new Vector3(invWorldMatrix.multiplyVector(new Vector4$1(distVecInWorld)));
+        dirVecInLocal = Vector3.subtract(distVecInLocal, origVecInLocal).normalize();
       } else {
-        const invVW = GLBoost$1.Matrix44.multiply(camera.lookAtRHMatrix(), this.worldMatrix).invert();
-        dirVecInLocal = invVW.multiplyVector(dirVecInWorld);
+        const x = arg1;
+        const y = arg2;
+        const invPVW = Matrix44$1.multiply(camera.projectionRHMatrix(), Matrix44$1.multiply(camera.lookAtRHMatrix(), this.worldMatrix)).invert();
+        origVecInLocal = MathClassUtil.unProject(new Vector3(x, y, 0), invPVW, viewport);
+        const distVecInLocal = MathClassUtil.unProject(new Vector3(x, y, 1), invPVW, viewport);
+        dirVecInLocal = Vector3.subtract(distVecInLocal, origVecInLocal).normalize();
       }
 
       const material = this.getAppropriateMaterials()[0];
@@ -14334,7 +14382,7 @@ albedo.rgb *= (1.0 - metallic);
       this.removeAll();
     }
 
-    rayCast(arg, y, camera, viewport) {
+    rayCast(arg1, arg2, camera, viewport) {
       const meshes = this.searchElementsByType(M_Mesh);
       let currentShortestT = Number.MAX_VALUE;
       let currentShortestIntersectedPosVec3 = null;
@@ -14347,12 +14395,12 @@ albedo.rgb *= (1.0 - metallic);
           continue;
         }
         let result = null;
-        if (arg instanceof Vector3 && y != null) {
-          mesh.rayCast(arg);
+        if (arg1 instanceof Vector3 && arg2 instanceof Vector3) {
+          result = mesh.rayCast(arg1, arg2, camera);
         } else {
-          mesh.rayCast(arg, y, camera, viewport);
+          result = mesh.rayCast(arg1, arg2, camera, viewport);
         }
-        {
+        if (result === null) {
           return [null, null];
         }
         const t = result[1];
@@ -14998,7 +15046,9 @@ albedo.rgb *= (1.0 - metallic);
           });
         }
       };
-      collectGizmos(this._scene);
+      if (this._scene != null) {
+        collectGizmos(this._scene);
+      }
 
       this._opacityMeshes = [];
       this._transparentMeshes = [];
@@ -17677,11 +17727,20 @@ albedo.rgb *= (1.0 - metallic);
 
       //    this._mesh.rotate = new Vector3(-Math.PI/2, 0, 0);
       const material = glBoostContext._glBoostContext.createClassicMaterial();
+      this._material = material;
       this._mesh = new M_Mesh(glBoostContext, this._primitive, material);
       this._mesh.isPickable = false;
       this._mesh.masterElement = this;
       this.addChild(this._mesh);
 
+    }
+
+    set color(val) {
+      this._material.baseColor = val;
+    }
+
+    get color() {
+      return this._material.baseColor;
     }
 
     set startPosition(startPos) {
@@ -17800,12 +17859,12 @@ albedo.rgb *= (1.0 - metallic);
 
     _init(customVertexAttributes) {
       let gl = this._glContext.gl;
-      this.geometry = new Screen(this._glBoostContext, void 0, customVertexAttributes);
+      this.geometry = new Screen(this._glBoostSystem, void 0, customVertexAttributes);
       this.isAffectedByWorldMatrix = false;
       this.isAffectedByViewMatrix = false;
       this.isAffectedByProjectionMatrix = false;
 
-      let material = new ClassicMaterial$1(this._glBoostContext);
+      let material = new ClassicMaterial$1(this._glBoostSystem);
       material.globalStatesUsage = GLBoost.GLOBAL_STATES_USAGE_IGNORE;
       material.states = {
         "enable": [
@@ -21342,7 +21401,7 @@ albedo.rgb *= (1.0 - metallic);
             if (options.loaderExtension && options.loaderExtension.createClassicMaterial) {
               glboostMaterial = options.loaderExtension.createClassicMaterial(glBoostContext);
             } else {
-              glboostMaterial = glBoostContext.createClassicMaterial();
+              glboostMaterial = glBoostContext.createPBRMatallicRoughnessMaterial();
             }
             if (options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
               glboostMaterial.shaderParameters.isNeededToMultiplyAlphaToColorOfPixelOutput = options.isNeededToMultiplyAlphaToColorOfPixelOutput;
@@ -21560,7 +21619,7 @@ albedo.rgb *= (1.0 - metallic);
                 'TEXTURE_WRAP_T': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapT,
                 'UNPACK_PREMULTIPLY_ALPHA_WEBGL': isNeededToMultiplyAlphaToColorOfTexture
               });
-              gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
+              gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_METALLIC_ROUGHNESS);
             }
 
             let enables = [];
@@ -21579,6 +21638,8 @@ albedo.rgb *= (1.0 - metallic);
         };
         setTextures(materialJson);
 
+
+
       } else {
         if (typeof vertexData.components.texcoord !== 'undefined') {
           // If texture coordinates existed even once in the previous loop
@@ -21596,10 +21657,19 @@ albedo.rgb *= (1.0 - metallic);
         }
       }
 
-      if (materialJson.pbrMetallicRoughness && materialJson.pbrMetallicRoughness.baseColorFactor) {
-        let value = materialJson.pbrMetallicRoughness.baseColorFactor;
-        gltfMaterial.baseColor = new Vector4$1(value[0], value[1], value[2], value[3]);
+      const pmr = materialJson.pbrMetallicRoughness;
+      if (pmr != null) {
+        if (pmr.baseColorFactor) {
+          gltfMaterial.baseColor = new Vector4$1(pmr.baseColorFactor);
+        }
+        if (pmr.metallicFactor) {
+          gltfMaterial.metallic = new Vector4$1(pmr.metallicFactor);
+        }
+        if (pmr.roughnessFactor) {
+          gltfMaterial.roughness = new Vector4$1(pmr.roughnessFactor);
+        }
       }
+
 
       if (indices !== null) {
         gltfMaterial.setVertexN(geometry, indices.length);
@@ -22569,4 +22639,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-192-g0aa1-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-202-g91f4-mod branch: develop';
