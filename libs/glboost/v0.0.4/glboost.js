@@ -21401,7 +21401,7 @@ albedo.rgb *= (1.0 - metallic);
             if (options.loaderExtension && options.loaderExtension.createClassicMaterial) {
               glboostMaterial = options.loaderExtension.createClassicMaterial(glBoostContext);
             } else {
-              glboostMaterial = glBoostContext.createPBRMatallicRoughnessMaterial();
+              glboostMaterial = glBoostContext.createPBRMetallicRoughnessMaterial();
             }
             if (options.isNeededToMultiplyAlphaToColorOfPixelOutput) {
               glboostMaterial.shaderParameters.isNeededToMultiplyAlphaToColorOfPixelOutput = options.isNeededToMultiplyAlphaToColorOfPixelOutput;
@@ -22639,4 +22639,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-202-g91f4-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-203-g4445-mod branch: develop';
