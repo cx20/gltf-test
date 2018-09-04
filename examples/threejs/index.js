@@ -47,7 +47,7 @@ function init() {
     directionalLight2.position.set( 0, 5, -5 );
     scene.add( directionalLight2 );
 
-    camera = new THREE.PerspectiveCamera( 75, width / height, 1, 2000 );
+    camera = new THREE.PerspectiveCamera( 75, width / height, 1, 10000 );
     camera.position.set(0, 2, 3);
     scene.add( camera );
 
