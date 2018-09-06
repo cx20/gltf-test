@@ -110,8 +110,12 @@ function init() {
     axis = new THREE.AxesHelper(1000);   
     scene.add(axis);
 
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setSize( width, height );
+    renderer.gammaOutput = true; // if >r88, models are dark unless you activate gammaOutput
+    renderer.gammaFactor = 2.2;
     renderer.setClearColor( 0xaaaaaa );
+    renderer.setPixelRatio( window.devicePixelRatio );
 
     controls = new THREE.OrbitControls( camera, renderer.domElement );
     controls.userPan = false;
@@ -132,10 +136,7 @@ function init() {
     guiAxis.onChange(function (value) {
         axis.visible = value;
     });
-
-    renderer.setSize( width, height );
-    renderer.gammaOutput = true; // if >r88, models are dark unless you activate gammaOutput
-
+    
     document.body.appendChild( renderer.domElement );
 }
 
