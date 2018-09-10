@@ -750,6 +750,26 @@
       return null;
     }
 
+    getGLBoostObjectByUserFlavorName(glBoostObjectUserFlavorName) {
+      for (let instanceName in this._glBoostObjects) {
+        if (this._glBoostObjects[instanceName].userFlavorName === glBoostObjectUserFlavorName) {
+          return this._glBoostObjects[instanceName];
+        }
+      }
+      return null;
+    }
+
+
+    getGLBoostObjectsByUserFlavorName(glBoostObjectUserFlavorName) {
+      const results = [];
+      for (let instanceName in this._glBoostObjects) {
+        if (this._glBoostObjects[instanceName].userFlavorName === glBoostObjectUserFlavorName) {
+          results.push(this._glBoostObjects[instanceName]);
+        }
+      }
+      return results;
+    }
+
     getGLBoostObjectWhichHasThisObjectId(objectId) {
       for (let instanceName in this._glBoostObjects) {
         if (this._glBoostObjects[instanceName].objectIndex === objectId) {
@@ -1122,13 +1142,14 @@
       }
   */
       if (this._currentProgramInuse.createdAt !== uniformLocation.glslProgram.createdAt) {
-  //       console.error('missmatch!')
+         console.error('missmatch!');
         return;
       }
 
       if (uniformLocation.glslProgramUsageCountWhenLastSet < this._glslProgramsLatestUsageCount) {
         // Since I have never sent a uniform value to glslProgram which is currently in use, update it.
         this.gl[uniformFuncStr].apply(this.gl, args);
+        args[0].setValue = args;
         this.checkGLError();
 
         return;
@@ -1141,6 +1162,11 @@
         MiscUtil.consoleLog(GLBoost$1.LOG_OMISSION_PROCESSING,
           'LOG_OMISSION_PROCESSING: gl.uniformXXX call has been omitted since the uniformLocation.glslProgram is not in use.');
       }
+    }
+
+    // Set forceUpdate to true if there is no way to check whether the values (x, y, z, w) change from the previous states or not.
+    uniformMatrix4fv(uniformLocation, toTranspose, matrix44, forceUpdate) {
+      this._setUniformValues('uniformMatrix4fv', [uniformLocation, toTranspose, matrix44], forceUpdate);
     }
 
     // Set forceUpdate to true if there is no way to check whether the values (x, y, z, w) change from the previous states or not.
@@ -1461,6 +1487,15 @@
       this._userFlavorName = name;
     }
 
+    tryToSetUserFlavorNameUniquely(name       ) {
+      if (this._glBoostMonitor.getGLBoostObjectByUserFlavorName(name) != null) {
+        return false;
+      } else {
+        this._userFlavorName = name;
+        return true;
+      }
+    }
+
     get userFlavorName()        {
       return this._userFlavorName;
     }
@@ -1584,9 +1619,71 @@
 
   GLBoost$1["MathUtil"] = MathUtil;
 
+  const IsUtil = {
+    not: {},
+    all: {},
+    any: {},
+
+    _not(fn) {
+      return function() {
+        return !fn.apply(null, [...arguments]);
+      };
+    },
+
+    _all(fn) {
+      return function() {
+        if (Array.isArray(arguments[0])) {
+          return arguments[0].every(fn);
+        }
+        return [...arguments].every(fn);
+      };
+    },
+
+    _any(fn) {
+      return function() {
+        if (Array.isArray(arguments[0])) {
+          return arguments[0].some(fn);
+        }
+        return [...arguments].some(fn);
+      };
+    },
+
+    defined(val) {
+      return val !== void 0;
+    },
+
+    undefined(val) {
+      return val === void 0;
+    },
+
+    null(val) {
+      return val === null;
+    },
+
+    // is NOT null or undefined
+    exist(val) {
+      return val != null;
+    },
+
+    function(val) {
+      return typeof val === 'function';
+    }
+
+  };
+
+  for (let fn in IsUtil) {
+    if (IsUtil.hasOwnProperty(fn)) {
+      const interfaces = ['not', 'all', 'any'];
+      if (fn.indexOf('_') === -1 && !interfaces.includes(fn)) {
+        interfaces.forEach((itf)=>{
+          const op = '_' + itf;
+          IsUtil[itf][fn] = IsUtil[op](IsUtil[fn]);
+        });
+      }
+    }
+  }
+
   //      
-                                       
-                                       
 
                                                                              
                                                                        
@@ -1602,7 +1699,7 @@
         this.v = new Float32Array(3);
       }
 
-      if (typeof x == null) {
+      if (IsUtil.not.exist(x)) {
         this.x = 0;
         this.y = 0;
         this.z = 0;
@@ -1906,8 +2003,6 @@
   GLBoost$1['Vector3'] = Vector3;
 
   //      
-                                       
-                                       
 
                                                                              
                                                                        
@@ -1923,7 +2018,7 @@
         this.v = new Float32Array(4);
       }
 
-      if (typeof x == null) {
+      if (IsUtil.not.exist(x)) {
         this.x = 0;
         this.y = 0;
         this.z = 0;
@@ -6238,19 +6333,12 @@
       }
 
       let isTextureProcessDone = true;
-      if (typeof material._semanticsDic['TEXTURE'] === 'undefined') ; else if (typeof material._semanticsDic['TEXTURE'] === 'string') {
-        let textureSamplerDic = material.uniformTextureSamplerDic[material._semanticsDic['TEXTURE']];
+      for (let key in material._textureSemanticsDic) {
+        const uniformName = material._textureSemanticsDic[key];
+        let textureSamplerDic = material.uniformTextureSamplerDic[uniformName];
         let textureName = textureSamplerDic.textureName;
         let textureUnitIndex = textureSamplerDic.textureUnitIndex;
         isTextureProcessDone = material[methodName](textureName, textureUnitIndex);
-      } else {
-        // it must be an Array...
-        material._semanticsDic['TEXTURE'].forEach((uniformName) => {
-          let textureSamplerDic = material.uniformTextureSamplerDic[uniformName];
-          let textureName = textureSamplerDic.textureName;
-          let textureUnitIndex = textureSamplerDic.textureUnitIndex;
-          isTextureProcessDone = material[methodName](textureName, textureUnitIndex);
-        });
       }
 
       return isTextureProcessDone;
@@ -8875,18 +8963,8 @@ return mat4(
           let depthTextureUniformLocation = this._glContext.getUniformLocation(shaderProgram, `uDepthTexture[${i}]`);
           material.setUniform(shaderProgram, 'uniform_DepthTextureSampler_' + i, depthTextureUniformLocation);
 
-          let index = i;
-
-          // count for Decal Texture at first
-          index++;
-
-          // count for Normal Texture if it exists
-          let normalTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_NORMAL);
-          if (normalTexture) {
-            index++;
-          }
-
-          lights[i].camera.texture.textureUnitIndex = index;  // +1 because 0 is used for diffuse texture
+          const index = i + material.getTextureNumAttachedShader();
+          lights[i].camera.texture.textureUnitIndex = index;
         }
       }
 
@@ -8894,16 +8972,9 @@ return mat4(
       material.setUniform(shaderProgram, 'uniform_depthBias', uniform_depthBias);
       this._glContext.uniform1f(uniform_depthBias, 0.005, true);
 
-      let textureUnitIndex = 0;
       for (let i=0; i<lights.length; i++) {
-        //if (lights[i].camera && lights[i].camera.texture) {
-
-        // matrices
-        material.setUniform(shaderProgram, 'uniform_depthPVMatrix_' + textureUnitIndex, this._glContext.getUniformLocation(shaderProgram, 'depthPVMatrix[' + textureUnitIndex + ']'));
-
-        textureUnitIndex++;
-        //}
-        //shaderProgram['isShadowCasting' + i] = this._glContext.getUniformLocation(shaderProgram, 'isShadowCasting[' + i + ']');
+        const light_i = i;
+        material.setUniform(shaderProgram, 'uniform_depthPVMatrix_' + light_i, this._glContext.getUniformLocation(shaderProgram, 'depthPVMatrix[' + light_i + ']'));
       }
 
       return vertexAttribsAsResult;
@@ -9175,8 +9246,12 @@ return mat4(
       if (Shader._exist(f, GLBoost$1.TEXCOORD)) {
         shaderText += `${in_} vec2 texcoord;\n\n`;
       }
-      if (material.hasAnyTextures()) {
+      if (material.getTextureFromPurpose(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE)) {
         shaderText += 'uniform sampler2D uTexture;\n';
+      }
+      let normalTexture = material.getTextureFromPurpose(GLBoost$1.TEXTURE_PURPOSE_NORMAL);
+      if (normalTexture) {
+        shaderText += `uniform highp sampler2D uNormalTexture;\n`;
       }
       shaderText += 'uniform vec4 materialBaseColor;\n';
       shaderText += 'uniform int uIsTextureToMultiplyAlphaToColorPreviously;\n';
@@ -9202,7 +9277,7 @@ return mat4(
         shaderText += '  rt0 *= color;\n';
       }
       shaderText += '    rt0 *= materialBaseColor;\n';
-      if (Shader._exist(f, GLBoost$1.TEXCOORD) && material.hasAnyTextures()) {
+      if (Shader._exist(f, GLBoost$1.TEXCOORD) && material.getTextureFromPurpose(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE)) {
         shaderText += `  rt0 *= multiplyAlphaToColorOfTexel(uTexture, texcoord, uIsTextureToMultiplyAlphaToColorPreviously);\n`;
       }
 
@@ -9238,35 +9313,9 @@ return mat4(
         material.setUniform(shaderProgram, 'uIsTextureToMultiplyAlphaToColorPreviously', uIsTextureToMultiplyAlphaToColorPreviously);
       }
 
-      let uTexture = this._glContext.getUniformLocation(shaderProgram, 'uTexture');
-      material.setUniform(shaderProgram, 'uTexture', uTexture);
-      // set texture unit 0 to the sampler
-      this._glContext.uniform1i( uTexture, 0, true);
-
-      material._semanticsDic['TEXTURE'] = [];
-
-      material.uniformTextureSamplerDic['uTexture'] = {};
-      if (material.hasAnyTextures() || diffuseTexture) {
-        material.uniformTextureSamplerDic['uTexture'].textureUnitIndex = 0;
-        material.uniformTextureSamplerDic['uTexture'].textureName = diffuseTexture.userFlavorName;
-        material._semanticsDic['TEXTURE'] = 'uTexture';
-      }
-
-
-      let normalTexture = material.getTextureFromPurpose(GLBoost$1.TEXTURE_PURPOSE_NORMAL);
-      let uNormalTexture = this._glContext.getUniformLocation(shaderProgram, 'uNormalTexture');
-      if (uNormalTexture) {
-        material.setUniform(shaderProgram, 'uNormalTexture', normalTexture);
-        // set texture unit 1 to the normal texture sampler
-        this._glContext.uniform1i( uNormalTexture, 1, true);
-
-        material.uniformTextureSamplerDic['uNormalTexture'] = {};
-        if (material.hasAnyTextures()) {
-          material.uniformTextureSamplerDic['uNormalTexture'].textureUnitIndex = 1;
-          material.uniformTextureSamplerDic['uNormalTexture'].textureName = normalTexture.userFlavorName;
-          material._semanticsDic['TEXTURE'].push('uNormalTexture');
-        }
-      }
+      material.registerTextureUnitToUniform(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE, shaderProgram, 'uTexture'); 
+      
+      material.registerTextureUnitToUniform(GLBoost$1.TEXTURE_PURPOSE_NORMAL, shaderProgram, 'uNormalTexture'); 
 
       return vertexAttribsAsResult;
     }
@@ -9304,10 +9353,13 @@ return mat4(
       // For Shadow
       for (let i=0; i<lights.length; i++) {
         if (lights[i].camera && lights[i].camera.texture) {
+          const index = i + material.getTextureNumAttachedShader();
+          lights[i].camera.texture.textureUnitIndex = index;
+
           let cameraMatrix = lights[i].camera.lookAtRHMatrix();
           let viewMatrix = cameraMatrix.clone();
           let projectionMatrix = lights[i].camera.projectionRHMatrix();
-          gl.uniformMatrix4fv(material.getUniform(glslProgram, 'uniform_depthPVMatrix_'+i), false, Matrix44$1.multiply(projectionMatrix, viewMatrix).flatten());
+          this._glContext.uniformMatrix4fv(material.getUniform(glslProgram, 'uniform_depthPVMatrix_'+i), false, Matrix44$1.multiply(projectionMatrix, viewMatrix).flatten(), true);
         }
 
         if (lights[i].camera && lights[i].camera.texture) {
@@ -9319,10 +9371,10 @@ return mat4(
         if (lights[i].camera && lights[i].camera.texture) {
           let uniformLocation = material.getUniform(glslProgram, 'uniform_DepthTextureSampler_' + i);
           let index = lights[i].camera.texture.textureUnitIndex;
+          //const index = i + material.getTextureNumAttachedShader();
+
 
           this._glContext.uniform1i(uniformLocation, index, true);
-        } else {
-          this._glContext.uniform1i(material.getUniform(glslProgram, 'uniform_DepthTextureSampler_' + i), 0, true);
         }
       }
     }
@@ -9330,10 +9382,7 @@ return mat4(
     setUniformsAsTearDown(gl, glslProgram, scene, material, camera, mesh, lights) {
       super.setUniformsAsTearDown(gl, glslProgram, scene, material, camera, mesh, lights);
       for (let i=0; i<lights.length; i++) {
-        if (lights[i].camera && lights[i].camera.texture) {
-          // set depthTexture unit i+1 to the sampler
-          this._glContext.uniform1i(material.getUniform(glslProgram, 'uniform_DepthTextureSampler_' + i), 0, true);  // +1 because 0 is used for diffuse texture
-        }
+        if (lights[i].camera && lights[i].camera.texture) ;
       }
     }
 
@@ -9374,6 +9423,7 @@ return mat4(
       this._globalStatesUsage = null;
       this._shaderParametersForShaderInstance = {};
       this._semanticsDic = {};
+      this._textureSemanticsDic = {};
 
       this._stateFunctionsToReset = {
         "blendColor": [0.0, 0.0, 0.0, 0.0],
@@ -9448,11 +9498,13 @@ return mat4(
       if (!texture) {
         return;
       }
+
       this._textureDic[texture.userFlavorName] = texture;
       let _purpose = (typeof purpose !== 'undefined' ? purpose:GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
       this._texturePurposeDic[_purpose] = texture.userFlavorName;
       texture.purpose = _purpose;
       this._textureContributionRateDic[texture.userFlavorName] = new Vector4$1(1.0, 1.0, 1.0, 1.0);
+
       this._updateCount();
     }
 
@@ -9477,7 +9529,12 @@ return mat4(
 
     getTextureFromPurpose(purpose) {
       let userFlavorName = this._texturePurposeDic[purpose];
-      return this.getTexture(userFlavorName);
+      let texture = this.getTexture(userFlavorName);
+      //if (purpose === GLBoost.TEXTURE_PURPOSE_DIFFUSE && !texture) {
+      //  texture = this._glBoostSystem._glBoostContext.defaultDummyTexture;
+      //}
+
+      return texture;
     }
 
     getOneTexture() {
@@ -9589,7 +9646,7 @@ return mat4(
         isCalledWebGLBindTexture = texture.setUp(textureUnitIndex);
         return isCalledWebGLBindTexture;
       } else {
-        this._glBoostSystem._glBoostContext.defaultDummyTexture.setUp(0);
+        this._glBoostSystem._glBoostContext.defaultDummyTexture.setUp(textureUnitIndex);
 
   //      gl.bindTexture(gl.TEXTURE_2D, null);
         isCalledWebGLBindTexture = true;
@@ -9658,6 +9715,9 @@ return mat4(
 
       this._shaderUniformLocationsOfExpressions[glslProgram.hashId][uniformLocationName] = uniformLocation;
       glslProgram['uniform_' + uniformLocationName] = uniformLocationName;
+      if (uniformLocation != null) {
+        uniformLocation.uniformLocationName = uniformLocationName;
+      }
 
       this._updateCount();
     }
@@ -9723,6 +9783,26 @@ return mat4(
       }
       this._shaderInstance = null;
     }
+
+    registerTextureUnitToUniform(texturePurpose, shaderProgram, uniformName) {
+      const texture = this.getTextureFromPurpose(texturePurpose);
+      if (texture != null) {
+        let uTexture = this._glContext.getUniformLocation(shaderProgram, uniformName);
+        let index = Object.keys(this._textureSemanticsDic).indexOf(''+texturePurpose);
+        index = (index !== -1) ? index : Object.keys(this._textureSemanticsDic).length;
+        this._glContext.uniform1i( uTexture, index, true);
+        this.setUniform(shaderProgram, uniformName, uTexture);
+        this.uniformTextureSamplerDic[uniformName] = {};
+        this.uniformTextureSamplerDic[uniformName].textureUnitIndex = index;
+        this.uniformTextureSamplerDic[uniformName].textureName = texture.userFlavorName;
+        this._textureSemanticsDic[texturePurpose] = uniformName;
+      }
+    }
+
+    getTextureNumAttachedShader() {
+      return Object.keys(this._textureSemanticsDic).length;
+    }
+
   }
 
   GLBoost$1['L_AbstractMaterial'] = L_AbstractMaterial;
@@ -9814,6 +9894,7 @@ return mat4(
       var shaderText = '';
       shaderText += 'uniform vec2 uMetallicRoughnessFactors;\n';
       shaderText += 'uniform vec3 uBaseColorFactor;\n';
+      shaderText += 'uniform sampler2D uMetallicRoughnessTexture;\n';
 
       shaderText += 'uniform vec4 ambient;\n'; // Ka * amount of ambient lights
 
@@ -9953,6 +10034,9 @@ vec3 baseColor = srgbToLinear(surfaceColor) * uBaseColorFactor.rgb;
 // Metallic & Roughness
 float userRoughness = uMetallicRoughnessFactors.y;
 float metallic = uMetallicRoughnessFactors.x;
+vec4 ormTexel = texture2D(uMetallicRoughnessTexture, texcoord);
+userRoughness = ormTexel.g * userRoughness;
+metallic = ormTexel.b * metallic;
 
 userRoughness = clamp(userRoughness, c_MinRoughness, 1.0);
 metallic = clamp(metallic, 0.0, 1.0);
@@ -10019,6 +10103,8 @@ albedo.rgb *= (1.0 - metallic);
       material.setUniform(shaderProgram, 'uniform_MetallicRoughnessFactors', this._glContext.getUniformLocation(shaderProgram, 'uMetallicRoughnessFactors'));
       material.setUniform(shaderProgram, 'uniform_BaseColorFactor', this._glContext.getUniformLocation(shaderProgram, 'uBaseColorFactor'));
       material.setUniform(shaderProgram, 'uniform_ambient', this._glContext.getUniformLocation(shaderProgram, 'ambient'));
+
+      material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_METALLIC_ROUGHNESS, shaderProgram, 'uMetallicRoughnessTexture'); 
       
       return vertexAttribsAsResult;
     }
@@ -13220,6 +13306,7 @@ albedo.rgb *= (1.0 - metallic);
         internalFormat, format, type,
         gl.LINEAR, gl.LINEAR, gl.CLAMP_TO_EDGE, gl.CLAMP_TO_EDGE);
       depthTexture.fbo = fbo;
+      depthTexture.userFlavorName = `DepthTexture_${fbo.width}x${fbo.height}`;
 
       /// Attach Buffers
       // color
@@ -13305,88 +13392,38 @@ albedo.rgb *= (1.0 - metallic);
       return this.__system._glBoostMonitor;
     }
 
-    setPropertiesFromJson(arg) {
+    setPropertiesFromJson(arg, queryType = GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME) {
       let json = arg;
       if (typeof arg === "string") {
         json = JSON.parse(arg);
       }
-      if (!json.targetInstanceName) {
+      if (!json.targetUserFlavorName) {
         console.warn(`Faild! This json doesn't include targetInstanceName field!`);
         return;
       }
-      const object = this.__system._glBoostMonitor.getGLBoostObject(json.targetInstanceName);
-      object.setPropertiesFromJson(json);
+      let objects = null;
+      if (queryType === GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME) {
+        objects = this.__system._glBoostMonitor.getGLBoostObjectsByUserFlavorName(json.targetUserFlavorName);
+      } else if (queryType === GLBoost$1.QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR) {
+        const found = this.__system._glBoostMonitor.getGLBoostObject(json.targetInstanceName);
+        if (found != null && found.userFlavorName === json.targetUserFlavorName) {
+          objects = [found];
+        } else {
+          objects = [];
+        }
+      } else {
+        const found = this.__system._glBoostMonitor.getGLBoostObject(json.targetInstanceName);
+        objects = [found];
+      }
 
-      return object;
+      objects.forEach((obj)=>{obj.setPropertiesFromJson(json);});
+     
+      return objects;
     }
 
   }
 
   GLBoost$1['GLBoostLowContext'] = GLBoostLowContext;
-
-  const IsUtil = {
-    not: {},
-    all: {},
-    any: {},
-
-    _not(fn) {
-      return function() {
-        return !fn.apply(null, [...arguments]);
-      };
-    },
-
-    _all(fn) {
-      return function() {
-        if (Array.isArray(arguments[0])) {
-          return arguments[0].every(fn);
-        }
-        return [...arguments].every(fn);
-      };
-    },
-
-    _any(fn) {
-      return function() {
-        if (Array.isArray(arguments[0])) {
-          return arguments[0].some(fn);
-        }
-        return [...arguments].some(fn);
-      };
-    },
-
-    defined(val) {
-      return val !== void 0;
-    },
-
-    undefined(val) {
-      return val === void 0;
-    },
-
-    null(val) {
-      return val === null;
-    },
-
-    // is NOT null or undefined
-    exist(val) {
-      return val != null;
-    },
-
-    function(val) {
-      return typeof val === 'function';
-    }
-
-  };
-
-  for (let fn in IsUtil) {
-    if (IsUtil.hasOwnProperty(fn)) {
-      const interfaces = ['not', 'all', 'any'];
-      if (fn.indexOf('_') === -1 && !interfaces.includes(fn)) {
-        interfaces.forEach((itf)=>{
-          const op = '_' + itf;
-          IsUtil[itf][fn] = IsUtil[op](IsUtil[fn]);
-        });
-      }
-    }
-  }
 
   class M_Mesh extends M_Element {
     constructor(glBoostContext, geometry, material) {
@@ -16675,7 +16712,7 @@ albedo.rgb *= (1.0 - metallic);
           for (let i=0; i<matrices.length; i++) {
             let q = (Quaternion.fromMatrix(matrices[i]));
             q.normalize();
-            let vec2QPacked = MathUtil.packNormalizedVec4ToVec2(q.x, q.y, q.z, q.w, 4096);
+            let vec2QPacked = MathClassUtil.packNormalizedVec4ToVec2(q.x, q.y, q.z, q.w, 4096);
             skeletalMesh._qArray[i*2+0] = vec2QPacked[0];
             skeletalMesh._qArray[i*2+1] = vec2QPacked[1];
             let t = matrices[i].getTranslate();
@@ -16715,11 +16752,11 @@ albedo.rgb *= (1.0 - metallic);
 
             let q = (Quaternion.fromMatrix(matrices[i]));
             q.normalize();
-            let vec2QPacked = MathUtil.packNormalizedVec4ToVec2(q.x, q.y, q.z, q.w, 4096);
+            let vec2QPacked = MathClassUtil.packNormalizedVec4ToVec2(q.x, q.y, q.z, q.w, 4096);
             let t = matrices[i].getTranslate();
             skeletalMesh._qtArray[i*4+0] = vec2QPacked[0];
             skeletalMesh._qtArray[i*4+1] = vec2QPacked[1];
-            let vec2TPacked = MathUtil.packNormalizedVec4ToVec2(
+            let vec2TPacked = MathClassUtil.packNormalizedVec4ToVec2(
               t.x/skeletalMesh._translationScale.x, t.y/skeletalMesh._translationScale.y,
               t.z/skeletalMesh._translationScale.z, 0.0, 4096);
               skeletalMesh._qtArray[i*4+2] = vec2TPacked[0];
@@ -21619,7 +21656,35 @@ albedo.rgb *= (1.0 - metallic);
                 'TEXTURE_WRAP_T': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapT,
                 'UNPACK_PREMULTIPLY_ALPHA_WEBGL': isNeededToMultiplyAlphaToColorOfTexture
               });
+              texture.userFlavorName = `Texture_Diffuse_index_${baseColorTexture.index}_of_${gltfMaterial.instanceNameWithUserFlavor}`;
+              gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_DIFFUSE);
+            }
+
+           
+            let metallicRoughnessTexture = materialJson.pbrMetallicRoughness.metallicRoughnessTexture;
+            if (metallicRoughnessTexture) {
+              let sampler = metallicRoughnessTexture.texture.sampler;
+              let texture = glBoostContext.createTexture(metallicRoughnessTexture.texture.image.image, '', {
+                'TEXTURE_MAG_FILTER': sampler === void 0 ? GLBoost$1.LINEAR : sampler.magFilter,
+                'TEXTURE_MIN_FILTER': sampler === void 0 ? GLBoost$1.LINEAR_MIPMAP_LINEAR : sampler.minFilter,
+                'TEXTURE_WRAP_S': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapS,
+                'TEXTURE_WRAP_T': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapT
+              });
+              texture.userFlavorName = `Texture_MetallicRoughness_index_${metallicRoughnessTexture.index}_of_${gltfMaterial.instanceNameWithUserFlavor}`;
               gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_METALLIC_ROUGHNESS);
+            }
+
+            const normalTexture = materialJson.normalTexture;
+            if (normalTexture) {
+              const sampler = normalTexture.texture.sampler;
+              const texture = glBoostContext.createTexture(normalTexture.texture.image.image, '', {
+                'TEXTURE_MAG_FILTER': sampler === void 0 ? GLBoost$1.LINEAR : sampler.magFilter,
+                'TEXTURE_MIN_FILTER': sampler === void 0 ? GLBoost$1.LINEAR_MIPMAP_LINEAR : sampler.minFilter,
+                'TEXTURE_WRAP_S': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapS,
+                'TEXTURE_WRAP_T': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapT
+              });
+              texture.userFlavorName = `Texture_MetallicRoughness_index_${normalTexture.index}_of_${gltfMaterial.instanceNameWithUserFlavor}`;
+              gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_NORMAL);
             }
 
             let enables = [];
@@ -22639,4 +22704,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-203-g4445-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-220-gb89c-mod branch: develop';

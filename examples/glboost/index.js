@@ -66,14 +66,24 @@ let glTF2Loader = GLBoost.GLTF2Loader.getInstance();
 let modelConverter = GLBoost.ModelConverter.getInstance();
 //let promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
 let promise = glTF2Loader.loadGLTF(url, {
-      extensionLoader: null,
-      defaultShaderClass: GLBoost.PhongShader,
-      isNeededToMultiplyAlphaToColorOfPixelOutput: true,
-      isTextureImageToLoadPreMultipliedAlpha: false,
-      isExistJointGizmo: false,
-      isBlend: false,
-      isDepthTest: true,
-      isAllMeshesTransparent: false
+/*
+        extensionLoader: null,
+        defaultShaderClass: GLBoost.PhongShader,
+        isNeededToMultiplyAlphaToColorOfPixelOutput: true,
+        isTextureImageToLoadPreMultipliedAlpha: false,
+        isExistJointGizmo: false,
+        isBlend: false,
+        isDepthTest: true,
+        isAllMeshesTransparent: false
+*/
+        loaderExtension: null,
+        isNeededToMultiplyAlphaToColorOfPixelOutput: true,
+        isTextureImageToLoadPreMultipliedAlphaAsDefault: false,
+        isExistJointGizmo: false,
+        isBlend: true,
+        isDepthTest: true,
+        defaultShaderClass: null,
+        isMeshTransparentAsDefault: true
     });
       
 promise.then(function(gltfObj) {
