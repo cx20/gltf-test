@@ -386,6 +386,7 @@
       c.define('TEXTURE_PURPOSE_DIFFUSE', void 0, 'diffuse');
       c.define('TEXTURE_PURPOSE_NORMAL', void 0, 'normal');
       c.define('TEXTURE_PURPOSE_METALLIC_ROUGHNESS', void 0, 'metallic_roughness');
+      c.define('TEXTURE_PURPOSE_EMISSIVE', void 0, 'emissive');
       c.define('QUERY_TYPE_INSTANCE_NAME');
       c.define('QUERY_TYPE_USER_FLAVOR_NAME');
       c.define('QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR');
@@ -9889,12 +9890,19 @@ return mat4(
 
   class PBRPrincipledShaderSource {
 
-    FSDefine_PBRPrincipledShaderSource(in_, f, lights) {
+    FSDefine_PBRPrincipledShaderSource(in_, f, lights, material, extraData) {
       
       var shaderText = '';
       shaderText += 'uniform vec2 uMetallicRoughnessFactors;\n';
       shaderText += 'uniform vec3 uBaseColorFactor;\n';
+      shaderText += 'uniform vec3 uEmissiveFactor;';
       shaderText += 'uniform sampler2D uMetallicRoughnessTexture;\n';
+
+      let emissiveTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_EMISSIVE);
+      if (emissiveTexture) {
+        shaderText += 'uniform sampler2D uEmissiveTexture;\n';
+      }
+      
 
       shaderText += 'uniform vec4 ambient;\n'; // Ka * amount of ambient lights
 
@@ -10021,7 +10029,7 @@ return mat4(
       return shaderText;
     }
 
-    FSShade_PBRPrincipledShaderSource(f, gl, lights) {
+    FSShade_PBRPrincipledShaderSource(f, gl, lights, material, extraData) {
       var shaderText = '';
 
       shaderText += `
@@ -10086,6 +10094,15 @@ albedo.rgb *= (1.0 - metallic);
 
         shaderText += `  }\n`;
       }
+
+      // Emissive
+      shaderText += '  vec3 emissive = uEmissiveFactor;\n';
+      let emissiveTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_EMISSIVE);
+      if (emissiveTexture) {
+        shaderText += 'emissive *= srgbToLinear(texture2D(uEmissiveTexture, texcoord).xyz);';
+      }
+      shaderText += '  rt0.xyz += emissive;\n';
+
       shaderText += '  rt0.xyz += ambient.xyz;\n';
       shaderText += '  rt0.xyz = linearToSrgb(rt0.xyz);\n';
        
@@ -10100,12 +10117,15 @@ albedo.rgb *= (1.0 - metallic);
 
       var vertexAttribsAsResult = [];
 
-      material.setUniform(shaderProgram, 'uniform_MetallicRoughnessFactors', this._glContext.getUniformLocation(shaderProgram, 'uMetallicRoughnessFactors'));
       material.setUniform(shaderProgram, 'uniform_BaseColorFactor', this._glContext.getUniformLocation(shaderProgram, 'uBaseColorFactor'));
+      material.setUniform(shaderProgram, 'uniform_MetallicRoughnessFactors', this._glContext.getUniformLocation(shaderProgram, 'uMetallicRoughnessFactors'));
+      material.setUniform(shaderProgram, 'uniform_EmissiveFactor', this._glContext.getUniformLocation(shaderProgram, 'uEmissiveFactor'));
       material.setUniform(shaderProgram, 'uniform_ambient', this._glContext.getUniformLocation(shaderProgram, 'ambient'));
 
+
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_METALLIC_ROUGHNESS, shaderProgram, 'uMetallicRoughnessTexture'); 
-      
+      material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_EMISSIVE, shaderProgram, 'uEmissiveTexture');
+
       return vertexAttribsAsResult;
     }
   }
@@ -10124,8 +10144,10 @@ albedo.rgb *= (1.0 - metallic);
       var baseColor = material.baseColor;
       var metallic = material.metallic;
       let roughness = material.roughness;
+      const emissive = material.emissive;
       this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_MetallicRoughnessFactors'), metallic, roughness, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_BaseColorFactor'), baseColor.x, baseColor.y, baseColor.z, true);
+      this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_EmissiveFactor'), emissive.x, emissive.y, emissive.z, true);
 
       let ambient = Vector4$1.multiplyVector(new Vector4$1(1.0, 1.0, 1.0, 1.0), scene.getAmountOfAmbientLightsIntensity());
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_ambient'), ambient.x, ambient.y, ambient.z, ambient.w, true);    
@@ -10140,8 +10162,9 @@ albedo.rgb *= (1.0 - metallic);
 
   class PBRMetallicRoughnessMaterial extends L_AbstractMaterial {
                                          
-                        
+                              
                                        
+                             
                                       
 
     constructor(glBoostSystem               ) {
@@ -10149,8 +10172,9 @@ albedo.rgb *= (1.0 - metallic);
 
       this._wireframeWidthRelativeScale = 1.0;
 
-      this._baseColor = new Vector3(1.0, 1.0, 1.0);
+      this._baseColorFactor = new Vector3(1.0, 1.0, 1.0);
       this._metallicRoughnessFactors = new Vector2(1.0, 1.0);
+      this._emissiveFactor = new Vector3(0.0, 0.0, 0.0);
 
       this._shaderClass = PBRPrincipledShader;
     }
@@ -10160,11 +10184,11 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     set baseColor(val         ) {
-      this._baseColor = val.clone();
+      this._baseColorFactor = val.clone();
     }
 
     get baseColor() {
-      return this._baseColor.clone();
+      return this._baseColorFactor.clone();
     }
 
     set metallic(val        ) {
@@ -10181,6 +10205,14 @@ albedo.rgb *= (1.0 - metallic);
 
     get roughness() {
       return this._metallicRoughnessFactors.y;
+    }
+
+    set emissive(val         ) {
+      this._emissiveFactor = val;
+    }
+
+    get emissive() {
+      return this._emissiveFactor;
     }
   }
 
@@ -20832,6 +20864,11 @@ albedo.rgb *= (1.0 - metallic);
           if (normalTexture !== void 0) {
             normalTexture.texture = gltfJson.textures[normalTexture.index];
           }
+
+          const emissiveTexture = material.emissiveTexture;
+          if (emissiveTexture !== void 0) {
+            emissiveTexture.texture = gltfJson.textures[emissiveTexture.index];
+          }
         }
       }
     }
@@ -21686,6 +21723,20 @@ albedo.rgb *= (1.0 - metallic);
               texture.userFlavorName = `Texture_MetallicRoughness_index_${normalTexture.index}_of_${gltfMaterial.instanceNameWithUserFlavor}`;
               gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_NORMAL);
             }
+            
+            const emissiveTexture = materialJson.emissiveTexture;
+            if (emissiveTexture) {
+              const sampler = normalTexture.texture.sampler;
+              const texture = glBoostContext.createTexture(emissiveTexture.texture.image.image, '', {
+                'TEXTURE_MAG_FILTER': sampler === void 0 ? GLBoost$1.LINEAR : sampler.magFilter,
+                'TEXTURE_MIN_FILTER': sampler === void 0 ? GLBoost$1.LINEAR_MIPMAP_LINEAR : sampler.minFilter,
+                'TEXTURE_WRAP_S': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapS,
+                'TEXTURE_WRAP_T': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapT
+              });
+              texture.userFlavorName = `Texture_Emissive_index_${emissiveTexture.index}_of_${gltfMaterial.instanceNameWithUserFlavor}`;
+              gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_EMISSIVE);
+            }
+
 
             let enables = [];
             if (options.isBlend) {
@@ -21728,10 +21779,13 @@ albedo.rgb *= (1.0 - metallic);
           gltfMaterial.baseColor = new Vector4$1(pmr.baseColorFactor);
         }
         if (pmr.metallicFactor) {
-          gltfMaterial.metallic = new Vector4$1(pmr.metallicFactor);
+          gltfMaterial.metallic = pmr.metallicFactor;
         }
         if (pmr.roughnessFactor) {
-          gltfMaterial.roughness = new Vector4$1(pmr.roughnessFactor);
+          gltfMaterial.roughness = pmr.roughnessFactor;
+        }
+        if (materialJson.emissiveFactor) {
+          gltfMaterial.emissive = new Vector3(materialJson.emissiveFactor);
         }
       }
 
@@ -22704,4 +22758,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-220-gb89c-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-221-g690ae-mod branch: develop';
