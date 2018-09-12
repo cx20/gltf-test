@@ -36,16 +36,16 @@ function init() {
     
     scene = new THREE.Scene();
     
-    var ambient = new THREE.AmbientLight( 0x101030 );
+    var hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 1.2 );
+    scene.add(hemispheric);
+/*
+    var ambient = new THREE.AmbientLight( 0xffffff, 0.3 );
     scene.add( ambient );
 
-    var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-    directionalLight.position.set( 0, 0, 1 );
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
+    directionalLight.position.set( 0.5, 0, 0.866 );
     scene.add( directionalLight );
-
-    var directionalLight2 = new THREE.DirectionalLight( 0xffeedd );
-    directionalLight2.position.set( 0, 5, -5 );
-    scene.add( directionalLight2 );
+*/
 
     camera = new THREE.PerspectiveCamera( 75, width / height, 1, 10000 );
     camera.position.set(0, 2, 3);
