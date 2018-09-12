@@ -61,21 +61,13 @@ camera.cameraController = glBoostContext.createCameraController();
 //camera.cameraController.zFarAdjustingFactorBasedOnAABB = 3;
 scene.addChild(camera);
 
-let gtime = 0;
-let glTF2Loader = GLBoost.GLTF2Loader.getInstance();
-let modelConverter = GLBoost.ModelConverter.getInstance();
-//let promise = glTF2Loader.loadGLTF("../../" + modelInfo.category + "/" + modelInfo.path, {
-let promise = glTF2Loader.loadGLTF(url, {
-/*
-        extensionLoader: null,
-        defaultShaderClass: GLBoost.PhongShader,
-        isNeededToMultiplyAlphaToColorOfPixelOutput: true,
-        isTextureImageToLoadPreMultipliedAlpha: false,
-        isExistJointGizmo: false,
-        isBlend: false,
-        isDepthTest: true,
-        isAllMeshesTransparent: false
-*/
+(async () => {
+    let gtime = 0;
+    const fileType = await GLBoost.formatDetector(url);
+    let glTFLoader = null;
+    let modelConverter = null;
+    let promise = null;
+    let loadOption = {
         loaderExtension: null,
         isNeededToMultiplyAlphaToColorOfPixelOutput: true,
         isTextureImageToLoadPreMultipliedAlphaAsDefault: false,
@@ -84,54 +76,47 @@ let promise = glTF2Loader.loadGLTF(url, {
         isDepthTest: true,
         defaultShaderClass: null,
         isMeshTransparentAsDefault: true
-    });
-      
-promise.then(function(gltfObj) {
-    let group = modelConverter.convertToGLBoostModel(glBoostContext, gltfObj);
-    //camera.cameraController.target = group;
-    console.log(group);
-    //console.log(group);
-    if (modelInfo.name == "GearboxAssy" ) {
-        scale = 0.2;
-        group.scale = new GLBoost.Vector3(scale, scale, scale);
-        group.translate = new GLBoost.Vector3(-159.20*scale, -17.02*scale, -3.21*scale);
-    } else {
-        group.scale = new GLBoost.Vector3(scale, scale, scale);
-    }
-    scene.addChild(group);
-
-    let expression = glBoostContext.createExpressionAndRenderPasses(1);
-    expression.renderPasses[0].scene = scene;
-    expression.prepareToRender();
-    
-    const animationLength = group.getEndAnimationInputValue('time');
-    let lastAnimatedTime = Date.now();
-    renderer.doConvenientRenderLoop(expression, function() {
-        let currentMillisecondDeltaFromStart = Date.now() - lastAnimatedTime;
-        scene.setCurrentAnimationValue('time', currentMillisecondDeltaFromStart / 1000);
-        if (currentMillisecondDeltaFromStart / 1000 > animationLength) {
-            lastAnimatedTime = Date.now();
-        }
-
-        let rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
-        let rotatedVector = rotateMatrix.multiplyVector(camera.eye);
-        camera.eye = rotatedVector;
-    });
-/*
-    let render = function() {
-        scene.setCurrentAnimationValue('time', gtime);
-        renderer.clearCanvas();
-        renderer.update(expression); 
-        renderer.draw(expression);
-        gtime += 0.03;
-        if (gtime > 5) {
-            gtime = 0.0;
-        }
-        let rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
-        let rotatedVector = rotateMatrix.multiplyVector(camera.eye);
-        camera.eye = rotatedVector;
-        requestAnimationFrame(render);
     };
-    render();
-*/
-});
+    if (fileType === 'glTF2') {
+        glTFLoader = GLBoost.GLTF2Loader.getInstance();
+        modelConverter = GLBoost.ModelConverter.getInstance();
+        promise = glTFLoader.loadGLTF(url, loadOption);
+    } else if (fileType === 'glTF1') {
+        glTFLoader = GLBoost.GLTFLoader.getInstance();
+        modelConverter = GLBoost.ModelConverter.getInstance();
+        promise = glTFLoader.loadGLTF(glBoostContext, url, loadOption);
+    }
+
+    promise.then(function(gltfObj) {
+        let group = modelConverter.convertToGLBoostModel(glBoostContext, gltfObj);
+        //camera.cameraController.target = group;
+        console.log(group);
+        //console.log(group);
+        if (modelInfo.name == "GearboxAssy" ) {
+            scale = 0.2;
+            group.scale = new GLBoost.Vector3(scale, scale, scale);
+            group.translate = new GLBoost.Vector3(-159.20*scale, -17.02*scale, -3.21*scale);
+        } else {
+            group.scale = new GLBoost.Vector3(scale, scale, scale);
+        }
+        scene.addChild(group);
+
+        let expression = glBoostContext.createExpressionAndRenderPasses(1);
+        expression.renderPasses[0].scene = scene;
+        expression.prepareToRender();
+        
+        const animationLength = group.getEndAnimationInputValue('time');
+        let lastAnimatedTime = Date.now();
+        renderer.doConvenientRenderLoop(expression, function() {
+            let currentMillisecondDeltaFromStart = Date.now() - lastAnimatedTime;
+            scene.setCurrentAnimationValue('time', currentMillisecondDeltaFromStart / 1000);
+            if (currentMillisecondDeltaFromStart / 1000 > animationLength) {
+                lastAnimatedTime = Date.now();
+            }
+
+            let rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
+            let rotatedVector = rotateMatrix.multiplyVector(camera.eye);
+            camera.eye = rotatedVector;
+        });
+    });
+})();

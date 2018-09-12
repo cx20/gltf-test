@@ -386,6 +386,7 @@
       c.define('TEXTURE_PURPOSE_DIFFUSE', void 0, 'diffuse');
       c.define('TEXTURE_PURPOSE_NORMAL', void 0, 'normal');
       c.define('TEXTURE_PURPOSE_METALLIC_ROUGHNESS', void 0, 'metallic_roughness');
+      c.define('TEXTURE_PURPOSE_OCCLUSION', void 0, 'occlusion');
       c.define('TEXTURE_PURPOSE_EMISSIVE', void 0, 'emissive');
       c.define('QUERY_TYPE_INSTANCE_NAME');
       c.define('QUERY_TYPE_USER_FLAVOR_NAME');
@@ -9895,14 +9896,19 @@ return mat4(
       var shaderText = '';
       shaderText += 'uniform vec2 uMetallicRoughnessFactors;\n';
       shaderText += 'uniform vec3 uBaseColorFactor;\n';
+      shaderText += 'uniform vec2 uOcclusionFactors;';
       shaderText += 'uniform vec3 uEmissiveFactor;';
       shaderText += 'uniform sampler2D uMetallicRoughnessTexture;\n';
 
+      let occlusionTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_OCCLUSION);
+      if (occlusionTexture) {
+        shaderText += 'uniform sampler2D uOcclusionTexture;\n';
+      }
+      
       let emissiveTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_EMISSIVE);
       if (emissiveTexture) {
         shaderText += 'uniform sampler2D uEmissiveTexture;\n';
       }
-      
 
       shaderText += 'uniform vec4 ambient;\n'; // Ka * amount of ambient lights
 
@@ -10042,10 +10048,18 @@ vec3 baseColor = srgbToLinear(surfaceColor) * uBaseColorFactor.rgb;
 // Metallic & Roughness
 float userRoughness = uMetallicRoughnessFactors.y;
 float metallic = uMetallicRoughnessFactors.x;
+`;
+
+      let metallicRoughnessTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_METALLIC_ROUGHNESS);
+      if (metallicRoughnessTexture) {
+      shaderText += `
 vec4 ormTexel = texture2D(uMetallicRoughnessTexture, texcoord);
 userRoughness = ormTexel.g * userRoughness;
 metallic = ormTexel.b * metallic;
+`;
+      }
 
+      shaderText += `
 userRoughness = clamp(userRoughness, c_MinRoughness, 1.0);
 metallic = clamp(metallic, 0.0, 1.0);
 float alphaRoughness = userRoughness * userRoughness;
@@ -10057,8 +10071,8 @@ vec3 F0 = mix(diffuseMatAverageF0, baseColor.rgb, metallic);
 // Albedo
 vec3 albedo = baseColor.rgb * (vec3(1.0) - diffuseMatAverageF0);
 albedo.rgb *= (1.0 - metallic);
-
 `;
+
       for (let i=0; i<lights.length; i++) {
         let light = lights[i];
         let isShadowEnabledAsTexture = (light.camera && light.camera.texture) ? true:false;
@@ -10095,6 +10109,18 @@ albedo.rgb *= (1.0 - metallic);
         shaderText += `  }\n`;
       }
 
+      // Ambient
+      shaderText += 'float occlusion = 1.0;\n';
+      let occlusionTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_OCCLUSION);
+      if (occlusionTexture) {
+        shaderText += 'occlusion = mix(1.0, texture2D(uOcclusionTexture, texcoord).r, uOcclusionFactors.x);\n';
+      }
+      shaderText += '  float occlusionRateForDirectionalLight = uOcclusionFactors.y;\n';
+      shaderText += '  rt0.xyz = mix(rt0.xyz, rt0.xyz * occlusion, occlusionRateForDirectionalLight);\n';
+      shaderText += '  rt0.xyz += ambient.xyz * occlusion;\n';
+
+
+
       // Emissive
       shaderText += '  vec3 emissive = uEmissiveFactor;\n';
       let emissiveTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_EMISSIVE);
@@ -10103,10 +10129,10 @@ albedo.rgb *= (1.0 - metallic);
       }
       shaderText += '  rt0.xyz += emissive;\n';
 
-      shaderText += '  rt0.xyz += ambient.xyz;\n';
       shaderText += '  rt0.xyz = linearToSrgb(rt0.xyz);\n';
        
       shaderText += '  rt0.a = 1.0;\n';
+  //    shaderText += '  rt0.xyz = vec3(texture2D(uOcclusionTexture, texcoord).r);\n';
 
 
 
@@ -10119,11 +10145,13 @@ albedo.rgb *= (1.0 - metallic);
 
       material.setUniform(shaderProgram, 'uniform_BaseColorFactor', this._glContext.getUniformLocation(shaderProgram, 'uBaseColorFactor'));
       material.setUniform(shaderProgram, 'uniform_MetallicRoughnessFactors', this._glContext.getUniformLocation(shaderProgram, 'uMetallicRoughnessFactors'));
+      material.setUniform(shaderProgram, 'uniform_OcclusionFactors', this._glContext.getUniformLocation(shaderProgram, 'uOcclusionFactors'));
       material.setUniform(shaderProgram, 'uniform_EmissiveFactor', this._glContext.getUniformLocation(shaderProgram, 'uEmissiveFactor'));
       material.setUniform(shaderProgram, 'uniform_ambient', this._glContext.getUniformLocation(shaderProgram, 'ambient'));
 
 
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_METALLIC_ROUGHNESS, shaderProgram, 'uMetallicRoughnessTexture'); 
+      material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_OCCLUSION, shaderProgram, 'uOcclusionTexture');
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_EMISSIVE, shaderProgram, 'uEmissiveTexture');
 
       return vertexAttribsAsResult;
@@ -10144,9 +10172,12 @@ albedo.rgb *= (1.0 - metallic);
       var baseColor = material.baseColor;
       var metallic = material.metallic;
       let roughness = material.roughness;
+      const occlusion = material.occlusion;
+      const occlusionRateForDirectionalLight = material.occlusionRateForDirectionalLight;
       const emissive = material.emissive;
       this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_MetallicRoughnessFactors'), metallic, roughness, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_BaseColorFactor'), baseColor.x, baseColor.y, baseColor.z, true);
+      this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_OcclusionFactors'), occlusion, occlusionRateForDirectionalLight, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_EmissiveFactor'), emissive.x, emissive.y, emissive.z, true);
 
       let ambient = Vector4$1.multiplyVector(new Vector4$1(1.0, 1.0, 1.0, 1.0), scene.getAmountOfAmbientLightsIntensity());
@@ -10165,6 +10196,8 @@ albedo.rgb *= (1.0 - metallic);
                               
                                        
                              
+                             
+                                              
                                       
 
     constructor(glBoostSystem               ) {
@@ -10174,7 +10207,9 @@ albedo.rgb *= (1.0 - metallic);
 
       this._baseColorFactor = new Vector3(1.0, 1.0, 1.0);
       this._metallicRoughnessFactors = new Vector2(1.0, 1.0);
+      this._occlusionFactor = 1.0;
       this._emissiveFactor = new Vector3(0.0, 0.0, 0.0);
+      this._occlusionRateForDirectionalLight = 0.2;
 
       this._shaderClass = PBRPrincipledShader;
     }
@@ -10213,6 +10248,22 @@ albedo.rgb *= (1.0 - metallic);
 
     get emissive() {
       return this._emissiveFactor;
+    }
+    
+    set occlusion(val        ) {
+      this._occlusionFactor = val;
+    }
+
+    get occlusion() {
+      return this._occlusionFactor;
+    }
+
+    set occlusionRateForDirectionalLight(val        ) {
+      this._occlusionRateForDirectionalLight = val;
+    }
+
+    get occlusionRateForDirectionalLight() {
+      return this._occlusionRateForDirectionalLight;
     }
   }
 
@@ -20865,6 +20916,11 @@ albedo.rgb *= (1.0 - metallic);
             normalTexture.texture = gltfJson.textures[normalTexture.index];
           }
 
+          const occlusionTexture = material.occlusionTexture;
+          if (occlusionTexture !== void 0) {
+            occlusionTexture.texture = gltfJson.textures[occlusionTexture.index];
+          }
+
           const emissiveTexture = material.emissiveTexture;
           if (emissiveTexture !== void 0) {
             emissiveTexture.texture = gltfJson.textures[emissiveTexture.index];
@@ -21722,6 +21778,19 @@ albedo.rgb *= (1.0 - metallic);
               });
               texture.userFlavorName = `Texture_MetallicRoughness_index_${normalTexture.index}_of_${gltfMaterial.instanceNameWithUserFlavor}`;
               gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_NORMAL);
+            }
+            
+            const occlusionTexture = materialJson.occlusionTexture;
+            if (occlusionTexture) {
+              const sampler = occlusionTexture.texture.sampler;
+              const texture = glBoostContext.createTexture(occlusionTexture.texture.image.image, '', {
+                'TEXTURE_MAG_FILTER': sampler === void 0 ? GLBoost$1.LINEAR : sampler.magFilter,
+                'TEXTURE_MIN_FILTER': sampler === void 0 ? GLBoost$1.LINEAR_MIPMAP_LINEAR : sampler.minFilter,
+                'TEXTURE_WRAP_S': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapS,
+                'TEXTURE_WRAP_T': sampler === void 0 ? GLBoost$1.REPEAT : sampler.wrapT
+              });
+              texture.userFlavorName = `Texture_Occlusion_index_${occlusionTexture.index}_of_${gltfMaterial.instanceNameWithUserFlavor}`;
+              gltfMaterial.setTexture(texture, GLBoost$1.TEXTURE_PURPOSE_OCCLUSION);
             }
             
             const emissiveTexture = materialJson.emissiveTexture;
@@ -22758,4 +22827,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-221-g690ae-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-223-g462f4-mod branch: develop';
