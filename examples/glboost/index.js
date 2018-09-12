@@ -100,7 +100,7 @@ scene.addChild(camera);
             let materials = mesh.getAppropriateMaterials();
             for (let materialKey in materials) {
                 let material = materials[materialKey];
-                material.occlusionRateForDirectionalLight = 1.0;
+                material.occlusionRateForDirectionalLight = 0.5;
             }
         }
         
