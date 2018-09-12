@@ -83,12 +83,16 @@ scene.addChild(camera);
         promise = glTFLoader.loadGLTF(url, loadOption);
     } else if (fileType === 'glTF1') {
         glTFLoader = GLBoost.GLTFLoader.getInstance();
-        modelConverter = GLBoost.ModelConverter.getInstance();
         promise = glTFLoader.loadGLTF(glBoostContext, url, loadOption);
     }
 
     promise.then(function(gltfObj) {
-        let group = modelConverter.convertToGLBoostModel(glBoostContext, gltfObj);
+        let group = null;
+        if (fileType === 'glTF2') {
+            group = modelConverter.convertToGLBoostModel(glBoostContext, gltfObj);
+        } else {
+            group = gltfObj;
+        }
         //camera.cameraController.target = group;
         console.log(group);
         //console.log(group);
