@@ -93,6 +93,17 @@ scene.addChild(camera);
         } else {
             group = gltfObj;
         }
+
+        // TODO: Experiment to force enabling Occlusion map
+        for (let meshKey in group.allMeshes) {
+            let mesh = group.allMeshes[meshKey];
+            let materials = mesh.getAppropriateMaterials();
+            for (let materialKey in materials) {
+                let material = materials[materialKey];
+                material.occlusionRateForDirectionalLight = 1.0;
+            }
+        }
+        
         //camera.cameraController.target = group;
         console.log(group);
         //console.log(group);
