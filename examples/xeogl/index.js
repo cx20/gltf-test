@@ -42,6 +42,29 @@ var skybox = new xeogl.Skybox({
 // Get the default Scene off the Skybox
 var scene = skybox.scene;
 
+scene.clearLights();
+
+var ambientLight = new xeogl.AmbientLight({
+    //color: [1.0, 0.3, 0.7]
+    color: [0.06, 0.06, 0.18]
+});
+
+new xeogl.DirLight({
+    id: "keyLight",
+    dir: [0.0, 0.0, 1.0],
+    color: [1.0, 0.9, 0.9],
+    intensity: 0.5,
+    space: "view"
+});
+
+new xeogl.DirLight({
+    id: "fillLight",
+    dir: [0, 0, -5],
+    color: [1.0, 0.9, 0.9],
+    intensity: 0.5,
+    space: "view"
+});
+
 var camera = scene.camera;
 if (modelInfo.name == "GearboxAssy" ) {
     camera.eye = [184.21, 10.54, -7.03];
@@ -60,3 +83,4 @@ scene.on("tick",
             camera.orbitYaw(0.2);
         }
     });
+
