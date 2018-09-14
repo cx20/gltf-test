@@ -18,6 +18,8 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+var decoderModule;
+
 // create a PlayCanvas application
 var canvas = document.getElementById('application');
 var app = new pc.Application(canvas, {
@@ -42,7 +44,7 @@ app.root.addChild(camera);
 camera.setLocalPosition(0, 0, 1);
 
 // make the camera interactive
-app.assets.loadFromUrl('../../libs/playcanvas/v1.6.4-dev/orbit-camera.js', 'script', function (err, asset) {
+app.assets.loadFromUrl('../../libs/playcanvas/v1.8.0-dev/orbit-camera.js', 'script', function (err, asset) {
     camera.script.create('orbitCamera', {
         attributes: {
             inertiaFactor: 0,
@@ -90,8 +92,38 @@ cubemapAsset.ready(function () {
 // root entity for loaded gltf scenes which can have more than one root entity
 var gltfRoot = new pc.Entity('gltf');
 app.root.addChild(gltfRoot);
- 
+
+
+function loadScript(src) {
+    var head = document.getElementsByTagName('head')[0];
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = src;
+    return new Promise(function (resolve) {
+        script.onload = resolve;
+        head.appendChild(script);
+    });
+}
+
 function init(){
+    if (true) {//typeof WebAssembly !== 'object') {
+        loadScript('../../libs/playcanvas/v1.8.0-dev/draco_decoder.js').then(function () {
+            decoderModule = DracoDecoderModule();
+            onLoad();
+        });
+    } else {
+        loadScript('../../libs/playcanvas/v1.8.0-dev/draco_wasm_wrapper.js').then(function () {
+            fetch('../../libs/playcanvas/v1.8.0-dev//draco_decoder.wasm').then(function (response) {
+                response.arrayBuffer().then(function (arrayBuffer) {
+                    decoderModule = DracoDecoderModule({ wasmBinary: arrayBuffer });
+                    onLoad();
+                });
+            });
+        });
+    }
+}
+
+function onLoad() {
     var url = "../../" + modelInfo.category + "/" + modelInfo.path;
     if(modelInfo.url) {
         url = modelInfo.url;
@@ -143,6 +175,8 @@ function init(){
                 }
                 // focus the camera on the newly loaded scene
                 camera.script.orbitCamera.focusEntity = gltfRoot;
+            }, {
+                decoderModule: decoderModule
             });
         }
     } else {
@@ -167,6 +201,7 @@ function init(){
                 // focus the camera on the newly loaded scene
                 camera.script.orbitCamera.focusEntity = gltfRoot;
             }, {
+                decoderModule: decoderModule,
                 basePath: basePath
             });
         });
