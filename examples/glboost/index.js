@@ -21,10 +21,12 @@ if (!modelInfo) {
 
 
 var ROTATE = true;
+var AXIS = true;
 
 // GUI
 var gui = new dat.GUI();
 var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+var guiAxis = gui.add(window, 'AXIS').name('Axis');
 
 let canvas = document.getElementById("world");
 let width = window.innerWidth;
@@ -67,6 +69,9 @@ let camera = glBoostContext.createPerspectiveCamera({
 camera.cameraController = glBoostContext.createCameraController();
 //camera.cameraController.zFarAdjustingFactorBasedOnAABB = 3;
 scene.addChild(camera);
+
+let meshAxis = glBoostContext.createAxisGizmo(100);
+scene.addChild(meshAxis);
 
 (async () => {
     let gtime = 0;
@@ -140,6 +145,8 @@ scene.addChild(camera);
             let rotateMatrix = GLBoost.Matrix33.rotateY(ROTATE ? 0.5 : 0.0);
             let rotatedVector = rotateMatrix.multiplyVector(camera.eye);
             camera.eye = rotatedVector;
+
+            meshAxis.isVisible = AXIS;
         });
     });
 })();
