@@ -19,6 +19,13 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+
+var ROTATE = true;
+
+// GUI
+var gui = new dat.GUI();
+var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+
 let canvas = document.getElementById("world");
 let width = window.innerWidth;
 let height = window.innerHeight;
@@ -109,9 +116,11 @@ scene.addChild(camera);
         //console.log(group);
         if (modelInfo.name == "GearboxAssy" ) {
             scale = 0.2;
+            scale *= 1.3; // TODO: Adjust to be displayed with the same size as other libraries
             group.scale = new GLBoost.Vector3(scale, scale, scale);
             group.translate = new GLBoost.Vector3(-159.20*scale, -17.02*scale, -3.21*scale);
         } else {
+            scale *= 1.3; // TODO: Adjust to be displayed with the same size as other libraries
             group.scale = new GLBoost.Vector3(scale, scale, scale);
         }
         scene.addChild(group);
@@ -119,7 +128,7 @@ scene.addChild(camera);
         let expression = glBoostContext.createExpressionAndRenderPasses(1);
         expression.renderPasses[0].scene = scene;
         expression.prepareToRender();
-        
+
         const animationLength = group.getEndAnimationInputValue('time');
         let lastAnimatedTime = Date.now();
         renderer.doConvenientRenderLoop(expression, function() {
@@ -128,8 +137,7 @@ scene.addChild(camera);
             if (currentMillisecondDeltaFromStart / 1000 > animationLength) {
                 lastAnimatedTime = Date.now();
             }
-
-            let rotateMatrix = GLBoost.Matrix33.rotateY(0.75);
+            let rotateMatrix = GLBoost.Matrix33.rotateY(ROTATE ? 0.5 : 0.0);
             let rotatedVector = rotateMatrix.multiplyVector(camera.eye);
             camera.eye = rotatedVector;
         });
