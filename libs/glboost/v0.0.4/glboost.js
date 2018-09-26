@@ -5549,7 +5549,7 @@
         var method = this['FSMethodDefine_' + className];
         if (method) {
           shaderText += '//                                                            FSMethodDefine_' + className + ' //\n';
-          shaderText += method.bind(this, in_, f, lights, material, extraData)();
+          shaderText += method.bind(this, f, lights, material, extraData)();
         }
       });
 
@@ -9077,7 +9077,7 @@ return mat4(
       return shaderText;
     }
 
-    FSMethodDefine_WireframeShaderSource(in_, f, lights, material, extraData) {
+    FSMethodDefine_WireframeShaderSource(f, lights, material, extraData) {
       let shaderText = '';
 
       shaderText += `
@@ -9298,7 +9298,7 @@ return mat4(
       return shaderText;
     }
 
-    FSMethodDefine_DecalShaderSource(in_, f, lights, material, extraData) {
+    FSMethodDefine_DecalShaderSource(f, lights, material, extraData) {
       let shaderText = '';
 
       shaderText += this._multiplyAlphaToColorOfTexel();
@@ -10101,27 +10101,30 @@ return mat4(
     }
   `;
 
-      shaderText += `
-    vec3 IBLContribution(vec3 n, float NV, vec3 reflection, vec3 albedo, vec3 F0, float userRoughness)
-    {
-      float mipCount = uIBLParameters.x;
-      float lod = (userRoughness * mipCount);
+      let diffuseEnvCubeTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE);
+      if (diffuseEnvCubeTexture) {
+        shaderText += `
+      vec3 IBLContribution(vec3 n, float NV, vec3 reflection, vec3 albedo, vec3 F0, float userRoughness)
+      {
+        float mipCount = uIBLParameters.x;
+        float lod = (userRoughness * mipCount);
 
-      vec3 brdf = srgbToLinear(texture2D(uBrdfLUTTexture, vec2(NV, 1.0 - userRoughness)).rgb);
-      vec3 diffuseLight = srgbToLinear(textureCube(uDiffuseEnvTexture, n).rgb);
-      vec3 specularLight = srgbToLinear(textureCubeLodEXT(uSpecularEnvTexture, F0, lod).rgb);
+        vec3 brdf = srgbToLinear(texture2D(uBrdfLUTTexture, vec2(NV, 1.0 - userRoughness)).rgb);
+        vec3 diffuseLight = srgbToLinear(textureCube(uDiffuseEnvTexture, n).rgb);
+        vec3 specularLight = srgbToLinear(textureCubeLodEXT(uSpecularEnvTexture, F0, lod).rgb);
 
-      vec3 diffuse = diffuseLight * albedo;
-      vec3 specular = specularLight * (F0 * brdf.x + brdf.y);
+        vec3 diffuse = diffuseLight * albedo;
+        vec3 specular = specularLight * (F0 * brdf.x + brdf.y);
 
-      float IBLDiffuseContribution = uIBLParameters.y;
-      float IBLSpecularContribution = uIBLParameters.z;
-      diffuse *= IBLDiffuseContribution;
-      specular *= IBLSpecularContribution;
+        float IBLDiffuseContribution = uIBLParameters.y;
+        float IBLSpecularContribution = uIBLParameters.z;
+        diffuse *= IBLDiffuseContribution;
+        specular *= IBLSpecularContribution;
 
-      return diffuse + specular;
-    }
-    `;
+        return diffuse + specular;
+      }
+      `;
+      }
 
       return shaderText;
     }
@@ -23253,4 +23256,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-236-g956d-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-238-gefe8a-mod branch: develop';
