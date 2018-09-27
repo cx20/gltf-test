@@ -44,7 +44,7 @@ app.root.addChild(camera);
 camera.setLocalPosition(0, 0, 1);
 
 // make the camera interactive
-app.assets.loadFromUrl('../../libs/playcanvas/v1.8.0-dev/orbit-camera.js', 'script', function (err, asset) {
+app.assets.loadFromUrl('../../libs/playcanvas/v1.9.0-dev/orbit-camera.js', 'script', function (err, asset) {
     camera.script.create('orbitCamera', {
         attributes: {
             inertiaFactor: 0,
@@ -107,13 +107,13 @@ function loadScript(src) {
 
 function init(){
     if (true) {//typeof WebAssembly !== 'object') {
-        loadScript('../../libs/playcanvas/v1.8.0-dev/draco_decoder.js').then(function () {
+        loadScript('../../libs/playcanvas/v1.9.0-dev/draco_decoder.js').then(function () {
             decoderModule = DracoDecoderModule();
             onLoad();
         });
     } else {
-        loadScript('../../libs/playcanvas/v1.8.0-dev/draco_wasm_wrapper.js').then(function () {
-            fetch('../../libs/playcanvas/v1.8.0-dev//draco_decoder.wasm').then(function (response) {
+        loadScript('../../libs/playcanvas/v1.9.0-dev/draco_wasm_wrapper.js').then(function () {
+            fetch('../../libs/playcanvas/v1.9.0-dev//draco_decoder.wasm').then(function (response) {
                 response.arrayBuffer().then(function (arrayBuffer) {
                     decoderModule = DracoDecoderModule({ wasmBinary: arrayBuffer });
                     onLoad();
