@@ -341,6 +341,10 @@
             material.name = data.name;
         }
 
+        if (data.hasOwnProperty('extensions') && data.extensions.hasOwnProperty('KHR_materials_unlit')) {
+            material.useLighting = false;
+        }
+
         var color, texture;
         if (data.hasOwnProperty('extensions') && data.extensions.hasOwnProperty('KHR_materials_pbrSpecularGlossiness')) {
             var specData = data.extensions.KHR_materials_pbrSpecularGlossiness;
