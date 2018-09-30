@@ -177,6 +177,10 @@
             }
         });
 
+        if (data.hasOwnProperty('extras') && resources.processAnimationExtras) {
+            resources.processAnimationExtras(clip, data.extras);
+        }
+
         return clip;
     }
 
@@ -397,8 +401,10 @@
             }
             if (specData.hasOwnProperty('specularGlossinessTexture')) {
                 var specularGlossinessTexture = specData.specularGlossinessTexture;
-                material.specularMap = resources.textures[specularGlossinessTexture.index];
-                material.specularMapChannel = 'a';
+                material.specularMap = resources.textures[specularGlossinessTexture.index] 
+                material.specularMapChannel = 'rgb';
+                material.glossMap = resources.textures[specularGlossinessTexture.index];
+                material.glossMapChannel = 'a';                
                 if (specularGlossinessTexture.hasOwnProperty('texCoord')) {
                     material.glossMapUv = specularGlossinessTexture.texCoord;
                     material.metalnessMapUv = specularGlossinessTexture.texCoord;
@@ -580,6 +586,10 @@
         } else {
             material.twoSidedLighting = false;
             material.cull = pc.CULLFACE_BACK;
+        }
+
+        if (data.hasOwnProperty('extras') && resources.processMaterialExtras) {
+            resources.processMaterialExtras(material, data.extras);
         }
 
         material.update();
@@ -1315,6 +1325,8 @@
         var buffers = (options && options.hasOwnProperty('buffers')) ? options.buffers : undefined;
         var basePath = (options && options.hasOwnProperty('basePath')) ? options.basePath : undefined;
         var processUri = (options && options.hasOwnProperty('processUri')) ? options.processUri : undefined;
+        var processAnimationExtras = (options && options.hasOwnProperty('processAnimationExtras')) ? options.processAnimationExtras : undefined;
+        var processMaterialExtras = (options && options.hasOwnProperty('processMaterialExtras')) ? options.processMaterialExtras : undefined;
 
         var resources = {
             basePath: basePath,
@@ -1324,7 +1336,9 @@
             gltf: gltf,
             imagesLoaded: 0,
             nodeCounter: 0,
-            processUri: processUri
+            processUri: processUri,
+            processAnimationExtras: processAnimationExtras,
+            processMaterialExtras: processMaterialExtras
         };
 
         if (gltf.hasOwnProperty('extensionsUsed')) {
