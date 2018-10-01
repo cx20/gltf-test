@@ -63,7 +63,8 @@ let camera = glBoostContext.createPerspectiveCamera({
 }, {
     fovy: 75.0,
     aspect: width/height,
-    zNear: 0.1,
+    //zNear: 0.1,
+    zNear: 0.0001,
     zFar: 3000.0
 });
 camera.cameraController = glBoostContext.createCameraController();
