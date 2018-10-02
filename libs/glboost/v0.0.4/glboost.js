@@ -4263,9 +4263,7 @@
         return this._scale.clone();
       } else if (this._is_trs_matrix_updated) {
         let m = this._matrix;
-        this._scale.x = Math.sqrt(m.m00*m.m00 + m.m01*m.m01 + m.m02*m.m02);
-        this._scale.y = Math.sqrt(m.m10*m.m10 + m.m11*m.m11 + m.m12*m.m12);
-        this._scale.z = Math.sqrt(m.m20*m.m20 + m.m21*m.m21 + m.m22*m.m22);
+        this._scale = m.getScale();
         this._is_scale_updated = true;
       }
       
@@ -10115,9 +10113,9 @@ return mat4(
         const gl = this._glBoostSystem._glContext.gl;
         const lodExt = gl.getExtension("EXT_shader_texture_lod");
         if (lodExt) {
-          shaderText += `vec3 specularLight = srgbToLinear(textureCubeLodEXT(uSpecularEnvTexture, F0, lod).rgb);`;
+          shaderText += `vec3 specularLight = srgbToLinear(textureCubeLodEXT(uSpecularEnvTexture, reflection, lod).rgb);`;
         } else {
-          shaderText += `vec3 specularLight = srgbToLinear(textureCube(uSpecularEnvTexture, F0).rgb);`;
+          shaderText += `vec3 specularLight = srgbToLinear(textureCube(uSpecularEnvTexture, reflection).rgb);`;
         }
         shaderText += `
         vec3 diffuse = diffuseLight * albedo;
@@ -10127,7 +10125,6 @@ return mat4(
         float IBLSpecularContribution = uIBLParameters.z;
         diffuse *= IBLDiffuseContribution;
         specular *= IBLSpecularContribution;
-
         return diffuse + specular;
       }
       `;
@@ -10337,7 +10334,7 @@ albedo.rgb *= (1.0 - metallic);
       this._occlusionRateForDirectionalLight = 0.2;
       this._IBLSpecularTextureMipmapCount = 9;
       this._IBLDiffuseContribution = 0.2;
-      this._IBLSpecularContribution = 0.2;
+      this._IBLSpecularContribution = 0.55;
 
       this._shaderClass = PBRPrincipledShader;
     }
@@ -14594,7 +14591,9 @@ albedo.rgb *= (1.0 - metallic);
       let children = this.getChildren();
       if (children) {
         for (let i = 0; i < children.length; i++) {
-          children[i]._setDirtyToAnimatedElement(inputName);
+          if (children[i]._setDirtyToAnimatedElement != null) {
+            children[i]._setDirtyToAnimatedElement(inputName);
+          }
         }  
       }
     }
@@ -14839,6 +14838,8 @@ albedo.rgb *= (1.0 - metallic);
           }
         }
         return latestInputValue;
+      } else if (!(element.getEndInputValueOfAnimation != null)) {
+        return 0;
       }
 
       return element.getEndInputValueOfAnimation(inputLineName);
@@ -14953,6 +14954,9 @@ albedo.rgb *= (1.0 - metallic);
           // Must be M_Element
           elem.readyForDiscard();
         } else {
+          if (typeof EffekseerElement !== undefined && elem instanceof EffekseerElement) {
+            console.log('Nothing to do for discarding at this time.');
+          }
           console.error('not M_Group nor M_Element');
         }
       };
@@ -15161,6 +15165,106 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost$1['Expression'] = Expression;
 
+  class EffekseerElement$1 extends M_Element {
+    constructor(glBoostContext) {
+      super(glBoostContext);
+      this.__effect = null;
+      this.__handle = null;
+      this.__speed = 1;
+      this.__timer = null;
+    }
+
+    load(uri, playJustAfterLoaded = false, isLoop = false) {
+      return new Promise((resolve, reject)=>{
+        this.__effect = effekseer.loadEffect(uri, ()=>{
+          if (playJustAfterLoaded) {
+            if (isLoop) {
+              this.__timer = setInterval(()=>{ this.play(); }, 500);
+            } else {
+              this.play();
+            }
+          }
+          resolve(this);
+        });
+      })
+    }
+
+    cancelLoop() {
+      clearInterval(this.__timer);
+    }
+
+    play(isLoop = false) {
+      const __play = ()=>{
+        // Play the loaded effect
+        this.__handle = effekseer.play(this.__effect);
+      };
+
+      if (isLoop) {
+        this.__timer = setInterval(__play, 200);
+      } else {
+        __play();
+      }
+      
+    }
+
+    update() {
+      if (this.__handle != null) {
+        const m = this.worldMatrix;
+        this.__handle.setLocation(m.m03, m.m13, m.m23);
+        const eular = m.toEulerAngles();
+        this.__handle.setRotation(eular.x, eular.y, eular.z);
+        const scale = m.getScale();
+        this.__handle.setScale(scale.x, scale.y, scale.z);
+        this.__handle.setSpeed(this.__speed);
+      }
+    }
+
+    set playSpeed(val) {
+      if (this.__handle) {
+        this.__handle.setSpeed(val);
+      }
+      this.__speed = val;
+    }
+
+    get playSpeed() {
+      return this.__speed;
+    }
+
+    set translate(vec) {
+      if (this.__handle) {
+        this.__handle.setLocation(vec.x, vec.y, vec.z);      
+      }
+      super.translate = vec;
+    }
+
+    get translate() {
+      return super.translate;
+    }
+
+    set rotate(vec) {
+      if (this.__handle) {
+        this.__handle.setRotation(vec.x, vec.y, vec.z);      
+      }
+      super.rotate = vec;
+    }
+
+    get rotate() {
+      return super.rotate;
+    }
+
+    set scale(vec) {
+      if (this.__handle) {
+        this.__handle.setScale(vec.x, vec.y, vec.z);      
+      }
+      super.scale = vec;
+    }
+
+    get scale() {
+      return super.scale;
+    }
+
+  }
+
   class RenderPass extends GLBoostObject {
 
     constructor(glBoostContext) {
@@ -15172,6 +15276,7 @@ albedo.rgb *= (1.0 - metallic);
       this._postGizmos = [];
       this._opacityMeshes = [];
       this._transparentMeshes = [];
+      this._effekseerElements = [];
       this._transparentMeshesAsManualOrder = null;
       this._drawBuffers = [this._glContext.gl.NONE];
       this._clearColor = null; // webgl default is [0, 0, 0, 0]
@@ -15602,9 +15707,10 @@ albedo.rgb *= (1.0 - metallic);
       this._meshes = [];
       this._preGizmos = [];
       this._postGizmos = [];
+      this._effekseerElements = [];
       if (this._scene) {
         // collect meshes
-        this._meshes = this._meshes.concat(collectElements(this._scene, M_Mesh));
+        this._meshes = collectElements(this._scene, M_Mesh);
       }
 
       // collect gizmos
@@ -15652,7 +15758,10 @@ albedo.rgb *= (1.0 - metallic);
           this._skeletalMeshes.push(mesh);
         }
       });
-        
+
+      if (this._scene) {
+        this._effekseerElements = collectElements(this._scene, EffekseerElement$1);
+      } 
 
       if (this._scene) {
         this._scene.prepareToRender(expression);
@@ -15780,9 +15889,11 @@ albedo.rgb *= (1.0 - metallic);
     update(expression) {
       
       let skeletalMeshes = [];
+      let effekseerElements = [];
       // gather scenes as unique
       for (let renderPass of expression.renderPasses) {
         skeletalMeshes = skeletalMeshes.concat(renderPass._skeletalMeshes);
+        effekseerElements = effekseerElements.concat(renderPass._effekseerElements);
         renderPass.scene.updateAmountOfAmbientLightsIntensity();
       }
 
@@ -15798,6 +15909,10 @@ albedo.rgb *= (1.0 - metallic);
       
       for (let mesh of skeletalMeshes) {
         mesh.geometry.update(mesh);
+      }
+
+      for (let effekseerElement of effekseerElements) {
+        effekseerElement.update();
       }
 
       if (typeof effekseer !== "undefined") {
@@ -15927,8 +16042,10 @@ albedo.rgb *= (1.0 - metallic);
   //      glem.drawBuffers(gl, [gl.BACK]);
 
         if (typeof effekseer !== "undefined") {
-          effekseer.setProjectionMatrix(camera.projectionRHMatrix().m);
-          effekseer.setCameraMatrix(camera.inverseWorldMatrix.m);
+          const projection = (camera === null) ? Matrix44$1.identity().m : camera.projectionRHMatrix().m;
+          const inverseWorld = (camera === null) ? Matrix44$1.identity().m : camera.inverseWorldMatrix.m; 
+          effekseer.setProjectionMatrix(projection);
+          effekseer.setCameraMatrix(inverseWorld);
           effekseer.draw();
         }
 
@@ -18331,83 +18448,6 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost['M_HeightLineGizmo'] = M_HeightLineGizmo;
 
-  class EffekseerElement extends M_Element {
-    constructor(glBoostContext) {
-      super(glBoostContext);
-      this.__effect = null;
-      this.__handle = null;
-      this.__speed = 1;
-    }
-
-    load(uri, playJustAfterLoaded = false) {
-      return new Promise((resolve, reject)=>{
-        this.__effect = effekseer.loadEffect(uri, ()=>{
-          if (playJustAfterLoaded) {
-            this.play();
-          }
-          resolve(this.__effect);
-        });
-      })
-    }
-
-    play() {
-      // Play the loaded effect
-      this.__handle = effekseer.play(this.__effect);
-  //            handle.setScale(1, 1, 1);
-      this.__handle.setLocation(this.translate.x, this.translate.y, this.translate.z);
-      this.__handle.setRotation(this.rotate.x, this.rotate.y, this.rotate.z);
-      this.__handle.setScale(this.scale.x, this.scale.y, this.scale.z);
-      this.__handle.setSpeed(this.__speed);
-      //handle.setMatrix((new GLBoost.Matrix44()).scale(0.01, 0.01, 0.01));
-  //    this.__handle.setSpeed(0.2);
-    }
-
-    set playSpeed(val) {
-      if (this.__handle) {
-        this.__handle.setSpeed(val);
-      }
-      this.__speed = val;
-    }
-
-    get playSpeed() {
-      return this.__speed;
-    }
-
-    set translate(vec) {
-      if (this.__handle) {
-        this.__handle.setLocation(vec.x, vec.y, vec.z);      
-      }
-      super.translate = vec;
-    }
-
-    get translate() {
-      return super.translate;
-    }
-
-    set rotate(vec) {
-      if (this.__handle) {
-        this.__handle.setRotation(vec.x, vec.y, vec.z);      
-      }
-      super.rotate = vec;
-    }
-
-    get rotate() {
-      return super.rotate;
-    }
-
-    set scale(vec) {
-      if (this.__handle) {
-        this.__handle.setScale(vec.x, vec.y, vec.z);      
-      }
-      super.scale = vec;
-    }
-
-    get scale() {
-      return super.scale;
-    }
-
-  }
-
   class M_ScreenMesh extends M_Mesh {
     constructor(glBoostContext, customVertexAttributes) {
       super(glBoostContext, null, null);
@@ -18556,7 +18596,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     createEffekseerElement() {
-      return new EffekseerElement(this.__system);
+      return new EffekseerElement$1(this.__system);
     }
 
     createScreenMesh(customVertexAttributes) {
@@ -23393,15 +23433,24 @@ albedo.rgb *= (1.0 - metallic);
         const fileExtension = splitted[splitted.length - 1];
 
         if (fileExtension === 'gltf' || fileExtension === 'glb') {
-          return new Promise((resolve, response)=>{
+          return new Promise((resolve, reject)=>{
             checkArrayBufferOfGltf(files[fileName], resolve);
-          }, (reject, error)=>{
-    
           });
         }
-      }      
+      } 
     }
 
+    const splitted = uri.split('.');
+    const fileExtension = splitted[splitted.length - 1];
+
+    // Effekseer
+    if (fileExtension === 'efk') {
+      return new Promise((resolve, reject)=>{
+        resolve('Effekseer');
+      });
+    }
+
+    // glTF
     return DataUtil.loadResourceAsync(uri, true,
       (resolve, response)=>
       {
@@ -23449,4 +23498,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-250-g918f-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-254-gf871-mod branch: develop';
