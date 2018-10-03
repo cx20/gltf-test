@@ -351,7 +351,7 @@ class Mesh {
         }
 
         // brdfLUT
-        var brdfLUT = 'textures/brdfLUT.png';
+        var brdfLUT = '../../textures/brdfLUT.png';
         samplerIndex = this.scene.getNextSamplerIndex();
         imageInfos['brdfLUT'] = { 'uri': brdfLUT, 'samplerIndex': samplerIndex, 'colorSpace': this.hasSRGBExt ? this.hasSRGBExt.SRGB_EXT : gl.RGBA, 'clamp': true };
         this.localState.uniforms['u_brdfLUT'] = { 'funcName': 'uniform1i', 'vals': [samplerIndex] };

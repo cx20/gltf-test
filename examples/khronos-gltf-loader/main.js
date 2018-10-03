@@ -59,7 +59,7 @@ function loadCubeMap(gl, envMap, type, state) {
         gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     }
 
-    var path = "textures/" + envMap + "/" + type + "/" + type;
+    var path = "../../textures/" + envMap + "/" + type + "/" + type;
 
     function onLoadEnvironmentImage(texture, face, image, j) {
         return function() {
