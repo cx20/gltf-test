@@ -107,6 +107,17 @@ scene.addChild(meshAxis);
             group = gltfObj;
         }
 
+        const diffuseEnvTexture = glBoostContext.createCubeTexture('DiffuseEnvTexture');
+        const specularEnvTexture = glBoostContext.createCubeTexture('SpecularEnvTexture');
+        const envTexture = glBoostContext.createCubeTexture('EnvTexture');
+
+        let diffuseEnvTexturePromise = new Promise((r) => { r(glBoostContext.defaultDummyTextureCube) });
+        let specularEnvTexturePromise = new Promise((r) => { r(glBoostContext.defaultDummyTextureCube) });
+        let envTexturePromise = new Promise((r) => { r(glBoostContext.defaultDummyTextureCube) });
+        diffuseEnvTexturePromise = diffuseEnvTexture.generateTextureFromBaseUri('../../textures/papermill/diffuse/diffuse', 1);
+        specularEnvTexturePromise = specularEnvTexture.generateTextureFromBaseUri('../../textures/papermill/specular/specular', 10);
+        envTexturePromise = envTexture.generateTextureFromBaseUri('../../textures/papermill/environment/environment', 1);
+
         // TODO: Experiment to force enabling Occlusion map
         for (let meshKey in group.allMeshes) {
             let mesh = group.allMeshes[meshKey];
@@ -114,6 +125,11 @@ scene.addChild(meshAxis);
             for (let materialKey in materials) {
                 let material = materials[materialKey];
                 material.occlusionRateForDirectionalLight = 0.5;
+
+                material.setTexture(diffuseEnvTexture, GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE);
+                material.setTexture(specularEnvTexture, GLBoost.TEXTURE_PURPOSE_IBL_SPECULAR_ENV_CUBE);
+                //material.IBLDiffuseContribution = 0.2;
+                //material.IBLSpecularContribution = 0.55;
             }
         }
         
