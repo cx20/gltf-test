@@ -880,7 +880,7 @@ AnimationClip.prototype.updateToTarget = function (snapshot) {
 AnimationClip.prototype.getAnimTargets = function () {
     var animTargets = {};
     for (var i = 0, len = this.animCurves.length; i < len; i++) {
-        var curve = clip.animCurves[i];
+        var curve = this.animCurves[i];
         var curveTarget = curve.getAnimTargets();
         animTargets[curve.name] = curveTarget[curve.name];
     }
