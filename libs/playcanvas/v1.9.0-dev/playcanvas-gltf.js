@@ -126,7 +126,7 @@
                     curve = new AnimationCurve();
                     keyType = AnimationKeyableType.NUM;
                     curve.keyableType = keyType;
-                    curve.addTarget(entity, path, i);
+                    curve.addTarget("model", path, i);
                     if (sampler.interpolation === "CUBIC")
                         curve.type = AnimationCurveType.CUBIC;
                     else if (sampler.interpolation === "STEP")
@@ -1263,11 +1263,13 @@
     }
 
     function createModel(resources) {
+        var gltf = resources.gltf;
+
         var meshInstances = [];
         var skinInstances = [];
         var morphInstances = [];
 
-        resources.gltf.nodes.forEach(function (node, idx) {
+        gltf.nodes.forEach(function (node, idx) {
             if (node.hasOwnProperty('mesh')) {
                 var meshGroup = resources.meshes[node.mesh];
                 for (var i = 0; i < meshGroup.length; i++) {
@@ -1283,6 +1285,12 @@
 
                     if (meshGroup[i].morph) {
                         var morphInstance = new pc.MorphInstance(meshGroup[i].morph);
+                        var weights = gltf.meshes[i].weights;
+                        if (weights) {
+                            weights.forEach(function (weight, idx) {
+                                morphInstance.setWeight(idx, weight);
+                            });
+                        }
                         meshInstance.morphInstance = morphInstance;
                         // HACK: need to force calculation of the morph's AABB due to a bug
                         // in the engine. This is a private function and will be removed!
@@ -1369,7 +1377,7 @@
         });
     }
 
-    function loadGlb(glb, device, success) {
+    function loadGlb(glb, device, success, options) {
         var dataView = new DataView(glb);
 
         // Read header
@@ -1414,9 +1422,9 @@
             byteOffset += chunkLength + 8;
         }
 
-        loadGltf(json, device, success, {
-            buffers: buffers
-        });
+        options = options || {};
+        options.buffers = buffers;
+        loadGltf(json, device, success, options);
     }
 
     window.loadGltf = loadGltf;
