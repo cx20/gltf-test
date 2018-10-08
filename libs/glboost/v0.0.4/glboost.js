@@ -3985,7 +3985,7 @@
   class L_Element extends GLBoostObject {
                            
                                          
-                                            
+                                     
                         
                      
                     
@@ -3999,6 +3999,8 @@
                                     
                                       
                                             
+                           
+                            
 
 
     constructor(glBoostSystem               , toRegister          = true) {
@@ -4122,10 +4124,10 @@
     /**
      * [en] Set animation input value (for instance frame value), This value affect all child elements in this scene graph (recursively).<br>
      * [ja] アニメーションのための入力値（例えばフレーム値）をセットします。この値はシーングラフに属する全ての子孫に影響します。
-     * @param {string} inputName [en] inputName name of input value. [ja] 入力値の名前
-     * @param {number|Vector2|Vector3|Vector4|*} inputValue [en] input value of animation. [ja] アニメーションの入力値
+     * @param inputName [en] inputName name of input value. [ja] 入力値の名前
+     * @param inputValue [en] input value of animation. [ja] アニメーションの入力値
      */
-    setCurrentAnimationValue(inputName        , inputValue     ) {
+    setCurrentAnimationValue(inputName        , inputValue                                           ) {
       this._setDirtyToAnimatedElement(inputName);
       this._currentAnimationInputValues[inputName] = inputValue;
     }
@@ -4163,7 +4165,7 @@
       return this.getTranslateAtOrStatic(this._activeAnimationLineName, this._getCurrentAnimationInputValue(this._activeAnimationLineName));
     }
 
-    getTranslateAt(lineName        , inputValue        )          {
+    getTranslateAt(lineName        , inputValue        )                {
       let value = this._getAnimatedTransformValue(inputValue, this._animationLine[lineName], 'translate');
       if (value !== null) {
         this._translate = value;
@@ -4399,7 +4401,7 @@
       return value;
     }
 
-    getQuaternionAtOrStatic(lineName        , inputValue        ) {
+    getQuaternionAtOrStatic(lineName        , inputValue               ) {
       let value = this.getQuaternionAt(lineName, inputValue);
       if (value === null) {
         return this.getQuaternionNotAnimated();
@@ -4540,7 +4542,7 @@
       instance._updateCountAsElement = this._updateCountAsElement;
     }
 
-    setPropertiesFromJson(arg) {
+    setPropertiesFromJson(arg        ) {
       let json = arg;
       if (typeof arg === "string") {
         json = JSON.parse(arg);
@@ -4556,7 +4558,7 @@
       }
     }
 
-    setRotationFromNewUpAndFront(UpVec, FrontVec) {
+    setRotationFromNewUpAndFront(UpVec         , FrontVec         ) {
       let yDir = UpVec;
       let xDir = Vector3.cross(yDir, FrontVec);
       let zDir = Vector3.cross(xDir, yDir);
@@ -4578,7 +4580,7 @@
       this.rotateMatrix33 = rotateMatrix;
     }
 
-    headToDirection(fromVec, toVec) {
+    headToDirection(fromVec         , toVec         ) {
       const fromDir = Vector3.normalize(fromVec);
       const toDir = Vector3.normalize(toVec);
       const rotationDir = Vector3.cross(fromDir, toDir);
@@ -4590,7 +4592,7 @@
       this.quaternion = Quaternion.axisAngle(rotationDir, theta);
     }
 
-    set rotateMatrix33(rotateMatrix) {
+    set rotateMatrix33(rotateMatrix          ) {
       this.quaternion = Quaternion.fromMatrix(rotateMatrix);
     }
 
@@ -4613,6 +4615,8 @@
                                                    
                                                                 
                                                         
+                                                          
+                                                            
                      
                                   
                             
@@ -4621,10 +4625,26 @@
                                                          
                                      
                                            
+                                            
+                                                
                                                   
                             
                                      
+                                         
+                                  
+                                     
+                          
                            
+                                                  
+                                                                                     
+                                                                                
+                                                                       
+                                                                          
+                                                                 
+                                                                      
+                                                                             
+                           
+                                        
 
     constructor(glBoostContext                      ) {
       super(glBoostContext);
@@ -4758,7 +4778,7 @@
       return this._multiplyMyAndParentTransformMatricesInInverseOrder(false, null).clone().invert();
     }
 
-    _multiplyMyAndParentRotateMatrices(currentElem           , withMySelf         ) {
+    _multiplyMyAndParentRotateMatrices(currentElem                  , withMySelf         ) {
       if (currentElem._parent === null) {
         if (withMySelf) {
           return currentElem.transformMatrixOnlyRotate;
@@ -6385,20 +6405,20 @@
   class SkeletalShaderSource {
 
     VSDefine_SkeletalShaderSource(in_, out_, f, lights, material, extraData) {
-      var shaderText = '';
+      let shaderText = '';
       shaderText += `${in_} vec4 aVertex_joint;\n`;
       shaderText += `${in_} vec4 aVertex_weight;\n`;
 
       if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
-        shaderText += 'uniform mat4 skinTransformMatrices[' + extraData.jointN  + '];\n';
+        shaderText += `uniform mat4 skinTransformMatrices[${  extraData.jointN   }];\n`;
       } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1){
-        shaderText += 'uniform vec4 quatArray[' + extraData.jointN  + '];\n';
-        shaderText += 'uniform vec4 transArray[' + extraData.jointN  + '];\n';
+        shaderText += `uniform vec4 quatArray[${  extraData.jointN   }];\n`;
+        shaderText += `uniform vec4 transArray[${  extraData.jointN   }];\n`;
         //    shaderText += 'uniform vec2 quatArray[' + extraData.jointN  + '];\n';
 
       } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
         // `OneVec4` Version [Begin]
-        shaderText += 'uniform vec4 quatTranslationArray[' + extraData.jointN  + '];\n';
+        shaderText += `uniform vec4 quatTranslationArray[${  extraData.jointN   }];\n`;
         shaderText += 'uniform vec3 translationScale;\n';
         // `OneVec4` Version [End]
       }
@@ -6713,36 +6733,36 @@ return mat4(
     }
 
     prepare_SkeletalShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
-      let vertexAttribsAsResult = [];
+      const vertexAttribsAsResult = [];
 
       vertexAttribs.forEach((attribName)=>{
         if (attribName === 'joint' || attribName === 'weight') {
           vertexAttribsAsResult.push(attribName);
-          shaderProgram['vertexAttribute_' + attribName] = gl.getAttribLocation(shaderProgram, 'aVertex_' + attribName);
-          gl.enableVertexAttribArray(shaderProgram['vertexAttribute_' + attribName]);
+          shaderProgram[`vertexAttribute_${  attribName}`] = gl.getAttribLocation(shaderProgram, `aVertex_${  attribName}`);
+          gl.enableVertexAttribArray(shaderProgram[`vertexAttribute_${  attribName}`]);
         }
       });
 
       if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
-        let skinTransformMatricesUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'skinTransformMatrices');
+        const skinTransformMatricesUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'skinTransformMatrices');
         material.setUniform(shaderProgram, 'uniform_skinTransformMatrices', skinTransformMatricesUniformLocation);
-        material._semanticsDic['JOINTMATRIX'] = 'skinTransformMatrices';
+        material._semanticsDic.JOINTMATRIX = 'skinTransformMatrices';
       } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
         
-        let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatArray');
+        const quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatArray');
         material.setUniform(shaderProgram, 'uniform_quatArray', quatArrayUniformLocation);
-        material._semanticsDic['JOINT_QUATERNION'] = 'quatArray';
-        let transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'transArray');
+        material._semanticsDic.JOINT_QUATERNION = 'quatArray';
+        const transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'transArray');
         material.setUniform(shaderProgram, 'uniform_transArray', transArrayUniformLocation);
-        material._semanticsDic['JOINT_TRANSLATION'] = 'transArray';
+        material._semanticsDic.JOINT_TRANSLATION = 'transArray';
         
       } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
         
         // `OneVec4` Version [Begin]
-        let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatTranslationArray');
+        const quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatTranslationArray');
         material.setUniform(shaderProgram, 'uniform_quatTranslationArray', quatArrayUniformLocation);
-        material._semanticsDic['JOINT_QUATTRANSLATION'] = 'quatTranslationArray';
-        let transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'translationScale');
+        material._semanticsDic.JOINT_QUATTRANSLATION = 'quatTranslationArray';
+        const transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'translationScale');
         material.setUniform(shaderProgram, 'uniform_translationScale', transArrayUniformLocation);
         // `OneVec4` Version [End]
         
@@ -7921,7 +7941,6 @@ return mat4(
 
     /**
      *
-     * @param geometry
      */
     mergeInner(geometry, typedArrayDic, isFirst = false) {
       let gl = this._glContext.gl;
@@ -8016,7 +8035,6 @@ return mat4(
     /**
      * take no thought geometry's materials
      *
-     * @param geometry
      */
     mergeHarderInner(geometry, typedArrayDic, isFirst = false) {
       let gl = this._glContext.gl;
@@ -8727,7 +8745,8 @@ return mat4(
      *
      * @param {number} x horizontal pixel position (0 is left)
      * @param {number} y virtical pixel position (0 is bottom)
-     * @returns {Vector4} [en] check whether or not the size x is power of two. [ja] xが２の累乗かどうか
+     * @param {Uint8Array} argByteArray Pixel Data as Uint8Array
+     * @returns {Vector4} Pixel Value in Vector4
      */
     getPixelValueAt(x, y, argByteArray) {
       let byteArray = argByteArray;
@@ -13271,11 +13290,6 @@ albedo.rgb *= (1.0 - metallic);
     /**
      * This is Particle class's constructor
      *
-     * @param {Object} centerPointData [en] a JSON object consisted of position (by the particle) array and the other data (by the particle) array.
-     * @param {Number} particleWidth Width of each particle
-     * @param {Number} particleHeight Height of each particle
-     * @param {Object} [en] a JSON which has other vertex attribute arrays you want (by the vertex of quad particle).
-     * @param {CanvasElement or String} Canvas Element which is generation source of WebGL context in current use or String which indicates the Canvas Element in jQuery like query string
      */
     constructor(glBoostContext, centerPointData, particleWidth, particleHeight, customVertexAttributes, performanceHint) {
       super(glBoostContext);
@@ -13759,13 +13773,11 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * en: create textures as render target. (and attach it to framebuffer object internally.)<br>
-     * ja:レンダーターゲットとしてテクスチャを作成します（内部的にframebuffer objectにアタッチされます）。
-     * @param {number} width en: width of texture. ja: テクスチャの幅
-     * @param {number} height en: height of texture. ja: テクスチャの高さ
-     * @param {number} textureNum en: the number of creation. ja:テクスチャを作る個数
-     * @param {HTMLCanvas|string} canvas [en] canvas or canvas' id string. [ja] canvasまたはcanvasのid文字列
-     * @returns {Array} en: an array of created textures. ja:作成されたテクスチャの配列
+     * create textures as render target. (and attach it to framebuffer object internally.)<br>
+     * @param {number} width - width of texture
+     * @param {number} height - height of texture
+     * @param {number} textureNum - the number of creation.
+     * @returns {Array} an array of created textures.
      */
     createTexturesForRenderTarget(width, height, textureNum) {
       var glContext = this.__system._glContext;
@@ -13963,6 +13975,8 @@ albedo.rgb *= (1.0 - metallic);
   }
 
   GLBoost$1['GLBoostLowContext'] = GLBoostLowContext;
+
+  //      
 
   class M_Mesh extends M_Element {
     constructor(glBoostContext, geometry, material) {
@@ -14219,7 +14233,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
 
-    rayCast(arg1, arg2, camera, viewport) {
+    rayCast(arg1         , arg2         , camera, viewport) {
       let origVecInLocal = null;
       let dirVecInLocal = null;
       if (arg1 instanceof Vector3 && arg2 instanceof Vector3) {
@@ -14508,6 +14522,9 @@ albedo.rgb *= (1.0 - metallic);
 
   class M_Group extends M_Element {
                                
+                        
+                  
+                               
 
     constructor(glBoostContext) {
       super(glBoostContext);
@@ -14521,9 +14538,9 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * [en] Add the element to this group as a child.<br>
-     * [ja] このグループにelementを子供として追加します。
-     * @param {Element} element  [en] a instance of Element class [ja] Elementクラスのインスタンス
+     * Add the element to this group as a child.
+     * @param {Element} element - a instance of Element class
+     * @param {boolean} isDuplicateOk - allow duplicating if need
      */
     addChild(element, isDuplicateOk = false) {
 
@@ -14817,7 +14834,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
 
-    getEndAnimationInputValue(inputLineName, element = this) {
+    getEndAnimationInputValue(inputLineName, element          = this) {
 
       if (element instanceof M_Group) {
         let latestInputValue = element.getEndInputValueOfAnimation(inputLineName);
@@ -14965,7 +14982,7 @@ albedo.rgb *= (1.0 - metallic);
       this.removeAll();
     }
 
-    rayCast(arg1, arg2, camera, viewport) {
+    rayCast(arg1         , arg2         , camera, viewport) {
       const meshes = this.searchElementsByType(M_Mesh);
       let currentShortestT = Number.MAX_VALUE;
       let currentShortestIntersectedPosVec3 = null;
@@ -16345,6 +16362,7 @@ albedo.rgb *= (1.0 - metallic);
                                    
                                       
                                          
+                          
     
     /**
      * [en] constructor
@@ -17845,7 +17863,11 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * The constructor of DirectionalLight class. 
+     * 
+     * @param {glBoostSystem} glBoostSystem - glBoostSystem Instance
      * @param {Vector4} intensity intensity as Vector4 Color
+     * @param {Vector3} rotate - initial rotation vector
+     * @param {number} length - length for DirectionalLightGizmo
      */
     constructor(glBoostSystem, intensity, rotate = new Vector3(0, 0, 0), length = 1.0) {
       super(glBoostSystem);
@@ -18771,13 +18793,12 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * [en] the method to load Obj file.<br>
-     * [ja] Obj fileをロードするためのメソッド。
-     * @param {string} url [en] url of glTF file [ja] Objファイルのurl
-     * @param {Shader} defaultShader [en] a shader to assign to loaded geometries [ja] 読み込んだジオメトリに適用するシェーダー
-     * @param {string} mtlString [en] string of mtl file (optional) [ja] mtlファイルの内容の文字列情報（オプショナル。mtlファイルの読み込みが何らかの事情でできない場合に使います）
-     * @param {HTMLCanvas|string} canvas [en] canvas or canvas' id string. [ja] canvasまたはcanvasのid文字列
-     * @return {Promise} [en] a promise object [ja] Promiseオブジェクト
+     * the method to load Obj file.
+     * @param {glBoostContext} glBoostContext - glBoostContext instance
+     * @param {string} url - url of glTF file
+     * @param {Shader} defaultShader - a shader to assign to loaded geometries
+     * @param {string} mtlString - string of mtl file (optional)
+     * @return {Promise} a promise object
      */
     loadObj(glBoostContext, url, defaultShader = null, mtlString = null) {
       return DataUtil.loadResourceAsync(url, false, (resolve, responseText)=>{
@@ -19577,10 +19598,11 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * [en] the method to load glTF file.<br>
-     * [ja] glTF fileをロードするためのメソッド。
-     * @param {string} url [en] url of glTF file [ja] glTFファイルのurl
-     * @return {Promise} [en] a promise object [ja] Promiseオブジェクト
+     * the method to load glTF file.
+     * @param {glBoostContext} glBoostContext - glBoostContext instance
+     * @param {string} url - url of glTF file
+     * @param {Object} options - option data for loading
+     * @return {Promise} a promise object
      */
     loadGLTF(glBoostContext, url, options) {
       let defaultOptions = {
@@ -21111,7 +21133,8 @@ albedo.rgb *= (1.0 - metallic);
     /**
      * the method to load glTF2 file.
      * @param {string} uri uri of glTF file
-     * @return {Promise} a promise object
+     * @param {Object} options - opition data for loading
+     * @return {Promise}
      */
     loadGLTF(uri, options) {
       let defaultOptions = {
@@ -23498,4 +23521,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-254-gf871-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-270-g0389-mod branch: develop';
