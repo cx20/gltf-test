@@ -56,6 +56,14 @@ let scene = glBoostContext.createScene();
 let pointLight = glBoostContext.createPointLight(new GLBoost.Vector3(1.0, 1.0, 1.0));
 pointLight.translate = new GLBoost.Vector3(10, 10, 10);
 scene.addChild(pointLight);
+
+/*
+// make a directonal light
+let directionalLight = glBoostContext.createDirectionalLight(new GLBoost.Vector3(1, 1, 1), new GLBoost.Vector3(-1, -1, -1));
+// add the light to the scene
+scene.addChild( directionalLight );
+*/
+
 let camera = glBoostContext.createPerspectiveCamera({
     eye: new GLBoost.Vector3(0.0, 2.0, 3.0),
     center: new GLBoost.Vector3(0.0, 0.0, 0.0),
@@ -117,6 +125,17 @@ scene.addChild(meshAxis);
         diffuseEnvTexturePromise = diffuseEnvTexture.generateTextureFromBaseUri('../../textures/papermill/diffuse/diffuse', 1);
         specularEnvTexturePromise = specularEnvTexture.generateTextureFromBaseUri('../../textures/papermill/specular/specular', 10);
         envTexturePromise = envTexture.generateTextureFromBaseUri('../../textures/papermill/environment/environment', 1);
+
+        const aabb = group.updateAABB();
+        const sphereScale = aabb.lengthCenterToCorner === 0 ? 1 : aabb.lengthCenterToCorner;
+        const sphereGeom = glBoostContext.createSphere(sphereScale, 10, 10);
+        const domeMaterial = glBoostContext.createClassicMaterial();
+        domeMaterial.setTexture(envTexture, GLBoost.TEXTURE_PURPOSE_ENV_CUBE);
+        domeMaterial.shaderClass = GLBoost.EnvironmentMapShader;
+        const sphereDome = glBoostContext.createMesh(sphereGeom, domeMaterial);
+        //sphereDome.scale = new GLBoost.Vector3(1, 1, 1);
+        sphereDome.scale = new GLBoost.Vector3(scale * 10, scale * 10, scale * 10); // TOOD:The setting value needs to be adjusted
+        scene.addChild(sphereDome);
 
         // TODO: Experiment to force enabling Occlusion map
         for (let meshKey in group.allMeshes) {
