@@ -6405,20 +6405,20 @@
   class SkeletalShaderSource {
 
     VSDefine_SkeletalShaderSource(in_, out_, f, lights, material, extraData) {
-      let shaderText = '';
+      var shaderText = '';
       shaderText += `${in_} vec4 aVertex_joint;\n`;
       shaderText += `${in_} vec4 aVertex_weight;\n`;
 
       if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
-        shaderText += `uniform mat4 skinTransformMatrices[${  extraData.jointN   }];\n`;
+        shaderText += 'uniform mat4 skinTransformMatrices[' + extraData.jointN  + '];\n';
       } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1){
-        shaderText += `uniform vec4 quatArray[${  extraData.jointN   }];\n`;
-        shaderText += `uniform vec4 transArray[${  extraData.jointN   }];\n`;
+        shaderText += 'uniform vec4 quatArray[' + extraData.jointN  + '];\n';
+        shaderText += 'uniform vec4 transArray[' + extraData.jointN  + '];\n';
         //    shaderText += 'uniform vec2 quatArray[' + extraData.jointN  + '];\n';
 
       } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
         // `OneVec4` Version [Begin]
-        shaderText += `uniform vec4 quatTranslationArray[${  extraData.jointN   }];\n`;
+        shaderText += 'uniform vec4 quatTranslationArray[' + extraData.jointN  + '];\n';
         shaderText += 'uniform vec3 translationScale;\n';
         // `OneVec4` Version [End]
       }
@@ -6733,36 +6733,36 @@ return mat4(
     }
 
     prepare_SkeletalShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
-      const vertexAttribsAsResult = [];
+      let vertexAttribsAsResult = [];
 
       vertexAttribs.forEach((attribName)=>{
         if (attribName === 'joint' || attribName === 'weight') {
           vertexAttribsAsResult.push(attribName);
-          shaderProgram[`vertexAttribute_${  attribName}`] = gl.getAttribLocation(shaderProgram, `aVertex_${  attribName}`);
-          gl.enableVertexAttribArray(shaderProgram[`vertexAttribute_${  attribName}`]);
+          shaderProgram['vertexAttribute_' + attribName] = gl.getAttribLocation(shaderProgram, 'aVertex_' + attribName);
+          gl.enableVertexAttribArray(shaderProgram['vertexAttribute_' + attribName]);
         }
       });
 
       if (!GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL) {
-        const skinTransformMatricesUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'skinTransformMatrices');
+        let skinTransformMatricesUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'skinTransformMatrices');
         material.setUniform(shaderProgram, 'uniform_skinTransformMatrices', skinTransformMatricesUniformLocation);
-        material._semanticsDic.JOINTMATRIX = 'skinTransformMatrices';
+        material._semanticsDic['JOINTMATRIX'] = 'skinTransformMatrices';
       } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL === 1) {
         
-        const quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatArray');
+        let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatArray');
         material.setUniform(shaderProgram, 'uniform_quatArray', quatArrayUniformLocation);
-        material._semanticsDic.JOINT_QUATERNION = 'quatArray';
-        const transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'transArray');
+        material._semanticsDic['JOINT_QUATERNION'] = 'quatArray';
+        let transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'transArray');
         material.setUniform(shaderProgram, 'uniform_transArray', transArrayUniformLocation);
-        material._semanticsDic.JOINT_TRANSLATION = 'transArray';
+        material._semanticsDic['JOINT_TRANSLATION'] = 'transArray';
         
       } else if (GLBoost$1.VALUE_SKELETAL_SHADER_OPITIMIZATION_LEVEL > 1) {
         
         // `OneVec4` Version [Begin]
-        const quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatTranslationArray');
+        let quatArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'quatTranslationArray');
         material.setUniform(shaderProgram, 'uniform_quatTranslationArray', quatArrayUniformLocation);
-        material._semanticsDic.JOINT_QUATTRANSLATION = 'quatTranslationArray';
-        const transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'translationScale');
+        material._semanticsDic['JOINT_QUATTRANSLATION'] = 'quatTranslationArray';
+        let transArrayUniformLocation = this._glContext.getUniformLocation(shaderProgram, 'translationScale');
         material.setUniform(shaderProgram, 'uniform_translationScale', transArrayUniformLocation);
         // `OneVec4` Version [End]
         
@@ -9970,24 +9970,24 @@ return mat4(
 
     FSDefine_PBRPrincipledShaderSource(in_, f, lights, material, extraData) {
       
-      var shaderText = '';
+      let shaderText = '';
       shaderText += 'uniform vec2 uMetallicRoughnessFactors;\n';
       shaderText += 'uniform vec3 uBaseColorFactor;\n';
       shaderText += 'uniform vec2 uOcclusionFactors;';
       shaderText += 'uniform vec3 uEmissiveFactor;';
       shaderText += 'uniform sampler2D uMetallicRoughnessTexture;\n';
 
-      let occlusionTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_OCCLUSION);
+      const occlusionTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_OCCLUSION);
       if (occlusionTexture) {
         shaderText += 'uniform sampler2D uOcclusionTexture;\n';
       }
       
-      let emissiveTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_EMISSIVE);
+      const emissiveTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_EMISSIVE);
       if (emissiveTexture) {
         shaderText += 'uniform sampler2D uEmissiveTexture;\n';
       }
 
-      let diffuseEnvCubeTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE);
+      const diffuseEnvCubeTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE);
       if (diffuseEnvCubeTexture) {
         shaderText += 'uniform sampler2D uBrdfLUTTexture;\n';
         shaderText += 'uniform samplerCube uDiffuseEnvTexture;\n';
@@ -9998,8 +9998,8 @@ return mat4(
       shaderText += 'uniform vec4 ambient;\n'; // Ka * amount of ambient lights
       
 
-      var sampler2D = this._sampler2DShadow_func();
-      let lightNumExceptAmbient = lights.filter((light)=>{return !light.isTypeAmbient();}).length;    
+      const sampler2D = this._sampler2DShadow_func();
+      const lightNumExceptAmbient = lights.filter((light)=>!light.isTypeAmbient()).length;    
       if (lightNumExceptAmbient > 0) {
         shaderText += `uniform highp ${sampler2D} uDepthTexture[${lightNumExceptAmbient}];\n`;
         shaderText += `${in_} vec4 v_shadowCoord[${lightNumExceptAmbient}];\n`;
@@ -10118,7 +10118,7 @@ return mat4(
     }
   `;
 
-      let diffuseEnvCubeTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE);
+      const diffuseEnvCubeTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE);
       if (diffuseEnvCubeTexture) {
         shaderText += `
       vec3 IBLContribution(vec3 n, float NV, vec3 reflection, vec3 albedo, vec3 F0, float userRoughness)
@@ -10153,7 +10153,7 @@ return mat4(
     }
 
     FSShade_PBRPrincipledShaderSource(f, gl, lights, material, extraData) {
-      var shaderText = '';
+      let shaderText = '';
 
       shaderText += `
 vec3 surfaceColor = rt0.rgb;
@@ -10167,7 +10167,7 @@ float userRoughness = uMetallicRoughnessFactors.y;
 float metallic = uMetallicRoughnessFactors.x;
 `;
 
-      let metallicRoughnessTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_METALLIC_ROUGHNESS);
+      const metallicRoughnessTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_METALLIC_ROUGHNESS);
       if (metallicRoughnessTexture) {
       shaderText += `
 vec4 ormTexel = texture2D(uMetallicRoughnessTexture, texcoord);
@@ -10193,8 +10193,8 @@ albedo.rgb *= (1.0 - metallic);
       shaderText += '    float NV = clamp(dot(normal, viewDirection), 0.001, 1.0);\n';
 
       for (let i=0; i<lights.length; i++) {
-        let light = lights[i];
-        let isShadowEnabledAsTexture = (light.camera && light.camera.texture) ? true:false;
+        const light = lights[i];
+        const isShadowEnabledAsTexture = !!((light.camera && light.camera.texture));
         shaderText += `  {\n`;
         shaderText +=      Shader._generateLightStr(i);
         // Light
@@ -10227,9 +10227,9 @@ albedo.rgb *= (1.0 - metallic);
 
 
       // Indirect
-      /// IBL
+      // / IBL
       
-      let diffuseEnvCubeTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE);
+      const diffuseEnvCubeTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE);
       if (diffuseEnvCubeTexture) {
         shaderText += `vec3 reflection = reflect(-viewDirection, normal);\n`;
         shaderText += 'vec3 ibl = IBLContribution(normal, NV, reflection, albedo, F0, userRoughness);\n';
@@ -10237,15 +10237,15 @@ albedo.rgb *= (1.0 - metallic);
         shaderText += 'vec3 ibl = vec3(0.0, 0.0, 0.0);\n';
       }
       
-  //shaderText += 'ibl = vec3(0.0, 0.0, 0.0);\n';
+  // shaderText += 'ibl = vec3(0.0, 0.0, 0.0);\n';
       // calc occlusion
       shaderText += 'float occlusion = 1.0;\n';
-      let occlusionTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_OCCLUSION);
+      const occlusionTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_OCCLUSION);
       if (occlusionTexture) {
         shaderText += 'occlusion = mix(1.0, texture2D(uOcclusionTexture, texcoord).r, uOcclusionFactors.x);\n';
       }
 
-      /// Enforce Occlution to Directional Lights by occlusionRateForDirectionalLight (Fake effect)
+      // / Enforce Occlution to Directional Lights by occlusionRateForDirectionalLight (Fake effect)
       shaderText += '  float occlusionRateForDirectionalLight = uOcclusionFactors.y;\n';
       shaderText += '  rt0.xyz = mix(rt0.xyz, rt0.xyz * occlusion, occlusionRateForDirectionalLight);\n';
       
@@ -10254,7 +10254,7 @@ albedo.rgb *= (1.0 - metallic);
 
       // Emissive
       shaderText += '  vec3 emissive = uEmissiveFactor;\n';
-      let emissiveTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_EMISSIVE);
+      const emissiveTexture = material.getTextureFromPurpose(GLBoost.TEXTURE_PURPOSE_EMISSIVE);
       if (emissiveTexture) {
         shaderText += 'emissive *= srgbToLinear(texture2D(uEmissiveTexture, texcoord).xyz);';
       }
@@ -10271,7 +10271,7 @@ albedo.rgb *= (1.0 - metallic);
 
     prepare_PBRPrincipledShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
 
-      var vertexAttribsAsResult = [];
+      const vertexAttribsAsResult = [];
 
       material.setUniform(shaderProgram, 'uniform_BaseColorFactor', this._glContext.getUniformLocation(shaderProgram, 'uBaseColorFactor'));
       material.setUniform(shaderProgram, 'uniform_MetallicRoughnessFactors', this._glContext.getUniformLocation(shaderProgram, 'uMetallicRoughnessFactors'));
@@ -10284,7 +10284,7 @@ albedo.rgb *= (1.0 - metallic);
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_METALLIC_ROUGHNESS, shaderProgram, 'uMetallicRoughnessTexture'); 
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_OCCLUSION, shaderProgram, 'uOcclusionTexture');
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_EMISSIVE, shaderProgram, 'uEmissiveTexture');
-      material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_BRDF_LUT, shaderProgram, 'uBrdfLutTexture');
+      material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_BRDF_LUT, shaderProgram, 'uBrdfLUTTexture');
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_IBL_DIFFUSE_ENV_CUBE, shaderProgram, 'uDiffuseEnvTexture');
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_IBL_SPECULAR_ENV_CUBE, shaderProgram, 'uSpecularEnvTexture');
 
@@ -10303,9 +10303,9 @@ albedo.rgb *= (1.0 - metallic);
     setUniforms(gl, glslProgram, scene, material, camera, mesh, lights) {
       super.setUniforms(gl, glslProgram, scene, material, camera, mesh, lights);
 
-      var baseColor = material.baseColor;
-      var metallic = (material.metallic !== void 0) ? material.metallic : 1.0;
-      let roughness = (material.roughness !== void 0) ? material.roughness : 0.5;
+      const baseColor = material.baseColor;
+      const metallic = (material.metallic !== void 0) ? material.metallic : 1.0;
+      const roughness = (material.roughness !== void 0) ? material.roughness : 0.5;
       const occlusion = (material.occlusion !== void 0) ? material.occlusion : 1.0;
       const occlusionRateForDirectionalLight = (material.occlusionRateForDirectionalLight !== void 0) ? material.occlusionRateForDirectionalLight : 0.2;
       const emissive = (material.emissive !== void 0) ? material.emissive : Vector3.zero();
@@ -10318,14 +10318,14 @@ albedo.rgb *= (1.0 - metallic);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_EmissiveFactor'), emissive.x, emissive.y, emissive.z, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_IBLParameters'), IBLSpecularTextureMipmapCount, IBLDiffuseContribution, IBLSpecularContribution, true);
 
-      let ambient = Vector4$1.multiplyVector(new Vector4$1(1.0, 1.0, 1.0, 1.0), scene.getAmountOfAmbientLightsIntensity());
+      const ambient = Vector4$1.multiplyVector(new Vector4$1(1.0, 1.0, 1.0, 1.0), scene.getAmountOfAmbientLightsIntensity());
       this._glContext.uniform4f(material.getUniform(glslProgram, 'uniform_ambient'), ambient.x, ambient.y, ambient.z, ambient.w, true);    
 
     }
 
   }
 
-  GLBoost['PBRPrincipledShader'] = PBRPrincipledShader;
+  GLBoost.PBRPrincipledShader = PBRPrincipledShader;
 
   //      
 
@@ -23521,4 +23521,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-270-g0389-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-272-g1d588-mod branch: develop';
