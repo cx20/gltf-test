@@ -14934,7 +14934,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     set isVisible(flg         ) {
-      let collectVisibility = function(elem         ) {
+      let collectVisibility = function(elem           ) {
         elem._isVisible = flg;
         if (elem instanceof M_Group) {
           let children = elem.getChildren();
@@ -14948,6 +14948,35 @@ albedo.rgb *= (1.0 - metallic);
 
     get isVisible() {
       return this._isVisible;
+    }
+
+    setSpecifiedPropertyRecursively(propertyName         , value     ) {
+      let setValueRecursively = function(elem           ) {
+        elem[propertyName] = value;
+        if (elem instanceof M_Group) {
+          let children = elem.getChildren();
+          children.forEach(function(child) {
+            setValueRecursively(child);
+          });
+        }
+      };
+      setValueRecursively(this);
+    }
+
+    executeSpecifiedFunctionRecursively(func          , thisObj     , args            , childIndexToInsertToArgs = null) {
+      let execRecursively = function(elem           ) {
+        if (childIndexToInsertToArgs != null) {
+          args[childIndexToInsertToArgs] = elem;
+        }
+        func.apply(thisObj, args);
+        if (elem instanceof M_Group) {
+          let children = elem.getChildren();
+          children.forEach(function(child) {
+            execRecursively(child);
+          });
+        }
+      };
+      execRecursively(this);
     }
 
     _updateAABBGizmo() {
@@ -23523,4 +23552,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-277-g92b23-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-278-g0b15-mod branch: develop';
