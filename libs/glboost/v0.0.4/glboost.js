@@ -708,9 +708,14 @@
 
   }
 
+  /*       */
+
   let singleton = Symbol();
 
   class L_GLBoostMonitor {
+                            
+                                
+
     constructor(enforcer) {
       if (enforcer !== L_GLBoostMonitor._singletonEnforcer || !(this instanceof L_GLBoostMonitor)) {
         throw new Error('This is a Singleton class. get the instance using \'getInstance\' static method.');
@@ -728,18 +733,18 @@
       return this[singleton];
     }
 
-    registerGLBoostObject(glBoostObject) {
+    registerGLBoostObject(glBoostObject        ) {
       this._glBoostObjects[glBoostObject.instanceName] = glBoostObject;
       MiscUtil.consoleLog(GLBoost$1.LOG_GLBOOST_OBJECT_LIFECYCLE, 'GLBoost Resource: ' + glBoostObject.toString() + ' (' + glBoostObject.belongingCanvasId + ') was created.');
     }
 
-    deregisterGLBoostObject(glBoostObject) {
+    deregisterGLBoostObject(glBoostObject        ) {
       delete this._glBoostObjects[glBoostObject.instanceName];
       MiscUtil.consoleLog(GLBoost$1.LOG_GLBOOST_OBJECT_LIFECYCLE, 'GLBoost Resource: ' + glBoostObject.toString() + ' (' + glBoostObject.belongingCanvasId + ') was ready for discard.');
     }
 
 
-    getGLBoostObjects(partOfGlBoostObjectInstanceName) {
+    getGLBoostObjects(partOfGlBoostObjectInstanceName        ) {
       let glBoostObjects = [];
       for (let instanceName in this._glBoostObjects) {
         if (instanceName.indexOf(partOfGlBoostObjectInstanceName)>0) {
@@ -750,7 +755,7 @@
       return glBoostObjects;
     }
 
-    getGLBoostObject(glBoostObjectInstanceName) {
+    getGLBoostObject(glBoostObjectInstanceName        ) {
       for (let instanceName in this._glBoostObjects) {
         if (instanceName === glBoostObjectInstanceName) {
           return this._glBoostObjects[instanceName];
@@ -759,7 +764,7 @@
       return null;
     }
 
-    getGLBoostObjectByUserFlavorName(glBoostObjectUserFlavorName) {
+    getGLBoostObjectByUserFlavorName(glBoostObjectUserFlavorName        ) {
       for (let instanceName in this._glBoostObjects) {
         if (this._glBoostObjects[instanceName].userFlavorName === glBoostObjectUserFlavorName) {
           return this._glBoostObjects[instanceName];
@@ -769,7 +774,7 @@
     }
 
 
-    getGLBoostObjectsByUserFlavorName(glBoostObjectUserFlavorName) {
+    getGLBoostObjectsByUserFlavorName(glBoostObjectUserFlavorName        ) {
       const results = [];
       for (let instanceName in this._glBoostObjects) {
         if (this._glBoostObjects[instanceName].userFlavorName === glBoostObjectUserFlavorName) {
@@ -779,7 +784,7 @@
       return results;
     }
 
-    getGLBoostObjectWhichHasThisObjectId(objectId) {
+    getGLBoostObjectWhichHasThisObjectId(objectId        ) {
       for (let instanceName in this._glBoostObjects) {
         if (this._glBoostObjects[instanceName].objectIndex === objectId) {
           return this._glBoostObjects[instanceName];
@@ -822,13 +827,13 @@
       MiscUtil.consoleLog(GLBoost$1.LOG_GLBOOST_OBJECT_LIFECYCLE, '========== GLBoost Object Lists [end] ==========');
     }
 
-    registerWebGLResource(glBoostObject, glResource) {
+    registerWebGLResource(glBoostObject        , glResource        ) {
       var glResourceName = glResource.constructor.name;
       this._glResources.push([glBoostObject, glResource]);
       MiscUtil.consoleLog(GLBoost$1.LOG_GL_RESOURCE_LIFECYCLE, 'WebGL Resource: ' + glResourceName + ' was created by ' + glBoostObject.toString() + ' (' + glBoostObject.belongingCanvasId + ').');
     }
 
-    deregisterWebGLResource(glBoostObject, glResource) {
+    deregisterWebGLResource(glBoostObject        , glResource        ) {
       var glResourceName = glResource.constructor.name;
       this._glResources.forEach((glResource, i)=>{
         if (glResource[0] === glBoostObject && glResource[1].constructor.name === glResourceName) {
@@ -838,7 +843,7 @@
       MiscUtil.consoleLog(GLBoost$1.LOG_GL_RESOURCE_LIFECYCLE, 'WebGL Resource: ' + glResourceName + ' was deleted by ' + glBoostObject.toString() + ' (' + glBoostObject.belongingCanvasId + ').');
     }
 
-    getWebGLResources(webglResourceName) {
+    getWebGLResources(webglResourceName        ) {
       let webglResources = this._glResources.filter((glResourceArray)=>{
         if (glResourceArray[1].constructor.name === webglResourceName) {
           return true;
@@ -1266,9 +1271,16 @@
   }
   GLContext._instances = new Object();
 
-  class GLBoostSystem {
+  /*       */
 
-    constructor(canvas, initParameter, gl, width, height, glBoostContext) {
+  class GLBoostSystem {
+                                               
+                                        
+                          
+                                      
+                               
+
+    constructor(canvas        , initParameter, gl, width        , height        , glBoostContext) {
       if (gl) {
         this._glContext = GLContext.getInstance(null, initParameter, gl, width, height);
       } else {
@@ -8445,7 +8457,23 @@ return mat4(
     }
   }
 
+  /*       */
+
   class BlendShapeGeometry extends Geometry {
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                           
+                            
+                                    
+                                     
+                       
+
     constructor(glBoostContext) {
       super(glBoostContext);
 
@@ -8465,7 +8493,7 @@ return mat4(
     }
 
 
-    draw(data) {
+    draw(data        ) {
       this._currentRenderPassIndex = data.renderPass_index;
       super.draw({
         expression: data.expression,
@@ -8501,7 +8529,7 @@ return mat4(
       super.prepareToRender(expression, existCamera_f, pointLight, meshMaterial, mesh);
     }
 
-    _setBlendWeightToGlslProgram(blendTargetNumber, weight) {
+    _setBlendWeightToGlslProgram(blendTargetNumber        , weight        ) {
       let blendTarget = GLBoost$1.getValueOfGLBoostConstant(blendTargetNumber);
       let materials = [this._materialForBlend];
       for (let i=0; i<materials.length;i++) {
@@ -8510,7 +8538,7 @@ return mat4(
       }
     }
 
-    set blendWeight_1(weight) {
+    set blendWeight_1(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8522,7 +8550,7 @@ return mat4(
       return this._blendWeight_1;
     }
 
-    set blendWeight_2(weight) {
+    set blendWeight_2(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8534,7 +8562,7 @@ return mat4(
       return this._blendWeight_2;
     }
 
-    set blendWeight_3(weight) {
+    set blendWeight_3(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8546,7 +8574,7 @@ return mat4(
       return this._blendWeight_3;
     }
 
-    set blendWeight_4(weight) {
+    set blendWeight_4(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8558,7 +8586,7 @@ return mat4(
       return this._blendWeight_4;
     }
 
-    set blendWeight_5(weight) {
+    set blendWeight_5(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8570,7 +8598,7 @@ return mat4(
       return this._blendWeight_5;
     }
 
-    set blendWeight_6(weight) {
+    set blendWeight_6(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8582,7 +8610,7 @@ return mat4(
       return this._blendWeight_6;
     }
 
-    set blendWeight_7(weight) {
+    set blendWeight_7(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8594,7 +8622,7 @@ return mat4(
       return this._blendWeight_7;
     }
 
-    set blendWeight_8(weight) {
+    set blendWeight_8(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8606,7 +8634,7 @@ return mat4(
       return this._blendWeight_8;
     }
 
-    set blendWeight_9(weight) {
+    set blendWeight_9(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8618,7 +8646,7 @@ return mat4(
       return this._blendWeight_9;
     }
 
-    set blendWeight_10(weight) {
+    set blendWeight_10(weight        ) {
       var gl = this._glContext.gl;
       var currentProgram = gl.getParameter(gl.CURRENT_PROGRAM);
 
@@ -8784,6 +8812,10 @@ return mat4(
      */
     _isPowerOfTwo(x) {
       return (x & (x - 1)) == 0;
+    }
+
+    _isPowerOfTwoTexture() {
+      return this._isPowerOfTwo(this.width) && this._isPowerOfTwo(this.height);
     }
 
     /**
@@ -9885,7 +9917,15 @@ return mat4(
 
   GLBoost$1['L_AbstractMaterial'] = L_AbstractMaterial;
 
+  /*       */
+
   class ClassicMaterial$1 extends L_AbstractMaterial {
+                                         
+                        
+                           
+                            
+                           
+
     constructor(glBoostContext) {
       super(glBoostContext);
 
@@ -9910,7 +9950,7 @@ return mat4(
     }
 
 
-    set baseColor(vec) {
+    set baseColor(vec         ) {
       if (!vec) {
         return;
       }
@@ -9923,7 +9963,7 @@ return mat4(
       return this._baseColor;
     }
 
-    set diffuseColor(vec) {
+    set diffuseColor(vec         ) {
       if (!vec) {
         return;
       }
@@ -9936,7 +9976,7 @@ return mat4(
       return this._diffuseColor;
     }
 
-    set specularColor(vec) {
+    set specularColor(vec         ) {
       if (!vec) {
         return;
       }
@@ -9949,7 +9989,7 @@ return mat4(
       return this._specularColor;
     }
 
-    set ambientColor(vec) {
+    set ambientColor(vec         ) {
       if (!vec) {
         return;
       }
@@ -10455,12 +10495,12 @@ albedo.rgb *= (1.0 - metallic);
       return this._isAlphaTestEnable;
     }
 
-    set alphaCuttoff(value) {
+    set alphaCutoff(value) {
       this._alphaCutoff = value;
     }
 
-    get alphaCuttoff() {
-      return this.alphaCuttoff;
+    get alphaCutoff() {
+      return this._alphaCutoff;
     }
   }
 
@@ -10687,7 +10727,20 @@ albedo.rgb *= (1.0 - metallic);
 
   L_AbstractCamera._mainCamera = {};
 
+  /*       */
+
   class L_PerspectiveCamera extends L_AbstractCamera {
+                  
+                    
+                   
+                  
+                        
+                       
+                    
+                    
+                              
+                                           
+
     constructor(glBoostContext, toRegister, lookat, perspective) {
       super(glBoostContext, toRegister, lookat);
 
@@ -10722,7 +10775,7 @@ albedo.rgb *= (1.0 - metallic);
       }
     }
 
-    static perspectiveRHMatrix(fovy, aspect, zNear, zFar) {
+    static perspectiveRHMatrix(fovy        , aspect        , zNear        , zFar        ) {
 
       var yscale = 1.0 / Math.tan(0.5*fovy*Math.PI/180);
       var xscale = yscale / aspect;
@@ -10747,7 +10800,7 @@ albedo.rgb *= (1.0 - metallic);
       this._xscale = xscale;
     }
 
-    set fovy(value) {
+    set fovy(value        ) {
       if (this._fovy === value) {
         return;
       }
@@ -10759,7 +10812,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._fovy;
     }
 
-    set aspect(value) {
+    set aspect(value        ) {
       if (this._aspect === value) {
         return;
       }
@@ -10771,7 +10824,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._aspect;
     }
 
-    set zNear(value) {
+    set zNear(value        ) {
       if (this._zNear === value) {
         return;
       }
@@ -10783,7 +10836,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._zNear;
     }
 
-    set zFar(value) {
+    set zFar(value        ) {
       if (this._zFar === value) {
         return;
       }
@@ -10852,12 +10905,26 @@ albedo.rgb *= (1.0 - metallic);
       return info;
     }
 
-    set allInfo(info) {
+    set allInfo(info        ) {
       super.allInfo = info;
     }
   }
 
+  /*       */
+
   class L_FrustumCamera extends L_AbstractCamera {
+                  
+                   
+                 
+                    
+                   
+                  
+                        
+                       
+                              
+                                           
+                                
+    
     constructor(glBoostContext, toRegister, lookat, frustum) {
       super(glBoostContext, toRegister, lookat);
 
@@ -10894,7 +10961,7 @@ albedo.rgb *= (1.0 - metallic);
       }
     }
 
-    static frustumRHMatrix(left, right, top, bottom, zNear, zFar) {
+    static frustumRHMatrix(left        , right        , top        , bottom        , zNear        , zFar        ) {
       return new Matrix44$1(
         2*zNear/(right-left), 0.0, (right+left)/(right-left), 0.0,
         0.0, 2*zNear/(top-bottom), (top+bottom)/(top-bottom), 0.0,
@@ -10903,7 +10970,7 @@ albedo.rgb *= (1.0 - metallic);
       );
     }
 
-    set left(value) {
+    set left(value        ) {
       if (this._left === value) {
         return;
       }
@@ -10915,7 +10982,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._left;
     }
 
-    set right(value) {
+    set right(value        ) {
       if (this._right === value) {
         return;
       }
@@ -10927,7 +10994,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._right;
     }
 
-    set top(value) {
+    set top(value        ) {
       if (this._top === value) {
         return;
       }
@@ -10939,7 +11006,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._top;
     }
 
-    set bottom(value) {
+    set bottom(value        ) {
       if (this._bottom === value) {
         return;
       }
@@ -10951,7 +11018,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._bottom;
     }
 
-    set zNear(value) {
+    set zNear(value        ) {
       if (this._zNear === value) {
         return;
       }
@@ -10963,7 +11030,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._zNear;
     }
 
-    set zFar(value) {
+    set zFar(value        ) {
       if (this._zFar === value) {
         return;
       }
@@ -11020,12 +11087,28 @@ albedo.rgb *= (1.0 - metallic);
       return info;
     }
 
-    set allInfo(info) {
+    set allInfo(info        ) {
       super.allInfo = info;
     }
   }
 
+  /*       */
+
   class L_OrthoCamera extends L_AbstractCamera {
+                  
+                   
+                    
+                 
+                   
+                  
+                  
+                  
+                              
+                                           
+                              
+                                           
+                                
+
     constructor(glBoostContext, toRegister, lookat, ortho) {
       super(glBoostContext, toRegister, lookat);
 
@@ -11061,7 +11144,7 @@ albedo.rgb *= (1.0 - metallic);
       }
     }
 
-    static orthoRHMatrix(left, right, bottom, top, near, far, xmag, ymag) {
+    static orthoRHMatrix(left        , right        , bottom        , top        , near        , far        , xmag        , ymag        ) {
 
       if (xmag && ymag) {
         return new Matrix44$1(
@@ -11080,7 +11163,7 @@ albedo.rgb *= (1.0 - metallic);
       }
     }
 
-    set left(value) {
+    set left(value        ) {
       if (this._left === value) {
         return;
       }
@@ -11092,7 +11175,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._left;
     }
 
-    set right(value) {
+    set right(value        ) {
       if (this._right === value) {
         return;
       }
@@ -11104,7 +11187,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._right;
     }
 
-    set bottom(value) {
+    set bottom(value        ) {
       if (this._bottom === value) {
         return;
       }
@@ -11116,7 +11199,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._bottom;
     }
 
-    set top(value) {
+    set top(value        ) {
       if (this._top === value) {
         return;
       }
@@ -11128,7 +11211,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._top;
     }
 
-    set zNear(value) {
+    set zNear(value        ) {
       if (this._zNear === value) {
         return;
       }
@@ -11140,7 +11223,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._zNear;
     }
 
-    set zFar(value) {
+    set zFar(value        ) {
       if (this._zFar === value) {
         return;
       }
@@ -11152,7 +11235,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._zFar;
     }
 
-    set xmag(value) {
+    set xmag(value        ) {
       if (this._xmag === value) {
         return;
       }
@@ -11164,7 +11247,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._xmag;
     }
 
-    set ymag(value) {
+    set ymag(value        ) {
       if (this._ymag === value) {
         return;
       }
@@ -11228,7 +11311,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     
-    set allInfo(info) {
+    set allInfo(info        ) {
       super.allInfo = info;
     }
   }
@@ -12609,11 +12692,13 @@ albedo.rgb *= (1.0 - metallic);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this._getParamWithAlternative(GLBoost$1.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false));
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, imgCanvas);
 
-      if (glem.extTFA) {
-        gl.texParameteri(gl.TEXTURE_2D, glem.extTFA.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+      if (this._isPowerOfTwoTexture()) {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this._getParamWithAlternative(GLBoost$1.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR));
+        if (glem.extTFA) {
+          gl.texParameteri(gl.TEXTURE_2D, glem.extTFA.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+        }
       }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this._getParamWithAlternative(GLBoost$1.TEXTURE_MAG_FILTER, gl.LINEAR));
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this._getParamWithAlternative(GLBoost$1.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR));
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this._getParamWithAlternative(GLBoost$1.TEXTURE_WRAP_S, gl.REPEAT));
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this._getParamWithAlternative(GLBoost$1.TEXTURE_WRAP_T, gl.REPEAT));
       gl.generateMipmap(gl.TEXTURE_2D);
@@ -12634,11 +12719,13 @@ albedo.rgb *= (1.0 - metallic);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, this._getParamWithAlternative(GLBoost$1.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false));
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, imgCanvas);
 
-      if (glem.extTFA) {
-        gl.texParameteri(gl.TEXTURE_2D, glem.extTFA.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+      if (this._isPowerOfTwoTexture()) {
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this._getParamWithAlternative(GLBoost$1.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR));
+        if (glem.extTFA) {
+          gl.texParameteri(gl.TEXTURE_2D, glem.extTFA.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+        }
       }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, this._getParamWithAlternative(GLBoost$1.TEXTURE_MAG_FILTER, gl.LINEAR));
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, this._getParamWithAlternative(GLBoost$1.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR));
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, this._getParamWithAlternative(GLBoost$1.TEXTURE_WRAP_S, gl.REPEAT));
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, this._getParamWithAlternative(GLBoost$1.TEXTURE_WRAP_T, gl.REPEAT));
       gl.generateMipmap(gl.TEXTURE_2D);
@@ -12858,8 +12945,10 @@ albedo.rgb *= (1.0 - metallic);
 
   }
 
+  /*       */
+
   class Cube extends Geometry {
-    constructor(glBoostContext, widthVector, vertexColor) {
+    constructor(glBoostContext        , widthVector         , vertexColor         ) {
       super(glBoostContext);
 
       // if array, convert to vector[2/3/4]
@@ -13207,8 +13296,10 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost$1["Sphere"] = Sphere;
 
+  /*       */
+
   class Axis extends Geometry {
-    constructor(glBoostContext, length) {
+    constructor(glBoostContext        , length        ) {
       super(glBoostContext);
 
       this._setupVertexData(length);
@@ -14370,7 +14461,12 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost$1['M_Mesh'] = M_Mesh;
 
+  /*       */
+
   class CubeAbsolute extends Geometry {
+                            
+                        
+
     constructor(glBoostContext) {
       super(glBoostContext);
 
@@ -14383,7 +14479,7 @@ albedo.rgb *= (1.0 - metallic);
       this.setVerticesData(this._vertexData, [this._indices]);
     }
 
-    _setupVertexData(minPosition, maxPosition, vertexColor) {
+    _setupVertexData(minPosition        , maxPosition        , vertexColor) {
       this._indices = [
         3, 1, 0, 2, 1, 3,
         4, 5, 7, 7, 5, 6,
@@ -14534,7 +14630,7 @@ albedo.rgb *= (1.0 - metallic);
       return this._vertexData;
     }
 
-    update(minPosition, maxPosition) {
+    update(minPosition        , maxPosition        ) {
       this._vertexData = this._setupVertexData(minPosition, maxPosition);
       this.updateVerticesData(this._vertexData, [this._indices]);
     }
@@ -15240,6 +15336,142 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost$1['Expression'] = Expression;
 
+  class M_FrustumCamera extends M_AbstractCamera {
+    constructor(glBoostContext, toRegister, lookat, perspective) {
+      super(glBoostContext, toRegister);
+
+      this._lowLevelCamera = new L_FrustumCamera(this, false, lookat, perspective);
+      this._lowLevelCamera._middleLevelCamera = this;
+    }
+
+    // ===================== delegate to low level class ========================
+
+    _needUpdateProjection() {
+      this._lowLevelCamera._needUpdateProjection();
+    }
+
+    get updateCountAsCameraProjection() {
+      return this._lowLevelCamera.updateCountAsCameraProjection;
+    }
+
+    projectionRHMatrix() {
+      return this._lowLevelCamera.projectionRHMatrix();
+    }
+
+    set left(value) {
+      this._lowLevelCamera.left = value;
+    }
+
+    get left() {
+      return this._lowLevelCamera.left;
+    }
+
+    set right(value) {
+      this._lowLevelCamera.right = value;
+    }
+
+    get right() {
+      return this._lowLevelCamera.right;
+    }
+
+    set top(value) {
+      this._lowLevelCamera.top = value;
+    }
+
+    get top() {
+      return this._lowLevelCamera.top;
+    }
+
+    set bottom(value) {
+      this._lowLevelCamera.bottom = value;
+    }
+
+    get bottom() {
+      return this._lowLevelCamera.bottom;
+    }
+
+    set zNear(value) {
+      this._lowLevelCamera.zNear = value;
+    }
+
+    get zNear() {
+      return this._lowLevelCamera.zNear;
+    }
+
+    set zFar(value) {
+      this._lowLevelCamera.zFar = value;
+    }
+
+    get zFar() {
+      return this._lowLevelCamera.zFar;
+    }
+
+    get aspect() {
+      return (this._lowLevelCamera.right - this._lowLevelCamera.left) / (this._lowLevelCamera.top - this._lowLevelCamera.bottom);
+    }
+
+  }
+
+  GLBoost$1['M_FrustumCamera'] = M_FrustumCamera;
+
+  class M_PerspectiveCamera extends M_AbstractCamera {
+    constructor(glBoostContext, toRegister, lookat, perspective) {
+      super(glBoostContext, toRegister);
+
+      this._lowLevelCamera = new L_PerspectiveCamera(this, false, lookat, perspective);
+      this._lowLevelCamera._middleLevelCamera = this;
+    }
+
+    // ===================== delegate to low level class ========================
+
+    _needUpdateProjection() {
+      this._lowLevelCamera._needUpdateProjection();
+    }
+
+    get updateCountAsCameraProjection() {
+      return this._lowLevelCamera.updateCountAsCameraProjection;
+    }
+
+    projectionRHMatrix() {
+      return this._lowLevelCamera.projectionRHMatrix();
+    }
+
+    set fovy(value) {
+      this._lowLevelCamera.fovy = value;
+    }
+
+    get fovy() {
+      return this._lowLevelCamera.fovy;
+    }
+
+    set aspect(value) {
+      this._lowLevelCamera.aspect = value;
+    }
+
+    get aspect() {
+      return this._lowLevelCamera.aspect;
+    }
+
+    set zNear(value) {
+      this._lowLevelCamera.zNear = value;
+    }
+
+    get zNear() {
+      return this._lowLevelCamera.zNear;
+    }
+
+    set zFar(value) {
+      this._lowLevelCamera.zFar = value;
+    }
+
+    get zFar() {
+      return this._lowLevelCamera.zFar;
+    }
+
+  }
+
+  GLBoost$1['M_PerspectiveCamera'] = M_PerspectiveCamera;
+
   class EffekseerElement$1 extends M_Element {
     constructor(glBoostContext) {
       super(glBoostContext);
@@ -15272,6 +15504,7 @@ albedo.rgb *= (1.0 - metallic);
       const __play = ()=>{
         // Play the loaded effect
         this.__handle = effekseer.play(this.__effect);
+        this.update();
       };
 
       if (isLoop) {
@@ -15282,7 +15515,7 @@ albedo.rgb *= (1.0 - metallic);
       
     }
 
-    update() {
+    update(camera) {
       if (this.__handle != null) {
         const m = this.worldMatrix;
         this.__handle.setLocation(m.m03, m.m13, m.m23);
@@ -15290,6 +15523,33 @@ albedo.rgb *= (1.0 - metallic);
         this.__handle.setRotation(eular.x, eular.y, eular.z);
         const scale = m.getScale();
         this.__handle.setScale(scale.x, scale.y, scale.z);
+
+   //     this.__handle.setMatrix(this.worldMatrix.transpose().m);
+  //      this.__handle.setMatrix(this.worldMatrix.m);
+        let lookAtMatrix = Matrix44$1.identity().m;
+        let projectionMatrix = Matrix44$1.identity().m;
+        if (camera) {
+  //        lookAtMatrix = camera.lookAtRHMatrix().transpose().m;
+  //        projectionMatrix = camera.projectionRHMatrix().transpose().m;
+  //        lookAtMatrix = camera.lookAtRHMatrix().m;
+          projectionMatrix = camera.projectionRHMatrix().transpose().m;
+  //        effekseer.setCameraMatrix(lookAtMatrix);
+          effekseer.setProjectionMatrix(projectionMatrix);
+
+            effekseer.setCameraLookAt(camera.translateInner.x, camera.translateInner.y, camera.translateInner.z,
+              camera.centerInner.x, camera.centerInner.y, camera.centerInner.z,
+              camera.upInner.x, camera.upInner.y, camera.upInner.z);
+  /*
+              if (camera instanceof M_FrustumCamera) {
+              effekseer.setProjectionMatrix();
+            } else if (camera instanceof M_PerspectiveCamera) {
+
+            } else {
+
+            }
+            */
+          }
+        
         this.__handle.setSpeed(this.__speed);
       }
     }
@@ -15968,8 +16228,13 @@ albedo.rgb *= (1.0 - metallic);
       // gather scenes as unique
       for (let renderPass of expression.renderPasses) {
         skeletalMeshes = skeletalMeshes.concat(renderPass._skeletalMeshes);
-        effekseerElements = effekseerElements.concat(renderPass._effekseerElements);
+  //      effekseerElements = effekseerElements.concat(renderPass._effekseerElements);
+        effekseerElements = effekseerElements.concat(renderPass.scene.searchElementsByType(EffekseerElement$1));
         renderPass.scene.updateAmountOfAmbientLightsIntensity();
+        let camera = renderPass.scene.getMainCamera();
+        for (let effekseerElement of effekseerElements) {
+          effekseerElement.update(camera);
+        }
       }
 
       let unique = function(array) {
@@ -15984,10 +16249,6 @@ albedo.rgb *= (1.0 - metallic);
       
       for (let mesh of skeletalMeshes) {
         mesh.geometry.update(mesh);
-      }
-
-      for (let effekseerElement of effekseerElements) {
-        effekseerElement.update();
       }
 
       if (typeof effekseer !== "undefined") {
@@ -17599,142 +17860,6 @@ albedo.rgb *= (1.0 - metallic);
       }
   }
 
-  class M_PerspectiveCamera extends M_AbstractCamera {
-    constructor(glBoostContext, toRegister, lookat, perspective) {
-      super(glBoostContext, toRegister);
-
-      this._lowLevelCamera = new L_PerspectiveCamera(this, false, lookat, perspective);
-      this._lowLevelCamera._middleLevelCamera = this;
-    }
-
-    // ===================== delegate to low level class ========================
-
-    _needUpdateProjection() {
-      this._lowLevelCamera._needUpdateProjection();
-    }
-
-    get updateCountAsCameraProjection() {
-      return this._lowLevelCamera.updateCountAsCameraProjection;
-    }
-
-    projectionRHMatrix() {
-      return this._lowLevelCamera.projectionRHMatrix();
-    }
-
-    set fovy(value) {
-      this._lowLevelCamera.fovy = value;
-    }
-
-    get fovy() {
-      return this._lowLevelCamera.fovy;
-    }
-
-    set aspect(value) {
-      this._lowLevelCamera.aspect = value;
-    }
-
-    get aspect() {
-      return this._lowLevelCamera.aspect;
-    }
-
-    set zNear(value) {
-      this._lowLevelCamera.zNear = value;
-    }
-
-    get zNear() {
-      return this._lowLevelCamera.zNear;
-    }
-
-    set zFar(value) {
-      this._lowLevelCamera.zFar = value;
-    }
-
-    get zFar() {
-      return this._lowLevelCamera.zFar;
-    }
-
-  }
-
-  GLBoost$1['M_PerspectiveCamera'] = M_PerspectiveCamera;
-
-  class M_FrustumCamera extends M_AbstractCamera {
-    constructor(glBoostContext, toRegister, lookat, perspective) {
-      super(glBoostContext, toRegister);
-
-      this._lowLevelCamera = new L_FrustumCamera(this, false, lookat, perspective);
-      this._lowLevelCamera._middleLevelCamera = this;
-    }
-
-    // ===================== delegate to low level class ========================
-
-    _needUpdateProjection() {
-      this._lowLevelCamera._needUpdateProjection();
-    }
-
-    get updateCountAsCameraProjection() {
-      return this._lowLevelCamera.updateCountAsCameraProjection;
-    }
-
-    projectionRHMatrix() {
-      return this._lowLevelCamera.projectionRHMatrix();
-    }
-
-    set left(value) {
-      this._lowLevelCamera.left = value;
-    }
-
-    get left() {
-      return this._lowLevelCamera.left;
-    }
-
-    set right(value) {
-      this._lowLevelCamera.right = value;
-    }
-
-    get right() {
-      return this._lowLevelCamera.right;
-    }
-
-    set top(value) {
-      this._lowLevelCamera.top = value;
-    }
-
-    get top() {
-      return this._lowLevelCamera.top;
-    }
-
-    set bottom(value) {
-      this._lowLevelCamera.bottom = value;
-    }
-
-    get bottom() {
-      return this._lowLevelCamera.bottom;
-    }
-
-    set zNear(value) {
-      this._lowLevelCamera.zNear = value;
-    }
-
-    get zNear() {
-      return this._lowLevelCamera.zNear;
-    }
-
-    set zFar(value) {
-      this._lowLevelCamera.zFar = value;
-    }
-
-    get zFar() {
-      return this._lowLevelCamera.zFar;
-    }
-
-    get aspect() {
-      return (this._lowLevelCamera.right - this._lowLevelCamera.left) / (this._lowLevelCamera.top - this._lowLevelCamera.bottom);
-    }
-
-  }
-
-  GLBoost$1['M_FrustumCamera'] = M_FrustumCamera;
-
   class M_OrthoCamera extends M_AbstractCamera {
     constructor(glBoostContext, toRegister, lookat, ortho) {
       super(glBoostContext, toRegister);
@@ -17829,8 +17954,10 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost$1['M_OrthoCamera'] = M_OrthoCamera;
 
+  /*       */
+
   class Arrow extends Geometry {
-    constructor(glBoostSystem, length, lineCount = 1) {
+    constructor(glBoostSystem        , length        , lineCount         = 1) {
       super(glBoostSystem);
 
       this._setupVertexData(length, lineCount);
@@ -20863,7 +20990,7 @@ albedo.rgb *= (1.0 - metallic);
 
     _sliceBufferViewToArrayBuffer(json, bufferViewStr, arrayBuffer) {
       let bufferViewJson = json.bufferViews[bufferViewStr];
-      let byteOffset = bufferViewJson.byteOffset;
+      let byteOffset = (bufferViewJson.byteOffset != null) ? bufferViewJson.byteOffset : 0;
       let byteLength = bufferViewJson.byteLength;
       let arrayBufferSliced = arrayBuffer.slice(byteOffset, byteOffset + byteLength);
       return arrayBufferSliced;
@@ -21238,7 +21365,8 @@ albedo.rgb *= (1.0 - metallic);
             isTextureImageToLoadPreMultipliedAlpha: false,
             globalStatesUsage: GLBoost$1.GLOBAL_STATES_USAGE_IGNORE // GLBoost.GLOBAL_STATES_USAGE_DO_NOTHING // GLBoost.GLOBAL_STATES_USAGE_INCLUSIVE // GLBoost.GLOBAL_STATES_USAGE_EXCLUSIVE
           }
-        ]
+        ],
+        extendedJson: null //   URI string / JSON Object / ArrayBuffer
       };
 
       (function() {
@@ -21279,7 +21407,21 @@ albedo.rgb *= (1.0 - metallic);
       return DataUtil.loadResourceAsync(uri, true,
         (resolve, response)=>{
           var arrayBuffer = response;
-          this._checkArrayBufferOfGltf(arrayBuffer, uri, options, defaultOptions, resolve);
+
+          if (options.extendedJson) {
+            fetch(options.extendedJson).then((_response)=> {
+              _response.json().then((json)=>{
+                options.extendedJson = json;
+                this._checkArrayBufferOfGltf(arrayBuffer, uri, options, defaultOptions, resolve);
+              });
+            }).then((json)=> {
+              //this._checkArrayBufferOfGltf(arrayBuffer, uri, options, defaultOptions, resolve);
+              console.log("Result of ladding extended JSON");
+            });
+          } else {
+            this._checkArrayBufferOfGltf(arrayBuffer, uri, options, defaultOptions, resolve);
+          }
+        
         }, (reject, error)=>{}
       );
     }
@@ -21325,6 +21467,12 @@ albedo.rgb *= (1.0 - metallic);
         basePath = uri.substring(0, uri.lastIndexOf('/')) + '/';
       }
 
+      if (gltfJson.asset.extras === undefined) {
+        gltfJson.asset.extras = {};
+      }
+      this._mergeExtendedJson(gltfJson, options.extendedJson);
+      gltfJson.asset.extras.basePath = basePath;
+
       let promise = this._loadInner(arrayBufferBinary, basePath, gltfJson, options);
       promise.then((gltfJson) => {
         console.log('Resoureces loading done!');
@@ -21340,12 +21488,35 @@ albedo.rgb *= (1.0 - metallic);
         basePath = uri.substring(0, uri.lastIndexOf('/')) + '/';
       }
       let gltfJson = JSON.parse(gotText);
+      if (gltfJson.asset.extras === undefined) {
+        gltfJson.asset.extras = {};
+      } 
+
       options = this._getOptions(defaultOptions, gltfJson, options);
+      
+      this._mergeExtendedJson(gltfJson, options.extendedJson);
+      gltfJson.asset.extras.basePath = basePath;
+
       let promise = this._loadInner(null, basePath, gltfJson, options);
       promise.then((gltfJson) => {
         console.log('Resoureces loading done!');
         resolve(gltfJson[0][0]);
       });
+    }
+
+    _mergeExtendedJson(gltfJson, extendedData) {
+      let extendedJson = null;
+      if (extendedData instanceof ArrayBuffer) {
+        const extendedJsonStr = DataUtil.arrayBufferToString(extendedData);
+        extendedJson = JSON.parse(extendedJsonStr);
+      } else if (typeof extendedData === 'string') {
+        extendedJson = JSON.parse(extendedData);
+        extendedJson = extendedJson;
+      } else if (typeof extendedData === 'object') {
+        extendedJson = extendedData;
+      }
+
+      Object.assign(gltfJson, extendedJson);
     }
 
     _loadInner(arrayBufferBinary, basePath, gltfJson, options) {
@@ -21843,7 +22014,7 @@ albedo.rgb *= (1.0 - metallic);
 
     _sliceBufferViewToArrayBuffer(json, bufferViewStr, arrayBuffer) {
       let bufferViewJson = json.bufferViews[bufferViewStr];
-      let byteOffset = bufferViewJson.byteOffset;
+      let byteOffset = (bufferViewJson.byteOffset != null) ? bufferViewJson.byteOffset : 0;
       let byteLength = bufferViewJson.byteLength;
       let arrayBufferSliced = arrayBuffer.slice(byteOffset, byteOffset + byteLength);
       return arrayBufferSliced;
@@ -21944,8 +22115,9 @@ albedo.rgb *= (1.0 - metallic);
       let glboostMeshes = this._setupMesh(glBoostContext, gltfModel);
 
       let groups = [];
-      for (let node_i in gltfModel.nodes) {
+      for (let node of gltfModel.nodes) {
         let group = glBoostContext.createGroup();
+        group.userFlavorName = node.name;
         groups.push(group);
       }
 
@@ -21981,7 +22153,7 @@ albedo.rgb *= (1.0 - metallic);
 
       let options = gltfModel.asset.extras.glboostOptions;
       if (options.loaderExtension && options.loaderExtension.setAssetPropertiesToRootGroup) {
-        options.loaderExtension.setAssetPropertiesToRootGroup(rootGroup, gltfModel.asset);
+        options.loaderExtension.setAssetPropertiesToRootGroup(rootGroup, gltfModel.asset, glBoostContext);
       }
 
       rootGroup.allMeshes = rootGroup.searchElementsByType(M_Mesh);
@@ -22072,7 +22244,6 @@ albedo.rgb *= (1.0 - metallic);
             let options = gltfModel.asset.extras.glboostOptions;
             let glboostJoint = glBoostContext.createJoint(options.isExistJointGizmo);
             glboostJoint._glTFJointIndex = joint_i;
-  //          glboostJoint.userFlavorName = nodeJson.jointName;
             let group = groups[joint_i];
             group.addChild(glboostJoint, true);
           }
@@ -23401,6 +23572,107 @@ albedo.rgb *= (1.0 - metallic);
     GLBoost['JointGizmoUpdater'] = JointGizmoUpdater;
   }
 
+  let singleton$8 = Symbol();
+  let singletonEnforcer$5 = Symbol();
+
+  /**
+   * This is a loader class of glTF VRize extension Data.
+   */
+  class GLBoostGLTFLoaderExtension {
+
+    /**
+     * The constructor of ObjLoader class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.
+     * @param {Symbol} enforcer a Symbol to forbid calling this constructor directly
+     */
+    constructor(enforcer) {
+      if (enforcer !== singletonEnforcer$5) {
+        throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
+      }
+    }
+
+    /**
+     * The static method to get singleton instance of this class.
+     * @return {ObjLoader} the singleton instance of ObjLoader class
+     */
+    static getInstance() {
+      if (!this[singleton$8]) {
+        this[singleton$8] = new GLBoostGLTFLoaderExtension(singletonEnforcer$5);
+      }
+      return this[singleton$8];
+    }
+
+    setAssetPropertiesToRootGroup(rootGroup, asset, glBoostContext) {
+      // Animation FPS
+      if (asset && asset.animationFps) {
+        rootGroup.animationFps = asset.animationFps;
+      }
+
+      // other information
+      if (asset && asset.version) {
+        rootGroup.spv_version = asset.version;
+      }
+      if (asset && asset.LastSaved_ApplicationVendor) {
+        rootGroup.LastSaved_ApplicationVendor = asset.LastSaved_ApplicationVendor;
+      }
+      if (asset && asset.LastSaved_ApplicationName) {
+        rootGroup.LastSaved_ApplicationName = asset.LastSaved_ApplicationName;
+      }
+      if (asset && asset.LastSaved_ApplicationVersion) {
+        rootGroup.LastSaved_ApplicationVersion = asset.LastSaved_ApplicationVersion;
+      }
+
+      // Animation Tracks
+      if (asset && asset.extras && asset.extras.animation_tracks) {
+        rootGroup.animationTracks = asset.extras.animation_tracks;
+      }
+
+      // Transparent Meshes Draw Order
+      if (asset && asset.extras && asset.extras.transparent_meshes_draw_order) {
+        rootGroup.transparentMeshesDrawOrder = asset.extras.transparent_meshes_draw_order;
+        let meshes = rootGroup.searchElementsByType(M_Mesh);
+        rootGroup.transparentMeshes = [];
+        for (let name of rootGroup.transparentMeshesDrawOrder) {
+          for (let mesh of meshes) {
+            if (mesh.userFlavorName === name) {
+              rootGroup.transparentMeshes.push(mesh);
+              break;
+            }
+          }
+        }
+      }
+
+      if (asset && asset.extras && asset.extras.effekseerEffects) {
+        for (let effect of asset.extras.effekseerEffects) {
+          const group = rootGroup.searchElement(effect.nodeName, {type: GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost$1.QUERY_FORMAT_STRING_PERFECT_MATCHING});
+          const effekseerElm = glBoostContext.createEffekseerElement();
+          const promise = effekseerElm.load(asset.extras.basePath + effect.efkName + '.efk', true, true);
+          promise.then((effect)=>{
+            group.addChild(effect);
+          });
+        }
+      }
+    }
+
+    setUVTransformToTexture(texture, samplerJson) {
+      let uvTransform = new Vector4$1(1, 1, 0, 0);
+      if (samplerJson.extras && samplerJson.extras.scale) {
+        let scale = samplerJson.extras.scale;
+        uvTransform.x = scale[0];
+        uvTransform.y = scale[1];
+      }
+      if (samplerJson.extras && samplerJson.extras.translation) {
+        let translation = samplerJson.extras.translation;
+        uvTransform.z = translation[0];
+        uvTransform.w = translation[1];
+      }
+      texture.uvTransform = uvTransform;
+    }
+
+  }
+
+
+  GLBoost$1["GLBoostGLTFLoaderExtension"] = GLBoostGLTFLoaderExtension;
+
   /*       */
 
   class AnimationPlayer {
@@ -23596,4 +23868,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-280-g1a7f-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-289-gc8fa3-mod branch: develop';
