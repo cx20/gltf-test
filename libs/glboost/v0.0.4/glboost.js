@@ -9168,11 +9168,11 @@ return mat4(
 
       shaderText += 'if ( isWireframe ) {\n';
       shaderText += '  rt0 = wireframeResult;\n';
+      shaderText += '  if (rt0.a == 0.0) {\n';
+      shaderText += '    discard;\n';
+      shaderText += '  }\n';
       shaderText += '}\n';
 
-      shaderText += '    if (rt0.a < 0.05) {\n';
-      shaderText += '      discard;\n';
-      shaderText += '    }\n';
 
       /*
       //shaderText += '  rt0 = vec4((v_tangent+1.0)/2.0, 1.0);\n';
@@ -10366,7 +10366,7 @@ albedo.rgb *= (1.0 - metallic);
       this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_OcclusionFactors'), occlusion, occlusionRateForDirectionalLight, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_EmissiveFactor'), emissive.x, emissive.y, emissive.z, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_IBLParameters'), IBLSpecularTextureMipmapCount, IBLDiffuseContribution, IBLSpecularContribution, true);
-      this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_alphaTestParameters'), isAlphaTestEnable, alphaCutoff, true);
+      this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_alphaTestParameters'), isAlphaTestEnable ? 1.0 : 0.0, alphaCutoff, true);
       
 
       const ambient = Vector4$1.multiplyVector(new Vector4$1(1.0, 1.0, 1.0, 1.0), scene.getAmountOfAmbientLightsIntensity());
@@ -11044,6 +11044,10 @@ albedo.rgb *= (1.0 - metallic);
 
     get aspect() {
       return (this.right - this.left) / (this.top - this.bottom);
+    }
+
+    get fovy() {
+      return MathUtil.radianToDegree(2 * Math.atan(Math.abs(this.top - this.bottom) / (2 * this.zNear)));
     }
 
     get allInfo() {
@@ -15407,9 +15411,12 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     get aspect() {
-      return (this._lowLevelCamera.right - this._lowLevelCamera.left) / (this._lowLevelCamera.top - this._lowLevelCamera.bottom);
+      return this._lowLevelCamera.aspect;
     }
 
+    get fovy() {
+      return this._lowLevelCamera.fovy;
+    }
   }
 
   GLBoost$1['M_FrustumCamera'] = M_FrustumCamera;
@@ -15517,29 +15524,43 @@ albedo.rgb *= (1.0 - metallic);
 
     update(camera) {
       if (this.__handle != null) {
+
+        // Set Model Matrix
+        const scale = 0.1;
         const m = this.worldMatrix;
-        this.__handle.setLocation(m.m03, m.m13, m.m23);
+        this.__handle.setLocation(m.m03*scale, m.m13*scale, m.m23*scale);
         const eular = m.toEulerAngles();
         this.__handle.setRotation(eular.x, eular.y, eular.z);
-        const scale = m.getScale();
-        this.__handle.setScale(scale.x, scale.y, scale.z);
+        const _scale = m.getScale();
+        this.__handle.setScale(_scale.x*scale, _scale.y*scale, _scale.z*scale);
 
    //     this.__handle.setMatrix(this.worldMatrix.transpose().m);
   //      this.__handle.setMatrix(this.worldMatrix.m);
+
+
         let lookAtMatrix = Matrix44$1.identity().m;
         let projectionMatrix = Matrix44$1.identity().m;
         if (camera) {
-  //        lookAtMatrix = camera.lookAtRHMatrix().transpose().m;
-  //        projectionMatrix = camera.projectionRHMatrix().transpose().m;
-  //        lookAtMatrix = camera.lookAtRHMatrix().m;
-          projectionMatrix = camera.projectionRHMatrix().transpose().m;
-  //        effekseer.setCameraMatrix(lookAtMatrix);
-          effekseer.setProjectionMatrix(projectionMatrix);
 
-            effekseer.setCameraLookAt(camera.translateInner.x, camera.translateInner.y, camera.translateInner.z,
-              camera.centerInner.x, camera.centerInner.y, camera.centerInner.z,
-              camera.upInner.x, camera.upInner.y, camera.upInner.z);
-  /*
+
+          // Set Viewing Matrix
+  //        lookAtMatrix = camera.lookAtRHMatrix();
+  //        let viewMatrix = lookAtMatrix.multiply(camera.inverseWorldMatrixWithoutMySelf);
+  //        console.log(lookAtMatrix.toStringApproximately())
+
+          effekseer.setCameraLookAt(camera.translateInner.x, camera.translateInner.y, camera.translateInner.z,
+            camera.centerInner.x, camera.centerInner.y, camera.centerInner.z,
+            camera.upInner.x, camera.upInner.y, camera.upInner.z);
+
+
+          // Set Projection Matrix
+  //        projectionMatrix = camera.projectionRHMatrix().transpose().m;
+  //        effekseer.setProjectionMatrix(projectionMatrix);
+          //effekseer.setCameraMatrix(viewMatrix.transpose().m);
+            
+            effekseer.setProjectionPerspective(camera.fovy, camera.aspect, camera.zNear, camera.zFar);
+
+              /*
               if (camera instanceof M_FrustumCamera) {
               effekseer.setProjectionMatrix();
             } else if (camera instanceof M_PerspectiveCamera) {
@@ -23868,4 +23889,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-289-gc8fa3-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-293-g11f9-mod branch: develop';
