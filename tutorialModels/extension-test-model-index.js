@@ -3,11 +3,13 @@ var TutorialExtensionTestModelIndex = {};
 TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'SpecGlossVsMetalRough', scale:10.0},
     {category:'tutorialModels', name:'TextureTransformTest', scale:1.0},
+    {category:'tutorialModels', name:'MorphPrimitivesTest', scale:2.0},
 ];
 
 TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'SpecGlossVsMetalRough',
-    'TextureTransformTest'
+    'TextureTransformTest',
+    'MorphPrimitivesTest'
 ];
 
 TutorialExtensionTestModelIndex.getScreenshot = function(name) {
@@ -65,7 +67,7 @@ TutorialExtensionTestModelIndex.getCurrentModel = function() {
         if (options.scale !== undefined) {
             modelInfoCollection[options.model].scale = options.scale;
         }
-        if (options.type == 'glTF-Binary') {
+        if (options.type == 'glTF-Binary' || options.type == 'glTF-Draco' && options.model == 'MorphPrimitivesTest') {
             modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.glb';
         } else {
             modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.gltf';

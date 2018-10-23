@@ -323,7 +323,14 @@ function makeTutorialExtensionTestModelLinks() {
         for (i = 0; i < numEngines; ++i) {
             var td = document.createElement('td');
             td.setAttribute('width', '100');
-            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            if ( modelName == 'MorphPrimitivesTest' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
+            } else {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            }
+            //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             //td.appendChild(document.createElement('br'));
             //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
             //td.appendChild(document.createElement('br'));
