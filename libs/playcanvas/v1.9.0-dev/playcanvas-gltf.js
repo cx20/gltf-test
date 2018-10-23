@@ -101,7 +101,7 @@
     function translateAnimation(data, resources) {
         var clip = new AnimationClip();
         clip.loop = true;
-        if(data.hasOwnProperty('name'))
+        if (data.hasOwnProperty('name'))
             clip.name = data.name;
 
         var gltf = resources.gltf;
@@ -143,7 +143,7 @@
                 // translation, rotation or scale
                 keyType = AnimationKeyableType.NUM;
                 var targetPath = path;
-                switch(path) {
+                switch (path) {
                     case "translation":
                         keyType = AnimationKeyableType.VEC;
                         targetPath = "localPosition";
@@ -159,21 +159,49 @@
                 }
                 curve = new AnimationCurve();
                 curve.keyableType = keyType;
-                curve.setTarget(entity, targetPath);
-                if(sampler.interpolation === "CUBIC")
-                    curve.type = AnimationCurveType.CUBIC;
-                else if(sampler.interpolation === "STEP")
-                    curve.type = AnimationCurveType.STEP;
+                curve.setTarget(entity, targetPath); 
 
-                for (i = 0; i < times.length; i++) {
-                    time = times[i];
-                    if ((path === 'translation') || (path === 'scale'))
-                        value = new pc.Vec3(values[3 * i + 0], values[3 * i + 1], values[3 * i + 2]);
-                    else if (path === 'rotation')
-                        value = new pc.Quat(values[4 * i + 0], values[4 * i + 1], values[4 * i + 2], values[4 * i + 3]);
-                    curve.insertKey(keyType, time, value);
-                }
-                clip.addCurve(curve);
+                if (sampler.interpolation !== "CUBICSPLINE") { 
+                    if(sampler.interpolation === "CUBIC")
+                        curve.type = AnimationCurveType.CUBIC;
+                    else if (sampler.interpolation === "STEP")
+                        curve.type = AnimationCurveType.STEP; 
+                    for (i = 0; i < times.length; i++) {
+                        time = times[i];
+                        if ((path === 'translation') || (path === 'scale'))
+                            value = new pc.Vec3(values[3 * i + 0], values[3 * i + 1], values[3 * i + 2]);
+                        else if (path === 'rotation')
+                            value = new pc.Quat(values[4 * i + 0], values[4 * i + 1], values[4 * i + 2], values[4 * i + 3]);
+                        else 
+                            value = values[i];//AnimationKeyableType.NUM
+                        curve.insertKey(keyType, time, value);
+                    }
+                    clip.addCurve(curve);
+                } else { //10/15 one key contains (in-tangent, value, out-tangent)
+                    console.log(clip.name, curve.name, path, "CUBICSPLINE")
+                    curve.type = AnimationCurveType.CUBICSPLINE_GLTF;
+                    for (i = 0; i < times.length; i++) {
+                        time = times[i];
+                        var keyable = new AnimationKeyable(keyType, time, null);
+                        if ((path === 'translation') || (path === 'scale')) {
+                            keyable.inTangent = new pc.Vec3(values[9 * i + 0], values[9 * i + 1], values[9 * i + 2]);
+                            keyable.value = new pc.Vec3(values[9 * i + 3], values[9 * i + 4], values[9 * i + 5]);
+                            keyable.outTangent = new pc.Vec3(values[9 * i + 6], values[9 * i + 7], values[9 * i + 8]); 
+                        }
+                        else if (path === 'rotation') {
+                            keyable.inTangent = new pc.Quat(values[12 * i + 0], values[12 * i + 1], values[12 * i + 2], values[12 * i + 3]);
+                            keyable.value = new pc.Quat(values[12 * i + 4], values[12 * i + 5], values[12 * i + 6], values[12 * i + 7]);
+                            keyable.outTangent = new pc.Quat(values[12 * i + 8], values[12 * i + 9], values[12 * i + 10], values[12 * i + 11]);
+                        }
+                        else {
+                            keyable.inTangent = values[3*i];
+                            keyable.value = values[3*i+1];
+                            keyable.outTangent = value[3*i+2];
+                        }
+                        curve.insertKeyable(keyable);
+                    }
+                    clip.addCurve(curve); 
+                } 
             }
         });
 
@@ -245,7 +273,7 @@
             if (isDataURI(data.uri)) {
                 image.src = data.uri;
             } else if (resources.processUri) {
-                resources.processUri(data.uri, function(uri) {
+                resources.processUri(data.uri, function (uri) {
                     image.crossOrigin = "anonymous";
                     image.src = uri;
                 });
@@ -401,10 +429,10 @@
             }
             if (specData.hasOwnProperty('specularGlossinessTexture')) {
                 var specularGlossinessTexture = specData.specularGlossinessTexture;
-                material.specularMap = resources.textures[specularGlossinessTexture.index] 
+                material.specularMap = resources.textures[specularGlossinessTexture.index];
                 material.specularMapChannel = 'rgb';
                 material.glossMap = resources.textures[specularGlossinessTexture.index];
-                material.glossMapChannel = 'a';                
+                material.glossMapChannel = 'a';
                 if (specularGlossinessTexture.hasOwnProperty('texCoord')) {
                     material.glossMapUv = specularGlossinessTexture.texCoord;
                     material.metalnessMapUv = specularGlossinessTexture.texCoord;
@@ -887,10 +915,14 @@
                 for (i = 0; i < numVertices; i++) {
                     dstIndex = dstOffset + i * dstStride;
                     srcIndex = accessor.type === 'VEC4' ? i * 4 : i * 3;
-                    vertexDataU8[dstIndex]     = colors[srcIndex] * 255;
-                    vertexDataU8[dstIndex + 1] = colors[srcIndex + 1] * 255;
-                    vertexDataU8[dstIndex + 2] = colors[srcIndex + 2] * 255;
-                    vertexDataU8[dstIndex + 3] = accessor.type === 'VEC4' ? colors[srcIndex + 3] * 255 : 255;
+                    var r = colors[srcIndex];
+                    var g = colors[srcIndex + 1];
+                    var b = colors[srcIndex + 2];
+                    var a = colors[srcIndex + 3];
+                    vertexDataU8[dstIndex]     = Math.round(pc.math.clamp(r, 0, 1) * 255);
+                    vertexDataU8[dstIndex + 1] = Math.round(pc.math.clamp(g, 0, 1) * 255);
+                    vertexDataU8[dstIndex + 2] = Math.round(pc.math.clamp(b, 0, 1) * 255);
+                    vertexDataU8[dstIndex + 3] = accessor.type === 'VEC4' ? Math.round(pc.math.clamp(a, 0, 1) * 255) : 255;
                 }
             }
 
@@ -1084,7 +1116,8 @@
             var ibmData = getAccessorData(gltf, gltf.accessors[inverseBindMatrices], resources.buffers);
 
             for (i = 0; i < numJoints; i++) {
-                bindMatrix = new pc.Mat4(ibmData.slice(i * 16, i * 16 + 16));
+                bindMatrix = new pc.Mat4();
+                bindMatrix.set(ibmData.slice(i * 16, i * 16 + 16));
                 ibp.push(bindMatrix);
             }
         } else {
@@ -1178,7 +1211,7 @@
                             success();
                         }
                     } else if (resources.processUri) {
-                        resources.processUri(buffer.uri, function(result) {
+                        resources.processUri(buffer.uri, function (result) {
                             resources.buffers[idx] = result;
                             if (gltf.buffers.length === ++numLoaded) {
                                 success();
@@ -1189,7 +1222,7 @@
                         xhr.open('GET', resources.basePath + buffer.uri, true);
                         xhr.responseType = 'arraybuffer';
 
-                        xhr.onload = function(e) {
+                        xhr.onload = function (e) {
                             // response is unsigned 8 bit integer
                             resources.buffers[idx] = this.response;
 
@@ -1268,39 +1301,38 @@
         var skinInstances = [];
         var morphInstances = [];
 
-        gltf.nodes.forEach(function (node, idx) {
+        gltf.nodes.forEach(function (node, nodeIndex) {
             if (node.hasOwnProperty('mesh')) {
                 var meshGroup = resources.meshes[node.mesh];
-                for (var i = 0; i < meshGroup.length; i++) {
+                meshGroup.forEach(function (mesh) {
                     var material;
-                    if (meshGroup[i].materialIndex === undefined) {
+                    if (mesh.materialIndex === undefined) {
                         material = resources.defaultMaterial;
                     } else {
-                        material = resources.materials[meshGroup[i].materialIndex];
+                        material = resources.materials[mesh.materialIndex];
                     }
 
-                    var meshInstance = new pc.MeshInstance(resources.nodes[idx], meshGroup[i], material);
+                    var meshInstance = new pc.MeshInstance(resources.nodes[nodeIndex], mesh, material);
                     meshInstances.push(meshInstance);
 
-                    if (meshGroup[i].morph) {
-                        var morphInstance = new pc.MorphInstance(meshGroup[i].morph);
-                        var weights = gltf.meshes[i].weights;
-                        if (weights) {
-                            weights.forEach(function (weight, idx) {
-                                morphInstance.setWeight(idx, weight);
-                            });
-                        }
+                    if (mesh.morph) {
+                        var morphInstance = new pc.MorphInstance(mesh.morph);
                         meshInstance.morphInstance = morphInstance;
                         // HACK: need to force calculation of the morph's AABB due to a bug
                         // in the engine. This is a private function and will be removed!
                         morphInstance.updateBounds(meshInstance.mesh);
+                        if (mesh.weights) {
+                            mesh.weights.forEach(function (weight, weightIndex) {
+                                morphInstance.setWeight(weightIndex, weight);
+                            });
+                        }
 
                         morphInstances.push(morphInstance);
                     }
 
                     if (node.hasOwnProperty('skin')) {
                         var skin = resources.skins[node.skin];
-                        meshGroup[i].skin = skin;
+                        mesh.skin = skin;
 
                         var skinInstance = new pc.SkinInstance(skin);
                         skinInstance.bones = skin.bones;
@@ -1308,7 +1340,7 @@
 
                         skinInstances.push(skinInstance);
                     }
-                }
+                });
             }
         });
 

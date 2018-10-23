@@ -2,7 +2,7 @@
 // * class AnimationKeyable
 // *
 // *===============================================================================================================
-var AnimationKeyableType = { NUM: 0, VEC: 1, QUAT: 2};
+var AnimationKeyableType = { NUM: 0, VEC: 1, QUAT: 2 };
 var AnimationKeyable = function AnimationKeyable(type, time, value) {
     this.init(type, time, value);
 };
@@ -13,7 +13,7 @@ AnimationKeyable.prototype.init = function (type, time, value) {
     if (value)
         this.value = value;
     else {
-        switch(type) {
+        switch (type) {
             case AnimationKeyableType.NUM: this.value = 0; break;
             case AnimationKeyableType.VEC: this.value = new pc.Vec3(); break;
             case AnimationKeyableType.QUAT: this.value = new pc.Quat(); break;
@@ -23,11 +23,11 @@ AnimationKeyable.prototype.init = function (type, time, value) {
 };
 
 AnimationKeyable.prototype.copy = function (keyable) {
-    if(!keyable)
+    if (!keyable)
         return this;
 
     var value = keyable.value;
-    if(keyable.value instanceof pc.Vec3 || keyable.value instanceof pc.Quat)
+    if (keyable.value instanceof pc.Vec3 || keyable.value instanceof pc.Quat)
         value = keyable.value.clone();
 
     this.init(keyable.type, keyable.time, value);
@@ -36,7 +36,7 @@ AnimationKeyable.prototype.copy = function (keyable) {
 
 AnimationKeyable.prototype.clone = function () {
     var value = this.value;
-    if(this.value instanceof pc.Vec3 || this.value instanceof pc.Quat)
+    if (this.value instanceof pc.Vec3 || this.value instanceof pc.Quat)
         value = this.value.clone();
     var cloned = new AnimationKeyable(this.type, this.time, value);
     return cloned;
@@ -49,7 +49,7 @@ AnimationKeyable.sum = function (keyable1, keyable2) {
         return null;
 
     var resKeyable = new AnimationKeyable(keyable1.type);
-    switch(keyable1.type) {
+    switch (keyable1.type) {
         case AnimationKeyableType.NUM: resKeyable.value = keyable1.value + keyable2.value; break;
         case AnimationKeyableType.VEC: resKeyable.value.add2(keyable1.value, keyable2.value); break;
         case AnimationKeyableType.QUAT:
@@ -67,7 +67,7 @@ AnimationKeyable.minus = function (keyable1, keyable2) {
         return null;
 
     var resKeyable = new AnimationKeyable(keyable1.type);
-    switch(keyable1.type) {
+    switch (keyable1.type) {
         case AnimationKeyableType.NUM: resKeyable.value = keyable1.value - keyable2.value; break;
         case AnimationKeyableType.VEC: resKeyable.value.sub2(keyable1.value, keyable2.value); break;
         case AnimationKeyableType.QUAT:
@@ -86,7 +86,7 @@ AnimationKeyable.mul = function (keyable, coeff) {
 
     var resKeyable = new AnimationKeyable();
     resKeyable.copy(keyable);
-    switch(keyable.type) {
+    switch (keyable.type) {
         case AnimationKeyableType.NUM: resKeyable.value *= coeff; break;
         case AnimationKeyableType.VEC: resKeyable.value.scale(coeff); break;
         case AnimationKeyableType.QUAT:
@@ -121,7 +121,7 @@ AnimationKeyable.linearBlend = function (keyable1, keyable2, p) {
         return resKeyable;
     }
 
-    switch(keyable1.type) {
+    switch (keyable1.type) {
         case AnimationKeyableType.NUM:
             resKeyable.value = (1 - p) * keyable1.value + p * keyable2.value; break;
         case AnimationKeyableType.VEC:
@@ -167,13 +167,13 @@ var AnimationTarget = function AnimationTarget(targetNode, targetPath, targetPro
 };
 
 // blend related
-AnimationTarget.prototype.toString = function(){
+AnimationTarget.prototype.toString = function (){
     var str = "";
-    if(this.targetNode)
+    if (this.targetNode)
         str += this.targetNode.name;
-    if(this.targetPath)
+    if (this.targetPath)
         str += ("_" + this.targetPath);
-    if(this.targetProp)
+    if (this.targetProp)
         str += ("_" + this.targetProp);
     return str;
 };
@@ -214,7 +214,7 @@ AnimationTarget.prototype.blendToTarget = function (value, p) {
     }
 
     // p*cur + (1-p)*prev
-    if (this.targetNode && this.targetNode.hasOwnProperty(this.targetPath)) {
+    if (this.targetNode && this.targetNode[this.targetPath] !== undefined) {
         var blendValue;
         if (this.targetProp && this.targetProp in this.targetNode[this.targetPath]) {
             blendValue = AnimationKeyable.linearBlendValue(this.targetNode[this.targetPath][this.targetProp], value, p);
@@ -235,7 +235,9 @@ AnimationTarget.prototype.blendToTarget = function (value, p) {
         }
 
         // execute update target
-        this.targetNode._dirtify(true);
+        if (typeof this.targetNode._dirtifyLocal === 'function') {
+            this.targetNode._dirtifyLocal();
+        }
     }
 
     /* /special wrapping for morph weights
@@ -266,7 +268,7 @@ AnimationTarget.prototype.updateToTarget = function (value) {
         }
     }
 
-    if (this.targetNode && this.targetNode.hasOwnProperty(this.targetPath)) {
+    if (this.targetNode && this.targetNode[this.targetPath] !== undefined) {
         if (this.targetProp && this.targetProp in this.targetNode[this.targetPath])
             this.targetNode[this.targetPath][this.targetProp] = value;
         else
@@ -283,7 +285,9 @@ AnimationTarget.prototype.updateToTarget = function (value) {
         }
 
         // execute update target
-        this.targetNode._dirtify(true);
+        if (typeof this.targetNode._dirtifyLocal === 'function') {
+            this.targetNode._dirtifyLocal();
+        }
     }
 
     // special wrapping for morph weights
@@ -309,7 +313,7 @@ AnimationTarget.constructTargetNodes = function (root, vec3Scale, output) {
 
     output[rootTargetNode.targetNode.name] = rootTargetNode;
     for (var i = 0; i < root.children.length; i ++) {
-        var arTargets = AnimationTarget.constructTargetNodes(root.children[i], rootTargetNode.vScale, output);
+        AnimationTarget.constructTargetNodes(root.children[i], rootTargetNode.vScale, output);
     }
 };
 
@@ -320,7 +324,7 @@ AnimationTarget.getLocalScale = function (node) {
 
     var vScale = new pc.Vec3(1, 1, 1);
     var curNode = node;
-    while(curNode) {
+    while (curNode) {
         if (curNode.localScale) {
             vScale.x *= curNode.localScale.x;
             vScale.y *= curNode.localScale.y;
@@ -338,7 +342,7 @@ AnimationTarget.getLocalScale = function (node) {
 // *        type: how to interpolate between keys.
 // *
 // *===============================================================================================================
-var AnimationCurveType = { LINEAR: 0, STEP: 1, CUBIC: 2 };
+var AnimationCurveType = { LINEAR: 0, STEP: 1, CUBIC: 2, CUBICSPLINE_GLTF: 3};
 
 var AnimationCurve = function AnimationCurve() {
     AnimationCurve.count ++;
@@ -500,7 +504,7 @@ AnimationCurve.prototype.insertKey = function (type, time, value) {
         return;
 
     var pos = 0;
-    while(pos < this.animKeys.length && this.animKeys[pos].time < time)
+    while (pos < this.animKeys.length && this.animKeys[pos].time < time)
         pos ++;
 
     // replace if existed at time
@@ -510,6 +514,33 @@ AnimationCurve.prototype.insertKey = function (type, time, value) {
     }
 
     var keyable = new AnimationKeyable(type, time, value);
+
+    // append at the back
+    if (pos >= this.animKeys.length) {
+        this.animKeys.push(keyable);
+        this.duration = time;
+        return;
+    }
+
+    // insert at pos
+    this.animKeys.splice(pos, 0, keyable);
+};
+
+//10/15
+AnimationCurve.prototype.insertKeyable = function (keyable) {
+    if (!keyable || this.keyableType != keyable.type)
+        return;
+
+    var time = keyable.time;
+    var pos = 0;
+    while (pos < this.animKeys.length && this.animKeys[pos].time < time)
+        pos ++;
+
+    // replace if existed at time
+    if (pos < this.animKeys.length && this.animKeys[pos].time == time) {
+        this.animKeys[pos] = keyable;
+        return;
+    }
 
     // append at the back
     if (pos >= this.animKeys.length) {
@@ -660,17 +691,73 @@ AnimationCurve.prototype.evalCUBIC = function (time) {
     return null;// quaternion or combo
 };
 
+//10/16
+AnimationCurve.prototype.evalCUBICSPLINE_GLTF = function (time) {
+    if (!this.animKeys || this.animKeys.length === 0)
+        return null;
+
+    // 1. find the interval [key1, key2]
+    var resKey = new AnimationKeyable();
+    var key1, key2;
+    for (var i = 0; i < this.animKeys.length; i ++) {
+        if (this.animKeys[i].time === time) {
+            resKey.copy(this.animKeys[i]);
+            return resKey;
+        }
+
+        if (this.animKeys[i].time > time) {
+            key2 = this.animKeys[i];
+            break;
+        }
+        key1 = this.animKeys[i];
+    }
+
+    // 2. only found one boundary
+    if (!key1 || !key2) {
+        resKey.copy(key1 ? key1 : key2);
+        resKey.time = time;
+        return resKey;
+    }
+
+    // 3. both found then interpolate
+    var p = (time - key1.time) / (key2.time - key1.time);
+    var g = key2.time - key1.time;
+    if (this.keyableType === AnimationKeyableType.NUM) {
+        resKey.value = AnimationCurve.cubicHermite(g*key1.outTangent, key1.value, g*key2.inTangent, key2.value, p);
+    }
+    else if (this.keyableType === AnimationKeyableType.VEC) {
+        resKey.value = new pc.Vec3();
+        resKey.value.x = AnimationCurve.cubicHermite(g*key1.outTangent.x, key1.value.x, g*key2.inTangent.x, key2.value.x, p);
+        resKey.value.y = AnimationCurve.cubicHermite(g*key1.outTangent.y, key1.value.y, g*key2.inTangent.y, key2.value.y, p);
+        resKey.value.z = AnimationCurve.cubicHermite(g*key1.outTangent.z, key1.value.z, g*key2.inTangent.z, key2.value.z, p);
+    }
+    else if (this.keyableType === AnimationKeyableType.QUAT) {
+        resKey.value = new pc.Quat();
+        resKey.value.w = AnimationCurve.cubicHermite(g*key1.outTangent.w, key1.value.w, g*key2.inTangent.w, key2.value.w, p);
+        resKey.value.x = AnimationCurve.cubicHermite(g*key1.outTangent.x, key1.value.x, g*key2.inTangent.x, key2.value.x, p);
+        resKey.value.y = AnimationCurve.cubicHermite(g*key1.outTangent.y, key1.value.y, g*key2.inTangent.y, key2.value.y, p);
+        resKey.value.z = AnimationCurve.cubicHermite(g*key1.outTangent.z, key1.value.z, g*key2.inTangent.z, key2.value.z, p);
+        resKey.normalize();
+    }
+
+    resKey.time = time;
+    return resKey;
+
+};
+
 AnimationCurve.prototype.eval = function (time) {
     if (!this.animKeys || this.animKeys.length === 0)
         return null;
 
-    switch(this.type) {
+    switch (this.type) {
         case AnimationCurveType.LINEAR: return this.evalLINEAR(time);
         case AnimationCurveType.STEP: return this.evalSTEP(time);
         case AnimationCurveType.CUBIC:
             if (this.keyableType == AnimationKeyableType.QUAT)
                 return this.evalLINEAR(time);
             return this.evalCUBIC(time);
+        case AnimationCurveType.CUBICSPLINE_GLTF://10/15, keyable contains (inTangent, value, outTangent)
+            return this.evalCUBICSPLINE_GLTF(time);
     }
     return null;
 };
@@ -1063,13 +1150,16 @@ AnimationClip.prototype.constructFromRoot = function (root) {
 //         newTarget.vScale = NS / AS = vScale * NS / RS;
 //
 */
-AnimationClip.prototype.transferToRoot = function (root) { 
+AnimationClip.prototype.transferToRoot = function (root) {
     var dictTarget = {};
     AnimationTarget.constructTargetNodes(root, null, dictTarget);// contains localScale information
 
     for (var i = 0, len = this.animCurves.length; i < len; i++) {
         var curve = this.animCurves[i];
         var ctarget = curve.animTargets[0];
+        if (curve.animTargets.length === 0) {
+            continue;
+        }
         var atarget = dictTarget[ctarget.targetNode.name];
         if (atarget) { // match by target name
             var cScale = AnimationTarget.getLocalScale(ctarget.targetNode);
@@ -1080,8 +1170,7 @@ AnimationClip.prototype.transferToRoot = function (root) {
                 if (atarget.vScale.y) ctarget.vScale.y /= atarget.vScale.y;
                 if (atarget.vScale.z) ctarget.vScale.z /= atarget.vScale.z;
             }
-        }
-        else //not found
+        } else // not found
             console.warn("transferToRoot: " + ctarget.targetNode.name + "in animation clip " + this.name + " has no transferred target under " + root.name);
     }
 };
@@ -1094,7 +1183,7 @@ AnimationClip.prototype.updateCurveNameFromTarget = function () {
             continue;
 
         // change name to target string
-        var oldName = curve.name;//backup before change
+        var oldName = curve.name;// backup before change
         var newName = curve.animTargets[0].toString();
         if (oldName == newName)// no need to change name
             continue;
@@ -1164,7 +1253,7 @@ var AnimationSession = function AnimationSession(playable, targets) {
     this.fadeTime = -1;
     this.fadeDir = 0;// 1 is in, -1 is out
     this.fadeSpeed = 1;
-    /*fadeIn, speed starts 0
+    /* fadeIn, speed starts 0
     fadeOut from fully-playing session, speed starts 1
     fadeOut from previously unfinished fading session, speed starts from value (0,1)
     this is solving such situation: session fadeIn a small amount unfinished yet, and it now fadeOut(it should not start updating 100% to target) */
@@ -1210,10 +1299,10 @@ var AnimationSession = function AnimationSession(playable, targets) {
         if (self.curTime < self.begTime)
             self.curTime += duration;
 
-        if(self.fadeDir) {
+        if (self.fadeDir) {
             self.fadeTime +=  dt;// (self.bySpeed * dt);
-            if(self.fadeTime >= self.fadeEndTime) {
-                if(self.fadeDir === 1) { // fadein completed
+            if (self.fadeTime >= self.fadeEndTime) {
+                if (self.fadeDir === 1) { // fadein completed
                     self.fadeDir = 0;
                     self.fadeBegTime = -1;
                     self.fadeEndTime = -1;
@@ -1232,8 +1321,9 @@ var AnimationSession = function AnimationSession(playable, targets) {
 
 AnimationSession.app = null;
 
-AnimationSession.prototype.clone = function () {   
-    var cloned = new AnimationSession();  
+AnimationSession.prototype.clone = function () {
+    var i, key;
+    var cloned = new AnimationSession();
 
     cloned.begTime = this.begTime;
     cloned.endTime = this.endTime;
@@ -1241,7 +1331,7 @@ AnimationSession.prototype.clone = function () {
     cloned.accTime = this.accTime;
     cloned.speed = this.speed;
     cloned.loop = this.loop;
-    cloned.isPlaying = this.isPlaying; 
+    cloned.isPlaying = this.isPlaying;
 
     // fading
     cloned.fadeBegTime = this.fadeBegTime;
@@ -1253,40 +1343,40 @@ AnimationSession.prototype.clone = function () {
     cloned.playable = this.playable;
 
     // targets
-    cloned.animTargets = {}; 
-    for(var key in this.animTargets) { 
-        if(!this.animTargets.hasOwnProperty(key)) continue;
+    cloned.animTargets = {};
+    for (key in this.animTargets) {
+        if (!this.animTargets.hasOwnProperty(key)) continue;
         var ttargets = this.animTargets[key];
         var ctargets = [];
-        for(var j = 0; j < ttargets.length; j ++) {
-            ctargets.push(ttargets[j].clone());
-        } 
+        for (i = 0; i < ttargets.length; i++) {
+            ctargets.push(ttargets[i].clone());
+        }
         cloned.animTargets[key] = ctargets;
     }
 
     // events
     cloned.animEvents = [];
-    for(var i = 0; i < this.animEvents.length; i ++)
-        cloned.animEvents.push(this.animEvents[i].clone()); 
+    for (i = 0; i < this.animEvents.length; i ++)
+        cloned.animEvents.push(this.animEvents[i].clone());
 
     // blending
-    cloned.blendables = {};  
-    for(var key in this.blendables)
-        if(this.blendables.hasOwnProperty(key)) 
+    cloned.blendables = {};
+    for (key in this.blendables)
+        if (this.blendables.hasOwnProperty(key))
             cloned.blendables[key] = this.blendables[key];
 
-    cloned.blendWeights = {};  
-    for(var key in this.blendWeights)
-        if(this.blendWeights.hasOwnProperty(key))
+    cloned.blendWeights = {};
+    for (key in this.blendWeights)
+        if (this.blendWeights.hasOwnProperty(key))
             cloned.blendWeights[key] = this.blendWeights[key];
 
     return cloned;
-}; 
+};
 
 // blend related==========================================================
-AnimationSession.prototype.setBlend = function(blendValue, weight, curveName){
-    if(blendValue instanceof AnimationClip){
-        if(!curveName || curveName === "")
+AnimationSession.prototype.setBlend = function (blendValue, weight, curveName){
+    if (blendValue instanceof AnimationClip){
+        if (!curveName || curveName === "")
             curveName = "__default__";
         this.blendables[curveName] = blendValue;
         this.blendWeights[curveName] = weight;
@@ -1295,26 +1385,26 @@ AnimationSession.prototype.setBlend = function(blendValue, weight, curveName){
 
     // blendable is just a single DOF=================================
     var keyType;
-    if(typeof blendValue === "number")// 1 instanceof Number is false, don't know why
+    if (typeof blendValue === "number")// 1 instanceof Number is false, don't know why
         keyType =  AnimationKeyableType.NUM;
-    else if(blendValue instanceof pc.Vec3)
+    else if (blendValue instanceof pc.Vec3)
         keyType = AnimationKeyableType.VEC;
-    else if(blendValue instanceof pc.Quat)
+    else if (blendValue instanceof pc.Quat)
         keyType = AnimationKeyableType.QUAT;
 
-    if(!curveName || curveName === "" || typeof keyType === "undefined")// has to specify curveName
+    if (!curveName || curveName === "" || typeof keyType === "undefined")// has to specify curveName
         return;
 
     this.blendWeights[curveName] = weight;
     this.blendables[curveName] = new AnimationKeyable(keyType, 0, blendValue);
 };
 
-AnimationSession.prototype.unsetBlend = function(curveName) {
-    if(!curveName || curveName === "")
+AnimationSession.prototype.unsetBlend = function (curveName) {
+    if (!curveName || curveName === "")
         curveName = "__default__";
 
     // unset blendvalue
-    if(this.blendables[curveName]) {
+    if (this.blendables[curveName]) {
         delete this.blendables[curveName];
         delete this.blendWeights[curveName];
     }
@@ -1382,7 +1472,7 @@ AnimationSession.prototype.invokeByTime = function (time) {
 
 AnimationSession.prototype.blendToTarget = function (input, p) {
     var i, j;
-    var cname, ctargets;
+    var cname, ctargets, blendUpdateNone;
 
     if (!input || p > 1 || p <= 0)// p===0 remain prev
         return;
@@ -1399,8 +1489,17 @@ AnimationSession.prototype.blendToTarget = function (input, p) {
         if (!ctargets)
             return;
 
-        for (j = 0; j < ctargets.length; j ++)
-            ctargets[j].blendToTarget(input.value, p);
+        // 10/10, if curve is step, let's not blend
+        blendUpdateNone = 0;
+        if (this.playable.type === AnimationCurveType.STEP && this.fadeDir) {
+            if ((this.fadeDir == -1 && p <= 0.5) || (this.fadeDir == 1 && p > 0.5)) blendUpdateNone = 1;
+            else blendUpdateNone = 2;
+        }
+
+        for (j = 0; j < ctargets.length; j ++) {
+            if (blendUpdateNone === 0) ctargets[j].blendToTarget(input.value, p);
+            else if (blendUpdateNone === 1) ctargets[j].updateToTarget(input.value);
+        }
         return;
     }
 
@@ -1410,11 +1509,20 @@ AnimationSession.prototype.blendToTarget = function (input, p) {
         for (i = 0; i < curveNames.length; i ++) {
             cname = curveNames[i];
             if (!cname) continue;
+
+            blendUpdateNone = 0;
+            if (this.playable.animCurvesMap[cname] && this.playable.animCurvesMap[cname].type === AnimationCurveType.STEP && this.fadeDir) {
+                if ((this.fadeDir == -1 && p <= 0.5) || (this.fadeDir == 1 && p > 0.5)) blendUpdateNone = 1;
+                else blendUpdateNone = 2;
+            }
+
             ctargets = this.animTargets[cname];
             if (!ctargets) continue;
 
-            for (j = 0; j < ctargets.length; j ++)
-                ctargets[j].blendToTarget(input.curveKeyable[cname].value, p);
+            for (j = 0; j < ctargets.length; j ++) {
+                if (blendUpdateNone === 0) ctargets[j].blendToTarget(input.curveKeyable[cname].value, p);
+                else if (blendUpdateNone === 1) ctargets[j].updateToTarget(input.value);
+            }
         }
     }
 };
@@ -1466,7 +1574,7 @@ AnimationSession.prototype.showAt = function (time, fadeDir, fadeBegTime, fadeEn
         var bname = blendableNames[i];
         p = this.blendWeights[bname];
         var blendClip = this.blendables[bname];
-        if(blendClip && (blendClip instanceof AnimationClip) && (typeof p === "number")) {
+        if (blendClip && (blendClip instanceof AnimationClip) && (typeof p === "number")) {
             var blendInput = blendClip.eval(this.accTime % blendClip.duration);
             input = AnimationClipSnapshot.linearBlend(input, blendInput, p);
         }
@@ -1476,22 +1584,22 @@ AnimationSession.prototype.showAt = function (time, fadeDir, fadeBegTime, fadeEn
         var cname = blendableNames[i];
         p = this.blendWeights[cname];
         var blendkey = this.blendables[cname];
-        if(!blendkey || !input.curveKeyable[cname] || (blendkey instanceof AnimationClip))
+        if (!blendkey || !input.curveKeyable[cname] || (blendkey instanceof AnimationClip))
             continue;
         var resKey = AnimationKeyable.linearBlend(input.curveKeyable[cname], blendkey, p);
         input.curveKeyable[cname] = resKey;
     }
 
-    if(fadeDir === 0 || fadeTime < fadeBegTime || fadeTime > fadeEndTime)
+    if (fadeDir === 0 || fadeTime < fadeBegTime || fadeTime > fadeEndTime)
         this.updateToTarget(input);
     else {
         p = (fadeTime - fadeBegTime) / (fadeEndTime - fadeBegTime);
         if (fadeDir === -1)
             p = 1 - p;
 
-        if(this.fadeSpeed < 1 && fadeDir === -1) { //fadeOut from non-100% 
-            p = p * this.fadeSpeed;  
-        } 
+        if (this.fadeSpeed < 1 && fadeDir === -1) { // fadeOut from non-100%
+            p *= this.fadeSpeed;
+        }
 
         this.blendToTarget(input, p);
     }
@@ -1521,7 +1629,7 @@ AnimationSession.prototype.play = function (playable, animTargets) {
 
     if (!animTargets && playable && typeof playable.getAnimTargets === "function")
         this.animTargets = playable.getAnimTargets();
-    else if(animTargets)
+    else if (animTargets)
         this.animTargets = animTargets;
 
     // reset events
@@ -1551,7 +1659,7 @@ AnimationSession.prototype.stop = function () {
 };
 
 AnimationSession.prototype.pause = function () {
-    if(AnimationSession.app)
+    if (AnimationSession.app)
         AnimationSession.app.off('update', this.onTimer);
     this.isPlaying = false;
     return this;
@@ -1566,14 +1674,14 @@ AnimationSession.prototype.resume = function () {
 };
 
 AnimationSession.prototype.fadeOut = function (duration) {
-    if(this.fadeDir === 0) //fade out from normal playing session
+    if (this.fadeDir === 0) // fade out from normal playing session
         this.fadeSpeed = 1;
-    else if(this.fadeDir === 1) //fade out from session in the middle of fading In
-        this.fadeSpeed = (this.fadeTime - this.fadeBegTime) / (this.fadeEndTime - this.fadeBegTime); 
-    else //fade out from seesion that is fading out
+    else if (this.fadeDir === 1) // fade out from session in the middle of fading In
+        this.fadeSpeed = (this.fadeTime - this.fadeBegTime) / (this.fadeEndTime - this.fadeBegTime);
+    else // fade out from seesion that is fading out
         return;//
 
-    if(typeof duration !== "number")
+    if (typeof duration !== "number")
         duration = 0;
 
     this.fadeBegTime = this.curTime;
@@ -1583,13 +1691,13 @@ AnimationSession.prototype.fadeOut = function (duration) {
 };
 
 AnimationSession.prototype.fadeIn = function (duration, playable) {
-    if(this.isPlaying) {
-        this.stop(); 
+    if (this.isPlaying) {
+        this.stop();
     }
     this.fadeSpeed = 0;
     this.curTime = 0;
-    if(typeof duration !== "number")
-        duration = 0; 
+    if (typeof duration !== "number")
+        duration = 0;
 
     this.fadeBegTime = this.curTime;
     this.fadeTime = this.fadeBegTime;
@@ -1607,14 +1715,14 @@ AnimationSession.prototype.fadeTo = function (playable, duration) {
     return session;
 };
 
-AnimationSession.prototype.fadeToSelf = function(duration) { 
-    var session = this.clone(); 
-    if(AnimationSession.app)
+AnimationSession.prototype.fadeToSelf = function (duration) {
+    var session = this.clone();
+    if (AnimationSession.app)
         AnimationSession.app.on('update', session.onTimer);
-    session.fadeOut(duration); 
- 
+    session.fadeOut(duration);
+
     this.stop();
-    this.fadeIn(duration);  
+    this.fadeIn(duration);
 };
 
 // *===============================================================================================================
@@ -1677,7 +1785,7 @@ AnimationComponent.prototype.playClip = function (name) {
 };
 
 AnimationComponent.prototype.stopClip = function () {
-    var clip = this.animClips[this.curClip];
+    var clip = this.animClipsMap[this.curClip];
     if (clip) {
         clip.stop();
         this.curClip = "";
@@ -1709,7 +1817,7 @@ AnimationComponent.prototype.setBlend = function (blendValue, weight, curveName)
         curClip.session.setBlend(blendValue, weight, curveName);
 };
 
-AnimationComponent.prototype.unsetBlend = function(curveName) {
+AnimationComponent.prototype.unsetBlend = function (curveName) {
     var curClip = this.getCurrentClip();
     if (curClip && curClip.session)
         curClip.session.unsetBlend(curveName);
@@ -1761,9 +1869,29 @@ AnimationComponent.prototype.setBlendSession = function (blendValue, weight, cur
     }
 };
 
-AnimationComponent.prototype.unsetBlendSession = function(curveName) {
+AnimationComponent.prototype.unsetBlendSession = function (curveName) {
     var curSession = this.animSessions[this.curClip];
     if (curSession) {
         curSession.unsetBlend(curveName);
+    }
+};
+
+AnimationComponent.prototype.playSubstring = function (substr) {
+    var n = this.animClips.length;
+    for (var i = 0; i < n; i++) {
+        var clip = this.animClips[i];
+        if (clip.isPlaying)
+            clip.pause();
+        if (clip.name.indexOf(substr) !== -1)
+            clip.play();
+    }
+};
+
+AnimationComponent.prototype.pauseAll = function () {
+    var n = this.animClips.length;
+    for (var i = 0; i < n; i++) {
+        var clip = this.animClips[i];
+        if (clip.isPlaying)
+            clip.pause();
     }
 };
