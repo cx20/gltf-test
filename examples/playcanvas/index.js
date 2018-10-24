@@ -145,7 +145,7 @@ function onLoad() {
         this.entity.rotate(0, -deltaTime * 20, 0);
     };
     // glTF scene root that rotates
-    var gltfRoot = new pc.Entity();
+    var gltfRoot = new pc.Entity('gltf');
     gltfRoot.addComponent('script');
     gltfRoot.script.create('rotate');
     app.root.addChild(gltfRoot);
@@ -159,8 +159,30 @@ function onLoad() {
         req.onload = function(){
             var arrayBuffer = req.response;
             loadGlb(arrayBuffer, app.graphicsDevice, function (model, textures, animationClips) {
+                // Wrap the model as an asset and add to the asset registry
+                var asset = new pc.Asset('gltf', 'model', {
+                    url: ''
+                });
+                asset.resource = model;
+                asset.loaded = true;
+                app.assets.add(asset);
+
                 // add the loaded scene to the hierarchy
-                gltfRoot.addComponent('model');
+                gltfRoot.addComponent('model', {
+                    asset: asset
+                });
+
+                // Now that the model is created, after translateAnimation, we have to hook here
+                if (animationClips) {
+                    for (i = 0; i < animationClips.length; i++) {
+                        for(var c = 0; c < animationClips[i].animCurves.length; c++) {
+                            var curve = animationClips[i].animCurves[c];
+                            if (curve.animTargets[0].targetNode === "model")
+                                curve.animTargets[0].targetNode = gltfRoot;
+                        }
+                    }
+                }
+
                 gltfRoot.model.model = model;
                 if ( animationClips && animationClips.length > 0 ) {
                     gltfRoot.animComponent = new AnimationComponent();
@@ -184,8 +206,30 @@ function onLoad() {
             var json = asset.resource;
             var gltf = JSON.parse(json);
             loadGltf(gltf, app.graphicsDevice, function (model, textures, animationClips) {
+                // Wrap the model as an asset and add to the asset registry
+                var asset = new pc.Asset('gltf', 'model', {
+                    url: ''
+                });
+                asset.resource = model;
+                asset.loaded = true;
+                app.assets.add(asset);
+
                 // add the loaded scene to the hierarchy
-                gltfRoot.addComponent('model');
+                gltfRoot.addComponent('model', {
+                    asset: asset
+                });
+
+                // Now that the model is created, after translateAnimation, we have to hook here
+                if (animationClips) {
+                    for (i = 0; i < animationClips.length; i++) {
+                        for(var c = 0; c < animationClips[i].animCurves.length; c++) {
+                            var curve = animationClips[i].animCurves[c];
+                            if (curve.animTargets[0].targetNode === "model")
+                                curve.animTargets[0].targetNode = gltfRoot;
+                        }
+                    }
+                }
+
                 gltfRoot.model.model = model;
                 if ( animationClips && animationClips.length > 0 ) {
                     gltfRoot.animComponent = new AnimationComponent();
