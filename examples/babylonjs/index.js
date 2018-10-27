@@ -80,6 +80,7 @@ var createScene = function(engine) {
         var camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
         camera.attachControl(canvas, false, false);
+        camera.wheelDeltaPercentage = 0.005;
         scene.activeCamera = camera;
         
         var light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
