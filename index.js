@@ -324,6 +324,8 @@ function makeTutorialExtensionTestModelLinks() {
             var td = document.createElement('td');
             td.setAttribute('width', '100');
             if ( modelName == 'MorphPrimitivesTest' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
