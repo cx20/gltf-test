@@ -179,7 +179,7 @@ Object.assign( EventDispatcher.prototype, {
 
 } );
 
-var REVISION = '98dev';
+var REVISION = '98';
 var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2 };
 var CullFaceNone = 0;
 var CullFaceBack = 1;
@@ -6160,7 +6160,7 @@ var worldpos_vertex = "#if defined( USE_ENVMAP ) || defined( DISTANCE ) || defin
 
 var background_frag = "uniform sampler2D t2D;\nvarying vec2 vUv;\nvoid main() {\n\tgl_FragColor = texture2D( t2D, vUv );\n}\n";
 
-var background_vert = "varying vec2 vUv;\nvoid main() {\n\tvUv = uv;\n\tgl_Position = vec4( position, 1.0 );\n\tgl_Position.z = 1.0;\n}\n";
+var background_vert = "varying vec2 vUv;\nuniform mat3 uvTransform;\nvoid main() {\n\tvUv = ( uvTransform * vec3( uv, 1 ) ).xy;\n\tgl_Position = vec4( position, 1.0 );\n\tgl_Position.z = 1.0;\n}\n";
 
 var cube_frag = "uniform samplerCube tCube;\nuniform float tFlip;\nuniform float opacity;\nvarying vec3 vWorldDirection;\nvoid main() {\n\tgl_FragColor = textureCube( tCube, vec3( tFlip * vWorldDirection.x, vWorldDirection.yz ) );\n\tgl_FragColor.a *= opacity;\n}\n";
 
@@ -7394,6 +7394,7 @@ var ShaderLib = {
 	background: {
 
 		uniforms: {
+			uvTransform: { value: new Matrix3() },
 			t2D: { value: null },
 		},
 
@@ -9234,35 +9235,13 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		if ( uvs2 !== undefined ) this.faceVertexUvs[ 1 ] = [];
 
-		var tempNormals = [];
-		var tempUVs = [];
-		var tempUVs2 = [];
-
 		for ( var i = 0, j = 0; i < positions.length; i += 3, j += 2 ) {
 
-			scope.vertices.push( new Vector3( positions[ i ], positions[ i + 1 ], positions[ i + 2 ] ) );
-
-			if ( normals !== undefined ) {
-
-				tempNormals.push( new Vector3( normals[ i ], normals[ i + 1 ], normals[ i + 2 ] ) );
-
-			}
+			scope.vertices.push( new Vector3().fromArray( positions, i ) );
 
 			if ( colors !== undefined ) {
 
-				scope.colors.push( new Color( colors[ i ], colors[ i + 1 ], colors[ i + 2 ] ) );
-
-			}
-
-			if ( uvs !== undefined ) {
-
-				tempUVs.push( new Vector2( uvs[ j ], uvs[ j + 1 ] ) );
-
-			}
-
-			if ( uvs2 !== undefined ) {
-
-				tempUVs2.push( new Vector2( uvs2[ j ], uvs2[ j + 1 ] ) );
+				scope.colors.push( new Color().fromArray( colors, i ) );
 
 			}
 
@@ -9270,8 +9249,16 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 		function addFace( a, b, c, materialIndex ) {
 
-			var vertexNormals = normals !== undefined ? [ tempNormals[ a ].clone(), tempNormals[ b ].clone(), tempNormals[ c ].clone() ] : [];
-			var vertexColors = colors !== undefined ? [ scope.colors[ a ].clone(), scope.colors[ b ].clone(), scope.colors[ c ].clone() ] : [];
+			var vertexColors = ( colors === undefined ) ? [] : [
+				scope.colors[ a ].clone(),
+				scope.colors[ b ].clone(),
+				scope.colors[ c ].clone() ];
+
+			var vertexNormals = ( normals === undefined ) ? [] : [
+				new Vector3().fromArray( normals, a * 3 ),
+				new Vector3().fromArray( normals, b * 3 ),
+				new Vector3().fromArray( normals, c * 3 )
+			];
 
 			var face = new Face3( a, b, c, vertexNormals, vertexColors, materialIndex );
 
@@ -9279,13 +9266,21 @@ Geometry.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 
 			if ( uvs !== undefined ) {
 
-				scope.faceVertexUvs[ 0 ].push( [ tempUVs[ a ].clone(), tempUVs[ b ].clone(), tempUVs[ c ].clone() ] );
+				scope.faceVertexUvs[ 0 ].push( [
+					new Vector2().fromArray( uvs, a * 2 ),
+					new Vector2().fromArray( uvs, b * 2 ),
+					new Vector2().fromArray( uvs, c * 2 )
+				] );
 
 			}
 
 			if ( uvs2 !== undefined ) {
 
-				scope.faceVertexUvs[ 1 ].push( [ tempUVs2[ a ].clone(), tempUVs2[ b ].clone(), tempUVs2[ c ].clone() ] );
+				scope.faceVertexUvs[ 1 ].push( [
+					new Vector2().fromArray( uvs2, a * 2 ),
+					new Vector2().fromArray( uvs2, b * 2 ),
+					new Vector2().fromArray( uvs2, c * 2 )
+				] );
 
 			}
 
@@ -14624,6 +14619,7 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 				boxMesh = new Mesh(
 					new BoxBufferGeometry( 1, 1, 1 ),
 					new ShaderMaterial( {
+						type: 'BackgroundCubeMaterial',
 						uniforms: UniformsUtils.clone( ShaderLib.cube.uniforms ),
 						vertexShader: ShaderLib.cube.vertexShader,
 						fragmentShader: ShaderLib.cube.fragmentShader,
@@ -14660,6 +14656,7 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 				planeMesh = new Mesh(
 					new PlaneBufferGeometry( 2, 2 ),
 					new ShaderMaterial( {
+						type: 'BackgroundMaterial',
 						uniforms: UniformsUtils.clone( ShaderLib.background.uniforms ),
 						vertexShader: ShaderLib.background.vertexShader,
 						fragmentShader: ShaderLib.background.fragmentShader,
@@ -14677,6 +14674,14 @@ function WebGLBackground( renderer, state, objects, premultipliedAlpha ) {
 			}
 
 			planeMesh.material.uniforms.t2D.value = background;
+
+			if ( background.matrixAutoUpdate === true ) {
+
+				background.updateMatrix();
+
+			}
+
+			planeMesh.material.uniforms.uvTransform.value.copy( background.matrix );
 
 			// push to the pre-sorted opaque render list
 			renderList.push( planeMesh, planeMesh.geometry, planeMesh.material, 0, null );
@@ -21271,9 +21276,10 @@ var cameraLPos = new Vector3();
 var cameraRPos = new Vector3();
 
 /**
- * Assumes 2 cameras that are perpendicular and share an X-axis, and that
+ * Assumes 2 cameras that are parallel and share an X-axis, and that
  * the cameras' projection and world matrices have already been set.
  * And that near and far planes are identical for both cameras.
+ * Visualization of this technique: https://computergraphics.stackexchange.com/a/4765
  */
 function setProjectionFromUnion( camera, cameraL, cameraR ) {
 
@@ -21282,33 +21288,31 @@ function setProjectionFromUnion( camera, cameraL, cameraR ) {
 
 	var ipd = cameraLPos.distanceTo( cameraRPos );
 
-	var projL = cameraL.projectionMatrix;
-	var projR = cameraR.projectionMatrix;
+	var projL = cameraL.projectionMatrix.elements;
+	var projR = cameraR.projectionMatrix.elements;
 
 	// VR systems will have identical far and near planes, and
 	// most likely identical top and bottom frustum extents.
-	// via: https://computergraphics.stackexchange.com/a/4765
+	// Use the left camera for these values.
 	var near = projL[ 14 ] / ( projL[ 10 ] - 1 );
 	var far = projL[ 14 ] / ( projL[ 10 ] + 1 );
+	var topFov = ( projL[ 9 ] + 1 ) / projL[ 5 ];
+	var bottomFov = ( projL[ 9 ] - 1 ) / projL[ 5 ];
 
-	var leftFovL = ( projL[ 8 ] - 1 ) / projL[ 0 ];
-	var rightFovR = ( projR[ 8 ] + 1 ) / projR[ 0 ];
-	var leftL = leftFovL * near;
-	var rightR = rightFovR * near;
-	var topL = near * ( projL[ 9 ] + 1 ) / projL[ 5 ];
-	var topR = near * ( projR[ 9 ] + 1 ) / projR[ 5 ];
-	var bottomL = near * ( projL[ 9 ] - 1 ) / projL[ 5 ];
-	var bottomR = near * ( projR[ 9 ] - 1 ) / projR[ 5 ];
+	var leftFov = ( projL[ 8 ] - 1 ) / projL[ 0 ];
+	var rightFov = ( projR[ 8 ] + 1 ) / projR[ 0 ];
+	var left = near * leftFov;
+	var right = near * rightFov;
 
 	// Calculate the new camera's position offset from the
-	// left camera.
-	var zOffset = ipd / ( leftFovL + rightFovR );
-	var xOffset = zOffset * leftFovL;
+	// left camera. xOffset should be roughly half `ipd`.
+	var zOffset = ipd / ( - leftFov + rightFov );
+	var xOffset = zOffset * - leftFov;
 
 	// TODO: Better way to apply this offset?
 	cameraL.matrixWorld.decompose( camera.position, camera.quaternion, camera.scale );
 	camera.translateX( xOffset );
-	camera.translateZ( - zOffset );
+	camera.translateZ( zOffset );
 	camera.matrixWorld.compose( camera.position, camera.quaternion, camera.scale );
 	camera.matrixWorldInverse.getInverse( camera.matrixWorld );
 
@@ -21317,12 +21321,12 @@ function setProjectionFromUnion( camera, cameraL, cameraR ) {
 	// although must now be relative to the new union camera.
 	var near2 = near + zOffset;
 	var far2 = far + zOffset;
-	var left = leftL - xOffset;
-	var right = rightR + ( ipd - xOffset );
-	var top = Math.max( topL, topR );
-	var bottom = Math.min( bottomL, bottomR );
+	var left2 = left - xOffset;
+	var right2 = right + ( ipd - xOffset );
+	var top2 = topFov * far / far2 * near2;
+	var bottom2 = bottomFov * far / far2 * near2;
 
-	camera.projectionMatrix.makePerspective( left, right, top, bottom, near2, far2 );
+	camera.projectionMatrix.makePerspective( left2, right2, top2, bottom2, near2, far2 );
 
 }
 
@@ -21851,6 +21855,13 @@ function WebXRManager( renderer ) {
 
 				inputSources = session.getInputSources();
 				console.log( inputSources );
+
+				for ( var i = 0; i < controllers.length; i ++ ) {
+
+					var controller = controllers[ i ];
+					controller.userData.inputSource = inputSources[ i ];
+
+				}
 
 			} );
 
@@ -33927,8 +33938,8 @@ Object.assign( FileLoader.prototype, {
 
 					if ( onError ) onError( error );
 
-					scope.manager.itemEnd( url );
 					scope.manager.itemError( url );
+					scope.manager.itemEnd( url );
 
 				}, 0 );
 
@@ -33987,8 +33998,8 @@ Object.assign( FileLoader.prototype, {
 
 					}
 
-					scope.manager.itemEnd( url );
 					scope.manager.itemError( url );
+					scope.manager.itemEnd( url );
 
 				}
 
@@ -34020,8 +34031,8 @@ Object.assign( FileLoader.prototype, {
 
 				}
 
-				scope.manager.itemEnd( url );
 				scope.manager.itemError( url );
+				scope.manager.itemEnd( url );
 
 			}, false );
 
@@ -34038,8 +34049,8 @@ Object.assign( FileLoader.prototype, {
 
 				}
 
-				scope.manager.itemEnd( url );
 				scope.manager.itemError( url );
+				scope.manager.itemEnd( url );
 
 			}, false );
 
@@ -34318,11 +34329,11 @@ Object.assign( DataTextureLoader.prototype, {
 
 			if ( ! texData ) return;
 
-			if ( undefined !== texData.image ) {
+			if ( texData.image !== undefined ) {
 
 				texture.image = texData.image;
 
-			} else if ( undefined !== texData.data ) {
+			} else if ( texData.data !== undefined ) {
 
 				texture.image.width = texData.width;
 				texture.image.height = texData.height;
@@ -34330,32 +34341,32 @@ Object.assign( DataTextureLoader.prototype, {
 
 			}
 
-			texture.wrapS = undefined !== texData.wrapS ? texData.wrapS : ClampToEdgeWrapping;
-			texture.wrapT = undefined !== texData.wrapT ? texData.wrapT : ClampToEdgeWrapping;
+			texture.wrapS = texData.wrapS !== undefined ? texData.wrapS : ClampToEdgeWrapping;
+			texture.wrapT = texData.wrapT !== undefined ? texData.wrapT : ClampToEdgeWrapping;
 
-			texture.magFilter = undefined !== texData.magFilter ? texData.magFilter : LinearFilter;
-			texture.minFilter = undefined !== texData.minFilter ? texData.minFilter : LinearMipMapLinearFilter;
+			texture.magFilter = texData.magFilter !== undefined ? texData.magFilter : LinearFilter;
+			texture.minFilter = texData.minFilter !== undefined ? texData.minFilter : LinearMipMapLinearFilter;
 
-			texture.anisotropy = undefined !== texData.anisotropy ? texData.anisotropy : 1;
+			texture.anisotropy = texData.anisotropy !== undefined ? texData.anisotropy : 1;
 
-			if ( undefined !== texData.format ) {
+			if ( texData.format !== undefined ) {
 
 				texture.format = texData.format;
 
 			}
-			if ( undefined !== texData.type ) {
+			if ( texData.type !== undefined ) {
 
 				texture.type = texData.type;
 
 			}
 
-			if ( undefined !== texData.mipmaps ) {
+			if ( texData.mipmaps !== undefined ) {
 
 				texture.mipmaps = texData.mipmaps;
 
 			}
 
-			if ( 1 === texData.mipmapCount ) {
+			if ( texData.mipmapCount === 1 ) {
 
 				texture.minFilter = LinearFilter;
 
@@ -34446,8 +34457,8 @@ Object.assign( ImageLoader.prototype, {
 
 			if ( onError ) onError( event );
 
-			scope.manager.itemEnd( url );
 			scope.manager.itemError( url );
+			scope.manager.itemEnd( url );
 
 		}
 
@@ -36940,10 +36951,10 @@ function OrthographicCamera( left, right, top, bottom, near, far ) {
 	this.zoom = 1;
 	this.view = null;
 
-	this.left = left;
-	this.right = right;
-	this.top = top;
-	this.bottom = bottom;
+	this.left = ( left !== undefined ) ? left : - 1;
+	this.right = ( right !== undefined ) ? right : 1;
+	this.top = ( top !== undefined ) ? top : 1;
+	this.bottom = ( bottom !== undefined ) ? bottom : - 1;
 
 	this.near = ( near !== undefined ) ? near : 0.1;
 	this.far = ( far !== undefined ) ? far : 2000;
@@ -38855,6 +38866,7 @@ Object.assign( ObjectLoader.prototype, {
 
 	parseMaterials: function ( json, textures ) {
 
+		var cache = {}; // MultiMaterial
 		var materials = {};
 
 		if ( json !== undefined ) {
@@ -38874,7 +38886,15 @@ Object.assign( ObjectLoader.prototype, {
 
 					for ( var j = 0; j < data.materials.length; j ++ ) {
 
-						array.push( loader.parse( data.materials[ j ] ) );
+						var material = data.materials[ j ];
+
+						if ( cache[ material.uuid ] === undefined ) {
+
+							cache[ material.uuid ] = loader.parse( material );
+
+						}
+
+						array.push( cache[ material.uuid ] );
 
 					}
 
@@ -38883,6 +38903,7 @@ Object.assign( ObjectLoader.prototype, {
 				} else {
 
 					materials[ data.uuid ] = loader.parse( data );
+					cache[ data.uuid ] = materials[ data.uuid ];
 
 				}
 
@@ -38929,8 +38950,8 @@ Object.assign( ObjectLoader.prototype, {
 
 			}, undefined, function () {
 
-				scope.manager.itemEnd( url );
 				scope.manager.itemError( url );
+				scope.manager.itemEnd( url );
 
 			} );
 
@@ -39460,8 +39481,8 @@ ImageBitmapLoader.prototype = {
 
 			if ( onError ) onError( e );
 
-			scope.manager.itemEnd( url );
 			scope.manager.itemError( url );
+			scope.manager.itemEnd( url );
 
 		} );
 
@@ -40228,6 +40249,77 @@ CubeCamera.prototype = Object.create( Object3D.prototype );
 CubeCamera.prototype.constructor = CubeCamera;
 
 /**
+ * @author alteredq / http://alteredqualia.com/
+ */
+
+function Clock( autoStart ) {
+
+	this.autoStart = ( autoStart !== undefined ) ? autoStart : true;
+
+	this.startTime = 0;
+	this.oldTime = 0;
+	this.elapsedTime = 0;
+
+	this.running = false;
+
+}
+
+Object.assign( Clock.prototype, {
+
+	start: function () {
+
+		this.startTime = ( typeof performance === 'undefined' ? Date : performance ).now(); // see #10732
+
+		this.oldTime = this.startTime;
+		this.elapsedTime = 0;
+		this.running = true;
+
+	},
+
+	stop: function () {
+
+		this.getElapsedTime();
+		this.running = false;
+		this.autoStart = false;
+
+	},
+
+	getElapsedTime: function () {
+
+		this.getDelta();
+		return this.elapsedTime;
+
+	},
+
+	getDelta: function () {
+
+		var diff = 0;
+
+		if ( this.autoStart && ! this.running ) {
+
+			this.start();
+			return 0;
+
+		}
+
+		if ( this.running ) {
+
+			var newTime = ( typeof performance === 'undefined' ? Date : performance ).now();
+
+			diff = ( newTime - this.oldTime ) / 1000;
+			this.oldTime = newTime;
+
+			this.elapsedTime += diff;
+
+		}
+
+		return diff;
+
+	}
+
+} );
+
+/**
  * @author mrdoob / http://mrdoob.com/
  */
 
@@ -40243,6 +40335,8 @@ function AudioListener() {
 	this.gain.connect( this.context.destination );
 
 	this.filter = null;
+
+	this.timeDelta = 0;
 
 }
 
@@ -40319,6 +40413,7 @@ AudioListener.prototype = Object.assign( Object.create( Object3D.prototype ), {
 		var scale = new Vector3();
 
 		var orientation = new Vector3();
+		var clock = new Clock();
 
 		return function updateMatrixWorld( force ) {
 
@@ -40327,21 +40422,27 @@ AudioListener.prototype = Object.assign( Object.create( Object3D.prototype ), {
 			var listener = this.context.listener;
 			var up = this.up;
 
+			this.timeDelta = clock.getDelta();
+
 			this.matrixWorld.decompose( position, quaternion, scale );
 
 			orientation.set( 0, 0, - 1 ).applyQuaternion( quaternion );
 
 			if ( listener.positionX ) {
 
-				listener.positionX.setValueAtTime( position.x, this.context.currentTime );
-				listener.positionY.setValueAtTime( position.y, this.context.currentTime );
-				listener.positionZ.setValueAtTime( position.z, this.context.currentTime );
-				listener.forwardX.setValueAtTime( orientation.x, this.context.currentTime );
-				listener.forwardY.setValueAtTime( orientation.y, this.context.currentTime );
-				listener.forwardZ.setValueAtTime( orientation.z, this.context.currentTime );
-				listener.upX.setValueAtTime( up.x, this.context.currentTime );
-				listener.upY.setValueAtTime( up.y, this.context.currentTime );
-				listener.upZ.setValueAtTime( up.z, this.context.currentTime );
+				// code path for Chrome (see #14393)
+
+				var endTime = this.context.currentTime + this.timeDelta;
+
+				listener.positionX.linearRampToValueAtTime( position.x, endTime );
+				listener.positionY.linearRampToValueAtTime( position.y, endTime );
+				listener.positionZ.linearRampToValueAtTime( position.z, endTime );
+				listener.forwardX.linearRampToValueAtTime( orientation.x, endTime );
+				listener.forwardY.linearRampToValueAtTime( orientation.y, endTime );
+				listener.forwardZ.linearRampToValueAtTime( orientation.z, endTime );
+				listener.upX.linearRampToValueAtTime( up.x, endTime );
+				listener.upY.linearRampToValueAtTime( up.y, endTime );
+				listener.upZ.linearRampToValueAtTime( up.z, endTime );
 
 			} else {
 
@@ -40367,6 +40468,7 @@ function Audio( listener ) {
 
 	this.type = 'Audio';
 
+	this.listener = listener;
 	this.context = listener.context;
 
 	this.gain = this.context.createGain();
@@ -40778,8 +40880,25 @@ PositionalAudio.prototype = Object.assign( Object.create( Audio.prototype ), {
 
 			orientation.set( 0, 0, 1 ).applyQuaternion( quaternion );
 
-			panner.setPosition( position.x, position.y, position.z );
-			panner.setOrientation( orientation.x, orientation.y, orientation.z );
+			if ( panner.positionX ) {
+
+				// code path for Chrome and Firefox (see #14393)
+
+				var endTime = this.context.currentTime + this.listener.timeDelta;
+
+				panner.positionX.linearRampToValueAtTime( position.x, endTime );
+				panner.positionY.linearRampToValueAtTime( position.y, endTime );
+				panner.positionZ.linearRampToValueAtTime( position.z, endTime );
+				panner.orientationX.linearRampToValueAtTime( orientation.x, endTime );
+				panner.orientationY.linearRampToValueAtTime( orientation.y, endTime );
+				panner.orientationZ.linearRampToValueAtTime( orientation.z, endTime );
+
+			} else {
+
+				panner.setPosition( position.x, position.y, position.z );
+				panner.setOrientation( orientation.x, orientation.y, orientation.z );
+
+			}
 
 		};
 
@@ -43816,77 +43935,6 @@ Object.assign( Raycaster.prototype, {
 } );
 
 /**
- * @author alteredq / http://alteredqualia.com/
- */
-
-function Clock( autoStart ) {
-
-	this.autoStart = ( autoStart !== undefined ) ? autoStart : true;
-
-	this.startTime = 0;
-	this.oldTime = 0;
-	this.elapsedTime = 0;
-
-	this.running = false;
-
-}
-
-Object.assign( Clock.prototype, {
-
-	start: function () {
-
-		this.startTime = ( typeof performance === 'undefined' ? Date : performance ).now(); // see #10732
-
-		this.oldTime = this.startTime;
-		this.elapsedTime = 0;
-		this.running = true;
-
-	},
-
-	stop: function () {
-
-		this.getElapsedTime();
-		this.running = false;
-		this.autoStart = false;
-
-	},
-
-	getElapsedTime: function () {
-
-		this.getDelta();
-		return this.elapsedTime;
-
-	},
-
-	getDelta: function () {
-
-		var diff = 0;
-
-		if ( this.autoStart && ! this.running ) {
-
-			this.start();
-			return 0;
-
-		}
-
-		if ( this.running ) {
-
-			var newTime = ( typeof performance === 'undefined' ? Date : performance ).now();
-
-			diff = ( newTime - this.oldTime ) / 1000;
-			this.oldTime = newTime;
-
-			this.elapsedTime += diff;
-
-		}
-
-		return diff;
-
-	}
-
-} );
-
-/**
  * @author bhouston / http://clara.io
  * @author WestLangley / http://github.com/WestLangley
  *
@@ -44819,7 +44867,7 @@ function PointLightHelper( light, sphereSize, color ) {
 
 
 	/*
-	var distanceGeometry = new THREE.IcosahedronGeometry( 1, 2 );
+	var distanceGeometry = new THREE.IcosahedronBufferGeometry( 1, 2 );
 	var distanceMaterial = new THREE.MeshBasicMaterial( { color: hexColor, fog: false, wireframe: true, opacity: 0.1, transparent: true } );
 
 	this.lightSphere = new THREE.Mesh( bulbGeometry, bulbMaterial );
