@@ -396,7 +396,8 @@
       c.define('QUERY_TYPE_INSTANCE_NAME');
       c.define('QUERY_TYPE_USER_FLAVOR_NAME');
       c.define('QUERY_TYPE_INSTANCE_NAME_WITH_USER_FLAVOR');
-      c.define('QUERY_FORMAT_STRING');
+      c.define('QUERY_FORMAT_STRING_PARTIAL_MATCHING');
+      c.define('QUERY_FORMAT_STRING_PERFECT_MATCHING');
       c.define('QUERY_FORMAT_REGEXP');
 
       c.define('WORLD_MATRIX');
@@ -776,10 +777,10 @@
     }
 
 
-    getGLBoostObjectsByUserFlavorName(glBoostObjectUserFlavorName        ) {
+    getGLBoostObjectsByUserFlavorName(partOfGlBoostObjectUserFlavorName        ) {
       const results = [];
       for (let instanceName in this._glBoostObjects) {
-        if (this._glBoostObjects[instanceName].userFlavorName === glBoostObjectUserFlavorName) {
+        if (this._glBoostObjects[instanceName].userFlavorName.indexOf(partOfGlBoostObjectUserFlavorName) !== -1) {
           results.push(this._glBoostObjects[instanceName]);
         }
       }
@@ -1494,9 +1495,8 @@
     }
 
     /**
-     * [en] Return instance name.
-     * [ja] インスタンス名を返します。
-     * @returns {string} [en] the instance name. [ja] インスタンス名
+     * Return instance name.
+     * @returns the instance name.
      */
     toString()        {
       return this._instanceName;
@@ -1803,14 +1803,14 @@
     */
 
     /**
-     * 長さの2乗
+     * to square length
      */
     lengthSquared() {
       return this.x*this.x + this.y*this.y + this.z*this.z;
     }
 
     /**
-     * 長さの2乗（static版）
+     * to square length(static verison)
      */
     static lengthSquared(vec3        ) {
       return vec3.x*vec3.x + vec3.y*vec3.y + vec3.z*vec3.z;
@@ -1831,21 +1831,21 @@
     }
 
     /**
-     * 内積
+     * dot product
      */
     dotProduct(vec3        ) {
         return this.x * vec3.x + this.y * vec3.y + this.z * vec3.z;
     }
 
     /**
-     * 内積（static版）
+     * dot product(static version)
      */
     static dotProduct(lv        , rv        ) {
       return lv.x * rv.x + lv.y * rv.y + lv.z * rv.z;
     }
 
     /**
-     * 外積
+     * cross product
      */
     cross(v        ) {
       var x = this.y*v.z - this.z*v.y;
@@ -1860,7 +1860,7 @@
     }
 
     /**
-    * 外積(static版)
+    * cross product(static version)
     */
     static cross(lv        , rv        ) {
       var x = lv.y*rv.z - lv.z*rv.y;
@@ -1871,7 +1871,7 @@
     }
 
     /**
-     * 正規化
+     * normalize
      */
     normalize() {
       var length = this.length();
@@ -1881,7 +1881,7 @@
     }
 
     /**
-     * 正規化（static版）
+     * normalize(static version)
      */
     static normalize(vec3        ) {
       var length = vec3.length();
@@ -1910,7 +1910,7 @@
     }
 
     /**
-     * 減算
+     * subtract
      */
     subtract(v        ) {
       this.x -= v.x;
@@ -1921,14 +1921,14 @@
     }
 
     /**
-     * 減算（static版）
+     * subtract(subtract)
      */
     static subtract(lv        , rv        ) {
       return new Vector3(lv.x - rv.x, lv.y - rv.y, lv.z - rv.z);
     }
 
     /**
-     * 除算
+     * divide
      */
     divide(val       ) {
       if (val !== 0) {
@@ -1946,7 +1946,7 @@
     }
 
     /**
-     * 除算（static版）
+     * divide(static version)
      */
     static divide(vec3        , val       ) {
       if (val !== 0) {
@@ -1957,6 +1957,9 @@
       }
     }
 
+    /**
+     * multiply
+     */
     multiply(val       ) {
       this.x *= val;
       this.y *= val;
@@ -1965,6 +1968,9 @@
       return this;
     }
 
+    /**
+     * multiply vector
+     */
     multiplyVector(vec        ) {
       this.x *= vec.x;
       this.y *= vec.y;
@@ -1973,10 +1979,16 @@
       return this;
     }
 
+    /**
+     * multiply(static version)
+     */
     static multiply(vec3        , val       ) {
       return new Vector3(vec3.x * val, vec3.y * val, vec3.z * val);
     }
 
+    /**
+     * multiply vector(static version)
+     */
     static multiplyVector(vec3        , vec        ) {
       return new Vector3(vec3.x * vec.x, vec3.y * vec.y, vec3.z * vec.z);
     }
@@ -1993,6 +2005,9 @@
       return sita;
     }
 
+    /**
+     * divide vector
+     */
     divideVector(vec3        ) {
       this.x /= vec3.x;
       this.y /= vec3.y;
@@ -2001,10 +2016,16 @@
       return this;
     }
 
+    /**
+     * divide vector(static version)
+     */
     static divideVector(lvec3        , rvec3        ) {
       return new Vector3(lvec3.x / rvec3.x, lvec3.y / rvec3.y, lvec3.z / rvec3.z);
     }
 
+    /**
+     * change to string
+     */
     toString() {
       return '(' + this.x + ', ' + this.y + ', ' + this.z +')';
     }
@@ -2406,10 +2427,10 @@
 
     multiply(q) {
       let result = new Quaternion(0, 0, 0, 1);
-      result.w = this.w*q.w - this.x*q.x - this.y*q.y - this.z*q.z;
-      result.x = this.w*q.x + this.x*q.w + this.y*q.z - this.z*q.y;
-      result.y = this.w*q.y + this.y*q.w + this.x*q.z - this.z*q.x;
-      result.z = this.w*q.z + this.z*q.w + this.x*q.y - this.y*q.x;
+      result.x =   q.w*this.x + q.z*this.y + q.y*this.z - q.x*this.w;
+      result.y = - q.z*this.x + q.w*this.y + q.x*this.z - q.y*this.w;
+      result.z =   q.y*this.x + q.x*this.y + q.w*this.z - q.z*this.w;
+      result.w = - q.x*this.x - q.y*this.y - q.z*this.z - q.w*this.w;
       this.x = result.x;
       this.y = result.y;
       this.z = result.z;
@@ -2420,10 +2441,10 @@
 
     static multiply(q1, q2) {
       let result = new Quaternion(0, 0, 0, 1);
-      result.w = q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z;
-      result.x = q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y;
-      result.y = q1.w*q2.y + q1.y*q2.w + q1.x*q2.z - q1.z*q2.x;
-      result.z = q1.w*q2.z + q1.z*q2.w + q1.x*q2.y - q1.y*q2.x;
+      result.x =   q2.w*q1.x + q2.z*q1.y - q2.y*q1.z + q2.x*q1.w;
+      result.y = - q2.z*q1.x + q2.w*q1.y + q2.x*q1.z + q2.y*q1.w;
+      result.z =   q2.y*q1.x - q2.x*q1.y + q2.w*q1.z + q2.z*q1.w;
+      result.w = - q2.x*q1.x - q2.y*q1.y - q2.z*q1.z + q2.w*q1.w;
       return result;
     }
 
@@ -2790,13 +2811,16 @@
     }
 
     /**
-     * ゼロ行列
+     * zero matrix
      */
     zero() {
       this.setComponents(0, 0, 0, 0, 0, 0, 0, 0, 0);
       return this;
     }
 
+    /**
+     * zero matrix(static version)
+     */
     static zero() {
       return new Matrix33(0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
@@ -2816,7 +2840,7 @@
     }
 
     /**
-     * 転置
+     * transpose
      */
     transpose() {
       this._swap(1, 3);
@@ -2827,7 +2851,7 @@
     }
 
     /**
-     * 転置（static版）
+     * transpose(static version)
      */
     static transpose(mat) {
 
@@ -2849,7 +2873,7 @@
     }
 
     /**
-     * 行列同士の乗算
+     * multiply zero matrix and zero matrix
      */
     multiply(mat) {
       var m00 = this.m00*mat.m00 + this.m01*mat.m10 + this.m02*mat.m20;
@@ -2873,7 +2897,7 @@
     }
 
     /**
-     * 行列同士の乗算（static版）
+     * multiply zero matrix and zero matrix(static version)
      */
     static multiply(l_m, r_m) {
       var m00 = l_m.m00*r_m.m00 + l_m.m01*r_m.m10 + l_m.m02*r_m.m20;
@@ -3168,7 +3192,7 @@
     }
 
     /**
-     * 単位行列にする
+     * to the identity matrix
      */
     identity() {
       this.setComponents(
@@ -3181,7 +3205,7 @@
     }
 
     /**
-     * 単位行列にする（static版）
+     * to the identity matrix（static版）
      */
     static identity() {
       return new Matrix44$1(
@@ -3426,7 +3450,7 @@
     }
 
     /**
-     * 転置
+     * transpose
      */
     transpose() {
       this._swap(1, 4);
@@ -3440,7 +3464,7 @@
     }
 
     /**
-     * 転置（static版）
+     * transpose(static version)
      */
     static transpose(mat) {
 
@@ -3464,7 +3488,7 @@
     }
 
     /**
-     * 行列同士の乗算
+     * multiply zero matrix and zero matrix
      */
     multiply(mat) {
       var m00 = this.m00*mat.m00 + this.m01*mat.m10 + this.m02*mat.m20 + this.m03*mat.m30;
@@ -3525,7 +3549,7 @@
     }
 
     /**
-     * 行列同士の乗算（static版）
+     * multiply zero matrix and zero matrix(static version)
      */
     static multiply(l_m, r_m) {
       var m00 = l_m.m00*r_m.m00 + l_m.m01*r_m.m10 + l_m.m02*r_m.m20 + l_m.m03*r_m.m30;
@@ -3804,6 +3828,8 @@
 
   GLBoost$1["Matrix44"] = Matrix44$1;
 
+  //      
+
   class MathClassUtil {
     constructor() {
 
@@ -3893,7 +3919,12 @@
       }
     }
 
-    static compomentNumberOfVector(element) {
+    /**
+     * discriminate which Vector instance 
+     * @param element any Vector instance  
+     * @return number of Vector instance
+     */
+    static compomentNumberOfVector(element                                                   )         {
       if(element instanceof Vector2) {
         return 2;
       } else if (element instanceof Vector3) {
@@ -4151,10 +4182,9 @@
     }
 
     /**
-     * [en] Set animation input value (for instance frame value), This value affect all child elements in this scene graph (recursively).<br>
-     * [ja] アニメーションのための入力値（例えばフレーム値）をセットします。この値はシーングラフに属する全ての子孫に影響します。
-     * @param inputName [en] inputName name of input value. [ja] 入力値の名前
-     * @param inputValue [en] input value of animation. [ja] アニメーションの入力値
+     * Set animation input value (for instance frame value), This value affect all child elements in this scene graph (recursively).
+     * @param inputName inputName name of input value.
+     * @param inputValue input value of animation.
      */
     setCurrentAnimationValue(inputName        , inputValue                                           ) {
       if ((this     )._setDirtyToAnimatedElement != null) {
@@ -4692,7 +4722,7 @@
       this._accumulatedAncestryObjectUpdateNumberNormal = -Number.MAX_VALUE;
       this._accumulatedAncestryObjectUpdateNumberInv = -Number.MAX_VALUE;
       this._accumulatedAncestryObjectUpdateNumberJoint = -Number.MAX_VALUE;
-      this._isTransparentForce = null;
+      this._isTransparentForce = false;
       this._opacity = 1.0;
       this._isAffectedByWorldMatrix = true;
       this._isAffectedByWorldMatrixAccumulatedAncestry = true;
@@ -4811,7 +4841,7 @@
         return Matrix44$1.identity();
       }
 
-      return this._multiplyMyAndParentTransformMatricesInInverseOrder(false, null).clone().invert();
+      return this._multiplyMyAndParentTransformMatrices(false, null).clone().invert();
     }
 
     _multiplyMyAndParentRotateMatrices(currentElem                  , withMySelf         ) {
@@ -4855,10 +4885,12 @@
     }
 
     get isTransparent() {
-      return this._isTransparentForce;
+      let isTransparent = (this._opacity < 1.0) ? true : false;
+      isTransparent = isTransparent || this._isTransparentForce;
+      return isTransparent;
     }
 
-    set isTransparentForce(flg         ) {
+    set isTransparent(flg         ) {
       this._isTransparentForce = flg;
     }
 
@@ -5047,7 +5079,7 @@
     }
 
     _multiplyMyAndParentTransformMatrices(withMySelf, input) {
-      if (input === void 0 && this._activeAnimationLineName !== null) {
+      if (input === null && this._activeAnimationLineName !== null) {
         input = this._getCurrentAnimationInputValue(this._activeAnimationLineName);
       }
 
@@ -6341,7 +6373,7 @@
           let needTobeStillDirty = material.shaderInstance.setUniforms(gl, glslProgram, scene, material, camera, mesh, lights);
           material.shaderInstance.dirty = needTobeStillDirty ? true : false;
 
-          material.setUpStates();
+          material.setUpStates(mesh);
 
           this._setUpOrTearDownTextures(true, material);
         }
@@ -6437,6 +6469,8 @@
   //DrawKickerWorld._lastMaterialUpdateStateString = null;
   //DrawKickerWorld._lastGeometry = null;
   //DrawKickerWorld._lastRenderPassIndex = -1;
+
+  //      
 
   class SkeletalShaderSource {
 
@@ -6710,9 +6744,9 @@ return mat4(
     }
 
     /**
-     * @return {string}
+     * 
      */
-    VSPreProcess_SkeletalShaderSource(existCamera_f, f, lights, material, extraData) {
+    VSPreProcess_SkeletalShaderSource(existCamera_f, f, lights, material, extraData)         {
       let shaderText = '';
 
       shaderText += 'vec4 weightVec = aVertex_weight;\n'; // DO NOT normalize as vec4!
@@ -7336,7 +7370,7 @@ return mat4(
     }
 
     /**
-     * 全ての頂点属性のリストを返す
+     * return all vertex attribute name list
      */
     _allVertexAttribs(vertices) {
       var attribNameArray = [];
@@ -8684,17 +8718,17 @@ return mat4(
 
   GLBoost$1['BlendShapeGeometry'] = BlendShapeGeometry;
 
+  //      
+
   /**
-   * [en] This is the abstract class for all texture classes. Don't use this class directly.<br>
-   * [ja] 全てのテクスチャクラスのための抽象クラスです。直接このクラスは使わないでください。
+   * This is the abstract class for all texture classes. Don't use this class directly.
    */
   class AbstractTexture extends GLBoostObject {
 
     /**
-     * [en] The constructor of PointLight class. Do not construct this class directly.<br>
-     * [ja] PointLightクラスのコンストラクタ。直接このクラスを生成しようとしないでください。
+     * The constructor of PointLight class. Do not construct this class directly.
      *
-     * * @param {HTMLCanvas|string} canvas [en] canvas or canvas' id string. [ja] canvasまたはcanvasのid文字列
+     * * @param {HTMLCanvas|string} canvas canvas or canvas' id string.
      */
     constructor(glBoostContext) {
       super(glBoostContext);
@@ -8712,18 +8746,16 @@ return mat4(
     }
 
     /**
-     * [en] get the WebGL texture resource within this class. <br />
-     * [ja] このクラス内部で管理しているWebGLテクスチャリソースを取得します。
+     * get the WebGL texture resource within this class.
      *
-     * @returns {null|*} [en] WebGL texture resouce. [ja] WebGLテクスチャリソース
+     * @returns WebGL texture resouce.
      */
-    get glTextureResource() {
+    get glTextureResource()           {
       return this._texture;
     }
 
     /**
-     * [en] bind the texture. It calls bindTexture on WebGL only if it has WebGL texture. Otherwise it returns false without doing anything.<br />
-     * [ja] テクスチャをバインドします。自身がWebGLテクスチャを持っている場合のみ、WebGLのbindTextureを呼びます。それ以外は何もせずにfalseを返します。
+     * bind the texture. It calls bindTexture on WebGL only if it has WebGL texture. Otherwise it returns false without doing anything.
      */
     setUp(textureUnitIndex) {
       var gl = this._glContext.gl;
@@ -8743,8 +8775,7 @@ return mat4(
     }
 
     /**
-     * [en] unbind the texture. <br />
-     * [ja] テクスチャをバインド解除します。
+     * unbind the texture.
      */
     tearDown(textureUnitIndex) {
       var gl = this._glContext.gl;
@@ -8795,12 +8826,12 @@ return mat4(
     /**
      * Origin is left bottom
      *
-     * @param {number} x horizontal pixel position (0 is left)
-     * @param {number} y virtical pixel position (0 is bottom)
-     * @param {Uint8Array} argByteArray Pixel Data as Uint8Array
-     * @returns {Vector4} Pixel Value in Vector4
+     * @param x horizontal pixel position (0 is left)
+     * @param y virtical pixel position (0 is bottom)
+     * @param argByteArray Pixel Data as Uint8Array
+     * @returns Pixel Value in Vector4
      */
-    getPixelValueAt(x, y, argByteArray) {
+    getPixelValueAt(x        , y        , argByteArray            )         {
       let byteArray = argByteArray;
       if (!byteArray) {
         byteArray = this.getTexturePixelData();
@@ -8826,13 +8857,12 @@ return mat4(
       return canvas;
     }
     /**
-     * [en] check whether or not this texture size is power of two. <br />
-     * [ja] テクスチャサイズが２の累乗かどうかを返します
+     * check whether or not this texture size is power of two.
      *
-     * @param {number} x [en] texture size. [ja] テクスチャサイズ
-     * @returns {boolean} [en] check whether or not the size x is power of two. [ja] xが２の累乗かどうか
+     * @param x texture size.
+     * @returns check whether or not the size x is power of two.
      */
-    _isPowerOfTwo(x) {
+    _isPowerOfTwo(x        )          {
       return (x & (x - 1)) == 0;
     }
 
@@ -8841,13 +8871,12 @@ return mat4(
     }
 
     /**
-     * [en] get a value nearest power of two. <br />
-     * [ja] 与えられた数から見て２の累乗に最も近い値を返します。
+     * get a value nearest power of two.
      *
-     * @param {number} x [en] texture size. [ja] テクスチャサイズ
-     * @returns {number} [en] a value nearest power of two. [ja] xに近い２の累乗の値
+     * @param x texture size.
+     * @returns a value nearest power of two.
      */
-    _getNearestPowerOfTwo(x) {
+    _getNearestPowerOfTwo(x        )         {
       return Math.pow( 2, Math.round( Math.log( x ) / Math.LN2 ) );
     }
 
@@ -8889,6 +8918,7 @@ return mat4(
       this._toMultiplyAlphaToColorPreviously = flag;
     }
   }
+  GLBoost$1['AbstractTexture'] = AbstractTexture;
 
   class FragmentSimpleShaderSource {
     // In the context within these member methods,
@@ -9364,7 +9394,8 @@ return mat4(
       }
       shaderText += 'uniform vec4 materialBaseColor;\n';
       shaderText += 'uniform int uIsTextureToMultiplyAlphaToColorPreviously;\n';
-
+      shaderText += 'uniform vec2 uAlphaTestParameters;\n';
+      
       return shaderText;
     }
 
@@ -9397,6 +9428,17 @@ return mat4(
       return shaderText;
     }
 
+    FSFinalize_DecalShaderSource(f, gl, lights, material, extraData) {
+      let shaderText = '';
+      shaderText += `
+                     if (uAlphaTestParameters.x > 0.5 && rt0.a < uAlphaTestParameters.y) {
+                       discard;
+                     }
+    `;
+
+      return shaderText;
+    }
+
     prepare_DecalShaderSource(gl, shaderProgram, expression, vertexAttribs, existCamera_f, lights, material, extraData) {
 
       var vertexAttribsAsResult = [];
@@ -9421,11 +9463,12 @@ return mat4(
         let uIsTextureToMultiplyAlphaToColorPreviously = this._glContext.getUniformLocation(shaderProgram, 'uIsTextureToMultiplyAlphaToColorPreviously');
         material.setUniform(shaderProgram, 'uIsTextureToMultiplyAlphaToColorPreviously', uIsTextureToMultiplyAlphaToColorPreviously);
       }
+      material.setUniform(shaderProgram, 'uniform_alphaTestParameters', this._glContext.getUniformLocation(shaderProgram, 'uAlphaTestParameters'));
 
       material.registerTextureUnitToUniform(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE, shaderProgram, 'uTexture'); 
       
       material.registerTextureUnitToUniform(GLBoost$1.TEXTURE_PURPOSE_NORMAL, shaderProgram, 'uNormalTexture'); 
-
+      
       return vertexAttribsAsResult;
     }
   }
@@ -9458,7 +9501,10 @@ return mat4(
         material.updateTextureInfo(GLBoost$1.TEXTURE_PURPOSE_DIFFUSE, 'uTexture'); 
         this._glContext.uniform1i(material.getUniform(glslProgram, 'uIsTextureToMultiplyAlphaToColorPreviously'), diffuseTexture.toMultiplyAlphaToColorPreviously, true);
       }
-
+      
+      const alphaCutoff = material.alphaCutoff;
+      const isAlphaTestEnable = material.isAlphaTest;
+      this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_alphaTestParameters'), isAlphaTestEnable ? 1.0 : 0.0, alphaCutoff, true);
 
       // For Shadow
       for (let i=0; i<lights.length; i++) {
@@ -9551,6 +9597,8 @@ return mat4(
         "lineWidth": [1.0],
         "polygonOffset": [0.0, 0.0]
       };
+      this._isAlphaTestEnable = true;
+      this._alphaCutoff = 0.1;
 
       this._countOfUpdate = 0;
     }
@@ -9674,6 +9722,10 @@ return mat4(
       return count;
     }
 
+    getTextures() {
+      return Object.values(this._textureDic);
+    }
+
     getTextureUserFlavorNames() {
       return Object.keys(this._textureDic);
     }
@@ -9754,8 +9806,7 @@ return mat4(
     }
 
     /**
-     * [en] bind the texture. For any value, it returns true if we call WebGL's bindTexture function, false otherwise.<br />
-     * [ja] テクスチャをバインドします。どんな値にせよ、WebGLのbindTexture関数を呼んだ場合はtrueを、そうでなければfalseを返します。
+     * bind the texture. For any value, it returns true if we call WebGL's bindTexture function, false otherwise.
      */
     setUpTexture(textureName, textureUnitIndex) {
       var gl = this._gl;
@@ -9798,7 +9849,7 @@ return mat4(
       }
     }
 
-    setUpStates() {
+    setUpStates(mesh) {
       let globalStatesUsage = this._glBoostSystem._glBoostContext.globalStatesUsage;
       if (this._globalStatesUsage) {
         globalStatesUsage = this._globalStatesUsage;
@@ -9818,6 +9869,12 @@ return mat4(
           break;
         default:
           break;
+      }
+
+      if (mesh.isTransparent || this.isTransparent) {
+        //this._gl.disable(2929);
+        this._gl.enable(3042);
+        //this._gl.colorMask(true, true, true, false);
       }
     }
 
@@ -9935,6 +9992,21 @@ return mat4(
       return Object.keys(this._textureSemanticsDic).length;
     }
 
+    set isAlphaTest(flg){
+      this._isAlphaTestEnable = flg;
+    }
+
+    get isAlphaTest() {
+      return this._isAlphaTestEnable;
+    }
+
+    set alphaCutoff(value) {
+      this._alphaCutoff = value;
+    }
+
+    get alphaCutoff() {
+      return this._alphaCutoff;
+    }
   }
 
   GLBoost$1['L_AbstractMaterial'] = L_AbstractMaterial;
@@ -10058,7 +10130,6 @@ return mat4(
       
       shaderText += 'uniform vec4 ambient;\n'; // Ka * amount of ambient lights
 
-      shaderText += 'uniform vec2 uAlphaTestParameters;\n';
 
       
 
@@ -10325,12 +10396,7 @@ albedo.rgb *= (1.0 - metallic);
       shaderText += '  rt0.xyz += emissive;\n';
 
       shaderText += '  rt0.xyz = linearToSrgb(rt0.xyz);\n';
-
-      shaderText += `
-                     if (uAlphaTestParameters.x > 0.5 && rt0.a < uAlphaTestParameters.y) {
-                       discard;
-                     }
-    `;
+      
   //    shaderText += '  rt0.xyz = vec3(texture2D(uOcclusionTexture, texcoord).r);\n';
 
 
@@ -10347,7 +10413,6 @@ albedo.rgb *= (1.0 - metallic);
       material.setUniform(shaderProgram, 'uniform_EmissiveFactor', this._glContext.getUniformLocation(shaderProgram, 'uEmissiveFactor'));
       material.setUniform(shaderProgram, 'uniform_IBLParameters', this._glContext.getUniformLocation(shaderProgram, 'uIBLParameters'));
       material.setUniform(shaderProgram, 'uniform_ambient', this._glContext.getUniformLocation(shaderProgram, 'ambient'));
-      material.setUniform(shaderProgram, 'uniform_alphaTestParameters', this._glContext.getUniformLocation(shaderProgram, 'uAlphaTestParameters'));
 
       material.setTexture(this._glBoostSystem._glBoostContext.brdfLutTexture, GLBoost.TEXTURE_PURPOSE_BRDF_LUT);
       material.registerTextureUnitToUniform(GLBoost.TEXTURE_PURPOSE_METALLIC_ROUGHNESS, shaderProgram, 'uMetallicRoughnessTexture'); 
@@ -10381,14 +10446,11 @@ albedo.rgb *= (1.0 - metallic);
       const IBLSpecularTextureMipmapCount = (material.IBLSpecularTextureMipmapCount !== void 0) ? material.IBLSpecularTextureMipmapCount : 9;
       const IBLDiffuseContribution = (material.IBLDiffuseContribution !== void 0) ? material.IBLDiffuseContribution : 0.2;
       const IBLSpecularContribution = (material.IBLSpecularContribution !== void 0) ? material.IBLSpecularContribution : 0.2;
-      const isAlphaTestEnable = material.isAlphaTest;
-      const alphaCutoff = material.alphaCutoff;
       this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_MetallicRoughnessFactors'), metallic, roughness, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_BaseColorFactor'), baseColor.x, baseColor.y, baseColor.z, true);
       this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_OcclusionFactors'), occlusion, occlusionRateForDirectionalLight, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_EmissiveFactor'), emissive.x, emissive.y, emissive.z, true);
       this._glContext.uniform3f(material.getUniform(glslProgram, 'uniform_IBLParameters'), IBLSpecularTextureMipmapCount, IBLDiffuseContribution, IBLSpecularContribution, true);
-      this._glContext.uniform2f(material.getUniform(glslProgram, 'uniform_alphaTestParameters'), isAlphaTestEnable ? 1.0 : 0.0, alphaCutoff, true);
       
 
       const ambient = Vector4$1.multiplyVector(new Vector4$1(1.0, 1.0, 1.0, 1.0), scene.getAmountOfAmbientLightsIntensity());
@@ -10507,22 +10569,6 @@ albedo.rgb *= (1.0 - metallic);
 
     get IBLSpecularContribution() {
       return this._IBLSpecularContribution;
-    }
-
-    set isAlphaTest(flg){
-      this._isAlphaTestEnable = flg;
-    }
-
-    get isAlphaTest() {
-      return this._isAlphaTestEnable;
-    }
-
-    set alphaCutoff(value) {
-      this._alphaCutoff = value;
-    }
-
-    get alphaCutoff() {
-      return this._alphaCutoff;
     }
   }
 
@@ -12050,16 +12096,16 @@ albedo.rgb *= (1.0 - metallic);
 
         if ('ontouchend' in document) {
           eventTargetDom.addEventListener('touchstart', this._mouseDown.bind(this));
-          eventTargetDom.addEventListener('touchend', this._mouseUp.bind(this));
+          document.addEventListener('touchend', this._mouseUp.bind(this));
           eventTargetDom.addEventListener('touchmove', this._mouseMove.bind(this));          
         }
         if ('onmouseup' in document) {
           eventTargetDom.addEventListener('mousedown', this._mouseDown.bind(this));
-          eventTargetDom.addEventListener('mouseup', this._mouseUp.bind(this));
+          document.addEventListener('mouseup', this._mouseUp.bind(this));
           eventTargetDom.addEventListener('mousemove', this._mouseMove.bind(this));          
         }
-        if ('onmousewheel' in document) {
-          document.addEventListener('mousewheel', this._mouseWheel.bind(this));
+        if (window.WheelEvent) {
+          eventTargetDom.addEventListener('wheel', this._mouseWheel.bind(this));
         }
       }
     }
@@ -12071,16 +12117,16 @@ albedo.rgb *= (1.0 - metallic);
         
         if ('ontouchend' in document) {
           eventTargetDom.removeEventListener('touchstart', this._mouseDown.bind(this));
-          eventTargetDom.removeEventListener('touchend', this._mouseUp.bind(this));
+          document.removeEventListener('touchend', this._mouseUp.bind(this));
           eventTargetDom.removeEventListener('touchmove', this._mouseMove).bind(this);          
         }
         if ('onmouseup' in document) {
           eventTargetDom.removeEventListener('mousedown', this._mouseDown.bind(this));
-          eventTargetDom.removeEventListener('mouseup', this._mouseUp.bind(this));
+          document.removeEventListener('mouseup', this._mouseUp.bind(this));
           eventTargetDom.removeEventListener('mousemove', this._mouseMove.bind(this));          
         }
-        if ('onmousewheel' in document) {
-          document.removeEventListener('mousewheel', this._mouseWheel.bind(this));
+        if (window.WheelEvent) {
+          eventTargetDom.removeEventListener('wheel', this._mouseWheel.bind(this));
         }
       }
     }
@@ -12777,6 +12823,7 @@ albedo.rgb *= (1.0 - metallic);
 
 
   }
+  GLBoost$1['Texture'] = Texture;
 
   class PhinaTexture extends Texture {
     constructor(glBoostContext, width, height, fillStyle, parameters = null) {
@@ -13913,12 +13960,12 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * create textures as render target. (and attach it to framebuffer object internally.)<br>
-     * @param {number} width - width of texture
-     * @param {number} height - height of texture
-     * @param {number} textureNum - the number of creation.
-     * @returns {Array} an array of created textures.
+     * @param  width - width of texture
+     * @param  height - height of texture
+     * @param  textureNum - the number of creation.
+     * @returns  an array of created textures.
      */
-    createTexturesForRenderTarget(width        , height       , textureNum       ) {
+    createTexturesForRenderTarget(width        , height       , textureNum       )        {
       var glContext = this.__system._glContext;
       var gl = glContext.gl;
 
@@ -14121,7 +14168,6 @@ albedo.rgb *= (1.0 - metallic);
   //      
 
   class M_Mesh extends M_Element {
-                                 
                          
                               
                      
@@ -14356,16 +14402,13 @@ albedo.rgb *= (1.0 - metallic);
 
     get isTransparent() {
       let isTransparent = (this._opacity < 1.0) ? true : false;
-      isTransparent |= this.geometry.isTransparent(this);
+      isTransparent = isTransparent || this._isTransparentForce;
+      isTransparent = isTransparent || this._isTransparentForce;
       return isTransparent;
     }
 
-    set isTransparentForce(flg         ) {
+    set isTransparent(flg         ) {
       this._isTransparentForce = flg;
-    }
-
-    get isTransparentForce() {
-      return this._isTransparentForce;
     }
 
     get AABBInWorld() {
@@ -14699,10 +14742,10 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * Add the element to this group as a child.
-     * @param {Element} element - a instance of Element class
-     * @param {boolean} isDuplicateOk - allow duplicating if need
+     * @param element - a instance of Element class
+     * @param isDuplicateOk - allow duplicating if need
      */
-    addChild(element     , isDuplicateOk          = false) {
+    addChild(element         , isDuplicateOk          = false) {
 
       if (isDuplicateOk){
         // if forgive duplicated register by copy
@@ -14723,9 +14766,8 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * [en] remove the element from this group.
-     * [ja] このグループから指定した要素を削除します。
-     * @param {Element} element [en] the element to remove [ja] 削除したい要素
+     * remove the element from this group.
+     * @param element the element to remove
      */
     removeChild(element           ) {
       this._elements = this._elements.filter(function(elem) {
@@ -14737,8 +14779,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * [en] remove all elements from this group.
-     * [ja] このグループから全ての要素を削除します。
+     * remove all elements from this group.
      */
     removeAll() {
       this._elements = this._elements.filter(function(elem) {
@@ -14867,9 +14908,6 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     searchElementsByType(type     , element           = this) {
-      if (element instanceof type) {
-        return element;
-      }
 
       if (type['name'].indexOf('Gizmo') !== -1 && element instanceof M_Element) {
         let gizmos = element._gizmos;
@@ -14891,8 +14929,17 @@ albedo.rgb *= (1.0 - metallic);
             results.push(hitChildOrChildren);
           }
         }
+
+        if (type === M_Group) {
+          results.push(element);
+        }
         return results;
       }
+      
+      if (element instanceof type) {
+        return element;
+      }
+      
       return null;
     }
 
@@ -14915,18 +14962,39 @@ albedo.rgb *= (1.0 - metallic);
           }
         }
       }
-
-      if (type === L_AbstractMaterial && element instanceof M_Mesh) {
+      
+      if (type.name.indexOf('Material') !== -1 && element instanceof M_Mesh) {
         let materials = element.getAppropriateMaterials();
         for (let material of materials) {
-          if (this._validateByQuery(material, query, queryMeta)) {
-            return material;
+          if (material instanceof type) {
+            if (this._validateByQuery(material, query, queryMeta)) {
+              return material;
+            }
           }
         }
         return null;
-      } else if (this._validateByQuery(element, query, queryMeta) && element instanceof type) {
+      }
+      
+      if (type.name.indexOf('Texture') !== -1 && element instanceof M_Mesh) {
+        let materials = element.getAppropriateMaterials();
+        for (let material of materials) {
+          const textures = material.getTextures();
+          for (let texture of textures) {
+            if (texture instanceof type) {
+              if (this._validateByQuery(texture, query, queryMeta)) {
+                return texture;
+              }
+            }
+          }
+        }
+        return null;
+      }
+      
+      if (this._validateByQuery(element, query, queryMeta) && element instanceof type) {
         return element;
       }
+
+      return null;
     }
 
     searchGLBoostObjectsByNameAndType(query     , type               , queryMeta           = {type: GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost$1.QUERY_FORMAT_STRING_PARTIAL_MATCHING}, element          = this) {
@@ -14951,16 +15019,85 @@ albedo.rgb *= (1.0 - metallic);
         }
         return objects;
       }
-
-      if (type === L_AbstractMaterial && element instanceof M_Mesh) {
+      
+      if (type.name.indexOf('Material') !== -1 && element instanceof M_Mesh) {
         let materials = element.getAppropriateMaterials();
         for (let material of materials) {
-          if (this._validateByQuery(material, query, queryMeta)) {
+          if (material instanceof type) {
+            if (this._validateByQuery(material, query, queryMeta)) {
+              objects.push(material);
+            }
+          }
+        }
+        return objects;
+      }
+      
+      if (type.name.indexOf('Texture') !== -1 && element instanceof M_Mesh) {
+        let materials = element.getAppropriateMaterials();
+        for (let material of materials) {
+          const textures = material.getTextures();
+          for (let texture of textures) {
+            if (texture instanceof type) {
+              if (this._validateByQuery(texture, query, queryMeta)) {
+                objects.push(texture);
+              }
+            }
+          }
+        }
+        return objects;
+      }
+      
+      if (this._validateByQuery(element, query, queryMeta) && element instanceof type) {
+        return [element];
+      }
+      return objects;
+    }
+
+    searchGLBoostObjectsByType(type               , element          = this) {
+      let objects = [];
+      if (element instanceof M_Group) {
+        let children = element.getChildren();
+        for (let i = 0; i < children.length; i++) {
+          let hitChildren = this.searchGLBoostObjectsByType(type, children[i]);
+          if (hitChildren.length > 0) {
+            objects = objects.concat(hitChildren);
+          }
+        }
+        return objects;
+      }
+
+      if (type.name.indexOf('Gizmo') !== -1 && element instanceof M_Element) {
+        let gizmos = element._gizmos;
+        for (let gizmo of gizmos) {
+          objects.push(gizmo);
+        }
+        return objects;
+      }
+
+      if (type.name.indexOf('Material') !== -1 && element instanceof M_Mesh) {
+        let materials = element.getAppropriateMaterials();
+        for (let material of materials) {
+          if (material instanceof type) {
             objects.push(material);
           }
         }
         return objects;
-      } else if (this._validateByQuery(element, query, queryMeta) && element instanceof type) {
+      }
+      
+      if (type.name.indexOf('Texture') !== -1 && element instanceof M_Mesh) {
+        let materials = element.getAppropriateMaterials();
+        for (let material of materials) {
+          const textures = material.getTextures();
+          for (let texture of textures) {
+            if (texture instanceof type) {
+              objects.push(texture);
+            }
+          }
+        }
+        return objects;
+      }
+
+      if (element instanceof type) {
         return [element];
       }
       return objects;
@@ -15171,7 +15308,7 @@ albedo.rgb *= (1.0 - metallic);
       this.removeAll();
     }
 
-    rayCast(arg1        , arg2        , camera     , viewport     ) {
+    rayCast(arg1        , arg2        , camera     , viewport     , ignoreInstanceNameList           ) {
       const meshes = this.searchElementsByType(M_Mesh);
       let currentShortestT = Number.MAX_VALUE;
       let currentShortestIntersectedPosVec3 = null;
@@ -15181,6 +15318,9 @@ albedo.rgb *= (1.0 - metallic);
           continue;
         }
         if (!mesh.isPickable) {
+          continue;
+        }
+        if (ignoreInstanceNameList && ignoreInstanceNameList.indexOf(mesh.instanceName)) {
           continue;
         }
         let result = null;
@@ -16079,17 +16219,10 @@ albedo.rgb *= (1.0 - metallic);
       this._opacityMeshes = [];
       this._transparentMeshes = [];
       this._meshes.forEach((mesh)=>{
-        if (mesh.isTransparentForce === false) {
-          this._opacityMeshes.push(mesh);
-        } else if (mesh.isTransparentForce === true) {
+        if (mesh.isTransparent) {
           this._transparentMeshes.push(mesh);
         } else {
-          if (!mesh.isTransparent) {
-            this._opacityMeshes.push(mesh);
-          } else {
-            this._transparentMeshes.push(mesh);
-          }
-
+          this._opacityMeshes.push(mesh);
         }
       });
 
@@ -16193,9 +16326,10 @@ albedo.rgb *= (1.0 - metallic);
 
   }
 
+  //      
+
   /**
-   * en: This class take a role as operator of rendering process. In order to render images to canvas, this Renderer class gathers other elements' data, decides a plan of drawing process, and then just execute it.<br>
-   * ja: このクラスはレンダリングプロセスの制御を司ります。Canvasにイメージをレンダリングするために、このRendererクラスは他の要素のデータを集め、描画プロセスの計画を決定し、実行します。
+   * This class take a role as operator of rendering process. In order to render images to canvas, this Renderer class gathers other elements' data, decides a plan of drawing process, and then just execute it.
    */
   class Renderer extends GLBoostObject {
     constructor(glBoostContext, parameters) {
@@ -16224,10 +16358,10 @@ albedo.rgb *= (1.0 - metallic);
 
 
     /**
-     * en: update things of elements of the expression.<br>
-     * @param {Expression} expression a instance of Expression class
+     * update things of elements of the expression.
+     * @param expression a instance of Expression class
      */
-    update(expression) {
+    update(expression            ) {
       
       let skeletalMeshes = [];
       let effekseerElements = [];
@@ -16264,11 +16398,10 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * en: draw elements of the expression.<br>
-     * ja: sceneが持つオブジェクトを描画します
-     * @param {Expression} expression a instance of Expression class
+     * draw elements of the expression.
+     * @param expression a instance of Expression class
      */
-    draw(expression) {
+    draw(expression            ) {
       let renderPassTag = '';
       expression.renderPasses.forEach((renderPass, index)=>{
         if (!renderPass.isEnableToDraw || !renderPass.scene) {
@@ -16363,7 +16496,7 @@ albedo.rgb *= (1.0 - metallic);
 
         transparentMeshes.forEach((mesh)=> {
           //console.log(mesh.userFlavorName);
-          if (mesh.isVisible) {
+          if (mesh.isVisible && mesh.isTransparent) {
             mesh.draw({
               expression: expression,
               lights: lights,
@@ -16454,13 +16587,12 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * en: clear color/depth/stencil of canvas.<br>
-     * ja: canvasのカラー、デプス、ステンシルのいずれか又は全てをクリアします。
-     * @param {boolean} color_flg true: clear color, false: don't clear color
-     * @param {boolean} depth_flg true: clear depth, false: don't clear depth
-     * @param {boolean} stencil_flg  true: clear stencil, false: don't clear stencil
+     * clear color/depth/stencil of canvas.
+     * @param color_flg true: clear color, false: don't clear color
+     * @param depth_flg true: clear depth, false: don't clear depth
+     * @param stencil_flg  true: clear stencil, false: don't clear stencil
      */
-    clearCanvas( color_flg, depth_flg, stencil_flg ) {
+    clearCanvas( color_flg         , depth_flg         , stencil_flg          ) {
       const gl = this._glContext.gl;
 
       var bufferBits = 0;
@@ -16474,22 +16606,20 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * en: Get WebGL context.<br>
-     * ja: WebGLコンテキストを取得します。
-     * @returns {webglcontext} a context of WebGL
+     * Get WebGL context.
+     * @returns a context of WebGL
      */
-    get glContext() {
+    get glContext()               {
       return this._glContext.gl;
     }
 
 
     /**
-     * en: resize canvas and viewport.<br>
-     * ja: canvasとビューポートをリサイズします。
-     * @param {number} width en: width to resize, ja: リサイズする幅
-     * @param {number} height en: height to resize, ja:リサイズする高さ
+     * resize canvas and viewport.
+     * @param width width to resize.
+     * @param height height to resize.
      */
-    resize(width, height) {
+    resize(width        , height        ) {
       this._glContext.canvasWidth = width;
       this._glContext.canvasHeight = height;
     }
@@ -16672,10 +16802,8 @@ albedo.rgb *= (1.0 - metallic);
 
 
   /**
-   * [en] This M_Scene class is the top level element of scene graph hierarchy.
-   *       To render scene, pass this scene element to Renderer.draw method.<br>
-   * [ja] このSceneクラスはシーングラフ階層のトップレベルに位置する要素です。
-   *       シーンをレンダリングするには、このscene要素をRenderer.drawメソッドに渡します。
+   * This M_Scene class is the top level element of scene graph hierarchy.
+   *  To render scene, pass this scene element to Renderer.draw method.
    */
   class M_Scene extends M_Group {
                                
@@ -16690,9 +16818,8 @@ albedo.rgb *= (1.0 - metallic);
                           
     
     /**
-     * [en] constructor
-     * [ja] コンストラクタ
-     * @param {HTMLCanvas|string} canvas [en] canvas or canvas' id string. [ja] canvasまたはcanvasのid文字列
+     * constructor
+     * @param {HTMLCanvas|string} canvas canvas or canvas' id string.
      */
     constructor(glBoostContext    ) {
       super(glBoostContext);
@@ -16719,8 +16846,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * [en] Prepare for Rendering. You have to call this method before Renderer.draw method.
-     * [ja] レンダリングのための前処理を行います。Renderer.drawメソッドの前にこのメソッドを呼ぶ必要があります。
+     * Prepare for Rendering. You have to call this method before Renderer.draw method.
      */
     prepareToRender(expression    ) {
       this._reset();
@@ -16892,38 +17018,34 @@ albedo.rgb *= (1.0 - metallic);
     }    
 
     /**
-     * [en] Get child elements which belong to this scene.<br>
-     * [ja] このシーンに属していた子供の要素の配列を返します。
-     * @return {Array<Element>} [en] child elements of this scene. [ja] このシーンの子供の要素
+     * Get child elements which belong to this scene.
+     * @return child elements of this scene.
      */
-    getChildren() {
+    getChildren()                {
       return this._elements;
     }
 
     /**
-     * [en] Get child elements which belong to this scene.<br>
-     * [ja] このシーンに属していた子供の要素の配列を返します。
-     * @return {Array<Element>} [en] child elements of this scene. [ja] このシーンの子供の要素
+     * Get child elements which belong to this scene.
+     * @return child elements of this scene.
      */
-    get elements()            {
+    get elements()                {
       return this._elements;
     }
 
     /**
-     * [en] Get child meshes which belong to this scene.<br>
-     * [ja] このシーンに属していた子供のMesh要素の配列を返します。
-     * @return {Array<M_Mesh>} [en] child meshes of this scene. [ja] このシーンの子供のMesh要素
+     * Get child meshes which belong to this scene.
+     * @return child meshes of this scene.
      */
-    get meshes() {
+    get meshes()               {
       return this._meshes;
     }
 
     /**
-     * [en] Get child lights which belong to this scene.<br>
-     * [ja] このシーンに属していた子供のLight要素の配列を返します。
-     * @return {Array<M_AbstractLight>} [en] child lights of this scene. [ja] このシーンの子供のLight要素
+     * Get child lights which belong to this scene.
+     * @return child lights of this scene.
      */
-    get lights() {
+    get lights()                        {
       return this._lights;
     }
 
@@ -16932,11 +17054,10 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     /**
-     * [en] Get child cameras which belong to this scene.<br>
-     * [ja] このシーンに属していた子供のCamera要素の配列を返します。
-     * @return {Array<PerspectiveCamera>} [en] child cameras of this scene. [ja] このシーンの子供のCamera要素
+     * Get child cameras which belong to this scene.
+     * @return child cameras of this scene.
      */
-    get cameras() {
+    get cameras()                           {
       return this._cameras;
     }
 
@@ -18046,21 +18167,23 @@ albedo.rgb *= (1.0 - metallic);
     }
   }
 
+  //      
+
+
   /**
-   * [en] This is a Directional Light class.<br>
-   * [ja] 平行光源クラスです。
+   * This is a Directional Light class.
    */
   class M_DirectionalLight extends M_AbstractLight {
 
     /**
      * The constructor of DirectionalLight class. 
      * 
-     * @param {glBoostSystem} glBoostSystem - glBoostSystem Instance
-     * @param {Vector4} intensity intensity as Vector4 Color
-     * @param {Vector3} rotate - initial rotation vector
-     * @param {number} length - length for DirectionalLightGizmo
+     * @param glBoostSystem - glBoostSystem Instance
+     * @param intensity intensity as Vector4 Color
+     * @param rotate - initial rotation vector
+     * @param length - length for DirectionalLightGizmo
      */
-    constructor(glBoostSystem, intensity, rotate = new Vector3(0, 0, 0), length = 1.0) {
+    constructor(glBoostSystem               , intensity         , rotate          = new Vector3(0, 0, 0), length         = 1.0) {
       super(glBoostSystem);
 
       this._intensity = intensity;
@@ -18951,32 +19074,31 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost['PhongShader'] = PhongShader;
 
+  //      
+
   let singleton$4 = Symbol();
   let singletonEnforcer$1 = Symbol();
 
   /**
-   * [en] This is a loader class of Obj file format.<br>
-   * [ja] Objファイルを読み込むためのローダークラスです。
+   * This is a loader class of Obj file format.
    */
   class ObjLoader {
 
     /**
-     * [en] The constructor of ObjLoader class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.<br>
-     * [ja] ObjLoaderクラスのコンストラクタです。しかし本クラスはシングルトンであるため、このコンストラクタは直接呼び出せません。getInstance()静的メソッドを使ってください。
-     * @param {Symbol} enforcer [en] a Symbol to forbid calling this constructor directly [ja] このコンストラクタの直接呼び出しを禁止するためのシンボル
+     * The constructor of ObjLoader class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.
+     * @param enforcer a Symbol to forbid calling this constructor directly
      */
-    constructor(enforcer) {
+    constructor(enforcer        ) {
       if (enforcer !== singletonEnforcer$1) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
 
     /**
-     * [en] The static method to get singleton instance of this class.<br>
-     * [ja] このクラスのシングルトンインスタンスを取得するための静的メソッド。
-     * @return {ObjLoader} [en] the singleton instance of ObjLoader class [ja] ObjLoaderクラスのシングルトンインスタンス
+     * The static method to get singleton instance of this class.
+     * @return The singleton instance of ObjLoader class
      */
-    static getInstance() {
+    static getInstance()            {
       if (!this[singleton$4]) {
         this[singleton$4] = new ObjLoader(singletonEnforcer$1);
       }
@@ -18985,13 +19107,13 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * the method to load Obj file.
-     * @param {glBoostContext} glBoostContext - glBoostContext instance
-     * @param {string} url - url of glTF file
-     * @param {Shader} defaultShader - a shader to assign to loaded geometries
-     * @param {string} mtlString - string of mtl file (optional)
-     * @return {Promise} a promise object
+     * @param glBoostContext - glBoostContext instance
+     * @param url - url of glTF file
+     * @param defaultShader - a shader to assign to loaded geometries
+     * @param mtlString - string of mtl file (optional)
+     * @return a promise object
      */
-    loadObj(glBoostContext, url, defaultShader = null, mtlString = null) {
+    loadObj(glBoostContext                , url        , defaultShader         = null, mtlString         = null)          {
       return DataUtil.loadResourceAsync(url, false, (resolve, responseText)=>{
         let gotText = responseText;
         let partsOfPath = url.split('/');
@@ -19698,32 +19820,32 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost['LambertShader'] = LambertShader;
 
+  //      
+
+
   let singleton$5 = Symbol();
   let singletonEnforcer$2 = Symbol();
 
   /**
-   * [en] This is a loader class of glTF file format. You can see more detail of glTF format at https://github.com/KhronosGroup/glTF .<br>
-   * [ja] glTFファイルを読み込むためのローダークラスです。glTFファイルフォーマットについての詳細は https://github.com/KhronosGroup/glTF をご覧ください。
+   * This is a loader class of glTF file format. You can see more detail of glTF format at https://github.com/KhronosGroup/glTF .
    */
   class GLTFLoader {
 
     /**
-     * [en] The constructor of GLTFLoader class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.<br>
-     * [ja] GLTFLoaderクラスのコンストラクタです。しかし本クラスはシングルトンであるため、このコンストラクタは直接呼び出せません。getInstance()静的メソッドを使ってください。
-     * @param {Symbol} enforcer [en] a Symbol to forbid calling this constructor directly [ja] このコンストラクタの直接呼び出しを禁止するためのシンボル
+     * The constructor of GLTFLoader class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.
+     * @param enforcer a Symbol to forbid calling this constructor directly
      */
-    constructor(enforcer) {
+    constructor(enforcer        ) {
       if (enforcer !== singletonEnforcer$2) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
 
     /**
-     * [en] The static method to get singleton instance of this class.<br>
-     * [ja] このクラスのシングルトンインスタンスを取得するための静的メソッド。
-     * @return {GLTFLoader} [en] the singleton instance of GLTFLoader class [ja] GLTFLoaderクラスのシングルトンインスタンス
+     * The static method to get singleton instance of this class.<br>
+     * @return The singleton instance of GLTFLoader class
      */
-    static getInstance() {
+    static getInstance()             {
       if (!this[singleton$5]) {
         this[singleton$5] = new GLTFLoader(singletonEnforcer$2);
       }
@@ -19790,12 +19912,12 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * the method to load glTF file.
-     * @param {glBoostContext} glBoostContext - glBoostContext instance
-     * @param {string} url - url of glTF file
-     * @param {Object} options - option data for loading
-     * @return {Promise} a promise object
+     * @param glBoostContext - glBoostContext instance
+     * @param url - url of glTF file
+     * @param options - option data for loading
+     * @return a promise object
      */
-    loadGLTF(glBoostContext, url, options) {
+    loadGLTF(glBoostContext                , url        , options        )          {
       let defaultOptions = {
         files: { 
           //        "foo.gltf": content of file as ArrayBuffer, 
@@ -19811,6 +19933,7 @@ albedo.rgb *= (1.0 - metallic);
         defaultMaterial: ClassicMaterial$1,
         defaultShaderClass: null,
         isMeshTransparentAsDefault: false,
+        ignoreMeshList: [],
         defaultStates: {
           states: {
             enable: [
@@ -20089,6 +20212,8 @@ albedo.rgb *= (1.0 - metallic);
         this._IterateNodeOfScene(glBoostContext, buffers, json, defaultShader, shaders, textures, glTFVer, resolve, options);
       }
 
+      
+
     }
 
     _IterateNodeOfScene(glBoostContext, buffers, json, defaultShader, shaders, textures, glTFVer, resolve, options) {
@@ -20126,15 +20251,18 @@ albedo.rgb *= (1.0 - metallic);
         // Animation
         this._loadAnimation(group, buffers, json, glTFVer, options);
 
-        if (options && options.loaderExtension && options.loaderExtension.setAssetPropertiesToRootGroup) {
-          options.loaderExtension.setAssetPropertiesToRootGroup(rootGroup, json.asset);
-        }
-
         rootGroup.addChild(group);
 
       }
 
       rootGroup.allMeshes = rootGroup.searchElementsByType(M_Mesh);
+
+      if (options && options.loaderExtension && options.loaderExtension.setAssetPropertiesToRootGroup) {
+        options.loaderExtension.setAssetPropertiesToRootGroup(rootGroup, json.asset);
+      }
+      if (options && options.loaderExtension && options.loaderExtension.loadExtensionInfoAndSetToRootGroup) {
+        options.loaderExtension.loadExtensionInfoAndSetToRootGroup(rootGroup, json, glBoostContext);
+      }
 
       resolve(rootGroup);
     }
@@ -20183,12 +20311,18 @@ albedo.rgb *= (1.0 - metallic);
         let cameraStr = nodeJson.camera;
         let cameraJson = json.cameras[cameraStr];
         let camera = null;
+
+        let centerVec = new Vector3(0.0, 0.0, -1.0);
+        if (json.asset && json.asset.LastSaved_ApplicationVendor) {
+          // For backwards compatibility
+          centerVec = new Vector3(1.0, 0.0, 0.0);
+        }
         if (cameraJson.type === 'perspective') {
           let perspective = cameraJson.perspective;
           camera = glBoostContext.createPerspectiveCamera(
             {
               eye: new Vector3(0.0, 0.0, 0),
-              center: new Vector3(1.0, 0.0, 0.0),
+              center: centerVec,
               up: new Vector3(0.0, 1.0, 0.0)
             },
             {
@@ -20203,7 +20337,7 @@ albedo.rgb *= (1.0 - metallic);
           camera = glBoostContext.createOrthoCamera(
             {
               eye: new Vector3(0.0, 0.0, 0),
-              center: new Vector3(1.0, 0.0, 0.0),
+              center: centerVec,
               up: new Vector3(0.0, 1.0, 0.0)
             },
             {
@@ -20280,10 +20414,14 @@ albedo.rgb *= (1.0 - metallic);
         mesh = glBoostContext.createMesh(geometry);
       }
       mesh.userFlavorName = meshStr;
-      group.addChild(mesh);
 
-      if (options && options.isMeshTransparentAsDefault) {
-        mesh.isTransparentForce = true;
+      if (!(options.ignoreMeshList != null) || options.ignoreMeshList.indexOf(mesh.userFlavorName) === -1) {
+        // if the mesh name is not in ignore list, add it to the group.
+        group.addChild(mesh);
+      }
+
+      if (options && options.isMeshTransparentAsDefault || options && options.defaultStates && options.defaultStates.isTransparent) {
+        mesh.isTransparent = true;
       }
 
       let _indicesArray = [];
@@ -20425,7 +20563,7 @@ albedo.rgb *= (1.0 - metallic);
                   group.getChildren().forEach((elem)=>{
                     let isMatch = this.isTargetMatch(statesInfo, elem, target);
                     if (isMatch) {
-                      elem.isTransparentForce = statesInfo.isTransparent !== void 0 ? statesInfo.isTransparent : false;
+                      elem.isTransparent = statesInfo.isTransparent !== void 0 ? statesInfo.isTransparent : false;
                       if (statesInfo.states) {
                         material.states = statesInfo.states;
                       }
@@ -21277,6 +21415,8 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost$1["GLTFLoader"] = GLTFLoader;
 
+  //      
+
   let singleton$6 = Symbol();
   let singletonEnforcer$3 = Symbol();
 
@@ -21287,9 +21427,9 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * The constructor of GLTFLoader class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.
-     * @param {Symbol} enforcer a Symbol to forbid calling this constructor directly
+     * @param enforcer a Symbol to forbid calling this constructor directly
      */
-    constructor(enforcer) {
+    constructor(enforcer        ) {
       if (enforcer !== singletonEnforcer$3) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
@@ -21323,9 +21463,9 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * The static method to get singleton instance of this class.
-     * @return {GLTFLoader} the singleton instance of GLTFLoader class
+     * @return The singleton instance of GLTFLoader class
      */
-    static getInstance() {
+    static getInstance()             {
       if (!this[singleton$6]) {
         this[singleton$6] = new GLTF2Loader(singletonEnforcer$3);
       }
@@ -21334,11 +21474,11 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * the method to load glTF2 file.
-     * @param {string} uri uri of glTF file
-     * @param {Object} options - opition data for loading
-     * @return {Promise}
+     * @param uri uri of glTF file
+     * @param options - opition data for loading
+     * @return
      */
-    loadGLTF(uri, options) {
+    loadGLTF(uri        , options         = {})          {
       let defaultOptions = {
         files: { 
           //        "foo.gltf": content of file as ArrayBuffer, 
@@ -22067,6 +22207,8 @@ albedo.rgb *= (1.0 - metallic);
 
   GLBoost$1["GLTF2Loader"] = GLTF2Loader;
 
+  //      
+
   let singleton$7 = Symbol();
   let singletonEnforcer$4 = Symbol();
 
@@ -22077,9 +22219,9 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * The constructor of GLTFLoader class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.
-     * @param {Symbol} enforcer a Symbol to forbid calling this constructor directly
+     * @param enforcer a Symbol to forbid calling this constructor directly
      */
-    constructor(enforcer) {
+    constructor(enforcer        ) {
       if (enforcer !== singletonEnforcer$4) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
@@ -22087,9 +22229,9 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * The static method to get singleton instance of this class.
-     * @return {GLTFLoader} the singleton instance of GLTFLoader class
+     * @return The singleton instance of GLTFLoader class
      */
-    static getInstance() {
+    static getInstance()             {
       if (!this[singleton$7]) {
         this[singleton$7] = new ModelConverter(singletonEnforcer$4);
       }
@@ -22159,7 +22301,10 @@ albedo.rgb *= (1.0 - metallic);
 
       let options = gltfModel.asset.extras.glboostOptions;
       if (options.loaderExtension && options.loaderExtension.setAssetPropertiesToRootGroup) {
-        options.loaderExtension.setAssetPropertiesToRootGroup(rootGroup, gltfModel.asset, glBoostContext);
+        options.loaderExtension.setAssetPropertiesToRootGroup(rootGroup, gltfModel.asset);
+      }
+      if (options && options.loaderExtension && options.loaderExtension.loadExtensionInfoAndSetToRootGroup) {
+        options.loaderExtension.loadExtensionInfoAndSetToRootGroup(rootGroup, gltfModel, glBoostContext);
       }
 
       rootGroup.allMeshes = rootGroup.searchElementsByType(M_Mesh);
@@ -22262,11 +22407,15 @@ albedo.rgb *= (1.0 - metallic);
       for (let mesh of gltfModel.meshes) {
         let geometry = null;
         let glboostMesh = null;
-        if (mesh.extras && mesh.extras._skin && mesh.extras._skin.inverseBindMatrices) {
+        if (mesh.extras && mesh.extras._skin) {
           geometry = glBoostContext.createSkeletalGeometry();
           glboostMesh = glBoostContext.createSkeletalMesh(geometry, null);
           glboostMesh.gltfJointIndices = mesh.extras._skin.jointsIndices;
-          glboostMesh.inverseBindMatrices = mesh.extras._skin.inverseBindMatrices.extras.vertexAttributeArray;
+          if (mesh.extras._skin.inverseBindMatrices) {
+            glboostMesh.inverseBindMatrices = mesh.extras._skin.inverseBindMatrices.extras.vertexAttributeArray;
+          } else {
+            glboostMesh.inverseBindMatrices = []; 
+          }
         } else {
           geometry = glBoostContext.createGeometry();
           glboostMesh = glBoostContext.createMesh(geometry);
@@ -22275,7 +22424,7 @@ albedo.rgb *= (1.0 - metallic);
 
         let options = gltfModel.asset.extras.glboostOptions;
         if (options.isMeshTransparentAsDefault) {
-          glboostMeshes.isTransparentForce = true;
+          glboostMeshes.isTransparent = true;
         }
 
         let _indicesArray = [];
@@ -22973,7 +23122,7 @@ albedo.rgb *= (1.0 - metallic);
       renderer: null,
       canvas: null,
 
-      /** 子供を 自分のCanvasRenderer で描画するか */
+      /** rendering child by self CanvasRenderer or not */
       renderChildBySelf: true,
 
       init: function(params) {
@@ -22990,7 +23139,7 @@ albedo.rgb *= (1.0 - metallic);
         this.canvas.style.display = "none";
 
         this.glBoostContext = new GLBoostMiddleContext(this.canvas);
-        // レンダラーを生成
+        // create renderer
         this.renderer = this.glBoostContext.createRenderer({clearColor: {red:1, green:1, blue:1, alpha:1}});
         this.scene = this.glBoostContext.createScene();
         this.expression = this.glBoostContext.createExpressionAndRenderPasses(1);
@@ -23011,13 +23160,13 @@ albedo.rgb *= (1.0 - metallic);
       superClass: 'phina.display.Layer',
 
       /**
-       * 子孫要素の描画の面倒を自分で見る
+       * rendering child by self CanvasRenderer or not
        */
       renderChildBySelf: true,
 
-      /** 子孫要素を普通に描画するためのキャンバス */
+      /** For drawing child attribute canvas */
       canvas2d: null,
-      /** canvas2dに描画するレンダラー */
+      /** To drawing canvas2d renderer */
       renderer2d: null,
 
       width: 0,
@@ -23578,6 +23727,8 @@ albedo.rgb *= (1.0 - metallic);
     GLBoost['JointGizmoUpdater'] = JointGizmoUpdater;
   }
 
+  //      
+
   let singleton$8 = Symbol();
   let singletonEnforcer$5 = Symbol();
 
@@ -23588,9 +23739,9 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * The constructor of ObjLoader class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.
-     * @param {Symbol} enforcer a Symbol to forbid calling this constructor directly
+     * @param enforcer a Symbol to forbid calling this constructor directly
      */
-    constructor(enforcer) {
+    constructor(enforcer        ) {
       if (enforcer !== singletonEnforcer$5) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
@@ -23598,16 +23749,31 @@ albedo.rgb *= (1.0 - metallic);
 
     /**
      * The static method to get singleton instance of this class.
-     * @return {ObjLoader} the singleton instance of ObjLoader class
+     * @return the singleton instance of ObjLoader class
      */
-    static getInstance() {
+    static getInstance()           {
       if (!this[singleton$8]) {
         this[singleton$8] = new GLBoostGLTFLoaderExtension(singletonEnforcer$5);
       }
       return this[singleton$8];
     }
 
-    setAssetPropertiesToRootGroup(rootGroup, asset, glBoostContext) {
+    setUVTransformToTexture(texture, samplerJson) {
+      let uvTransform = new Vector4$1(1, 1, 0, 0);
+      if (samplerJson.extras && samplerJson.extras.scale) {
+        let scale = samplerJson.extras.scale;
+        uvTransform.x = scale[0];
+        uvTransform.y = scale[1];
+      }
+      if (samplerJson.extras && samplerJson.extras.translation) {
+        let translation = samplerJson.extras.translation;
+        uvTransform.z = translation[0];
+        uvTransform.w = translation[1];
+      }
+      texture.uvTransform = uvTransform;
+    }
+
+    setAssetPropertiesToRootGroup(rootGroup, asset) {
       // Animation FPS
       if (asset && asset.animationFps) {
         rootGroup.animationFps = asset.animationFps;
@@ -23615,7 +23781,7 @@ albedo.rgb *= (1.0 - metallic);
 
       // other information
       if (asset && asset.version) {
-        rootGroup.spv_version = asset.version;
+        rootGroup.version = asset.version;
       }
       if (asset && asset.LastSaved_ApplicationVendor) {
         rootGroup.LastSaved_ApplicationVendor = asset.LastSaved_ApplicationVendor;
@@ -23633,22 +23799,63 @@ albedo.rgb *= (1.0 - metallic);
       }
 
       // Transparent Meshes Draw Order
-      if (asset && asset.extras && asset.extras.transparent_meshes_draw_order) {
-        rootGroup.transparentMeshesDrawOrder = asset.extras.transparent_meshes_draw_order;
-        let meshes = rootGroup.searchElementsByType(M_Mesh);
-        rootGroup.transparentMeshes = [];
-        for (let name of rootGroup.transparentMeshesDrawOrder) {
-          for (let mesh of meshes) {
-            if (mesh.userFlavorName === name) {
-              rootGroup.transparentMeshes.push(mesh);
+      if (asset && asset.extras) {
+        const transparentMeshesAsManualOrder = (asset.extras.transparent_meshes_draw_order != null) ? asset.extras.transparent_meshes_draw_order : [];
+        let meshParents = rootGroup.searchElementsByType(M_Group);
+        const transparentMeshes = [];
+        for (let name of transparentMeshesAsManualOrder) {
+          for (let parent of meshParents) {
+            if (parent.userFlavorName === name) {
+              const mesh = parent.getChildren()[0];
+              if (mesh.isTransparent) {
+                transparentMeshes.push(mesh);
+              }
               break;
             }
           }
         }
+        rootGroup.transparentMeshesAsManualOrder = transparentMeshes;
       }
 
-      if (asset && asset.extras && asset.extras.effekseerEffects) {
-        for (let effect of asset.extras.effekseerEffects) {
+    }
+
+    loadExtensionInfoAndSetToRootGroup(rootGroup, json, glBoostContext) {
+      rootGroup['extensions'] = json.extensions;
+      if (json.extensions && json.extensions.GLBoost) {
+        const ext = json.extensions.GLBoost;
+
+        // Assignment for Backward Compatibility
+        if (ext.animation) {
+          if (ext.animation.fps != null) {
+            rootGroup.animationFps = ext.animation.fps; 
+          }
+          if (ext.animation.tracks != null) {
+            rootGroup.animationTracks = ext.animation.tracks;
+          }
+        }
+        
+        const transparentMeshesDrawOrder = ext.transparentMeshesDrawOrder;
+        if (transparentMeshesDrawOrder) {
+          let meshParents = rootGroup.searchElementsByType(M_Group);
+          const transparentMeshes = [];
+          for (let name of transparentMeshesDrawOrder) {
+            for (let parent of meshParents) {
+              if (parent.userFlavorName === name) {
+                const mesh = parent.getChildren()[0];
+                if (mesh.isTransparent) {
+                  transparentMeshes.push(mesh);
+                }
+                break;
+              }
+            }
+          }
+          rootGroup.transparentMeshesAsManualOrder = transparentMeshes;
+        }
+      }
+
+      if (json.extensions && json.extensions.Effekseer) {
+        const ext = json.extensions.Effekseer;
+        for (let effect of ext.effects) {
           const group = rootGroup.searchElement(effect.nodeName, {type: GLBoost$1.QUERY_TYPE_USER_FLAVOR_NAME, format:GLBoost$1.QUERY_FORMAT_STRING_PERFECT_MATCHING});
           const effekseerElm = glBoostContext.createEffekseerElement();
           const promise = effekseerElm.load(asset.extras.basePath + effect.efkName + '.efk', true, true);
@@ -23657,21 +23864,6 @@ albedo.rgb *= (1.0 - metallic);
           });
         }
       }
-    }
-
-    setUVTransformToTexture(texture, samplerJson) {
-      let uvTransform = new Vector4$1(1, 1, 0, 0);
-      if (samplerJson.extras && samplerJson.extras.scale) {
-        let scale = samplerJson.extras.scale;
-        uvTransform.x = scale[0];
-        uvTransform.y = scale[1];
-      }
-      if (samplerJson.extras && samplerJson.extras.translation) {
-        let translation = samplerJson.extras.translation;
-        uvTransform.z = translation[0];
-        uvTransform.w = translation[1];
-      }
-      texture.uvTransform = uvTransform;
     }
 
   }
@@ -23873,4 +24065,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-297-gc4f9-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-339-g9c57-mod branch: develop';
