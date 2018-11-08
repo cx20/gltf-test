@@ -4665,64 +4665,19 @@
     }
   }
 
-  /*       */
-                                              
-
   class M_Element extends L_Element {
-                        
-                                                      
-                                         
-                            
-                                                                         
-                                                                  
-                                                      
-                                                            
-                                                                
-                                                        
-                                                          
-                                                            
-                     
-                                  
-                            
-                         
-                                      
-                                                         
-                                     
-                                           
-                                            
-                                                
-                                                  
-                            
-                                     
-                                         
-                                     
-                          
-                           
-                                                  
-                                                                                     
-                                                                                
-                                                                       
-                                                                          
-                                                                 
-                                                                               
-                                  
-                                                                                    
-                                                                      
-                                                                                      
-                           
-                                        
-
-    constructor(glBoostContext                      ) {
+    constructor(glBoostContext) {
       super(glBoostContext);
 
       this._parent = null;
       this._invMatrix = Matrix44$1.identity();
-      this._accumulatedAncestryObjectUpdateNumber = -Number.MAX_VALUE;
-      this._accumulatedAncestryObjectUpdateNumberWithoutMySelf = -Number.MAX_VALUE;    
-      this._accumulatedAncestryObjectUpdateNumberNormal = -Number.MAX_VALUE;
-      this._accumulatedAncestryObjectUpdateNumberInv = -Number.MAX_VALUE;
-      this._accumulatedAncestryObjectUpdateNumberJoint = -Number.MAX_VALUE;
-      this._isTransparentForce = false;
+      this._matrixGetMode = ''; // 'notanimated', 'animate_<input_value>'
+      this._accumulatedAncestryObjectUpdateNumber = -Math.MAX_VALUE;
+      this._accumulatedAncestryObjectUpdateNumberWithoutMySelf = -Math.MAX_VALUE;    
+      this._accumulatedAncestryObjectUpdateNumberNormal = -Math.MAX_VALUE;
+      this._accumulatedAncestryObjectUpdateNumberInv = -Math.MAX_VALUE;
+      this._accumulatedAncestryObjectUpdateNumberJoint = -Math.MAX_VALUE;
+      this._transparentByUser = false;
       this._opacity = 1.0;
       this._isAffectedByWorldMatrix = true;
       this._isAffectedByWorldMatrixAccumulatedAncestry = true;
@@ -4731,6 +4686,8 @@
 
       this._toInheritCurrentAnimationInputValue = true;
 
+      this._camera = null;
+      this._customFunction = null;
       this._isVisible = true;
 
       this._gizmos = [];
@@ -4747,7 +4704,7 @@
       }
     }
 
-    set toInheritCurrentAnimationInputValue(flg         ) {
+    set toInheritCurrentAnimationInputValue(flg) {
       this._toInheritCurrentAnimationInputValue = flg;
     }
 
@@ -4755,7 +4712,7 @@
       return this._toInheritCurrentAnimationInputValue;
     }
 
-    _getCurrentAnimationInputValue(inputName        )                {
+    _getCurrentAnimationInputValue(inputName) {
       let value = this._currentAnimationInputValues[inputName];
       if (typeof(value) === 'number') {
         return value;
@@ -4770,48 +4727,17 @@
       }
     }
 
-    _setDirtyToAnimatedElement(inputName        ) {
+    _setDirtyToAnimatedElement(inputName) {
       if (this.hasAnimation(inputName)) {
         this._needUpdate();
       }
-    }
-
-
-    _multiplyMyAndParentTransformMatricesInInverseOrder(withMySelf         , input        ) {
-      if (input === void 0 && this._activeAnimationLineName !== null) {
-        input = this._getCurrentAnimationInputValue(this._activeAnimationLineName);
-      }
-
-      let tempNumber = 0;
-      if (this.__cache_input_multiplyMyAndParentTransformMatricesInInverseOrder !== input ||
-        this.__updateInfoString_multiplyMyAndParentTransformMatricesInInverseOrder !== (tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this)) ||
-        this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder === void 0)
-      {
-
-        let currentMatrix = null;
-        if (withMySelf) {
-          currentMatrix = this.getMatrixAtOrStatic(this._activeAnimationLineName, input);
-        } else {
-          currentMatrix = Matrix44$1.identity();
-        }
-    
-        if (this._parent === null) {
-          this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder = currentMatrix;
-          return currentMatrix;
-        }
-
-        this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder = Matrix44$1.multiply(currentMatrix, this._parent._multiplyMyAndParentTransformMatricesInInverseOrder(true, input));
-        this.__updateInfoString_multiplyMyAndParentTransformMatricesInInverseOrder = tempNumber;
-        this.__cache_input_multiplyMyAndParentTransformMatricesInInverseOrder = input;
-      }
-      return this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder;
     }
 
     get worldMatrixWithoutMySelf() {
       return this.getWorldMatrixWithoutMySelfAt(void 0);
     }
 
-    getWorldMatrixWithoutMySelfAt(input         ) {
+    getWorldMatrixWithoutMySelfAt(input) {
 
       let tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this);
     
@@ -4836,15 +4762,8 @@
     }
 
 
-    get inverseWorldMatrixWithoutMySelf() {
-      if (this._parent === null) {
-        return Matrix44$1.identity();
-      }
 
-      return this._multiplyMyAndParentTransformMatrices(false, null).clone().invert();
-    }
-
-    _multiplyMyAndParentRotateMatrices(currentElem                  , withMySelf         ) {
+    _multiplyMyAndParentRotateMatrices(currentElem, withMySelf) {
       if (currentElem._parent === null) {
         if (withMySelf) {
           return currentElem.transformMatrixOnlyRotate;
@@ -4861,10 +4780,18 @@
     }
 
     get inverseWorldMatrix() {
-      return this._multiplyMyAndParentTransformMatrices(true, null).clone().invert();
+      return this.getInverseWorldMatrix(true, void 0)
     }
 
-    _accumulateMyAndParentOpacity(currentElem           ) {
+    get inverseWorldMatrixWithoutMySelf() {
+      return this.getInverseWorldMatrix(false, void 0);
+    }
+
+    getInverseWorldMatrix(withMyself, input) {
+      return Matrix44$1.invert(this._multiplyMyAndParentTransformMatrices(withMyself, input));
+    }
+
+    _accumulateMyAndParentOpacity(currentElem) {
       if (currentElem._parent === null) {
         return currentElem.opacity;
       } else {
@@ -4876,7 +4803,7 @@
       return this._accumulateMyAndParentOpacity(this);
     }
 
-    set opacity(opacity        ) {
+    set opacity(opacity) {
       this._opacity = opacity;
     }
 
@@ -4885,16 +4812,14 @@
     }
 
     get isTransparent() {
-      let isTransparent = (this._opacity < 1.0) ? true : false;
-      isTransparent = isTransparent || this._isTransparentForce;
-      return isTransparent;
+      return this._transparentByUser;
     }
 
-    set isTransparent(flg         ) {
-      this._isTransparentForce = flg;
+    set isTransparent(flg) {
+      this._transparentByUser = flg;
     }
 
-    set dirty(flg        ) {
+    set dirty(flg) {
       if (flg) {
         this._needUpdate();
       }
@@ -4914,22 +4839,39 @@
       return this._instanceName + this._updateCountAsElement;                // faster
     }
 
+    set camera(camera) {
+      this._camera = camera;
+    }
+
+    get camera() {
+      return this._camera;
+    }
+
+    set customFunction(func) {
+      this._customFunction = func;
+    }
+
+    get customFunction() {
+      return this._customFunction;
+    }
+
     prepareToRender() {
 
     }
 
-    _copy(instance           ) {
+    _copy(instance) {
       super._copy(instance);
 
       instance._parent = this._parent;
       instance._invMatrix = this._invMatrix.clone();
+      instance._matrixGetMode = this._matrixGetMode;
       instance._is_inverse_trs_matrix_updated = this._is_inverse_trs_matrix_updated;
       instance._accumulatedAncestryObjectUpdateNumber = this._accumulatedAncestryObjectUpdateNumber;
       instance._accumulatedAncestryObjectUpdateNumberNormal = this._accumulatedAncestryObjectUpdateNumberNormal;
       instance._accumulatedAncestryObjectUpdateNumberInv = this._accumulatedAncestryObjectUpdateNumberInv;
 
 
-      instance._isTransparentForce = this._isTransparentForce;
+      instance._transparentByUser = this._transparentByUser;
       instance.opacity = this.opacity;
       instance._activeAnimationLineName = this._activeAnimationLineName;
 
@@ -4939,9 +4881,12 @@
       }
 
       instance._toInheritCurrentAnimationInputValue = this._toInheritCurrentAnimationInputValue;
+
+      instance._camera = this._camera;
+      instance._customFunction = this._customFunction;
     }
 
-    set isVisible(flg         ) {
+    set isVisible(flg) {
       this._isVisible = flg;
     }
 
@@ -4949,7 +4894,7 @@
       return this._isVisible;
     }
 
-    set isAffectedByWorldMatrix(flg         ) {
+    set isAffectedByWorldMatrix(flg) {
       this._isAffectedByWorldMatrix = flg;
     }
 
@@ -4957,7 +4902,7 @@
       return this._isAffectedByWorldMatrix;
     }
 
-    set isAffectedByWorldMatrixAccumulatedAncestry(flg         ) {
+    set isAffectedByWorldMatrixAccumulatedAncestry(flg) {
       this._isAffectedByWorldMatrixAccumulatedAncestry = flg;
     }
 
@@ -4965,7 +4910,7 @@
       return this._isAffectedByWorldMatrixAccumulatedAncestry;
     }
 
-    set isAffectedByViewMatrix(flg         ) {
+    set isAffectedByViewMatrix(flg) {
       this._isAffectedByViewMatrix = flg;
     }
 
@@ -4973,7 +4918,7 @@
       return this._isAffectedByViewMatrix;
     }
 
-    set isAffectedByProjectionMatrix(flg         ) {
+    set isAffectedByProjectionMatrix(flg) {
       this._isAffectedByProjectionMatrix = flg;
     }
 
@@ -4981,11 +4926,13 @@
       return this._isAffectedByProjectionMatrix;
     }
 
-    set gizmoScale(scale        ) {
+    set gizmoScale(scale) {
       for (let gizmo of this._gizmos) {
         gizmo.scale = new Vector3(scale, scale, scale);
       }
     }
+
+
 
     get gizmoScale() {
       if (this._gizmos.length === 0) {
@@ -4994,7 +4941,7 @@
       return this._gizmos[0].scale.x;
     }
 
-    set isGizmoVisible(flg         ) {
+    set isGizmoVisible(flg) {
       for (let gizmo of this._gizmos) {
         gizmo.isVisible = flg;
       }
@@ -5004,7 +4951,7 @@
       return this._gizmos[0].isVisible;
     }
 
-    set masterElement(element           ) {
+    set masterElement(element) {
       this._masterElement = element;
     }
 
@@ -5012,61 +4959,12 @@
       return this._masterElement;
     }
 
-    get worldMatrixForJoints() {
-      return this.getWorldMatrixForJointsAt(void 0);
-    }
-
-    getWorldMatrixForJointsAt(input         ) {
-
-      let tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this);
-      
-      if (this._accumulatedAncestryObjectUpdateNumberForJoints !== tempNumber || this._matrixAccumulatedAncestryForJoints === void 0) {
-        this._matrixAccumulatedAncestryForJoints = this._multiplyMyAndParentTransformMatricesForJoints(true, input);
-        this._accumulatedAncestryObjectUpdateNumberForJoints = tempNumber;
-      }
-
-      return this._matrixAccumulatedAncestryForJoints.clone();
-      
-    }
-
-    _multiplyMyAndParentTransformMatricesForJoints(withMySelf, input) {
-      if (input === void 0 && this._activeAnimationLineName !== null) {
-        input = this._getCurrentAnimationInputValue(this._activeAnimationLineName);
-      }
-
-      let tempNumber = 0;
-      if (this.__cache_input_multiplyMyAndParentTransformMatricesForJoints !== input ||
-        this.__updateInfoString_multiplyMyAndParentTransformMatricesForJoints !== (tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this)) ||
-        this.__cache_returnValue_multiplyMyAndParentTransformMatricesForJoints === void 0)
-      {
-
-          let currentMatrix = null;
-          if (withMySelf) {
-            currentMatrix = this.getRotateTranslateAt(input);
-          } else {
-            currentMatrix = Matrix44$1.identity();
-          }
-      
-          if (this._parent === null) {
-            this.__cache_returnValue_multiplyMyAndParentTransformMatricesForJoints = currentMatrix;
-            return currentMatrix;
-          }
-
-          this.__cache_returnValue_multiplyMyAndParentTransformMatricesForJoints = Matrix44$1.multiply(this._parent._multiplyMyAndParentTransformMatricesForJoints(true, input), currentMatrix);
-          this.__updateInfoString_multiplyMyAndParentTransformMatricesForJoints = tempNumber;
-          this.__cache_input_multiplyMyAndParentTransformMatricesForJoints = input;
-      }
-      return this.__cache_returnValue_multiplyMyAndParentTransformMatricesForJoints;
-    
-    }
-
-
     get worldMatrix() {
       return this.getWorldMatrixAt(void 0);
     }
 
 
-    getWorldMatrixAt(input        ) {
+    getWorldMatrixAt(input) {
 
       let tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this);
     
@@ -5079,7 +4977,7 @@
     }
 
     _multiplyMyAndParentTransformMatrices(withMySelf, input) {
-      if (input === null && this._activeAnimationLineName !== null) {
+      if (input === void 0 && this._activeAnimationLineName !== null) {
         input = this._getCurrentAnimationInputValue(this._activeAnimationLineName);
       }
 
@@ -5107,82 +5005,16 @@
     
     }
 
-    get inverseWorldMatrix() {
-      return this.getInverseWorldMatrixAt(void 0);
-    }
-
-    getInverseWorldMatrixAt(input         ) {
-      let tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this);
-    
-      if (this._accumulatedAncestryObjectUpdateNumberInverse !== tempNumber || this._inverseMatrixAccumulatedAncestry === void 0) {
-        this._inverseMatrixAccumulatedAncestry = this._multiplyMyAndParentTransformMatricesInInverseOrder(true, input);
-        this._accumulatedAncestryObjectUpdateNumberInverse = tempNumber;
-      }
-
-      return this._inverseMatrixAccumulatedAncestry.clone();
-    }
-
-    get inverseTransformMatrixAccumulatedAncestryWithoutMySelf() {
-      if (this._parent === null) {
-        return Matrix44$1.identity();
-      }
-
-      return this._multiplyMyAndParentTransformMatricesInInverseOrder(false, null).clone().invert();
-    }
-
-    _multiplyMyAndParentTransformMatricesInInverseOrder(withMySelf, input) {
-      if (input === null && this._activeAnimationLineName !== null) {
-        input = this._getCurrentAnimationInputValue(this._activeAnimationLineName);
-      }
-
-      let tempNumber = 0;
-      if (input === void 0 || this.__cache_input_multiplyMyAndParentTransformMatricesInInverseOrder !== input ||
-        this.__updateInfoString_multiplyMyAndParentTransformMatricesInInverseOrder !== (tempNumber = this._accumulateMyAndParentNameWithUpdateInfo(this)) ||
-        this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder === void 0)
-      {
-
-        let currentMatrix = null;
-        if (withMySelf) {
-          currentMatrix = this.getMatrixAtOrStatic(this._activeAnimationLineName, input);
-        } else {
-          currentMatrix = Matrix44$1.identity();
-        }
-    
-        if (this._parent === null) {
-          this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder = currentMatrix;
-          return currentMatrix;
-        }
-
-        this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder = Matrix44$1.multiply(currentMatrix, this._parent._multiplyMyAndParentTransformMatricesInInverseOrder(true, input));
-        this.__updateInfoString_multiplyMyAndParentTransformMatricesInInverseOrder = tempNumber;
-        this.__cache_input_multiplyMyAndParentTransformMatricesInInverseOrder = input;
-      }
-      return this.__cache_returnValue_multiplyMyAndParentTransformMatricesInInverseOrder;
-    }
-
-    readyForDiscard() {
-      if (this.className.indexOf('Mesh') !== -1) {
-        const materials = this.getAppropriateMaterials();
-        for (let material of materials) {
-          if (material.userFlavorName !== 'GLBoostSystemDefaultMaterial') {
-            material.readyForDiscard();
-          }
-        }
-      }
-    }
-
-    addGizmo(gizmo         ) {
-      this._gizmos.push(gizmo);
-    }
-
     get gizmos() {
       return this._gizmos;
     }
 
-    _needUpdate() {
-      super._needUpdate();
+    addGizmo(gizmo) {
+      this._gizmos.push(gizmo);
     }
 
+    readyForDiscard() {
+    }
   }
 
   /**
@@ -11856,11 +11688,11 @@ albedo.rgb *= (1.0 - metallic);
 
     _getTargetAABB() {
       let targetAABB = null;
-      if (typeof this._target.updateAABB !== 'undefined') {
-        targetAABB = this._target.updateAABB();
-      } else {
-        targetAABB = this._target.AABB;
-      }
+  //    if (typeof this._target.updateAABB !== 'undefined') {
+  //      targetAABB = this._target.updateAABB();
+  //    } else {
+      targetAABB = this._target.AABB;
+  //    }
       return targetAABB;
     }
 
@@ -14534,6 +14366,13 @@ albedo.rgb *= (1.0 - metallic);
     get isPickable() {
       return this._isPickable;
     }
+
+    readyForDiscard() {
+      const materials = this.getAppropriateMaterials();
+      for (let material of materials) {
+        material.readyForDiscard();
+      }
+    }
   }
   M_Mesh._geometries = {};
 
@@ -15320,7 +15159,7 @@ albedo.rgb *= (1.0 - metallic);
         if (!mesh.isPickable) {
           continue;
         }
-        if (ignoreInstanceNameList && ignoreInstanceNameList.indexOf(mesh.instanceName)) {
+        if (ignoreInstanceNameList && ignoreInstanceNameList.indexOf(mesh.instanceName) !== -1) {
           continue;
         }
         let result = null;
@@ -16354,6 +16193,7 @@ albedo.rgb *= (1.0 - metallic);
       this.__requestedToEnterWebVR = false;
       this.__isReadyForWebVR = false;
       this.__animationFrameObject = window;
+      this.__effekseerElements = [];
     }
 
 
@@ -16376,6 +16216,7 @@ albedo.rgb *= (1.0 - metallic);
           effekseerElement.update(camera);
         }
       }
+      this.__effekseerElements = effekseerElements;
 
       let unique = function(array) {
         return array.reduce(function(a, b) {
@@ -16391,7 +16232,7 @@ albedo.rgb *= (1.0 - metallic);
         mesh.geometry.update(mesh);
       }
 
-      if (typeof effekseer !== "undefined") {
+      if (typeof effekseer !== "undefined" && this.__effekseerElements.length > 0) {
         effekseer.update();
       }
 
@@ -16516,7 +16357,7 @@ albedo.rgb *= (1.0 - metallic);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   //      glem.drawBuffers(gl, [gl.BACK]);
 
-        if (typeof effekseer !== "undefined" && camera != null) {
+        if (typeof effekseer !== "undefined" && this.__effekseerElements.length > 0 && camera != null) {
           const projection = camera.projectionRHMatrix().m;
           const viewing = camera.lookAtRHMatrix().multiply(camera.inverseWorldMatrixWithoutMySelf).m; 
           effekseer.setProjectionMatrix(projection);
@@ -22407,7 +22248,7 @@ albedo.rgb *= (1.0 - metallic);
       for (let mesh of gltfModel.meshes) {
         let geometry = null;
         let glboostMesh = null;
-        if (mesh.extras && mesh.extras._skin) {
+        if (mesh.extras && mesh.extras._skin && mesh.extras._skin.jointsIndices.length > 0) {
           geometry = glBoostContext.createSkeletalGeometry();
           glboostMesh = glBoostContext.createSkeletalMesh(geometry, null);
           glboostMesh.gltfJointIndices = mesh.extras._skin.jointsIndices;
@@ -24065,4 +23906,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-339-g9c57-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-353-g8686d-mod branch: develop';
