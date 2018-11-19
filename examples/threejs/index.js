@@ -153,6 +153,7 @@ function getEnvMap() {
     loader.setCrossOrigin( 'anonymous' );
     var envMap = loader.load( urls );
     envMap.format = THREE.RGBFormat;
+    envMap.encoding = THREE.sRGBEncoding;
     return envMap;
 }
 
