@@ -26,16 +26,26 @@ var axis;
 var gui;
 var ROTATE = true;
 var AXIS = true;
+var camera;
+var renderer;
+var controls;
 
 init();
 animate();
-  
+
+function resize() {
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    camera.aspect = container.offsetWidth / container.offsetHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( width, height );
+}
+
 function init() {
-    width = window.innerWidth;
-    height = window.innerHeight;
-    
     scene = new THREE.Scene();
-    
+
     var hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 1.2 );
     scene.add(hemispheric);
 /*
@@ -47,7 +57,7 @@ function init() {
     scene.add( directionalLight );
 */
 
-    camera = new THREE.PerspectiveCamera( 75, width / height, 1, 10000 );
+    camera = new THREE.PerspectiveCamera( 75, 1, 1, 10000 );
     camera.position.set(0, 2, 3);
     scene.add( camera );
 
@@ -56,10 +66,10 @@ function init() {
         console.log( item, loaded, total );
     };
 
-    // monkeypatch 
+    // monkeypatch
     // https://github.com/mrdoob/three.js/pull/11498#issuecomment-308136310
     THREE.PropertyBinding.sanitizeNodeName = (n) => n;
-    
+
     var loader = new THREE.GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
@@ -94,7 +104,7 @@ function init() {
                 mixer.clipAction( animation ).play();
             }
         }
-        
+
         var envMap = getEnvMap();
         object.traverse( function( node ) {
             if ( node.material ) {
@@ -107,11 +117,10 @@ function init() {
         scene.add(object);
     });
 
-    axis = new THREE.AxesHelper(1000);   
+    axis = new THREE.AxesHelper(1000);
     scene.add(axis);
 
     renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.setSize( width, height );
     renderer.gammaOutput = true; // if >r88, models are dark unless you activate gammaOutput
     renderer.gammaFactor = 2.2;
     renderer.setClearColor( 0xaaaaaa );
@@ -129,15 +138,18 @@ function init() {
     gui = new dat.GUI();
     var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
     var guiAxis = gui.add(window, 'AXIS').name('Axis');
-    
+
     guiRotate.onChange(function (value) {
         controls.autoRotate = value;
     });
     guiAxis.onChange(function (value) {
         axis.visible = value;
     });
-    
+
     document.body.appendChild( renderer.domElement );
+
+    resize();
+    window.addEventListener( 'resize', resize, false );
 }
 
 // https://github.com/mrdoob/three.js/tree/dev/examples/textures/cube/skybox
@@ -158,7 +170,7 @@ function getEnvMap() {
 
 function animate() {
     requestAnimationFrame( animate );
-    if (mixer) mixer.update(clock.getDelta());
+    if ( mixer ) mixer.update( clock.getDelta() );
     controls.update();
     render();
 }
