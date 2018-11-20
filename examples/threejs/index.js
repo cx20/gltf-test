@@ -26,6 +26,7 @@ var axis;
 var gui;
 var ROTATE = true;
 var AXIS = true;
+var scene;
 var camera;
 var renderer;
 var controls;
@@ -34,10 +35,11 @@ init();
 animate();
 
 function resize() {
-    var width = window.innerWidth;
-    var height = window.innerHeight;
+    var container = document.getElementById('container');
+    var width = container.offsetWidth;
+    var height = container.offsetHeight;
 
-    camera.aspect = container.offsetWidth / container.offsetHeight;
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
 
     renderer.setSize( width, height );
