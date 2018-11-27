@@ -38,26 +38,6 @@ var createScene = function(engine) {
     var base = path.substr(0, path.lastIndexOf("/") + 1);
     var file = path.substr(path.lastIndexOf("/") + 1);
 
-    function findParentForMesh(mesh) {
-        var parentMesh = mesh;
-        if (mesh.parent !== null && mesh.parent !== undefined) {
-            parentMesh = findParentForMesh(mesh);
-        }
-        return parentMesh;
-    }
-
-    function findParentForMeshes(meshes) {
-        var parentMesh = meshes[0];
-        for (var i = 0; i < meshes.length; i++) {
-            if (scene.meshes[i].parent !== null && scene.meshes[i].parent !== undefined) {
-                parentMesh = scene.meshes[i].parent;
-                break;
-            }
-        }
-        parentMesh = findParentForMesh(parentMesh);
-        return parentMesh;
-    }
-
     // GUI
     var gui = new dat.GUI();
     var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
@@ -67,7 +47,7 @@ var createScene = function(engine) {
     var loader = BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
         scene = newScene;
-        var parentMesh = findParentForMeshes(scene.meshes);
+        var parentMesh = scene.rootNodes[0];
 
         if ( modelInfo.name == "GearboxAssy" ) {
             scale = 0.2;
