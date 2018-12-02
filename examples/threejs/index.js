@@ -75,7 +75,7 @@ function init() {
     var loader = new THREE.GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
-    THREE.DRACOLoader.setDecoderPath( '../../libs/three.js/r98dev/draco/gltf/' );
+    THREE.DRACOLoader.setDecoderPath( '../../libs/three.js/r99dev/draco/gltf/' );
     loader.setDRACOLoader( new THREE.DRACOLoader() );
 
     var scale = modelInfo.scale;
@@ -167,6 +167,8 @@ function getEnvMap() {
     loader.setCrossOrigin( 'anonymous' );
     var envMap = loader.load( urls );
     envMap.format = THREE.RGBFormat;
+    // The color of the environment map is displayed brighter than r98
+    // https://github.com/mrdoob/three.js/issues/15285
     envMap.encoding = THREE.sRGBEncoding;
     return envMap;
 }
