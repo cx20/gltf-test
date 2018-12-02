@@ -433,8 +433,18 @@
       c.define('LOG_SHADER_CODE');
       c.define('LOG_GLBOOST_OBJECT_LIFECYCLE');
       c.define('LOG_GL_RESOURCE_LIFECYCLE');
-      c.define('LOG_GL_ERROR');
+      c.define('LOG_LEVEL_ERROR', void 0, 'error');
+      c.define('LOG_LEVEL_WARN', void 0, 'warn');
+      c.define('LOG_LEVEL_LOG', void 0, 'log');
+      c.define('LOG_LEVEL_INFO', void 0, 'info');
+      c.define('LOG_LEVEL_DEBUG', void 0, 'debug');
       c.define('LOG_OMISSION_PROCESSING');
+
+      c.define('LOG_TYPE_NUMERICAL', void 0, 'numerical');
+      c.define('LOG_TYPE_AABB', void 0, 'AABB');
+      c.define('LOG_TYPE_GL', void 0, 'GL');
+      c.define('LOG_TYPE_PERFORMANCE', void 0, 'PERFORMANCE');
+       
 
     })();
 
@@ -625,6 +635,28 @@
     static consoleLog(logType, text) {
       if (GLBoost$1.VALUE_CONSOLE_OUT_FOR_DEBUGGING && GLBoost$1.valueOfGLBoostConstants[logType]) {
         console.log(text);
+      }
+    }
+
+    static isMobile() {
+      var ua = [
+        "iPod",
+        "iPad",
+        "iPhone",
+        "Android"
+      ];
+      
+      for (var i = 0; i < ua.length; i++) {
+        if (navigator.userAgent.indexOf(ua[i]) > 0) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    static preventDefaultForDesktopOnly(e) {
+      if(!MiscUtil.isMobile()) {
+        e.preventDefault();
       }
     }
   }
@@ -919,6 +951,137 @@
 
   GLBoost$1['L_GLBoostMonitor'] = L_GLBoostMonitor;
 
+  //      
+
+  let singleton$1 = Symbol();
+  let singletonEnforcer = Symbol();
+
+                           
+                          
+                            
+                     
+                          
+                    
+    
+
+  class Logger {
+                                     
+    // Formatter
+    // logFormatter:any;
+
+    // Log Data Output Target
+                                         
+                                           
+
+                        
+    /**
+     * The constructor of Logger class. But you cannot use this constructor directly because of this class is a singleton class. Use getInstance() static method.
+     * @param enforcer a Symbol to forbid calling this constructor directly
+     */
+    constructor(enforcer        ) {
+      if (enforcer !== singletonEnforcer) {
+        throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
+      }
+      //this.logFormatter = null;
+      this.realtimeTargets = new Map();
+      this.aggregateTargets = new Map();
+      this.logData = [];
+      this.logCapacity = 5000;
+      this.registerRealtimeOutputTarget('default', this.defaultConsoleFunction);
+      this.registerAggregateOutputTarget('default', this.defaultConsoleFunction);
+    }
+
+    /**
+     * The static method to get singleton instance of this class.
+     * @return The singleton instance of GLTFLoader class
+     */
+    static getInstance()         {
+      if (!this[singleton$1]) {
+        this[singleton$1] = new Logger(singletonEnforcer);
+      }
+      return this[singleton$1];
+    }
+
+    registerRealtimeOutputTarget(targetName, target) {
+      this.realtimeTargets.set(targetName, target);
+    }
+
+    registerAggregateOutputTarget(targetName, target) {
+      this.aggregateTargets.set(targetName, target);
+    }
+
+    unregisterRealtimeOutputTarget(targetName) {
+      this.realtimeTargets.delete(targetName);
+    }
+
+    unregisterAggregateOutputTarget(targetName) {
+      this.aggregateTargets.delete(targetName);
+    }
+
+    aggregate(targetName = null) {
+      if (targetName != null) {
+        const targetFunc = this.realtimeTargets[targetName];
+        for (const log of this.logData) {
+          targetFunc(log.logLevelId, log.logTypeId, log.unixtime, ...log.args);
+        }
+    } else {
+        for (var [targetName, targetFunc] of this.realtimeTargets) {
+          for (const log of this.logData) {
+            targetFunc(log.logLevelId, log.logTypeId, log.unixtime, ...log.args);
+          }
+        }
+      }
+    }
+
+    out(logLevelId, logTypeId, isRealtimeOn, ...args) {
+      if (GLBoost$1.VALUE_CONSOLE_OUT_FOR_DEBUGGING === false &&
+        (logLevelId === GLBoost$1.LOG_LEVEL_DEBUG ||
+         logLevelId === GLBoost$1.LOG_LEVEL_INFO ||
+         logLevelId === GLBoost$1.LOG_LEVEL_LOG)) {
+        // output error log even when VALUE_CONSOLE_OUT_FOR_DEBUGGING is true.
+        return;
+      }
+      
+      if (GLBoost$1.valueOfGLBoostConstants[logTypeId] != null && GLBoost$1.valueOfGLBoostConstants[logTypeId] === false) {
+        return;
+      }
+
+      const unixtime = Date.now();
+      this.logData.push({
+        unixtime: unixtime,
+        logLevelId: logLevelId,
+        logTypeId: logTypeId,
+        args: args
+      });
+
+      if (isRealtimeOn) {
+        for (var [targetName, targetFunc] of this.realtimeTargets) {
+          targetFunc(logLevelId, logTypeId, unixtime, ...args);
+        }
+      }
+
+      if (this.logData.length > this.logCapacity + 1000) {
+        this.logData.splice(0, this.logData.length - this.logCapacity);
+      }
+    }
+
+    defaultConsoleFunction(logLevelId, logTypeId, unixtime, ...args) {
+      //console[GLBoost.getValueOfGLBoostConstant(logLevelId)](`[${GLBoost.getValueOfGLBoostConstant(logTypeId)}] ${args}`);
+
+      const d = new Date(unixtime);
+      const year  = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const day   = d.getDate();
+      const hour  = ( d.getHours()   < 10 ) ? '0' + d.getHours()   : d.getHours();
+      const min   = ( d.getMinutes() < 10 ) ? '0' + d.getMinutes() : d.getMinutes();
+      const sec   = ( d.getSeconds() < 10 ) ? '0' + d.getSeconds() : d.getSeconds();
+      const datestr = year + '-' + month + '-' + day + ' ' + hour + ':' + min + ':' + sec;
+      console[GLBoost$1.getValueOfGLBoostConstant(logLevelId)](`[${datestr}][${GLBoost$1.getValueOfGLBoostConstant(logTypeId)}] ${args}`);
+    }
+  }
+
+  GLBoost$1['Logger'] = Logger;
+
   class GLContext {
 
     constructor(canvas, initParameter, gl, width, height) {
@@ -946,6 +1109,19 @@
 
       this._monitor = L_GLBoostMonitor.getInstance();
       this._glslProgramsLatestUsageCount = 0;
+
+      this._logger = Logger.getInstance();
+
+      this._glErrorTypes = ['INVALID_ENUM', 'INVALID_VALUE', 'INVALID_OPERATION', 'INVALID_FRAMEBUFFER_OPERATION',
+      'OUT_OF_MEMORY', 'CONTEXT_LOST_WEBGL'];
+      this._glErrorMessages = [
+        'An unacceptable value has been specified for an enumerated argument. The command is ignored and the error flag is set.',
+        'A numeric argument is out of range. The command is ignored and the error flag is set.',
+        'The specified command is not allowed for the current state. The command is ignored and the error flag is set.',
+        'The currently bound framebuffer is not framebuffer complete when trying to render to or to read from it.',
+        'Not enough memory is left to execute the command.',
+        'If the WebGL context is lost, this error is returned on the first call to getError. Afterwards and until the context has been restored, it returns gl.NO_ERROR.'
+      ]; 
     }
 
     static getInstance(canvas, initParameter, gl, width, height) {
@@ -976,30 +1152,16 @@
     }
 
     checkGLError() {
-      if (GLBoost$1.VALUE_CONSOLE_OUT_FOR_DEBUGGING === false) {
-        return;
-      }
-      if (GLBoost$1.valueOfGLBoostConstants[GLBoost$1.LOG_GL_ERROR] === false) {
+      if (GLBoost$1.valueOfGLBoostConstants[GLBoost$1.LOG_TYPE_GL] === false) {
         return;
       }
 
       let gl = this.impl.gl;
       let errorCode = gl.getError();
       if (errorCode !== 0) {
-        let errorTypes = ['INVALID_ENUM', 'INVALID_VALUE', 'INVALID_OPERATION', 'INVALID_FRAMEBUFFER_OPERATION',
-          'OUT_OF_MEMORY', 'CONTEXT_LOST_WEBGL'];
-        let errorMessages = [
-          'An unacceptable value has been specified for an enumerated argument. The command is ignored and the error flag is set.',
-          'A numeric argument is out of range. The command is ignored and the error flag is set.',
-          'The specified command is not allowed for the current state. The command is ignored and the error flag is set.',
-          'The currently bound framebuffer is not framebuffer complete when trying to render to or to read from it.',
-          'Not enough memory is left to execute the command.',
-          'If the WebGL context is lost, this error is returned on the first call to getError. Afterwards and until the context has been restored, it returns gl.NO_ERROR.'
-        ];
-
-        errorTypes.forEach((errorType, i)=>{
+        this.glErrorTypes.forEach((errorType, i)=>{
           if (gl[errorType] === errorCode) {
-            MiscUtil.consoleLog(GLBoost$1.LOG_GL_ERROR, 'WebGL Error: gl.' + errorCode + '\n' + 'Meaning:' + errorMessages[i]);
+            this._logger.out(GLBoost$1.LOG_LEVEL_ERROR, GLBoost$1.LOG_TYPE_GL, false, errorCode, this._glErrorMessages[i]);
           }
         });
       }
@@ -1149,6 +1311,13 @@
         return;
       }
 
+      if (forceUpdate) {
+        this.gl[uniformFuncStr].apply(this.gl, args);
+        this.checkGLError();
+        return;
+      }
+
+
   //    this.gl[uniformFuncStr].apply(this.gl, args);
   /*
       if (uniformLocation.glslProgram.glslProgramsSelfUsageCount < this._glslProgramsLatestUsageCount) {
@@ -1163,6 +1332,7 @@
         return;
       }
 
+      
       if (uniformLocation.glslProgramUsageCountWhenLastSet < this._glslProgramsLatestUsageCount) {
         // Since I have never sent a uniform value to glslProgram which is currently in use, update it.
         this.gl[uniformFuncStr].apply(this.gl, args);
@@ -1172,13 +1342,8 @@
         return;
       }
 
-      if (forceUpdate) {
-        this.gl[uniformFuncStr].apply(this.gl, args);
-        this.checkGLError();
-      } else {
-        MiscUtil.consoleLog(GLBoost$1.LOG_OMISSION_PROCESSING,
-          'LOG_OMISSION_PROCESSING: gl.uniformXXX call has been omitted since the uniformLocation.glslProgram is not in use.');
-      }
+      MiscUtil.consoleLog(GLBoost$1.LOG_OMISSION_PROCESSING,
+        'LOG_OMISSION_PROCESSING: gl.uniformXXX call has been omitted since the uniformLocation.glslProgram is not in use.');
     }
 
     // Set forceUpdate to true if there is no way to check whether the values (x, y, z, w) change from the previous states or not.
@@ -1340,7 +1505,7 @@
   //      
 
                           
-  let singleton$1     = Symbol();
+  let singleton$2     = Symbol();
 
   class EntityRepository {
                                        
@@ -1362,10 +1527,10 @@
     }
 
     static getInstance() {
-      if (!this[singleton$1]) {
-        this[singleton$1] = new EntityRepository(EntityRepository.__singletonEnforcer);
+      if (!this[singleton$2]) {
+        this[singleton$2] = new EntityRepository(EntityRepository.__singletonEnforcer);
       }
-      return this[singleton$1];
+      return this[singleton$2];
     }
 
     
@@ -2335,7 +2500,13 @@
     }
 
     static invert(quat) {
-      return new Quaternion(-quat.x, -quat.y, -quat.z, quat.w).multiply(1.0/(quat.x*quat.x + quat.y*quat.y + quat.z*quat.z + quat.w*quat.w));
+      quat = new Quaternion(-quat.x, -quat.y, -quat.z, quat.w);
+      const inorm2 = 1.0/(quat.x*quat.x + quat.y*quat.y + quat.z*quat.z + quat.w*quat.w);
+      quat.x *= inorm2;
+      quat.y *= inorm2;
+      quat.z *= inorm2;
+      quat.w *= inorm2;
+      return quat;
     }
 
     static qlerp(lhq, rhq, ratio) {
@@ -5989,22 +6160,22 @@
   Shader._shaderHashTable = {};
   Shader._defaultLight = null;
 
-  let singleton$2 = Symbol();
-  let singletonEnforcer = Symbol();
+  let singleton$3 = Symbol();
+  let singletonEnforcer$1 = Symbol();
 
   class DrawKickerWorld {
     constructor(enforcer) {
-      if (enforcer !== singletonEnforcer) {
+      if (enforcer !== singletonEnforcer$1) {
         throw new Error('This is a Singleton class. get the instance using \'getInstance\' static method.');
       }
       this._glslProgram = null;
     }
 
     static getInstance() {
-      if (!this[singleton$2]) {
-        this[singleton$2] = new DrawKickerWorld(singletonEnforcer);
+      if (!this[singleton$3]) {
+        this[singleton$3] = new DrawKickerWorld(singletonEnforcer$1);
       }
-      return this[singleton$2];
+      return this[singleton$3];
     }
 
     static setCamera(gl, glslProgram, material, world_m, normal_m, camera, mesh) {
@@ -6865,7 +7036,13 @@ return mat4(
       this._AABB_max = new Vector3(-Number.MAX_VALUE, -Number.MAX_VALUE, -Number.MAX_VALUE);
       this._centerPoint = null;
       this._lengthCenterToCorner = null;
+      this._threshold_AABB_min = -1000000000;
+      this._threshold_AABB_max = 1000000000;
+      this._threshold_AABB_lengthCenterToCorner = null;
 
+      this._isValid_AABB_min = true;
+      this._isValid_AABB_max = true;
+      this._isValid_AABB_lengthCenterToCorner = true;
     }
 
     clone() {
@@ -6914,7 +7091,43 @@ return mat4(
       const lengthCenterToCorner = Vector3.lengthBtw(this._centerPoint, this._AABB_max);
       this._lengthCenterToCorner = (lengthCenterToCorner !== lengthCenterToCorner) ? 0 : lengthCenterToCorner;
 
+      if (this._threshold_AABB_min != null &&
+        (this._AABB_min.x < this._threshold_AABB_min || this._AABB_min.y < this._threshold_AABB_min || this._AABB_min.z < this._threshold_AABB_min))
+      {
+        this._isValid_AABB_min = false;
+      }
+      if (this._threshold_AABB_max != null &&
+        (this._AABB_max.x > this._threshold_AABB_max || this._AABB_max.y > this._threshold_AABB_max || this._AABB_max.z > this._threshold_AABB_max))
+      {
+        this._isValid_AABB_max = false;
+      }
+      if (this._threshold_AABB_lengthCenterToCorner != null && this._threshold_AABB_lengthCenterToCorner < this._lengthCenterToCorner) {
+        this._isValid_AABB_lengthCenterToCorner = false;
+      }
+    
       return this;
+    }
+
+    isValid() {
+      return this._isValid_AABB_min && this._isValid_AABB_max && this._isValid_AABB_lengthCenterToCorner;
+    }
+
+    isValid_AABB_min() {
+      return this._isValid_AABB_min;
+    }
+
+    isValid_AABB_max() {
+      return this._isValid_AABB_min;
+    }
+
+    isValid_AABB_lengthCenterToCorner() {
+      return this._isValid_AABB_lengthCenterToCorner;
+    }
+
+    resetValidationFlags() {
+      this._isValid_AABB_min = true;
+      this._isValid_AABB_max = true;
+      this._isValid_AABB_lengthCenterToCorner = true; 
     }
 
     mergeAABB(aabb) {
@@ -11401,7 +11614,7 @@ albedo.rgb *= (1.0 - metallic);
       this._shiftCameraTo = null;
 
       this._onMouseDown = (evt) => {
-        evt.preventDefault();
+        MiscUtil.preventDefaultForDesktopOnly(evt);
         evt.stopPropagation();
         
         let rect = evt.target.getBoundingClientRect();
@@ -11437,7 +11650,7 @@ albedo.rgb *= (1.0 - metallic);
       };
 
       this._onMouseMove = (evt) => {
-        evt.preventDefault();
+        MiscUtil.preventDefaultForDesktopOnly(evt);
         evt.stopPropagation();
         
         if (this._isKeyUp) {
@@ -11503,14 +11716,14 @@ albedo.rgb *= (1.0 - metallic);
       };
 
       this._onMouseWheel = (evt) => {
-        evt.preventDefault();
+        MiscUtil.preventDefaultForDesktopOnly(evt);
 
         this.dolly += evt.deltaY / 600;
       };
 
       this._onContexMenu = (evt) => {
         if (evt.preventDefault) {
-          evt.preventDefault();
+          MiscUtil.preventDefaultForDesktopOnly(evt);
         } else {
           event.returnValue = false;
         }
@@ -11964,6 +12177,9 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     _mouseWheel(e) {
+      if (this._currentDir === null) {
+        return;
+      }
       const delta = e.wheelDelta * this._mouseWheelSpeedScale;
       const horizontalDir = (new Vector3(this._currentDir.x, 0, this._currentDir.z)).normalize();
       this._currentPos.add(Vector3.multiply(horizontalDir, delta));
@@ -11971,7 +12187,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     _mouseDown(evt) {
-      evt.preventDefault();
+      MiscUtil.preventDefaultForDesktopOnly(evt);
       evt.stopPropagation();
       this._isMouseDown = true;
 
@@ -11983,7 +12199,7 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     _mouseMove(evt) {
-      evt.preventDefault();
+      MiscUtil.preventDefaultForDesktopOnly(evt);
       evt.stopPropagation();
       if (!this._isMouseDown) {
         return;
@@ -14574,6 +14790,8 @@ albedo.rgb *= (1.0 - metallic);
       this._AABB = new AABB();
       this._isRootJointGroup = false;
 
+      this._logger = Logger.getInstance();
+
   //    this._aabbGizmo = null;
   //    this._aabbGizmo = new M_AABBGizmo(this._glBoostContext);
   //    this._gizmos.push(this._aabbGizmo);
@@ -15002,6 +15220,7 @@ albedo.rgb *= (1.0 - metallic);
      * Note that it's in world space
      */
     updateAABB() {
+      const that = this;
       var aabb = (function mergeAABBRecursively(elem) {
         if (elem instanceof M_Group) {
           var children = elem.getChildren();
@@ -15012,6 +15231,9 @@ albedo.rgb *= (1.0 - metallic);
             } else {
               console.assert('calculation of AABB error!');
             }
+          }
+          if (!elem.AABB.isValid()) {
+            that._logger.out(GLBoost$1.LOG_LEVEL_WARN, GLBoost$1.LOG_TYPE_AABB, true, 'This AABB has abnormal values', elem.userFlavorName, elem.AABB);
           }
           return elem.AABB;
           //return AABB.multiplyMatrix(elem.transformMatrix, elem.AABB);
@@ -15031,6 +15253,7 @@ albedo.rgb *= (1.0 - metallic);
   //    this._AABB = aabbInWorld;
 
       this._updateAABBGizmo();
+
 
       return newAABB;
     }
@@ -15202,7 +15425,7 @@ albedo.rgb *= (1.0 - metallic);
 
   }
 
-  let singleton$3 = Symbol();
+  let singleton$4 = Symbol();
 
   class M_GLBoostMonitor extends L_GLBoostMonitor {
     constructor(enforcer) {
@@ -15210,10 +15433,10 @@ albedo.rgb *= (1.0 - metallic);
     }
 
     static getInstance() {
-      if (!this[singleton$3]) {
-        this[singleton$3] = new M_GLBoostMonitor(L_GLBoostMonitor._singletonEnforcer);
+      if (!this[singleton$4]) {
+        this[singleton$4] = new M_GLBoostMonitor(L_GLBoostMonitor._singletonEnforcer);
       }
-      return this[singleton$3];
+      return this[singleton$4];
     }
 
     getGLBoostObjectsFromArgument(arg) {
@@ -16089,6 +16312,10 @@ albedo.rgb *= (1.0 - metallic);
           let renderSpecificMaterials = [];
           obj.getAppropriateMaterials().forEach((material, index) => {
             let newMaterial = this._glBoostSystem._glBoostContext.createClassicMaterial();
+            newMaterial._textureDic = Object.assign({}, material._textureDic);
+            newMaterial._texturePurposeDic = material._texturePurposeDic.concat();
+            newMaterial._textureContributionRateDic = Object.assign({}, material._textureContributionRateDic);
+             
             //newMaterial._originalMaterial = material;
             renderSpecificMaterials.push(newMaterial);
           });
@@ -16183,6 +16410,8 @@ albedo.rgb *= (1.0 - metallic);
         gl.clearColor( _clearColor.red, _clearColor.green, _clearColor.blue, _clearColor.alpha );
       }
 
+      this.__logger = Logger.getInstance();
+
       this.__animationFrameId = -1;
       this.__isWebVRMode = false;
       this.__webvrFrameData = null;
@@ -16247,6 +16476,9 @@ albedo.rgb *= (1.0 - metallic);
       expression.renderPasses.forEach((renderPass, index)=>{
         if (!renderPass.isEnableToDraw || !renderPass.scene) {
           return;
+        }
+        if (GLBoost.VALUE_CONSOLE_OUT_FOR_DEBUGGING && GLBoost.valueOfGLBoostConstants[GLBoost.LOG_TYPE_PERFORMANCE] !== false) {
+          renderPass._startUnixTime = performance.now();
         }
 
         if (renderPassTag !== renderPass.tag) {
@@ -16367,7 +16599,13 @@ albedo.rgb *= (1.0 - metallic);
 
         renderPass.postRender(camera ? true:false, lights);
 
+        renderPass._endUnixTime = performance.now();
       });
+      if (GLBoost.VALUE_CONSOLE_OUT_FOR_DEBUGGING && GLBoost.valueOfGLBoostConstants[GLBoost.LOG_TYPE_PERFORMANCE] !== false) {
+        expression.renderPasses.forEach((renderPass, index)=>{
+          this.__logger.out(GLBoost.LOG_LEVEL_INFO, GLBoost.LOG_TYPE_PERFORMANCE, false, `RenderPass[${index}]: ${renderPass._endUnixTime - renderPass._startUnixTime}`);
+        });
+      }
     }
 
     _drawGizmos(gizmos, expression, lights, camera, renderPass, index, viewport, isDepthTest) {
@@ -16463,6 +16701,13 @@ albedo.rgb *= (1.0 - metallic);
     resize(width        , height        ) {
       this._glContext.canvasWidth = width;
       this._glContext.canvasHeight = height;
+    }
+
+    makeNormalsOfViewFrustum(camera                  ) {
+      const viewMatrix = camera.lookAtRHMatrix();
+      const projectionMatrix = camera.projectionRHMatrix();
+      const vpMatrix = Matrix44$1.multiply(viewMatrix, projectionMatrix);
+      
     }
 
     /**
@@ -18917,8 +19162,8 @@ albedo.rgb *= (1.0 - metallic);
 
   //      
 
-  let singleton$4 = Symbol();
-  let singletonEnforcer$1 = Symbol();
+  let singleton$5 = Symbol();
+  let singletonEnforcer$2 = Symbol();
 
   /**
    * This is a loader class of Obj file format.
@@ -18930,7 +19175,7 @@ albedo.rgb *= (1.0 - metallic);
      * @param enforcer a Symbol to forbid calling this constructor directly
      */
     constructor(enforcer        ) {
-      if (enforcer !== singletonEnforcer$1) {
+      if (enforcer !== singletonEnforcer$2) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -18940,10 +19185,10 @@ albedo.rgb *= (1.0 - metallic);
      * @return The singleton instance of ObjLoader class
      */
     static getInstance()            {
-      if (!this[singleton$4]) {
-        this[singleton$4] = new ObjLoader(singletonEnforcer$1);
+      if (!this[singleton$5]) {
+        this[singleton$5] = new ObjLoader(singletonEnforcer$2);
       }
-      return this[singleton$4];
+      return this[singleton$5];
     }
 
     /**
@@ -19576,7 +19821,7 @@ albedo.rgb *= (1.0 - metallic);
     define(GLBoost$1.LOG_SHADER_CODE, true);
     define(GLBoost$1.LOG_GLBOOST_OBJECT_LIFECYCLE, true);
     define(GLBoost$1.LOG_GL_RESOURCE_LIFECYCLE, true);
-    define(GLBoost$1.LOG_GL_ERROR, true);
+    define(GLBoost$1.LOG_TYPE_GL, false);
     define(GLBoost$1.LOG_OMISSION_PROCESSING, false);
   })();
 
@@ -19664,8 +19909,8 @@ albedo.rgb *= (1.0 - metallic);
   //      
 
 
-  let singleton$5 = Symbol();
-  let singletonEnforcer$2 = Symbol();
+  let singleton$6 = Symbol();
+  let singletonEnforcer$3 = Symbol();
 
   /**
    * This is a loader class of glTF file format. You can see more detail of glTF format at https://github.com/KhronosGroup/glTF .
@@ -19677,7 +19922,7 @@ albedo.rgb *= (1.0 - metallic);
      * @param enforcer a Symbol to forbid calling this constructor directly
      */
     constructor(enforcer        ) {
-      if (enforcer !== singletonEnforcer$2) {
+      if (enforcer !== singletonEnforcer$3) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -19687,10 +19932,10 @@ albedo.rgb *= (1.0 - metallic);
      * @return The singleton instance of GLTFLoader class
      */
     static getInstance()             {
-      if (!this[singleton$5]) {
-        this[singleton$5] = new GLTFLoader(singletonEnforcer$2);
+      if (!this[singleton$6]) {
+        this[singleton$6] = new GLTFLoader(singletonEnforcer$3);
       }
-      return this[singleton$5];
+      return this[singleton$6];
     }
 
     getDefaultShader(options) {
@@ -19970,7 +20215,7 @@ albedo.rgb *= (1.0 - metallic);
         let bufferInfo = json.buffers[bufferName];
         const splitted = bufferInfo.uri.split('/');
         const filename = splitted[splitted.length - 1];
-        if (bufferInfo.uri.match(/^data:application\/octet-stream;base64,/)) {
+        if (bufferInfo.uri.match(/^data:application\/(.*);base64,/)) {
           promisesToLoadResources.push(
             new Promise((fulfilled, rejected) => {
               let arrayBuffer = DataUtil.base64ToArrayBuffer(bufferInfo.uri);
@@ -21258,8 +21503,8 @@ albedo.rgb *= (1.0 - metallic);
 
   //      
 
-  let singleton$6 = Symbol();
-  let singletonEnforcer$3 = Symbol();
+  let singleton$7 = Symbol();
+  let singletonEnforcer$4 = Symbol();
 
   /**
    * This is a loader class of glTF2 file format. You can see more detail of glTF2 format at https://github.com/KhronosGroup/glTF .
@@ -21271,7 +21516,7 @@ albedo.rgb *= (1.0 - metallic);
      * @param enforcer a Symbol to forbid calling this constructor directly
      */
     constructor(enforcer        ) {
-      if (enforcer !== singletonEnforcer$3) {
+      if (enforcer !== singletonEnforcer$4) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -21307,10 +21552,10 @@ albedo.rgb *= (1.0 - metallic);
      * @return The singleton instance of GLTFLoader class
      */
     static getInstance()             {
-      if (!this[singleton$6]) {
-        this[singleton$6] = new GLTF2Loader(singletonEnforcer$3);
+      if (!this[singleton$7]) {
+        this[singleton$7] = new GLTF2Loader(singletonEnforcer$4);
       }
-      return this[singleton$6];
+      return this[singleton$7];
     }
 
     /**
@@ -21836,7 +22081,7 @@ albedo.rgb *= (1.0 - metallic);
               resolve(gltfJson);
             }
           ));
-        } else if (bufferInfo.uri.match(/^data:application\/octet-stream;base64,/)) {
+        } else if (bufferInfo.uri.match(/^data:application\/(.*);base64,/)) {
           promisesToLoadResources.push(
             new Promise((resolve, rejected) => {
               let arrayBuffer = DataUtil.base64ToArrayBuffer(bufferInfo.uri);
@@ -22050,8 +22295,8 @@ albedo.rgb *= (1.0 - metallic);
 
   //      
 
-  let singleton$7 = Symbol();
-  let singletonEnforcer$4 = Symbol();
+  let singleton$8 = Symbol();
+  let singletonEnforcer$5 = Symbol();
 
   /**
    * 
@@ -22063,7 +22308,7 @@ albedo.rgb *= (1.0 - metallic);
      * @param enforcer a Symbol to forbid calling this constructor directly
      */
     constructor(enforcer        ) {
-      if (enforcer !== singletonEnforcer$4) {
+      if (enforcer !== singletonEnforcer$5) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -22073,10 +22318,10 @@ albedo.rgb *= (1.0 - metallic);
      * @return The singleton instance of GLTFLoader class
      */
     static getInstance()             {
-      if (!this[singleton$7]) {
-        this[singleton$7] = new ModelConverter(singletonEnforcer$4);
+      if (!this[singleton$8]) {
+        this[singleton$8] = new ModelConverter(singletonEnforcer$5);
       }
-      return this[singleton$7];
+      return this[singleton$8];
     }
 
     _getDefaultShader(options) {
@@ -23570,8 +23815,8 @@ albedo.rgb *= (1.0 - metallic);
 
   //      
 
-  let singleton$8 = Symbol();
-  let singletonEnforcer$5 = Symbol();
+  let singleton$9 = Symbol();
+  let singletonEnforcer$6 = Symbol();
 
   /**
    * This is a loader class of glTF VRize extension Data.
@@ -23583,7 +23828,7 @@ albedo.rgb *= (1.0 - metallic);
      * @param enforcer a Symbol to forbid calling this constructor directly
      */
     constructor(enforcer        ) {
-      if (enforcer !== singletonEnforcer$5) {
+      if (enforcer !== singletonEnforcer$6) {
         throw new Error("This is a Singleton class. get the instance using 'getInstance' static method.");
       }
     }
@@ -23593,10 +23838,10 @@ albedo.rgb *= (1.0 - metallic);
      * @return the singleton instance of ObjLoader class
      */
     static getInstance()           {
-      if (!this[singleton$8]) {
-        this[singleton$8] = new GLBoostGLTFLoaderExtension(singletonEnforcer$5);
+      if (!this[singleton$9]) {
+        this[singleton$9] = new GLBoostGLTFLoaderExtension(singletonEnforcer$6);
       }
-      return this[singleton$8];
+      return this[singleton$9];
     }
 
     setUVTransformToTexture(texture, samplerJson) {
@@ -23906,4 +24151,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-353-g8686d-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-371-g05d5-mod branch: develop';
