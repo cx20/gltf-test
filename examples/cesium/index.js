@@ -45,7 +45,7 @@ function createModel(url, height) {
     var orientation = Cesium.Transforms.headingPitchRollQuaternion(position, hpr);
 
     var entity = viewer.entities.add({
-        name : modelInfo.filename,
+        //name : modelInfo.filename, // TODO: The `name` property is not available in Cesium 1.52
         position : position,
         orientation : orientation,
         model : {
