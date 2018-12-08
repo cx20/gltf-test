@@ -14098,6 +14098,15 @@ albedo.rgb *= (1.0 - metallic);
         this._video
       );
     }
+
+    set playbackRate(value) {
+      this._video.playbackRate = value;
+    }
+
+    get playbackRate() {
+      const playbackRate = this._video.playbackRate;
+      return playbackRate != null ? playbackRate : 1;
+    }
   }
 
   /*       */
@@ -25294,4 +25303,4 @@ albedo.rgb *= (1.0 - metallic);
 
 })));
 
-(0,eval)('this').GLBoost.VERSION='version: 0.0.4-392-g059b-mod branch: develop';
+(0,eval)('this').GLBoost.VERSION='version: 0.0.4-394-g0c163-mod branch: develop';
