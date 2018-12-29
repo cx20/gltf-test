@@ -32,7 +32,7 @@ if(modelInfo.url) {
 const renderer = new redcube.RedCube(
     url,
     canvas,
-    ['light'],
+    [],
     '../../../../textures/hdr/pisa'
 );
 
