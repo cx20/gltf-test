@@ -37,6 +37,9 @@ var engines = [{
 }, {
     name: 'GLBoost',
     path: 'examples/glboost/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'RedCube.js',
+    path: 'examples/redcube/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function queryEngines(){
