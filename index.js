@@ -40,6 +40,9 @@ var engines = [{
 }, {
     name: 'RedCube.js',
     path: 'examples/redcube/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'RedGL',
+    path: 'examples/redgl2/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function queryEngines(){
