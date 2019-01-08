@@ -47,13 +47,8 @@ gr(function () {
   if(modelInfo.url) {
     url = modelInfo.url;
   }
+  $$('#model-container').append('<model src="' + url + '" scale="' + scale + '"/>');
   if (modelInfo.name == "GearboxAssy" ) {
-      scale = 0.2;
-      //$$('#model-container').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
-      $$('#model-container').append('<model src="' + url + '" scale="' + scale + '"/>');
       $$('model').setAttribute('position', '-31.84,-3.404,-0.642');
-  } else {
-      //$$('#model-container').append('<model src="' + "../../" + modelInfo.category + "/" + modelInfo.path + '" scale="' + scale + '"/>');
-      $$('#model-container').append('<model src="' + url + '" scale="' + scale + '"/>');
   }
 });
