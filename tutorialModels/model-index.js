@@ -12,14 +12,16 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'SimpleMeshes', scale:1.0},
     //{category:'tutorialModels', name:'SimpleTexture', scale:1.0},
     {category:'tutorialModels', name:'Cameras', scale:1.0},
-    //{category:'tutorialModels', name:'SimpleSkin', scale:1.0}
+    //{category:'tutorialModels', name:'SimpleSkin', scale:1.0},
+    {category:'tutorialModels', name:'InterpolationTest', scale:1.0},
 ];
 
 TutorialModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
     'AnimatedTriangle',
     'AnimatedMorphCube',
     'AnimatedMorphSphere',
-    'SimpleSkin'
+    'SimpleSkin',
+    'InterpolationTest'
 ];
 
 TutorialModelIndex.getScreenshot = function(name) {
