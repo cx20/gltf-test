@@ -94,12 +94,9 @@ window.addEventListener('load', function() {
             const {rootNode, textures, animations, cameras} = res;
             sceneNode = rootNode;
 
+            sceneNode.scale = [scale, scale, scale];
             if (modelInfo.name == "GearboxAssy" ) {
-                scale = 0.2;
-                sceneNode.scale = [scale, scale, scale];
                 sceneNode.transform.position = [-159.20*scale, -17.02*scale, -3.21*scale];
-            } else {
-                sceneNode.scale = [scale, scale, scale];
             }
 
             const gltfTextures = CZPG.createTextures(context, textures);
