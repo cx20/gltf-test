@@ -155,14 +155,10 @@ scene.addChild(meshAxis);
         //camera.cameraController.target = group;
         console.log(group);
         //console.log(group);
+        scale *= 1.3; // TODO: Adjust to be displayed with the same size as other libraries
+        group.scale = new GLBoost.Vector3(scale, scale, scale);
         if (modelInfo.name == "GearboxAssy" ) {
-            scale = 0.2;
-            scale *= 1.3; // TODO: Adjust to be displayed with the same size as other libraries
-            group.scale = new GLBoost.Vector3(scale, scale, scale);
             group.translate = new GLBoost.Vector3(-159.20*scale, -17.02*scale, -3.21*scale);
-        } else {
-            scale *= 1.3; // TODO: Adjust to be displayed with the same size as other libraries
-            group.scale = new GLBoost.Vector3(scale, scale, scale);
         }
         scene.addChild(group);
 
