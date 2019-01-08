@@ -124,7 +124,6 @@ var loadQueue = new Hilo3d.LoadQueue([{
             // stage.camera = model.cameras[0];
             break;
         case 'GearboxAssy':
-            scale = 0.1;
             node.setPosition(-159.20*scale, -17.02*scale, -3.21*scale);
             break;
         case 'AnimatedMorphSphere':
