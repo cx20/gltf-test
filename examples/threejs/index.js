@@ -91,12 +91,9 @@ function init() {
         } else if ( gltf.scenes.length > 0 ) {
             object = gltf.scenes[0]; // other scene
         }
+        object.scale.set(scale, scale, scale);
         if (modelInfo.name == "GearboxAssy" ) {
-            scale = 0.2;
-            object.scale.set(scale, scale, scale);
             object.position.set(-159.20*scale, -17.02*scale, -3.21*scale);
-        } else {
-            object.scale.set(scale, scale, scale);
         }
         var animations = gltf.animations;
         if ( animations && animations.length ) {
