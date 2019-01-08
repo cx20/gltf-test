@@ -106,9 +106,15 @@ function init() {
 
         var envMap = getEnvMap();
         object.traverse( function( node ) {
-            if ( node.material ) {
-                node.material.envMap = envMap;
-                node.material.needsUpdate = true;
+            if ( node.isMesh ) {
+                var materials = Array.isArray( node.material ) ? node.material : [ node.material ];
+                materials.forEach( function( material ) {
+                    // MeshBasicMaterial means that KHR_materials_unlit is set, so reflections are not needed.
+                    if ( 'envMap' in material && !material.isMeshBasicMaterial ) {
+                        material.envMap = envMap;
+                        material.needsUpdate = true;
+                    }
+                } );
             }
         } );
         scene.background = envMap;
