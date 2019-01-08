@@ -50,10 +50,10 @@ var createScene = function(engine) {
         var parentMesh = scene.rootNodes[0];
 
         if ( modelInfo.name == "GearboxAssy" ) {
-            scale = 0.2;
-            parentMesh.position.x -= 159.20;
-            parentMesh.position.y -= 17.02;
-            parentMesh.position.z -= 3.21;
+            // TODO: Position adjustment required
+            parentMesh.position.x += 159.20 * scale;
+            parentMesh.position.y -= 17.02 * scale;
+            parentMesh.position.z += 3.21 * scale;
         }
         var modelScaling = parentMesh.scaling;
         parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
