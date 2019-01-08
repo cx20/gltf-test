@@ -74,6 +74,13 @@ RedGL(canvas, function (v) {
                 v['resultMesh'].scaleX = scale;
                 v['resultMesh'].scaleY = scale;
                 v['resultMesh'].scaleZ = scale;
+                
+                if (modelInfo.name == "GearboxAssy" ) {
+                    v['resultMesh'].x = -159.20 * scale;
+                    v['resultMesh'].y =  -17.02 * scale;
+                    v['resultMesh'].z =   -3.21 * scale;
+                }
+                
                 tScene.addChild(v['resultMesh']);
             },
             RedBitmapCubeTexture(this, // environmentTexture
