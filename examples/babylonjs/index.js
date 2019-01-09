@@ -44,9 +44,9 @@ var createScene = function(engine) {
     var guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
     var guiDebug = gui.add(window, 'DEBUG').name('Debug');
 
-    BABYLON.SceneLoader.OnPluginActivatedObservable.add(function (plugin) {
+    BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (plugin) {
         plugin.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
-    }, undefined, undefined, undefined, true);
+    });
 
     var loader = BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
