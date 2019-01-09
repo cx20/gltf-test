@@ -44,6 +44,10 @@ var createScene = function(engine) {
     var guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
     var guiDebug = gui.add(window, 'DEBUG').name('Debug');
 
+    BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (plugin) {
+        plugin.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
+    });
+
     var loader = BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
         scene = newScene;
@@ -62,7 +66,7 @@ var createScene = function(engine) {
         camera.attachControl(canvas, false, false);
         camera.wheelDeltaPercentage = 0.005;
         scene.activeCamera = camera;
-        
+
         var light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
         var light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
 
@@ -102,9 +106,9 @@ var createScene = function(engine) {
             scene.render();
         });
     });
-    
+
     return scene;
-}
+};
 
 var canvas = document.querySelector("#renderCanvas");
 var engine = new BABYLON.Engine(canvas, true);
