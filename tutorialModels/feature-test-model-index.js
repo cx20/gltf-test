@@ -75,7 +75,7 @@ TutorialFeatureTestModelIndex.getCurrentModel = function() {
         if (options.scale !== undefined) {
             modelInfoCollection[options.model].scale = options.scale;
         }
-        if (options.type == 'glTF-Binary') {
+        if (options.type == 'glTF-Binary' || options.type == 'glTF-Draco' && options.model == 'MorphPrimitivesTest') {
             modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.glb';
         } else {
             modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.gltf';
