@@ -4,6 +4,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'AlphaBlendModeTest', scale:0.5},
     {category:'tutorialModels', name:'BoomBoxWithAxes', scale:80.0},
     {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.2},
+    {category:'tutorialModels', name:'MorphPrimitivesTest', scale:2.0},
     {category:'tutorialModels', name:'MultiUVTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
@@ -16,6 +17,7 @@ TutorialFeatureTestModelIndex.List = [
 TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'BoomBoxWithAxes',
     'MultiUVTest',
+    'MorphPrimitivesTest'
 ];
 
 TutorialFeatureTestModelIndex.getScreenshot = function(name) {
