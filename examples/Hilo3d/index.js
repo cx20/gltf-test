@@ -99,7 +99,8 @@ var loadQueue = new Hilo3d.LoadQueue([{
     wrapS: Hilo3d.constants.CLAMP_TO_EDGE,
     wrapT: Hilo3d.constants.CLAMP_TO_EDGE
 },{
-    src:url
+    src:url,
+    isMultiAnim: modelInfo.allAnimations !== true
 }]).on('load', function(e){
     var progress = loadQueue.getLoaded()/loadQueue.getTotal();
     if(progress >= 1){
