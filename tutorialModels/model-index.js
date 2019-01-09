@@ -13,7 +13,7 @@ TutorialModelIndex.List = [
     //{category:'tutorialModels', name:'SimpleTexture', scale:1.0},
     {category:'tutorialModels', name:'Cameras', scale:1.0},
     //{category:'tutorialModels', name:'SimpleSkin', scale:1.0},
-    {category:'tutorialModels', name:'InterpolationTest', scale:1.0},
+    {category:'tutorialModels', name:'InterpolationTest', scale:1.0, allAnimations:true},  // Play all model animations at the same time
 ];
 
 TutorialModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
@@ -50,14 +50,16 @@ TutorialModelIndex.getModelInfoCollection = function() {
         var category = TutorialModelIndex.List[i].category;
         var name = TutorialModelIndex.List[i].name;
         var scale = TutorialModelIndex.List[i].scale;
+        var allAnimations = TutorialModelIndex.List[i].allAnimations;
         modelInfoCollection[name] = {
             category: category,
             name: name,
-            scale: scale
+            scale: scale,
+            allAnimations: allAnimations
         };
     }
     return modelInfoCollection;
-}
+};
 
 TutorialModelIndex.getCurrentModel = function() {
     var modelInfoCollection = TutorialModelIndex.getModelInfoCollection();
