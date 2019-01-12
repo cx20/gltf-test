@@ -21,6 +21,7 @@ if (!modelInfo) {
 
 var ROTATE = true;
 var BOUNDING_BOX = false;
+var SKYBOX = true;
 var DEBUG = false;
 
 var createScene = function(engine) {
@@ -42,6 +43,7 @@ var createScene = function(engine) {
     var gui = new dat.GUI();
     var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
     var guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
+    var guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
     var guiDebug = gui.add(window, 'DEBUG').name('Debug');
 
     BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (plugin) {
@@ -95,10 +97,12 @@ var createScene = function(engine) {
             scene.forceShowBoundingBoxes = value;
         });
 
+        guiSkybox.onChange(function (value) {
+            scene.environmentTexture = value ? cubeTexture : null;
+        });
+
         guiDebug.onChange(function (value) {
-            if ( value ) {
-                scene.debugLayer.show({popup: true});
-            }
+            scene.debugLayer.show({popup: value});
         });
 
         engine.runRenderLoop(function() {
