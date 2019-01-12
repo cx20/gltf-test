@@ -26,12 +26,18 @@ if(modelInfo.url) {
 var scale = modelInfo.scale;
 var modelName = modelInfo.name;
 var axis;
+var diffuseEnvMap;
+var specularEnvMap;
+var brfdTexture;
+var model;
 
 var ROTATE = true;
 var AXIS = true;
+var SKYBOX = true;
 var gui = new dat.GUI();
 var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 var guiAxis = gui.add(window, 'AXIS').name('Axis');
+var guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
 
 var camera = new Hilo3d.PerspectiveCamera({
     aspect: innerWidth / innerHeight,
@@ -111,10 +117,10 @@ var loadQueue = new Hilo3d.LoadQueue([{
     }
 }).on('complete', function () {
     var result = loadQueue.getAllContent();
-    var diffuseEnvMap = result[0];
-    var specularEnvMap = result[1];
-    var brfdTexture = result[2];
-    var model = window.model = result[3];
+    diffuseEnvMap = result[0];
+    specularEnvMap = result[1];
+    brfdTexture = result[2];
+    model = window.model = result[3];
     var node = model.node;
 
     switch(modelName){
@@ -131,7 +137,6 @@ var loadQueue = new Hilo3d.LoadQueue([{
             diffuseEnvMap = null;
             break;
     }
-
     model.materials.forEach(function (material) {
         material.brdfLUT = brfdTexture;
         material.diffuseEnvMap = diffuseEnvMap;
@@ -161,4 +166,20 @@ var loadQueue = new Hilo3d.LoadQueue([{
 
 guiAxis.onChange(function (value) {
     axis.visible = value;
+});
+
+guiSkybox.onChange(function (value) {
+    if ( value ) {
+        model.materials.forEach(function (material) {
+            material.brdfLUT = brfdTexture;
+            material.diffuseEnvMap = diffuseEnvMap;
+            material.specularEnvMap = specularEnvMap;
+        });
+    } else {
+        model.materials.forEach(function (material) {
+            material.brdfLUT = null;
+            material.diffuseEnvMap = null;
+            material.specularEnvMap = null;
+        });
+    }
 });
