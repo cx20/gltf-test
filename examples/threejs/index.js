@@ -23,13 +23,19 @@ var gltf = null;
 var mixer = null;
 var clock = new THREE.Clock();
 var axis;
+var hemispheric;
 var gui;
+
 var ROTATE = true;
 var AXIS = true;
+var LIGHTS = true;
+var SKYBOX = true;
+
 var scene;
 var camera;
 var renderer;
 var controls;
+var envMap;
 
 init();
 animate();
@@ -48,7 +54,7 @@ function resize() {
 function init() {
     scene = new THREE.Scene();
 
-    var hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 1.2 );
+    hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 1.2 );
     scene.add(hemispheric);
 /*
     var ambient = new THREE.AmbientLight( 0xffffff, 0.3 );
@@ -104,7 +110,7 @@ function init() {
             }
         }
 
-        var envMap = getEnvMap();
+        envMap = getEnvMap();
         object.traverse( function( node ) {
             if ( node.isMesh ) {
                 var materials = Array.isArray( node.material ) ? node.material : [ node.material ];
@@ -143,12 +149,20 @@ function init() {
     gui = new dat.GUI();
     var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
     var guiAxis = gui.add(window, 'AXIS').name('Axis');
+    var guiLights = gui.add(window, 'LIGHTS').name('Lights');
+    var guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
 
     guiRotate.onChange(function (value) {
         controls.autoRotate = value;
     });
     guiAxis.onChange(function (value) {
         axis.visible = value;
+    });
+    guiLights.onChange(function (value) {
+        hemispheric.visible = value;
+    });
+    guiSkybox.onChange(function (value) {
+        scene.background = value ? envMap : null;
     });
 
     document.body.appendChild( renderer.domElement );
