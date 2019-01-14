@@ -54,7 +54,7 @@ function resize() {
 function init() {
     scene = new THREE.Scene();
 
-    hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 1.2 );
+    hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 3.0 );
     scene.add(hemispheric);
 /*
     var ambient = new THREE.AmbientLight( 0xffffff, 0.3 );
@@ -136,6 +136,7 @@ function init() {
     renderer.gammaFactor = 2.2;
     renderer.setClearColor( 0xaaaaaa );
     renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
 
     controls = new THREE.OrbitControls( camera, renderer.domElement );
     controls.userPan = false;
