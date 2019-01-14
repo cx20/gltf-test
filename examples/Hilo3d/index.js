@@ -67,10 +67,6 @@ var directionLight = new Hilo3d.DirectionalLight({
     direction:new Hilo3d.Vector3(1, -1, 0)
 }).addTo(stage);
 
-var ambientLight = new Hilo3d.AmbientLight({
-    color:new Hilo3d.Color(1, 1, 1),
-    amount: .2
-}).addTo(stage);
 
 var ticker = new Hilo3d.Ticker(60);
 ticker.addTick(stage);
@@ -174,12 +170,16 @@ guiSkybox.onChange(function (value) {
             material.brdfLUT = brfdTexture;
             material.diffuseEnvMap = diffuseEnvMap;
             material.specularEnvMap = specularEnvMap;
+            directionLight.enabled = true;
+            material.isDirty = true;
         });
     } else {
         model.materials.forEach(function (material) {
             material.brdfLUT = null;
             material.diffuseEnvMap = null;
             material.specularEnvMap = null;
+            directionLight.enabled = false;
+            material.isDirty = true;
         });
     }
 });
