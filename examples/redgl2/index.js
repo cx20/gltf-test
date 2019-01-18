@@ -56,7 +56,7 @@ RedGL(canvas, function (v) {
         var tDLight = RedDirectionalLight(this)
         tScene.addLight(tDLight)
         tDLight.x = 1;
-        tDLight.y = 0;
+        tDLight.y = 1;
         tDLight.z = 1;
         tRenderer.start(this, function (time) {
           //console.log(time)
