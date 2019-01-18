@@ -53,12 +53,10 @@ RedGL(canvas, function (v) {
             '../../textures/cube/skybox/pz.jpg',
             '../../textures/cube/skybox/nz.jpg'
         ]);
-        var tALight = RedAmbientLight(this)
-        tScene.addLight(tALight)
         var tDLight = RedDirectionalLight(this)
         tScene.addLight(tDLight)
-        tDLight.x = 2;
-        tDLight.y = 1;
+        tDLight.x = 1;
+        tDLight.y = 0;
         tDLight.z = 1;
         tRenderer.start(this, function (time) {
           //console.log(time)
