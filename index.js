@@ -43,6 +43,9 @@ var engines = [{
 }, {
     name: 'RedGL',
     path: 'examples/redgl2/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'Ashes',
+    path: 'examples/ashes3d/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function queryEngines(){
