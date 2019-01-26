@@ -10,17 +10,33 @@ varying mat3 TBN;
 
 
 uniform sampler2D brdfLUT;
+
+#ifdef HAS_EMISSIVE_MAP
 uniform sampler2D emissiveTexture;
+#endif
+
+#ifdef HAS_NORMAL_MAP
 uniform sampler2D normalTexture;
+#endif
+
+#ifdef HAS_BASECOLOR_MAP
 uniform sampler2D baseColorTexture;
+#endif
+
+#ifdef HAS_METALLIC_ROUGHNESS_MAP
+uniform sampler2D metallicRoughnessTexture;
+#endif
+
+#ifdef HAS_AO_MAP
+uniform sampler2D occlusionTexture;
+#endif
+
 uniform samplerCube env;
 
 uniform vec4 baseColorFactor;
 uniform float roughnessFactor;
 uniform float metallicFactor;
 
-uniform sampler2D metallicRoughnessTexture;
-uniform sampler2D occlusionTexture;
 uniform vec3 u_Camera;
 
 // texture stuff
@@ -100,22 +116,55 @@ vec3 lightContrib(vec3 lightDir, vec3 lightColor, coreData core) {
 }
 
 void main() {
+#ifdef HAS_EMISSIVE_MAP
     vec4 em = sRGBtoLINEAR(texture2D(emissiveTexture, uv));
-    vec4 base = sRGBtoLINEAR(texture2D(baseColorTexture, uv));
-    vec3 normalAddation = texture2D(normalTexture, uv).rgb * 2.0 - 1.0;
-    vec3 rm = texture2D(metallicRoughnessTexture, uv).rgb;
+#endif
 
+#ifdef HAS_BASECOLOR_MAP
+    vec4 base = sRGBtoLINEAR(texture2D(baseColorTexture, uv));
+#else
+    vec4 base = vec4(1);
+#endif
+
+#ifdef BASECOLOR_FACTOR
+    base *= BASECOLOR_FACTOR;
+#endif
+
+#ifdef HAS_METALLIC_ROUGHNESS_MAP
+    vec3 rm = texture2D(metallicRoughnessTexture, uv).rgb;
+#else
+    vec3 rm = vec3(0);
+#endif
+
+#ifdef HAS_AO_MAP
     vec4 ao = texture2D(occlusionTexture, uv);
+#endif
+
+
+#ifdef HAS_NORMAL_MAP
+    vec3 normalAddation = texture2D(normalTexture, uv).rgb * 2.0 - 1.0;
+    vec3 N = normalize(TBN * normalAddation);
+#else
+    vec3 N = normalize(normal);
+#endif
 
     vec3 V = normalize(u_Camera - pos);
-    vec3 N = normalize(TBN * normalAddation);
-    // vec3 N = normalize(normal);
+
     float NoV = clamp(abs(dot(N, V)), 0.001, 1.0);
     vec3 R = -normalize(reflect(V, N));
 
+
     float roughness = clamp(rm.g, 0.04, 1.0);
+#ifdef ROUGHNESS_FACTOR
+    roughness *= ROUGHNESS_FACTOR;
+#endif
     float alphaRoughness = roughness * roughness;
+
+
     float metallic = clamp(rm.b, 0.0, 1.0);
+#ifdef METALLIC_FACTOR
+    metallic *= METALLIC_FACTOR;
+#endif
     // float roughness = clamp((1.0-rm.g) * roughnessFactor, 0.0, 1.0);
     // float metallic = clamp(rm.b * metallicFactor, 0.0, 1.0);
     vec3 f0 = vec3(0.04);
@@ -161,5 +210,8 @@ void main() {
     // gl_FragColor = vec4(N, 1);
     // gl_FragColor = vec4(base.rgb, 1);
     // gl_FragColor = vec4(ao, 1);
-    gl_FragColor = LINEARtoSRGB(vec4(color + em.rgb * 1.0, base.a));
+#ifdef HAS_EMISSIVE_MAP
+    color += em.rgb;
+#endif
+    gl_FragColor = LINEARtoSRGB(vec4(color, base.a));
 }
