@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 817398529ae9d8ebe728338f3ce3c6274cb7ecd8 - Fri Jan 25 18:11:24 2019 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 84ffb8b72710e9c2d93fa8f9b40d03869eb20b07 - Fri Jan 25 20:27:53 2019 -0500 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -9050,28 +9050,18 @@ x3dom.glTF2Loader.prototype._generateX3DNode = function(node, parent, index)
     {
         var camera = this._gltf.cameras[node.camera];
         var viewpoint = this._generateX3DViewpoint(camera);
-        viewpoint.setAttribute('DEF','glTFCamera' + node.camera);
-
-        x3dNode.appendChild(viewpoint);
-    }
-
-    if( node.camera != undefined )
-    {
-        var camera = this._gltf.cameras[node.camera];
-        var viewpoint = this._generateX3DViewpoint(camera);
         viewpoint.setAttribute('DEF', this._cameraPrefix + node.camera);
 
         x3dNode.appendChild(viewpoint);
     }
 
-    if ( node.name === undefined )
+    if ( !node.name )
     {
         node.name = index;
     }
     
     var nodeDEF = this._nodeNamePrefix + node.name;
 
-    x3dNode.setAttribute( "id", nodeDEF );
     x3dNode.setAttribute( "DEF", nodeDEF );
 
     return x3dNode;
@@ -66065,14 +66055,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '817398529ae9d8ebe728338f3ce3c6274cb7ecd8',
-    date:     'Fri Jan 25 18:11:24 2019 +0100'
+    revision: '84ffb8b72710e9c2d93fa8f9b40d03869eb20b07',
+    date:     'Fri Jan 25 20:27:53 2019 -0500'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '817398529ae9d8ebe728338f3ce3c6274cb7ecd8',
-    date:     'Fri Jan 25 18:11:24 2019 +0100'
+    revision: '84ffb8b72710e9c2d93fa8f9b40d03869eb20b07',
+    date:     'Fri Jan 25 20:27:53 2019 -0500'
 };
 
