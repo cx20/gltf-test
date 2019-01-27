@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - b798eb50efda6a48506daf99b76c30cd11f52bc6 - Sun Jan 27 12:28:08 2019 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - c2d21421eac5cc3eec7bc948fa080382c36baea1 - Sun Jan 27 13:40:02 2019 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -11454,7 +11454,6 @@ x3dom.X3DCanvas = function(x3dElem, canvasIdx)
         switch(attrName) {
 
             case "width":
-                x3dElem.style.width = newVal;
                 that.canvas.setAttribute("width", newVal * that.devicePixelRatio);
                 if (that.doc && that.doc._viewarea) {
                     that.doc._viewarea._width = parseInt(that.canvas.getAttribute("width"), 0);
@@ -11463,7 +11462,6 @@ x3dom.X3DCanvas = function(x3dElem, canvasIdx)
                 break;
 
             case "height":
-                x3dElem.style.height = newVal;
                 that.canvas.setAttribute("height", newVal * that.devicePixelRatio);
                 if (that.doc && that.doc._viewarea) {
                     that.doc._viewarea._height = parseInt(that.canvas.getAttribute("height"), 0);
@@ -66105,14 +66103,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: 'b798eb50efda6a48506daf99b76c30cd11f52bc6',
-    date:     'Sun Jan 27 12:28:08 2019 +0100'
+    revision: 'c2d21421eac5cc3eec7bc948fa080382c36baea1',
+    date:     'Sun Jan 27 13:40:02 2019 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: 'b798eb50efda6a48506daf99b76c30cd11f52bc6',
-    date:     'Sun Jan 27 12:28:08 2019 +0100'
+    revision: 'c2d21421eac5cc3eec7bc948fa080382c36baea1',
+    date:     'Sun Jan 27 13:40:02 2019 +0100'
 };
 
