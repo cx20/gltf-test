@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - c2d21421eac5cc3eec7bc948fa080382c36baea1 - Sun Jan 27 13:40:02 2019 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 127935e5f092b7cfc620cd5ab5d63806283beb55 - Sun Jan 27 18:49:35 2019 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -4894,7 +4894,7 @@ x3dom.Utils.generateProperties = function (viewarea, shape)
         property.NORMALSPACE      = (property.NORMALMAP && property.CSSHADER) ? appearance._shader._vf.normalSpace.toUpperCase() :
                                     (property.NORMALMAP && property.PBR_MATERIAL) ? material._vf.normalSpace.toUpperCase() : "TANGENT";
 
-        property.BLENDING         = (property.TEXT || property.CUBEMAP || property.CSSHADER || property.PBR_MATERIAL || (texture && texture._blending)) ? 1 : 0;
+        property.BLENDING         = (property.TEXT || property.CUBEMAP || property.CSSHADER || (property.ALPHAMODE == "BLEND")|| (texture && texture._blending)) ? 1 : 0;
         property.REQUIREBBOX      = (geometry._vf.coordType !== undefined && geometry._vf.coordType != "Float32") ? 1 : 0;
         property.REQUIREBBOXNOR   = (geometry._vf.normalType !== undefined && geometry._vf.normalType != "Float32") ? 1 : 0;
         property.REQUIREBBOXCOL   = (geometry._vf.colorType !== undefined && geometry._vf.colorType != "Float32") ? 1 : 0;
@@ -4922,13 +4922,12 @@ x3dom.Utils.generateProperties = function (viewarea, shape)
         property.ROUGHNESSMETALLICMAPCHANNEL = (property.PBR_MATERIAL && property.ROUGHNESSMETALLICMAP && material._cf.roughnessMetallicTexture.node._vf.channel === 1) ? 1 : 0;
         property.OCCLUSIONROUGHNESSMETALLICMAPCHANNEL = (property.PBR_MATERIAL && property.OCCLUSIONROUGHNESSMETALLICMAP && material._cf.occlusionRoughnessMetallicTexture.node._vf.channel === 1) ? 1 : 0;
         property.SPECULARGLOSSINESSMAPCHANNEL = (property.PBR_MATERIAL && property.SPECULARGLOSSINESSMAP && material._cf.specularGlossinessTexture.node._vf.channel === 1) ? 1 : 0;
-
+        property.ALPHAMASK                    = (property.PBR_MATERIAL && (material._vf.alphaMode == "BLEND" || material._vf.alphaMode == "OPAQUE")) ? 0 : 1;
+        property.UNLIT = (property.PBR_MATERIAL && material._vf.unlit) ? 1 : 0;
 
         property.GAMMACORRECTION  = environment._vf.gammaCorrectionDefault;
 
         property.KHR_MATERIAL_COMMONS = 0;
-
-        //console.log(property);
 	}
 
 	property.toIdentifier = function() {
@@ -9245,6 +9244,12 @@ x3dom.glTF2Loader.prototype._generateX3DAppearance = function(material)
 
     appearance.appendChild(this._generateX3DPhysicalMaterial(material));
 
+    if(this._textureTransform)
+    {
+        appearance.appendChild(this._textureTransform);
+        this._textureTransform = undefined;
+    }
+
     return appearance;
 };
 
@@ -9263,6 +9268,7 @@ x3dom.glTF2Loader.prototype._generateX3DPhysicalMaterial = function(material)
     var model             = undefined;
     var pbr               = undefined;
     var channel           = 0;  
+    var transform;
 
     if( material.pbrMetallicRoughness )
     {
@@ -9281,26 +9287,30 @@ x3dom.glTF2Loader.prototype._generateX3DPhysicalMaterial = function(material)
         var metallicFactor  = (pbr.metallicFactor  != undefined) ? pbr.metallicFactor  : 1;
         var roughnessFactor = (pbr.roughnessFactor != undefined) ? pbr.roughnessFactor : 1;
 
-        if(pbr.baseColorTexture )
+        if(pbr.baseColorTexture)
         {
             channel = (pbr.baseColorTexture.texCoord) ? 1 : 0;
             texture = this._gltf.textures[pbr.baseColorTexture.index];
-            mat.appendChild(this._generateX3DImageTexture(texture, "baseColorTexture", channel));
+            transform = (pbr.baseColorTexture.extensions && pbr.baseColorTexture.extensions.KHR_texture_transform) ? 
+                         pbr.baseColorTexture.extensions.KHR_texture_transform : undefined;
+            mat.appendChild(this._generateX3DImageTexture(texture, "baseColorTexture", channel, transform));
         }
 
         if(pbr.metallicRoughnessTexture)
         {
             channel = (pbr.metallicRoughnessTexture.texCoord) ? 1 : 0;
             texture = this._gltf.textures[pbr.metallicRoughnessTexture.index];
+            transform = (pbr.metallicRoughnessTexture.extensions && pbr.metallicRoughnessTexture.extensions.KHR_texture_transform) ? 
+                         pbr.metallicRoughnessTexture.extensions.KHR_texture_transform : undefined;
 
             if( material.occlusionTexture && material.occlusionTexture.index == pbr.metallicRoughnessTexture.index)
             {
                 seperateOcclusion = false;        
-                mat.appendChild(this._generateX3DImageTexture(texture, "occlusionRoughnessMetallicTexture", channel));
+                mat.appendChild(this._generateX3DImageTexture(texture, "occlusionRoughnessMetallicTexture", channel, transform));
             }
             else
             {
-                mat.appendChild(this._generateX3DImageTexture(texture, "roughnessMetallicTexture", channel));
+                mat.appendChild(this._generateX3DImageTexture(texture, "roughnessMetallicTexture", channel, transform));
             }
         }
 
@@ -9310,7 +9320,7 @@ x3dom.glTF2Loader.prototype._generateX3DPhysicalMaterial = function(material)
     }
     else if ( model == "specularGlossiness" )
     {
-        var diffuseFactor    = pbr.diffuseFactor || [ 1, 1, 1, ];
+        var diffuseFactor    = pbr.diffuseFactor || [ 1, 1, 1, 1 ];
         var specularFactor   = pbr.specularFactor || [ 1, 1, 1 ];
         var glossinessFactor = (pbr.glossinessFactor != undefined) ? pbr.glossinessFactor : 1;
 
@@ -9318,14 +9328,18 @@ x3dom.glTF2Loader.prototype._generateX3DPhysicalMaterial = function(material)
         {
             channel = (pbr.diffuseTexture.texCoord) ? 1 : 0;
             texture = this._gltf.textures[pbr.diffuseTexture.index];
-            mat.appendChild(this._generateX3DImageTexture(texture, "baseColorTexture", channel));
+            transform = (pbr.diffuseTexture.extensions && pbr.diffuseTexture.extensions.KHR_texture_transform) ? 
+                         pbr.diffuseTexture.extensions.KHR_texture_transform : undefined;
+            mat.appendChild(this._generateX3DImageTexture(texture, "baseColorTexture", channel, transform));
         }
 
         if ( pbr.specularGlossinessTexture )
         {
             channel = (pbr.specularGlossinessTexture.texCoord) ? 1 : 0;
             texture = this._gltf.textures[pbr.specularGlossinessTexture.index];
-            mat.appendChild(this._generateX3DImageTexture(texture, "specularGlossinessTexture", channel));
+            transform = (pbr.specularGlossinessTexture.extensions && pbr.specularGlossinessTexture.extensions.KHR_texture_transform) ? 
+                         pbr.specularGlossinessTexture.extensions.KHR_texture_transform : undefined;
+            mat.appendChild(this._generateX3DImageTexture(texture, "specularGlossinessTexture", channel, transform));
         }
 
         mat.setAttribute("diffuseFactor", diffuseFactor.join(" "));
@@ -9337,26 +9351,38 @@ x3dom.glTF2Loader.prototype._generateX3DPhysicalMaterial = function(material)
     {
         channel = (material.normalTexture.texCoord) ? 1 : 0;
         texture = this._gltf.textures[material.normalTexture.index];
-        mat.appendChild(this._generateX3DImageTexture(texture, "normalTexture", channel));
+        transform = (material.normalTexture.extensions && material.normalTexture.extensions.KHR_texture_transform) ? 
+                     material.normalTexture.extensions.KHR_texture_transform : undefined;
+        mat.appendChild(this._generateX3DImageTexture(texture, "normalTexture", channel, transform));
     }
 
     if(material.emissiveTexture)
     {
         channel = (material.emissiveTexture.texCoord) ? 1 : 0;
         texture = this._gltf.textures[material.emissiveTexture.index];
-        mat.appendChild(this._generateX3DImageTexture(texture, "emissiveTexture", channel));
+        transform = (material.emissiveTexture.extensions && material.emissiveTexture.extensions.KHR_texture_transform) ? 
+                     material.emissiveTexture.extensions.KHR_texture_transform : undefined;
+        mat.appendChild(this._generateX3DImageTexture(texture, "emissiveTexture", channel, transform));
     }
 
     if(material.occlusionTexture && seperateOcclusion)
     {
         channel = (material.occlusionTexture.texCoord) ? 1 : 0;
         texture = this._gltf.textures[material.occlusionTexture.index];
-        mat.appendChild(this._generateX3DImageTexture(texture, "occlusionTexture", channel));
+        transform = (material.occlusionTexture.extensions && material.occlusionTexture.extensions.KHR_texture_transform) ? 
+                     material.occlusionTexture.extensions.KHR_texture_transform : undefined;
+        mat.appendChild(this._generateX3DImageTexture(texture, "occlusionTexture", channel, transform));
+    }
+
+    if(material.extensions && material.extensions.KHR_materials_unlit)
+    {
+        mat.setAttribute("unlit", true);
     }
 
     mat.setAttribute("emissiveFactor",  emissiveFactor.join(" "));
     mat.setAttribute("alphaMode",  alphaMode);
     mat.setAttribute("alphaCutoff", alphaCutoff);
+    mat.setAttribute("model", model);
 
     return mat;
 };
@@ -9367,7 +9393,7 @@ x3dom.glTF2Loader.prototype._generateX3DPhysicalMaterial = function(material)
  * @param {Object} image - A glTF image node
  * @return {Imagetexture}
  */
-x3dom.glTF2Loader.prototype._generateX3DImageTexture = function(texture, containerField, channel)
+x3dom.glTF2Loader.prototype._generateX3DImageTexture = function(texture, containerField, channel, transform)
 {
     var image   = this._gltf.images[texture.source];
 
@@ -9397,6 +9423,11 @@ x3dom.glTF2Loader.prototype._generateX3DImageTexture = function(texture, contain
         imagetexture.setAttribute("channel", "1");
     }
 
+    if(transform)
+    {
+        this._textureTransform = this._createX3DTextureTransform(imagetexture, transform);
+    }
+
     return imagetexture;
 };
 
@@ -9422,6 +9453,32 @@ x3dom.glTF2Loader.prototype._createX3DTextureProperties = function(sampler)
     }
 
     return textureproperties;
+};
+
+/**
+ * Generates a X3D TextureTransform node
+ * @private
+ * @param {Object} primitive - A glTF texture transform node
+ * @return {TextureTransform}
+ */
+x3dom.glTF2Loader.prototype._createX3DTextureTransform = function(imagetexture, transform)
+{
+    var texturetransform = document.createElement("texturetransform");
+
+    var offset   = transform.offset || [0, 0];
+    var rotation = transform.rotation || 0;
+    var scale    = transform.scale || [1, 1] ;
+
+    if(transform.texCoord)
+    {
+        imagetexture.setAttribute("channel", texCoord);
+    }
+
+    texturetransform.setAttribute("translation", offset.join(" "));
+    texturetransform.setAttribute("scale", scale.join(" "));
+    texturetransform.setAttribute("rotation", rotation * -1.0);
+
+    return texturetransform;
 };
 
 /**
@@ -26243,7 +26300,29 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
         }
     }
 	
-	if(properties.LIGHTS) {
+	if(properties.UNLIT)
+	{
+		if(properties.DIFFUSEMAP)
+		{
+			if(properties.DIFFUSEMAPCHANNEL)
+			{
+				shader += "texColor = " + x3dom.shader.decodeGamma(properties, "texture2D(diffuseMap, vec2(fragTexcoord2.x, 1.0 - fragTexcoord2.y))") + ";\n";
+			}
+			else
+			{
+				shader += "texColor = " + x3dom.shader.decodeGamma(properties, "texture2D(diffuseMap, vec2(fragTexcoord.x, 1.0 - fragTexcoord.y))") + ";\n";
+			}
+
+			if(properties.ALPHAMODE == "OPAQUE")
+			{
+				shader += "texColor.a = 1.0;\n";
+			}
+
+			shader += "color *= texColor;\n";
+		}
+	}
+	else if(properties.LIGHTS)
+	{
 		shader += "vec3 ambient   = vec3(0.0, 0.0, 0.0);\n";
 		shader += "vec3 diffuse   = vec3(0.0, 0.0, 0.0);\n";
 		shader += "vec3 specular  = vec3(0.0, 0.0, 0.0);\n";
@@ -26398,13 +26477,13 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
 			{
 				if(properties.SPECULARGLOSSINESSMAPCHANNEL)
 				{
-					shader += "vec4 specularGlossiness = texture2D(specularGlossinessMap, vec2(fragTexcoord2.x, 1.0-fragTexcoord2.y));\n";
+					shader += "vec4 specularGlossiness = " + x3dom.shader.decodeGamma(properties, "texture2D(specularGlossinessMap, vec2(fragTexcoord2.x, 1.0 - fragTexcoord2.y))") + ";\n";	
 				}
 				else
 				{
-					shader += "vec4 specularGlossiness = texture2D(specularGlossinessMap, vec2(fragTexcoord.x, 1.0-fragTexcoord.y));\n";
+					shader += "vec4 specularGlossiness = " + x3dom.shader.decodeGamma(properties, "texture2D(specularGlossinessMap, vec2(fragTexcoord.x, 1.0 - fragTexcoord.y))") + ";\n";	
 				}
-				shader += "_shininess = specularGlossiness.a;\n";
+				shader += "_shininess = specularGlossiness.a * _shininess;\n";
 			}
 
 			//Specularmap
@@ -26453,7 +26532,7 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
 		}
 		else if(properties.PBR_MATERIAL && properties.SPECULARGLOSSINESSMAP)
 		{
-			shader += "_specularColor = specularGlossiness.rgb;\n";
+			shader += "_specularColor = specularGlossiness.rgb * _specularColor;\n";
 		}
 
 		//Calculate lights
@@ -26564,8 +26643,15 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
 	//Kill pixel
 	if(properties.TEXT) {
 		shader += "if (color.a <= 0.5) discard;\n";
-	} else {
+	}
+	else if(properties.ALPHAMASK)
+	{
 		shader += "if (color.a <= alphaCutoff) discard;\n";
+		shader += "color.a = 1.0;\n";
+	}
+	else
+	{
+		shader += "if (color.a <= 0.01) discard;\n";
 	}
 
 	//Output the gamma encoded result.
@@ -32028,11 +32114,11 @@ x3dom.gfx_webgl = (function() {
             } else {
                 sp.diffuseColor     = [mat._vf.diffuseFactor.r,
                                        mat._vf.diffuseFactor.g,
-                                       mat._vf.diffusefactor.b];
+                                       mat._vf.diffuseFactor.b];
 
-                sp.specularColor    = [mat._vf.specularfactor.r,
-                                       mat._vf.specularfactor.g,
-                                       mat._vf.specularfactor.b];
+                sp.specularColor    = [mat._vf.specularFactor.r,
+                                       mat._vf.specularFactor.g,
+                                       mat._vf.specularFactor.b];
 
 
                 sp.shininess        = mat._vf.glossinessFactor;
@@ -32043,6 +32129,7 @@ x3dom.gfx_webgl = (function() {
             sp.normalBias       = mat._vf.normalBias.toGL();
             sp.ambientIntensity = 1.0;
             sp.alphaCutoff      = mat._vf.alphaCutoff;
+
         } else if (mat) {
             sp.diffuseColor      = mat._vf.diffuseColor.toGL();
             sp.specularColor     = mat._vf.specularColor.toGL();
@@ -32227,9 +32314,25 @@ x3dom.gfx_webgl = (function() {
                 this.stateManager.disable(gl.BLEND);
             }
         } else {
-            // Set Defaults
-            this.stateManager.enable(gl.BLEND);
-            this.stateManager.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+            //Get it from physicalmaterial or set defaults
+            if(mat && x3dom.isa(mat, x3dom.nodeTypes.PhysicalMaterial))
+            {
+                if(mat._vf.alphaMode == "BLEND")
+                {
+                    this.stateManager.enable(gl.BLEND);
+                    this.stateManager.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+                }
+                else
+                {
+                    this.stateManager.disable(gl.BLEND);
+                }
+            }
+            else
+            {
+                // Set Defaults
+                this.stateManager.enable(gl.BLEND);
+                this.stateManager.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+            }
         }
 
         // Set ColorMaskMode
@@ -42979,6 +43082,17 @@ x3dom.registerNodeType(
             this.addField_SFFloat(ctx, 'normalScale', 1);
 
             /**
+             * Set the material to unlit
+             * Final color is the product of baseColorFactor, baseColorTexture, and vertex color (if any)
+             * @var {x3dom.fields.SFBool} unlit
+             * @memberof x3dom.nodeTypes.PhysicalMaterial
+             * @initvalue false
+             * @field x3dom
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'unlit', false);
+
+            /**
              * The base color texture. This texture contains RGB(A) components in sRGB color space. 
              * The first three components (RGB) specify the base color of the material. 
              * If the fourth component (A) is present, it represents the alpha coverage of the material. 
@@ -43068,8 +43182,7 @@ x3dom.registerNodeType(
              * @field x3d
              * @instance
              */
-            this.addField_SFNode('occlusionTexture', x3dom.nodeTypes.X3DTextureNode);
-        
+            this.addField_SFNode('occlusionTexture', x3dom.nodeTypes.X3DTextureNode);        
         },
         {
             fieldChanged: function(fieldName)
@@ -54939,15 +55052,15 @@ x3dom.registerNodeType(
             this.addField_SFVec2f(ctx, 'translation', 0, 0);
 
             //Tc' = -C * S * R * C * T * Tc
-            var negCenter = new x3dom.fields.SFVec3f(-this._vf.center.x, -this._vf.center.y, 1);
+            var negCenter = new x3dom.fields.SFVec3f(-this._vf.center.x, -this._vf.center.y, 0);
             var posCenter = new x3dom.fields.SFVec3f(this._vf.center.x, this._vf.center.y, 0);
             var trans3 = new x3dom.fields.SFVec3f(this._vf.translation.x, this._vf.translation.y, 0);
             var scale3 = new x3dom.fields.SFVec3f(this._vf.scale.x, this._vf.scale.y, 0);
 
             this._trafo = x3dom.fields.SFMatrix4f.translation(negCenter).
+                mult(x3dom.fields.SFMatrix4f.translation(posCenter.add(trans3)).
                 mult(x3dom.fields.SFMatrix4f.scale(scale3)).
-                mult(x3dom.fields.SFMatrix4f.rotationZ(this._vf.rotation)).
-                mult(x3dom.fields.SFMatrix4f.translation(posCenter.add(trans3)));
+                mult(x3dom.fields.SFMatrix4f.rotationZ(this._vf.rotation)));
         
         },
         {
@@ -54962,9 +55075,9 @@ x3dom.registerNodeType(
                     var scale3 = new x3dom.fields.SFVec3f(this._vf.scale.x, this._vf.scale.y, 0);
 
                     this._trafo = x3dom.fields.SFMatrix4f.translation(negCenter).
+                        mult(x3dom.fields.SFMatrix4f.translation(posCenter.add(trans3)).
                         mult(x3dom.fields.SFMatrix4f.scale(scale3)).
-                        mult(x3dom.fields.SFMatrix4f.rotationZ(this._vf.rotation)).
-                        mult(x3dom.fields.SFMatrix4f.translation(posCenter.add(trans3)));
+                        mult(x3dom.fields.SFMatrix4f.rotationZ(this._vf.rotation)));
                 }
             },
 
@@ -66103,14 +66216,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: 'c2d21421eac5cc3eec7bc948fa080382c36baea1',
-    date:     'Sun Jan 27 13:40:02 2019 +0100'
+    revision: '127935e5f092b7cfc620cd5ab5d63806283beb55',
+    date:     'Sun Jan 27 18:49:35 2019 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: 'c2d21421eac5cc3eec7bc948fa080382c36baea1',
-    date:     'Sun Jan 27 13:40:02 2019 +0100'
+    revision: '127935e5f092b7cfc620cd5ab5d63806283beb55',
+    date:     'Sun Jan 27 18:49:35 2019 +0100'
 };
 
