@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 79a1866a404d6fd494d8dacbc7b245ca36e6a657 - Sat Jan 26 17:54:19 2019 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - b798eb50efda6a48506daf99b76c30cd11f52bc6 - Sun Jan 27 12:28:08 2019 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -124,6 +124,7 @@ x3dom.BUFFER_IDX =
     TEXCOORD: 3,
     TEXCOORD_0 : 3,
     COLOR: 4,
+    COLOR_0: 4,
     ID: 5,
     TANGENT: 6,
     BITANGENT: 7,
@@ -6992,6 +6993,7 @@ x3dom.BinaryContainerLoader.setupBufferGeo = function(shape, sp, gl, viewarea, c
             var bufferType = accessor._vf.bufferType;
             var components = accessor._vf.components;
             var componentType = accessor._vf.componentType;
+            var normalized = accessor._vf.normalized;
             var view = accessor._vf.view;
 
             switch(bufferType)
@@ -7005,38 +7007,46 @@ x3dom.BinaryContainerLoader.setupBufferGeo = function(shape, sp, gl, viewarea, c
                     posAccessor = accessor;
                     shape._coordStrideOffset = [byteStride, byteOffset];
                     shape._webgl.coordType = componentType;
+                    shape._webgl.coordNormalized = normalized;
                     bufferGeo._mesh._numPosComponents = components;
                     break;
                 case "NORMAL":
                     needNormalComputation = false;
                     shape._normalStrideOffset = [byteStride, byteOffset];
                     shape._webgl.normalType = componentType;
+                    shape._webgl.normalNormalized = normalized;
                     bufferGeo._mesh._numNormComponents = components;
                     break;
                 case "TEXCOORD_0":
                 case "TEXCOORD":
                     shape._texCoordStrideOffset = [byteStride, byteOffset];
                     shape._webgl.texCoordType = componentType;
+                    shape._webgl.texCoordNormalized = normalized;
                     bufferGeo._mesh._numTexComponents = components;
                     break;
                 case "TEXCOORD_1":
                     shape._texCoord2StrideOffset = [byteStride, byteOffset];
                     shape._webgl.texCoord2Type = componentType;
+                    shape._webgl.texCoord2Normalized = normalized;
                     bufferGeo._mesh._numTex2Components = components;
                     break;
                 case "COLOR":
+                case "COLOR_0":
                     shape._colorStrideOffset = [byteStride, byteOffset];
                     shape._webgl.colorType = componentType;
+                    shape._webgl.colorNormalized = normalized;
                     bufferGeo._mesh._numColComponents = components;
                     break;
                 case "TANGENT":
                     shape._tangentStrideOffset = [byteStride, byteOffset];
                     shape._webgl.tangentType = componentType;
+                    shape._webgl.tangentNormalized = normalized;
                     bufferGeo._mesh._numTangentComponents = components;
                     break;
                 case "BITANGENT":
                     shape._binormalStrideOffset = [byteStride, byteOffset];
                     shape._webgl.binormalType = componentType;
+                    shape._webgl.binormalNormalized = normalized;
                     bufferGeo._mesh._numBinormalComponents = components;
                     break;
             }
@@ -9514,6 +9524,7 @@ x3dom.glTF2Loader.prototype._generateX3DBufferAccessor = function(buffer, access
     bufferAccessor.setAttribute("view", viewID);
     bufferAccessor.setAttribute("byteOffset", byteOffset || 0);
     bufferAccessor.setAttribute("byteStride", bufferView.byteStride || 0);
+    bufferAccessor.setAttribute("normalized", accessor.normalized || false);
 
     bufferAccessor.setAttribute("components", components);
     bufferAccessor.setAttribute("componentType", accessor.componentType);
@@ -26381,8 +26392,8 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
 				{
 					shader += "vec3 roughnessMetallic = texture2D(roughnessMetallicMap, vec2(fragTexcoord.x, 1.0-fragTexcoord.y)).rgb;\n";
 				}
-				shader += "_shininess = 1.0 - roughnessMetallic.g;\n";
-				shader += "_metallic  = roughnessMetallic.b * metallicFactor;\n";		
+				shader += "_shininess = 1.0 - (roughnessMetallic.g * (1.0 - _shininess));\n";
+				shader += "_metallic  = roughnessMetallic.b * metallicFactor;\n";				
 			}
 
 			if(properties.SPECULARGLOSSINESSMAP)
@@ -30329,6 +30340,13 @@ x3dom.gfx_webgl = (function() {
             colorType: gl.FLOAT,
             tangentType: gl.FLOAT,
             binormalType: gl.FLOAT,
+            coordNormalized : false,
+            normalNormalized : false,
+            texCoordNormalized : false,
+            texCoord2Normalized : false,
+            colorNormalized : false,
+            tangentNormalized : false,
+            binormalNormalized : false,
             texture: [],
             dirtyLighting: x3dom.Utils.checkDirtyLighting(viewarea),
             imageGeometry: 0,   // 0 := no IG,  1 := indexed IG, -1  := non-indexed IG
@@ -34586,6 +34604,48 @@ x3dom.gfx_webgl = (function() {
         this.stateManager.viewport(0, 0, this.canvas.width, this.canvas.height);
     };
 
+    Context.prototype.drawElements = function(gl, mode, count, type, offset, instanceCount)
+    {
+        instanceCount = (instanceCount == undefined) ? 1 : instanceCount;
+
+        instanceCount *= this.VRMode;
+
+        if(x3dom.caps.WEBGL_VERSION == 2)
+        {
+            gl.drawElementsInstanced(mode, count, type, offset, instanceCount);
+        }
+        else if(x3dom.caps.INSTANCED_ARRAYS)
+        {
+            var instancedArrays = this.ctx3d.getExtension("ANGLE_instanced_arrays");
+            instancedArrays.drawElementsInstancedANGLE(mode, count, type, offset, instanceCount);
+        }
+        else
+        {
+            gl.drawElements(mode, count, type, offset);
+        }
+    };
+
+    Context.prototype.drawArrays = function(gl, mode, first, count, instanceCount)
+    {
+        instanceCount = (instanceCount == undefined) ? 1 : instanceCount;
+
+        instanceCount *= this.VRMode;
+
+        if(x3dom.caps.WEBGL_VERSION == 2)
+        {
+            gl.drawArraysInstanced(mode, first, count, instanceCount);
+        }
+        else if(x3dom.caps.INSTANCED_ARRAYS)
+        {
+            var instancedArrays = this.ctx3d.getExtension("ANGLE_instanced_arrays");
+            instancedArrays.drawArraysInstancedANGLE(mode, first, count, instanceCount);
+        }
+        else
+        {
+            gl.drawArrays(mode, first, count);
+        }
+    };
+
     Context.prototype.setVertexAttribEyeIdx = function(gl, sp)
     {
         if(x3dom.caps.WEBGL_VERSION == 2)
@@ -34664,52 +34724,10 @@ x3dom.gfx_webgl = (function() {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, shape._webgl.buffers[q6 + x3dom.BUFFER_IDX.POSITION]);
             gl.vertexAttribPointer(sp.position,
-                s_geo._mesh._numPosComponents, shape._webgl.coordType, false,
+                s_geo._mesh._numPosComponents, shape._webgl.coordType, shape._webgl.coordNormalized,
                 shape._coordStrideOffset[0], shape._coordStrideOffset[1]);
             gl.enableVertexAttribArray(sp.position);
 
-        }
-    };
-
-    Context.prototype.drawElements = function(gl, mode, count, type, offset, instanceCount)
-    {
-        instanceCount = (instanceCount == undefined) ? 1 : instanceCount;
-
-        instanceCount *= this.VRMode;
-
-        if(x3dom.caps.WEBGL_VERSION == 2)
-        {
-            gl.drawElementsInstanced(mode, count, type, offset, instanceCount);
-        }
-        else if(x3dom.caps.INSTANCED_ARRAYS)
-        {
-            var instancedArrays = this.ctx3d.getExtension("ANGLE_instanced_arrays");
-            instancedArrays.drawElementsInstancedANGLE(mode, count, type, offset, instanceCount);
-        }
-        else
-        {
-            gl.drawElements(mode, count, type, offset);
-        }
-    };
-
-    Context.prototype.drawArrays = function(gl, mode, first, count, instanceCount)
-    {
-        instanceCount = (instanceCount == undefined) ? 1 : instanceCount;
-
-        instanceCount *= this.VRMode;
-
-        if(x3dom.caps.WEBGL_VERSION == 2)
-        {
-            gl.drawArraysInstanced(mode, first, count, instanceCount);
-        }
-        else if(x3dom.caps.INSTANCED_ARRAYS)
-        {
-            var instancedArrays = this.ctx3d.getExtension("ANGLE_instanced_arrays");
-            instancedArrays.drawArraysInstancedANGLE(mode, first, count, instanceCount);
-        }
-        else
-        {
-            gl.drawArrays(mode, first, count);
         }
     };
 
@@ -34721,7 +34739,7 @@ x3dom.gfx_webgl = (function() {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, shape._webgl.buffers[q6 + x3dom.BUFFER_IDX.NORMAL]);
             gl.vertexAttribPointer(sp.normal,
-                s_geo._mesh._numNormComponents, shape._webgl.normalType, true,
+                s_geo._mesh._numNormComponents, shape._webgl.normalType, shape._webgl.normalNormalized,
                 shape._normalStrideOffset[0], shape._normalStrideOffset[1]);
             gl.enableVertexAttribArray(sp.normal);
 
@@ -34743,7 +34761,7 @@ x3dom.gfx_webgl = (function() {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, shape._webgl.buffers[q6 + x3dom.BUFFER_IDX.TEXCOORD]);
             gl.vertexAttribPointer(sp.texcoord,
-                s_geo._mesh._numTexComponents, shape._webgl.texCoordType, false,
+                s_geo._mesh._numTexComponents, shape._webgl.texCoordType, shape._webgl.texCoordNormalized,
                 shape._texCoordStrideOffset[0], shape._texCoordStrideOffset[1]);
             gl.enableVertexAttribArray(sp.texcoord);
 
@@ -34765,7 +34783,7 @@ x3dom.gfx_webgl = (function() {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, shape._webgl.buffers[q6 + x3dom.BUFFER_IDX.TEXCOORD_1]);
             gl.vertexAttribPointer(sp.texcoord2,
-                s_geo._mesh._numTex2Components, shape._webgl.texCoord2Type, false,
+                s_geo._mesh._numTex2Components, shape._webgl.texCoord2Type, shape._webgl.texCoord2Normalized,
                 shape._texCoord2StrideOffset[0], shape._texCoord2StrideOffset[1]);
             gl.enableVertexAttribArray(sp.texcoord2);
 
@@ -34787,7 +34805,7 @@ x3dom.gfx_webgl = (function() {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, shape._webgl.buffers[q6 + x3dom.BUFFER_IDX.COLOR]);
             gl.vertexAttribPointer(sp.color,
-                s_geo._mesh._numColComponents, shape._webgl.colorType, false,
+                s_geo._mesh._numColComponents, shape._webgl.colorType, shape._webgl.colorNormalized,
                 shape._colorStrideOffset[0], shape._colorStrideOffset[1]);
             gl.enableVertexAttribArray(sp.color);
         }
@@ -34802,7 +34820,7 @@ x3dom.gfx_webgl = (function() {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, shape._webgl.buffers[q6 + x3dom.BUFFER_IDX.TANGENT]);
             gl.vertexAttribPointer(sp.tangent,
-                s_geo._mesh._numTangentComponents, shape._webgl.tangentType, false,
+                s_geo._mesh._numTangentComponents, shape._webgl.tangentType, shape._webgl.tangentNormalized,
                 shape._tangentStrideOffset[0], shape._tangentStrideOffset[1]);
             gl.enableVertexAttribArray(sp.tangent);
         }
@@ -34817,7 +34835,7 @@ x3dom.gfx_webgl = (function() {
 
             gl.bindBuffer(gl.ARRAY_BUFFER, shape._webgl.buffers[q6 + x3dom.BUFFER_IDX.BITANGENT]);
             gl.vertexAttribPointer(sp.binormal,
-                s_geo._mesh._numBinormalComponents, shape._webgl.binormalType, false,
+                s_geo._mesh._numBinormalComponents, shape._webgl.binormalType, shape._webgl.binormalNormalized,
                 shape._binormalStrideOffset[0], shape._binormalStrideOffset[1]);
             gl.enableVertexAttribArray(sp.binormal);
         }
@@ -63910,6 +63928,16 @@ x3dom.registerNodeType(
              * @instance
              */
             this.addField_SFInt32(ctx, 'count', 0);
+
+            /**
+             * Attribute normalization
+             * @var {x3dom.fields.SFInt32} normalized
+             * @memberof x3dom.nodeTypes.BufferAccessor
+             * @initvalue false
+             * @field x3dom
+             * @instance
+             */
+            this.addField_SFBool(ctx, 'normalized', false);
         },
         {
             parentAdded: function(parent)
@@ -66077,14 +66105,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '79a1866a404d6fd494d8dacbc7b245ca36e6a657',
-    date:     'Sat Jan 26 17:54:19 2019 +0100'
+    revision: 'b798eb50efda6a48506daf99b76c30cd11f52bc6',
+    date:     'Sun Jan 27 12:28:08 2019 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '79a1866a404d6fd494d8dacbc7b245ca36e6a657',
-    date:     'Sat Jan 26 17:54:19 2019 +0100'
+    revision: 'b798eb50efda6a48506daf99b76c30cd11f52bc6',
+    date:     'Sun Jan 27 12:28:08 2019 +0100'
 };
 
