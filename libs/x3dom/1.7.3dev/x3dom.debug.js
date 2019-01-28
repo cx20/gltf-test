@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 127935e5f092b7cfc620cd5ab5d63806283beb55 - Sun Jan 27 18:49:35 2019 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 0640c363aa2f8573523a4213ec4ca6716024c576 - Mon Jan 28 17:14:50 2019 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -4894,7 +4894,7 @@ x3dom.Utils.generateProperties = function (viewarea, shape)
         property.NORMALSPACE      = (property.NORMALMAP && property.CSSHADER) ? appearance._shader._vf.normalSpace.toUpperCase() :
                                     (property.NORMALMAP && property.PBR_MATERIAL) ? material._vf.normalSpace.toUpperCase() : "TANGENT";
 
-        property.BLENDING         = (property.TEXT || property.CUBEMAP || property.CSSHADER || (property.ALPHAMODE == "BLEND")|| (texture && texture._blending)) ? 1 : 0;
+        property.BLENDING         = (property.TEXT || property.CUBEMAP || property.CSSHADER || (property.PBR_MATERIAL)|| (texture && texture._blending)) ? 1 : 0;
         property.REQUIREBBOX      = (geometry._vf.coordType !== undefined && geometry._vf.coordType != "Float32") ? 1 : 0;
         property.REQUIREBBOXNOR   = (geometry._vf.normalType !== undefined && geometry._vf.normalType != "Float32") ? 1 : 0;
         property.REQUIREBBOXCOL   = (geometry._vf.colorType !== undefined && geometry._vf.colorType != "Float32") ? 1 : 0;
@@ -51428,7 +51428,7 @@ x3dom.registerNodeType(
             },
 
             getCenterOfRotation: function() {
-                return this.getCurrentTransform().multMatrixPnt(this._vf.centerOfRotation);
+                return this._vf.centerOfRotation;
             },
 
             getViewMatrix: function() {
@@ -64055,6 +64055,7 @@ x3dom.registerNodeType(
             {
                 switch(this._vf.bufferType)
                 {
+                    case "COLOR_0":
                     case "COLOR" : parent._hasColor = true; break;
                     case "INDEX" : parent._indexed = true; break;
                     case "TEXCOORD_1" : parent._hasMultiTexCoord = true; break;
@@ -66216,14 +66217,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '127935e5f092b7cfc620cd5ab5d63806283beb55',
-    date:     'Sun Jan 27 18:49:35 2019 +0100'
+    revision: '0640c363aa2f8573523a4213ec4ca6716024c576',
+    date:     'Mon Jan 28 17:14:50 2019 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '127935e5f092b7cfc620cd5ab5d63806283beb55',
-    date:     'Sun Jan 27 18:49:35 2019 +0100'
+    revision: '0640c363aa2f8573523a4213ec4ca6716024c576',
+    date:     'Mon Jan 28 17:14:50 2019 +0100'
 };
 
