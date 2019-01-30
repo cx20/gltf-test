@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 0640c363aa2f8573523a4213ec4ca6716024c576 - Mon Jan 28 17:14:50 2019 +0100 */
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 5bb9a10d7d0d1ecc7ee987114a3802ed13c4ae28 - Tue Jan 29 20:14:27 2019 +0100 */
 if(!Array.forEach){Array.forEach=function(array,fun,thisp){var len=array.length;for(var i=0;i<len;i++){if(i in array){fun.call(thisp,array[i],i,array);}}};}
 if(!Array.map){Array.map=function(array,fun,thisp){var len=array.length;var res=[];for(var i=0;i<len;i++){if(i in array){res[i]=fun.call(thisp,array[i],i,array);}}
 return res;};}
@@ -443,12 +443,12 @@ return 0;};x3dom.Utils.isNumber=function(n){return!isNaN(parseFloat(n))&&isFinit
 {flipY=flipY||false;var texture=gl.createTexture();var data=new Uint8Array([0,0,0,255,0,0,0,255,0,0,0,255,0,0,0,255]);gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,2,2,0,gl.RGBA,gl.UNSIGNED_BYTE,data);if(genMipMaps){gl.generateMipmap(gl.TEXTURE_2D);}
 gl.bindTexture(gl.TEXTURE_2D,null);texture.ready=false;if(src==null||src=='')
 return texture;var image=new Image();switch(crossOrigin.toLowerCase()){case'anonymous':{image.crossOrigin='anonymous';}break;case'use-credentials':{image.crossOrigin='use-credentials';}break;case'none':{}break;default:{if(x3dom.Utils.forbiddenBySOP(src)){image.crossOrigin='anonymous';}}}
-image.src=src;doc.downloadCount++;image.onload=function(){texture.originalWidth=image.width;texture.originalHeight=image.height;if(scale)
+image.src=src;doc.incrementDownloads();image.onload=function(){texture.originalWidth=image.width;texture.originalHeight=image.height;if(scale)
 image=x3dom.Utils.scaleImage(image);if(bgnd==true||flipY==true){gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);}
 gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);if(genMipMaps){gl.generateMipmap(gl.TEXTURE_2D);}
 gl.bindTexture(gl.TEXTURE_2D,null);if(bgnd==true||flipY==true){gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);}
-texture.width=image.width;texture.height=image.height;texture.ready=true;doc.downloadCount--;doc.needRender=true;};image.onerror=function(error)
-{x3dom.Utils.tryDDSLoading(texture,gl,doc,src,genMipMaps,flipY).then(function(){doc.downloadCount--;doc.needRender=true;},function(){x3dom.debug.logError("[Utils|createTexture2D] Can't load Image: "+src);doc.downloadCount--;});};return texture;};x3dom.Utils.tryDDSLoading=function(texture,gl,doc,src,genMipMaps,flipY)
+texture.width=image.width;texture.height=image.height;texture.ready=true;doc.decrementDownloads();doc.needRender=true;};image.onerror=function(error)
+{x3dom.Utils.tryDDSLoading(texture,gl,doc,src,genMipMaps,flipY).then(function(){doc.decrementDownloads();doc.needRender=true;},function(){x3dom.debug.logError("[Utils|createTexture2D] Can't load Image: "+src);doc.decrementDownloads();});};return texture;};x3dom.Utils.tryDDSLoading=function(texture,gl,doc,src,genMipMaps,flipY)
 {return x3dom.DDSLoader.load(src).then(function(dds){if(!dds||(dds.isCompressed&&!x3dom.caps.COMPRESSED_TEXTURE))
 {return;}
 gl.bindTexture(dds.type,texture);flipY=false;if(flipY)
@@ -476,15 +476,15 @@ else
 texture.ready=false;texture.pendingTextureLoads=-1;texture.textureCubeReady=false;var width=0,height=0;for(var i=0;i<faces.length;i++)
 {gl.bindTexture(gl.TEXTURE_CUBE_MAP,texture);gl.texImage2D(faces[i],0,gl.RGBA,2,2,0,gl.RGBA,gl.UNSIGNED_BYTE,data);gl.bindTexture(gl.TEXTURE_CUBE_MAP,null);}
 if(src.length==1)
-{x3dom.Utils.tryDDSLoading(texture,gl,doc,src,genMipMaps,flipY).then(function(){doc.downloadCount--;doc.needRender=true;},function(){x3dom.debug.logError("[Utils|createTexture2D] Can't load Image: "+src);doc.downloadCount--;});}
+{doc.incrementDownloads();x3dom.Utils.tryDDSLoading(texture,gl,doc,src[0],genMipMaps,flipY).then(function(){doc.decrementDownloads();doc.needRender=true;},function(){x3dom.debug.logError("[Utils|createTexture2D] Can't load Image: "+src);doc.decrementDownloads();});}
 else if(src.length==6)
 {for(var i=0;i<faces.length;i++)
 {var face=faces[i];var image=new Image();switch(crossOrigin.toLowerCase()){case'anonymous':{image.crossOrigin='anonymous';}break;case'use-credentials':{image.crossOrigin='use-credentials';}break;case'none':{}break;default:{if(x3dom.Utils.forbiddenBySOP(src[i])){image.crossOrigin='anonymous';}}}
-texture.pendingTextureLoads++;doc.downloadCount++;image.onload=(function(texture,face,image,swap){return function(){if(width==0&&height==0){width=image.width;height=image.height;}
+texture.pendingTextureLoads++;doc.incrementDownloads();image.onload=(function(texture,face,image,swap){return function(){if(width==0&&height==0){width=image.width;height=image.height;}
 else if(scale&&(width!=image.width||height!=image.height)){x3dom.debug.logWarning("[Utils|createTextureCube] Rescaling CubeMap images, which are of different size!");image=x3dom.Utils.rescaleImage(image,width,height);}
-gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,swap);gl.bindTexture(gl.TEXTURE_CUBE_MAP,texture);gl.texImage2D(face,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);gl.bindTexture(gl.TEXTURE_CUBE_MAP,null);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);texture.pendingTextureLoads--;doc.downloadCount--;if(texture.pendingTextureLoads<0){texture.width=width;texture.height=height;texture.textureCubeReady=true;if(genMipMaps){gl.bindTexture(gl.TEXTURE_CUBE_MAP,texture);gl.generateMipmap(gl.TEXTURE_CUBE_MAP);gl.bindTexture(gl.TEXTURE_CUBE_MAP,null);}
+gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,swap);gl.bindTexture(gl.TEXTURE_CUBE_MAP,texture);gl.texImage2D(face,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,image);gl.bindTexture(gl.TEXTURE_CUBE_MAP,null);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);texture.pendingTextureLoads--;doc.decrementDownloads();if(texture.pendingTextureLoads<0){texture.width=width;texture.height=height;texture.textureCubeReady=true;if(genMipMaps){gl.bindTexture(gl.TEXTURE_CUBE_MAP,texture);gl.generateMipmap(gl.TEXTURE_CUBE_MAP);gl.bindTexture(gl.TEXTURE_CUBE_MAP,null);}
 x3dom.debug.logInfo("[Utils|createTextureCube] Loading CubeMap finished...");doc.needRender=true;}};})(texture,face,image,bgnd);image.onerror=function()
-{doc.downloadCount--;x3dom.debug.logError("[Utils|createTextureCube] Can't load CubeMap!");};image.src=src[i];}}
+{doc.decrementDownloads();x3dom.debug.logError("[Utils|createTextureCube] Can't load CubeMap!");};image.src=src[i];}}
 return texture;};x3dom.Utils.initFBO=function(gl,w,h,type,mipMap,needDepthBuf,numMrt){var tex=gl.createTexture();tex.width=w;tex.height=h;gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,type,null);if(mipMap)
 gl.generateMipmap(gl.TEXTURE_2D);gl.bindTexture(gl.TEXTURE_2D,null);var i,mrts=null;if(x3dom.caps.DRAW_BUFFERS&&numMrt!==undefined){mrts=[tex];for(i=1;i<numMrt;i++){mrts[i]=gl.createTexture();mrts[i].width=w;mrts[i].height=h;gl.bindTexture(gl.TEXTURE_2D,mrts[i]);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,w,h,0,gl.RGBA,type,null);if(mipMap)
 gl.generateMipmap(gl.TEXTURE_2D);gl.bindTexture(gl.TEXTURE_2D,null);}}
@@ -670,8 +670,8 @@ var buffer=gl.createBuffer();shape._webgl.buffers[x3dom.BUFFER_IDX.POSITION]=buf
 if(this.color)
 {buffer=gl.createBuffer();shape._webgl.buffers[x3dom.BUFFER_IDX.COLOR]=buffer;gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,x3dom.Utils.getArrayBufferView(geoNode._vf.colorType,colBuf),gl.STATIC_DRAW);gl.vertexAttribPointer(sp.color,geoNode._mesh._numColComponents,shape._webgl.colorType,false,shape._colorStrideOffset[0],shape._colorStrideOffset[1]);gl.enableVertexAttribArray(sp.color);}
 geoNode._vf.vertexCount=[];geoNode._vf.vertexCount[0]=posBuf.length/dataLen;geoNode._mesh._numCoords=geoNode._vf.vertexCount[0];geoNode._mesh._numFaces=geoNode._vf.vertexCount[0]/3;shape._webgl.primType=[];shape._webgl.primType[0]=gl.TRIANGLES;posBuf=null;normBuf=null;texcBuf=null;colBuf=null;this.index=null;this.coord=null;this.normal=null;this.texCoord=null;this.color=null;that.checkError(gl);delete shape._webgl.shader;shape._webgl.shader=currContext.cache.getDynamicShader(gl,viewarea,shape);}};if(binGeo._vf.index.length>0)
-{shape._webgl.binaryGeometry=1;var xmlhttp0=new XMLHttpRequest();xmlhttp0.open("GET",shape._nameSpace.getURL(binGeo._vf.index),true);xmlhttp0.responseType="arraybuffer";shape._nameSpace.doc.downloadCount+=1;x3dom.RequestManager.addRequest(xmlhttp0);xmlhttp0.onload=function()
-{shape._nameSpace.doc.downloadCount-=1;shape._webgl.internalDownloadCount-=1;if(xmlhttp0.status!=200){x3dom.debug.logError("XHR1/ index load failed with status: "+xmlhttp0.status);return;}
+{shape._webgl.binaryGeometry=1;var xmlhttp0=new XMLHttpRequest();xmlhttp0.open("GET",shape._nameSpace.getURL(binGeo._vf.index),true);xmlhttp0.responseType="arraybuffer";shape._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xmlhttp0);xmlhttp0.onload=function()
+{shape._nameSpace.doc.decrementDownloads();shape._webgl.internalDownloadCount-=1;if(xmlhttp0.status!=200){x3dom.debug.logError("XHR1/ index load failed with status: "+xmlhttp0.status);return;}
 if(!shape._webgl)
 return;var XHR_buffer=binGeo._vf.compressed==true?x3dom.Utils.gunzip(xmlhttp0.response):xmlhttp0.response;var geoNode=binGeo;var attribTypeStr=geoNode._vf.indexType;var indexArray=x3dom.Utils.getArrayBufferView(attribTypeStr,XHR_buffer);if(createTriangleSoup){shape._webgl.makeSeparateTris.pushBuffer("index",indexArray);return;}
 var indicesBuffer=gl.createBuffer();if(x3dom.caps.INDEX_UINT&&attribTypeStr=="Uint32"){shape._webgl.indexType=gl.UNSIGNED_INT;}
@@ -684,8 +684,8 @@ indexArray=null;if(shape._webgl.internalDownloadCount==0)
 {shape._nameSpace.doc.needRender=true;}
 that.checkError(gl);var t11=new Date().getTime()-t00;x3dom.debug.logInfo("XHR0/ index load time: "+t11+" ms");shape._webgl.buffers[x3dom.BUFFER_IDX.INDEX]=indicesBuffer;};}
 if(binGeo._hasStrideOffset&&binGeo._vf.coord.length>0)
-{var xmlhttp=new XMLHttpRequest();xmlhttp.open("GET",shape._nameSpace.getURL(binGeo._vf.coord),true);xmlhttp.responseType="arraybuffer";shape._nameSpace.doc.downloadCount+=1;x3dom.RequestManager.addRequest(xmlhttp);xmlhttp.onload=function()
-{shape._nameSpace.doc.downloadCount-=1;shape._webgl.internalDownloadCount-=1;if(xmlhttp.status!=200){x3dom.debug.logError("XHR1/ interleaved array load failed with status: "+xmlhttp.status);return;}
+{var xmlhttp=new XMLHttpRequest();xmlhttp.open("GET",shape._nameSpace.getURL(binGeo._vf.coord),true);xmlhttp.responseType="arraybuffer";shape._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xmlhttp);xmlhttp.onload=function()
+{shape._nameSpace.doc.decrementDownloads();shape._webgl.internalDownloadCount-=1;if(xmlhttp.status!=200){x3dom.debug.logError("XHR1/ interleaved array load failed with status: "+xmlhttp.status);return;}
 if(!shape._webgl)
 return;var XHR_buffer=binGeo._vf.compressed==true?x3dom.Utils.gunzip(xmlhttp.response):xmlhttp.response;var geoNode=binGeo;var attribTypeStr=geoNode._vf.coordType;shape._webgl.coordType=x3dom.Utils.getVertexAttribType(attribTypeStr,gl);shape._webgl.normalType=shape._webgl.coordType;shape._webgl.texCoordType=shape._webgl.coordType;shape._webgl.colorType=shape._webgl.coordType;var attributes=x3dom.Utils.getArrayBufferView(attribTypeStr,XHR_buffer);var dataLen=shape._coordStrideOffset[0]/x3dom.Utils.getDataTypeSize(attribTypeStr);if(dataLen)
 geoNode._mesh._numCoords=attributes.length/dataLen;if(geoNode._vf.index.length==0){for(var i=0;i<geoNode._vf.vertexCount.length;i++){if(shape._webgl.primType[i]==gl.TRIANGLE_STRIP)
@@ -701,8 +701,8 @@ attributes=null;if(shape._webgl.internalDownloadCount==0)
 {shape._nameSpace.doc.needRender=true;}
 that.checkError(gl);var t11=new Date().getTime()-t00;x3dom.debug.logInfo("XHR/ interleaved array load time: "+t11+" ms");shape._webgl.buffers[x3dom.BUFFER_IDX.POSITION]=buffer;};}
 if(!binGeo._hasStrideOffset&&binGeo._vf.coord.length>0)
-{var xmlhttp1=new XMLHttpRequest();xmlhttp1.open("GET",shape._nameSpace.getURL(binGeo._vf.coord),true);xmlhttp1.responseType="arraybuffer";shape._nameSpace.doc.downloadCount+=1;x3dom.RequestManager.addRequest(xmlhttp1);xmlhttp1.onload=function()
-{shape._nameSpace.doc.downloadCount-=1;shape._webgl.internalDownloadCount-=1;if(xmlhttp1.status!=200){x3dom.debug.logError("XHR1/ coord load failed with status: "+xmlhttp1.status);return;}
+{var xmlhttp1=new XMLHttpRequest();xmlhttp1.open("GET",shape._nameSpace.getURL(binGeo._vf.coord),true);xmlhttp1.responseType="arraybuffer";shape._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xmlhttp1);xmlhttp1.onload=function()
+{shape._nameSpace.doc.decrementDownloads();shape._webgl.internalDownloadCount-=1;if(xmlhttp1.status!=200){x3dom.debug.logError("XHR1/ coord load failed with status: "+xmlhttp1.status);return;}
 if(!shape._webgl)
 return;var XHR_buffer=binGeo._vf.compressed==true?x3dom.Utils.gunzip(xmlhttp1.response):xmlhttp1.response;var geoNode=binGeo;var i=0;var attribTypeStr=geoNode._vf.coordType;shape._webgl.coordType=x3dom.Utils.getVertexAttribType(attribTypeStr,gl);var vertices=x3dom.Utils.getArrayBufferView(attribTypeStr,XHR_buffer);if(createTriangleSoup){shape._webgl.makeSeparateTris.pushBuffer("coord",vertices);return;}
 gl.bindAttribLocation(sp.program,0,"position");var positionBuffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,positionBuffer);gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,null);geoNode._mesh._numCoords=vertices.length/geoNode._mesh._numPosComponents;if(geoNode._vf.index.length==0){for(i=0;i<geoNode._vf.vertexCount.length;i++){if(shape._webgl.primType[i]==gl.TRIANGLE_STRIP)
@@ -721,16 +721,16 @@ vertices=null;if(shape._webgl.internalDownloadCount==0)
 {shape._nameSpace.doc.needRender=true;}
 that.checkError(gl);var t11=new Date().getTime()-t00;x3dom.debug.logInfo("XHR1/ coord load time: "+t11+" ms");shape._webgl.buffers[x3dom.BUFFER_IDX.POSITION]=positionBuffer;};}
 if(!binGeo._hasStrideOffset&&binGeo._vf.normal.length>0)
-{var xmlhttp2=new XMLHttpRequest();xmlhttp2.open("GET",shape._nameSpace.getURL(binGeo._vf.normal),true);xmlhttp2.responseType="arraybuffer";shape._nameSpace.doc.downloadCount+=1;x3dom.RequestManager.addRequest(xmlhttp2);xmlhttp2.onload=function()
-{shape._nameSpace.doc.downloadCount-=1;shape._webgl.internalDownloadCount-=1;if(xmlhttp2.status!=200){x3dom.debug.logError("XHR2/ normal load failed with status: "+xmlhttp2.status);return;}
+{var xmlhttp2=new XMLHttpRequest();xmlhttp2.open("GET",shape._nameSpace.getURL(binGeo._vf.normal),true);xmlhttp2.responseType="arraybuffer";shape._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xmlhttp2);xmlhttp2.onload=function()
+{shape._nameSpace.doc.decrementDownloads();shape._webgl.internalDownloadCount-=1;if(xmlhttp2.status!=200){x3dom.debug.logError("XHR2/ normal load failed with status: "+xmlhttp2.status);return;}
 if(!shape._webgl)
 return;var XHR_buffer=binGeo._vf.compressed==true?x3dom.Utils.gunzip(xmlhttp2.response):xmlhttp2.response;var attribTypeStr=binGeo._vf.normalType;shape._webgl.normalType=x3dom.Utils.getVertexAttribType(attribTypeStr,gl);var normals=x3dom.Utils.getArrayBufferView(attribTypeStr,XHR_buffer);if(createTriangleSoup){shape._webgl.makeSeparateTris.pushBuffer("normal",normals);return;}
 var normalBuffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,normalBuffer);gl.bufferData(gl.ARRAY_BUFFER,normals,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,null);normals=null;if(shape._webgl.internalDownloadCount==0)
 {shape._nameSpace.doc.needRender=true;}
 that.checkError(gl);var t11=new Date().getTime()-t00;x3dom.debug.logInfo("XHR2/ normal load time: "+t11+" ms");shape._webgl.buffers[x3dom.BUFFER_IDX.NORMAL]=normalBuffer;};}
 if(!binGeo._hasStrideOffset&&binGeo._vf.texCoord.length>0)
-{var xmlhttp3=new XMLHttpRequest();xmlhttp3.open("GET",shape._nameSpace.getURL(binGeo._vf.texCoord),true);xmlhttp3.responseType="arraybuffer";shape._nameSpace.doc.downloadCount+=1;x3dom.RequestManager.addRequest(xmlhttp3);xmlhttp3.onload=function()
-{var i,j;var tmp;shape._nameSpace.doc.downloadCount-=1;shape._webgl.internalDownloadCount-=1;if(xmlhttp3.status!=200){x3dom.debug.logError("XHR3/ texcoord load failed with status: "+xmlhttp3.status);return;}
+{var xmlhttp3=new XMLHttpRequest();xmlhttp3.open("GET",shape._nameSpace.getURL(binGeo._vf.texCoord),true);xmlhttp3.responseType="arraybuffer";shape._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xmlhttp3);xmlhttp3.onload=function()
+{var i,j;var tmp;shape._nameSpace.doc.decrementDownloads();shape._webgl.internalDownloadCount-=1;if(xmlhttp3.status!=200){x3dom.debug.logError("XHR3/ texcoord load failed with status: "+xmlhttp3.status);return;}
 if(!shape._webgl)
 return;var XHR_buffer=binGeo._vf.compressed==true?x3dom.Utils.gunzip(xmlhttp3.response):xmlhttp3.response;var attribTypeStr=binGeo._vf.texCoordType;shape._webgl.texCoordType=x3dom.Utils.getVertexAttribType(attribTypeStr,gl);var texCoords=x3dom.Utils.getArrayBufferView(attribTypeStr,XHR_buffer);if(createTriangleSoup){shape._webgl.makeSeparateTris.pushBuffer("texCoord",texCoords);return;}
 if(binGeo._vf["idsPerVertex"])
@@ -743,24 +743,24 @@ texCoords=null;if(shape._webgl.internalDownloadCount==0)
 {shape._nameSpace.doc.needRender=true;}
 that.checkError(gl);var t11=new Date().getTime()-t00;x3dom.debug.logInfo("XHR3/ texCoord load time: "+t11+" ms");};}
 if(!binGeo._hasStrideOffset&&binGeo._vf.color.length>0)
-{var xmlhttp4=new XMLHttpRequest();xmlhttp4.open("GET",shape._nameSpace.getURL(binGeo._vf.color),true);xmlhttp4.responseType="arraybuffer";shape._nameSpace.doc.downloadCount+=1;x3dom.RequestManager.addRequest(xmlhttp4);xmlhttp4.onload=function()
-{shape._nameSpace.doc.downloadCount-=1;shape._webgl.internalDownloadCount-=1;if(xmlhttp4.status!=200){x3dom.debug.logError("XHR4/ color load failed with status: "+xmlhttp4.status);return;}
+{var xmlhttp4=new XMLHttpRequest();xmlhttp4.open("GET",shape._nameSpace.getURL(binGeo._vf.color),true);xmlhttp4.responseType="arraybuffer";shape._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xmlhttp4);xmlhttp4.onload=function()
+{shape._nameSpace.doc.decrementDownloads();shape._webgl.internalDownloadCount-=1;if(xmlhttp4.status!=200){x3dom.debug.logError("XHR4/ color load failed with status: "+xmlhttp4.status);return;}
 if(!shape._webgl)
 return;var XHR_buffer=binGeo._vf.compressed==true?x3dom.Utils.gunzip(xmlhttp4.response):xmlhttp4.response;var attribTypeStr=binGeo._vf.colorType;shape._webgl.colorType=x3dom.Utils.getVertexAttribType(attribTypeStr,gl);var colors=x3dom.Utils.getArrayBufferView(attribTypeStr,XHR_buffer);if(createTriangleSoup){shape._webgl.makeSeparateTris.pushBuffer("color",colors);return;}
 var colorBuffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,colorBuffer);gl.bufferData(gl.ARRAY_BUFFER,colors,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,null);colors=null;if(shape._webgl.internalDownloadCount==0)
 {shape._nameSpace.doc.needRender=true;}
 that.checkError(gl);var t11=new Date().getTime()-t00;x3dom.debug.logInfo("XHR4/ color load time: "+t11+" ms");shape._webgl.buffers[x3dom.BUFFER_IDX.COLOR]=colorBuffer;};}
 if(!binGeo._hasStrideOffset&&binGeo._vf.tangent.length>0)
-{var xmlhttp5=new XMLHttpRequest();xmlhttp5.open("GET",shape._nameSpace.getURL(binGeo._vf.normal),true);xmlhttp5.responseType="arraybuffer";shape._nameSpace.doc.downloadCount+=1;x3dom.RequestManager.addRequest(xmlhttp5);xmlhttp5.onload=function()
-{shape._nameSpace.doc.downloadCount-=1;shape._webgl.internalDownloadCount-=1;if(xmlhttp5.status!=200){x3dom.debug.logError("XHR2/ normal load failed with status: "+xmlhttp5.status);return;}
+{var xmlhttp5=new XMLHttpRequest();xmlhttp5.open("GET",shape._nameSpace.getURL(binGeo._vf.normal),true);xmlhttp5.responseType="arraybuffer";shape._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xmlhttp5);xmlhttp5.onload=function()
+{shape._nameSpace.doc.decrementDownloads();shape._webgl.internalDownloadCount-=1;if(xmlhttp5.status!=200){x3dom.debug.logError("XHR2/ normal load failed with status: "+xmlhttp5.status);return;}
 if(!shape._webgl)
 return;var XHR_buffer=binGeo._vf.compressed==true?x3dom.Utils.gunzip(xmlhttp5.response):xmlhttp5.response;var attribTypeStr=binGeo._vf.tangentType;shape._webgl.tangentType=x3dom.Utils.getVertexAttribType(attribTypeStr,gl);var tangents=x3dom.Utils.getArrayBufferView(attribTypeStr,XHR_buffer);if(createTriangleSoup){shape._webgl.makeSeparateTris.pushBuffer("tangent",tangents);return;}
 var tangentBuffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,tangentBuffer);gl.bufferData(gl.ARRAY_BUFFER,tangents,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,null);tangents=null;if(shape._webgl.internalDownloadCount==0)
 {shape._nameSpace.doc.needRender=true;}
 that.checkError(gl);var t11=new Date().getTime()-t00;x3dom.debug.logInfo("XHR5/ normal load time: "+t11+" ms");shape._webgl.buffers[x3dom.BUFFER_IDX.TANGENT]=tangentBuffer;};}
 if(!binGeo._hasStrideOffset&&binGeo._vf.binormal.length>0)
-{var xmlhttp6=new XMLHttpRequest();xmlhttp6.open("GET",shape._nameSpace.getURL(binGeo._vf.normal),true);xmlhttp6.responseType="arraybuffer";shape._nameSpace.doc.downloadCount+=1;x3dom.RequestManager.addRequest(xmlhttp6);xmlhttp6.onload=function()
-{shape._nameSpace.doc.downloadCount-=1;shape._webgl.internalDownloadCount-=1;if(xmlhttp6.status!=200){x3dom.debug.logError("XHR6/ normal load failed with status: "+xmlhttp6.status);return;}
+{var xmlhttp6=new XMLHttpRequest();xmlhttp6.open("GET",shape._nameSpace.getURL(binGeo._vf.normal),true);xmlhttp6.responseType="arraybuffer";shape._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xmlhttp6);xmlhttp6.onload=function()
+{shape._nameSpace.doc.decrementDownloads();shape._webgl.internalDownloadCount-=1;if(xmlhttp6.status!=200){x3dom.debug.logError("XHR6/ normal load failed with status: "+xmlhttp6.status);return;}
 if(!shape._webgl)
 return;var XHR_buffer=binGeo._vf.compressed==true?x3dom.Utils.gunzip(xmlhttp6.response):xmlhttp6.response;var attribTypeStr=binGeo._vf.binormalType;shape._webgl.binormalType=x3dom.Utils.getVertexAttribType(attribTypeStr,gl);var binormals=x3dom.Utils.getArrayBufferView(attribTypeStr,XHR_buffer);if(createTriangleSoup){shape._webgl.makeSeparateTris.pushBuffer("binormal",binormals);return;}
 var binormalBuffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,binormalBuffer);gl.bufferData(gl.ARRAY_BUFFER,binormals,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,null);binormals=null;if(shape._webgl.internalDownloadCount==0)
@@ -780,13 +780,13 @@ else{gl.bufferSubData(gl.ARRAY_BUFFER,popGeo.getVertexDataBufferOffset(lvl)*popG
 shape._webgl.numVerticesAtLevel[lvl]=vertexDataLengthInBytes/popGeo.getAttributeStride();shape._webgl.currentNumVertices+=shape._webgl.numVerticesAtLevel[lvl];}
 (function(){var numValidIndices=0;for(var i=shape._webgl.levelsAvailable;i<popGeo.getNumLevels();++i){if(shape._webgl.levelLoaded[i]===false){break;}
 else{numValidIndices+=popGeo.getNumIndicesByLevel(i);++shape._webgl.levelsAvailable;}}
-shape._webgl.currentNumIndices=numValidIndices;})();popGeo._mesh._numCoords=shape._webgl.currentNumVertices;popGeo._mesh._numFaces=(popGeo.hasIndex()?shape._webgl.currentNumIndices:shape._webgl.currentNumVertices)/3;popGeo.adaptVertexCount(popGeo.hasIndex()?popGeo._mesh._numFaces*3:popGeo._mesh._numCoords);if(redrawNeeded){shape._nameSpace.doc.needRender=true;}}};var dataURLs=popGeo.getDataURLs();var downloadCallbacks=[];var priorities=[];shape._webgl.downloadStartTimer=new Date().getTime();for(var i=0;i<dataURLs.length;++i){shape._nameSpace.doc.downloadCount+=1;(function(idx){downloadCallbacks.push(function(data){shape._nameSpace.doc.downloadCount-=1;return uploadDataToGPU(data,idx);});})(i);priorities.push(i);}
+shape._webgl.currentNumIndices=numValidIndices;})();popGeo._mesh._numCoords=shape._webgl.currentNumVertices;popGeo._mesh._numFaces=(popGeo.hasIndex()?shape._webgl.currentNumIndices:shape._webgl.currentNumVertices)/3;popGeo.adaptVertexCount(popGeo.hasIndex()?popGeo._mesh._numFaces*3:popGeo._mesh._numCoords);if(redrawNeeded){shape._nameSpace.doc.needRender=true;}}};var dataURLs=popGeo.getDataURLs();var downloadCallbacks=[];var priorities=[];shape._webgl.downloadStartTimer=new Date().getTime();for(var i=0;i<dataURLs.length;++i){shape._nameSpace.doc.incrementDownloads();(function(idx){downloadCallbacks.push(function(data){shape._nameSpace.doc.decrementDownloads();return uploadDataToGPU(data,idx);});})(i);priorities.push(i);}
 x3dom.DownloadManager.get(dataURLs,downloadCallbacks,priorities);};x3dom.BinaryContainerLoader.setupImgGeo=function(shape,sp,gl,viewarea,currContext)
 {if(this.outOfMemory){return;}
 var imageGeometry=shape._cf.geometry.node;if(imageGeometry.getIndexTexture()){shape._webgl.imageGeometry=1;}else{shape._webgl.imageGeometry=-1;}
 imageGeometry.unsetGeoDirty();if(currContext.IG_PositionBuffer==null){currContext.IG_PositionBuffer=gl.createBuffer();}
 shape._webgl.buffers[x3dom.BUFFER_IDX.POSITION]=currContext.IG_PositionBuffer;gl.bindBuffer(gl.ARRAY_BUFFER,currContext.IG_PositionBuffer);var vertices=new Float32Array(shape._webgl.positions[0]);gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.STATIC_DRAW);gl.bindBuffer(gl.ARRAY_BUFFER,currContext.IG_PositionBuffer);gl.vertexAttribPointer(sp.position,imageGeometry._mesh._numPosComponents,shape._webgl.coordType,false,shape._coordStrideOffset[0],shape._coordStrideOffset[1]);gl.enableVertexAttribArray(sp.position);vertices=null;this.checkError(gl);};x3dom.BinaryContainerLoader.bufferGeoCache={};x3dom.BinaryContainerLoader.setupBufferGeo=function(shape,sp,gl,viewarea,currContext)
-{var URL;var isDataURL=false;var bufferGeo=shape._cf.geometry.node;var idxAccessor=null;var posAccessor=null;var needNormalComputation=true;shape._webgl.bufferGeometry=(bufferGeo._indexed)?1:-1;var initAccessors=function()
+{var URL;var isDataURL=false;var bufferGeo=shape._cf.geometry.node;var idxAccessor=null;var posAccessor=null;var needNormalComputation=true;shape._webgl.bufferGeometry=(bufferGeo._indexed)?1:-1;bufferGeo._mesh._numCoords=bufferGeo._vf.vertexCount[0];bufferGeo._mesh._numFaces=bufferGeo._vf.vertexCount[0]/3;var initAccessors=function()
 {var accessors=bufferGeo._cf.accessors.nodes;for(var i=0;i<accessors.length;i++)
 {var accessor=accessors[i];var byteOffset=accessor._vf.byteOffset;var byteStride=accessor._vf.byteStride;var bufferType=accessor._vf.bufferType;var components=accessor._vf.components;var componentType=accessor._vf.componentType;var normalized=accessor._vf.normalized;var view=accessor._vf.view;switch(bufferType)
 {case"INDEX":idxAccessor=accessor;shape._webgl.indexType=componentType;shape._indexOffset=byteOffset;break;case"POSITION":posAccessor=accessor;shape._coordStrideOffset=[byteStride,byteOffset];shape._webgl.coordType=componentType;shape._webgl.coordNormalized=normalized;bufferGeo._mesh._numPosComponents=components;break;case"NORMAL":needNormalComputation=false;shape._normalStrideOffset=[byteStride,byteOffset];shape._webgl.normalType=componentType;shape._webgl.normalNormalized=normalized;bufferGeo._mesh._numNormComponents=components;break;case"TEXCOORD_0":case"TEXCOORD":shape._texCoordStrideOffset=[byteStride,byteOffset];shape._webgl.texCoordType=componentType;shape._webgl.texCoordNormalized=normalized;bufferGeo._mesh._numTexComponents=components;break;case"TEXCOORD_1":shape._texCoord2StrideOffset=[byteStride,byteOffset];shape._webgl.texCoord2Type=componentType;shape._webgl.texCoord2Normalized=normalized;bufferGeo._mesh._numTex2Components=components;break;case"COLOR":case"COLOR_0":shape._colorStrideOffset=[byteStride,byteOffset];shape._webgl.colorType=componentType;shape._webgl.colorNormalized=normalized;bufferGeo._mesh._numColComponents=components;break;case"TANGENT":shape._tangentStrideOffset=[byteStride,byteOffset];shape._webgl.tangentType=componentType;shape._webgl.tangentNormalized=normalized;bufferGeo._mesh._numTangentComponents=components;break;case"BITANGENT":shape._binormalStrideOffset=[byteStride,byteOffset];shape._webgl.binormalType=componentType;shape._webgl.binormalNormalized=normalized;bufferGeo._mesh._numBinormalComponents=components;break;}
@@ -797,26 +797,10 @@ var initBufferViews=function(arraybuffer)
 {var bufferData=new Uint8Array(arraybuffer,byteOffset,byteLength);var buffer=gl.createBuffer();gl.bindBuffer(view._vf.target,buffer);gl.bufferData(view._vf.target,bufferData,gl.STATIC_DRAW);gl.bindBuffer(view._vf.target,null);x3dom.BinaryContainerLoader.bufferGeoCache[URL].buffers[bufferID]=buffer;}}};var getPositions=function(arraybuffer)
 {var positions
 if(posAccessor)
-{var posView=bufferGeo._cf.views.nodes[posAccessor._vf.view];var byteOffset=posAccessor._vf.byteOffset+posView._vf.byteOffset;var byteLength=posAccessor._vf.count*posAccessor._vf.components;if(posAccessor._vf.componentType==5120)
-{positions=new Int8Array(arraybuffer,byteOffset,byteLength);}
-if(posAccessor._vf.componentType==5121)
-{positions=new Uint8Array(arraybuffer,byteOffset,byteLength);}
-else if(posAccessor._vf.componentType==5122)
-{positions=new Int16Array(arraybuffer,byteOffset,byteLength);}
-else if(posAccessor._vf.componentType==5123)
-{positions=new Uint16Array(arraybuffer,byteOffset,byteLength);}
-else if(posAccessor._vf.componentType==5125)
-{positions=new Uint32Array(arraybuffer,byteOffset,byteLength);}
-else if(posAccessor._vf.componentType==5126)
-{positions=new Float32Array(arraybuffer,byteOffset,byteLength);}}
+{var posView=bufferGeo._cf.views.nodes[posAccessor._vf.view];var byteOffset=posAccessor._vf.byteOffset+posView._vf.byteOffset;var byteLength=posAccessor._vf.count*posAccessor._vf.components;positions=x3dom.BinaryContainerLoader.getArrayBufferFromType(posAccessor._vf.componentType,arraybuffer,byteOffset,byteLength);}
 return positions;};var getIndices=function(arraybuffer)
 {var indices;if(idxAccessor)
-{var idxView=bufferGeo._cf.views.nodes[idxAccessor._vf.view];var byteOffset=idxAccessor._vf.byteOffset+idxView._vf.byteOffset;var byteLength=idxAccessor._vf.count*idxAccessor._vf.components;if(idxAccessor._vf.componentType==5121)
-{indices=new Uint8Array(arraybuffer,byteOffset,byteLength);}
-else if(idxAccessor._vf.componentType==5123)
-{indices=new Uint16Array(arraybuffer,byteOffset,byteLength);}
-else if(idxAccessor._vf.componentType==5125)
-{indices=new Uint32Array(arraybuffer,byteOffset,byteLength);}}
+{var idxView=bufferGeo._cf.views.nodes[idxAccessor._vf.view];var byteOffset=idxAccessor._vf.byteOffset+idxView._vf.byteOffset;var byteLength=idxAccessor._vf.count*idxAccessor._vf.components;indices=x3dom.BinaryContainerLoader.getArrayBufferFromType(idxAccessor._vf.componentType,arraybuffer,byteOffset,byteLength);}
 return indices;};var computeNormals=function(arraybuffer)
 {if(needNormalComputation==false)
 {return;}
@@ -828,20 +812,54 @@ else if(positions)
 {vA.set(positions[i],positions[i+1],positions[i+2]);vB.set(positions[i+3],positions[i+4],positions[i+5]);vC.set(positions[i+6],positions[i+7],positions[i+8]);ab=ab.subtractVectors(vA,vB);cb=cb.subtractVectors(vC,vB);cb=cb.cross(ab);cb=cb.normalize();normals[i]=normals[i+3]=normals[i+6]=cb.x;normals[i+1]=normals[i+4]=normals[i+7]=cb.y;normals[i+2]=normals[i+5]=normals[i+8]=cb.z;}}
 var buffer=gl.createBuffer();gl.bindBuffer(34962,buffer);gl.bufferData(34962,normals,gl.STATIC_DRAW);gl.bindBuffer(34962,null);shape._webgl.buffers[x3dom.BUFFER_IDX.NORMAL]=buffer;shape._normalStrideOffset=[12,0];shape._webgl.normalType=5126;bufferGeo._mesh._numNormComponents=3;}
 if(bufferGeo._vf.buffer!="")
-{URL=shape._nameSpace.getURL(bufferGeo._vf.buffer);if(x3dom.BinaryContainerLoader.bufferGeoCache[URL]!=undefined)
-{x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise.then(function(arraybuffer){if(shape._webgl==undefined)
-{x3dom.BinaryContainerLoader.bufferGeoCache[URL]=undefined;return;}
-initBufferViews(arraybuffer);initAccessors();computeNormals(arraybuffer);});}
+{URL=shape._nameSpace.getURL(bufferGeo._vf.buffer);if(x3dom.BinaryContainerLoader.bufferGeoCache[URL]==undefined)
+{shape._nameSpace.doc.incrementDownloads();x3dom.BinaryContainerLoader.bufferGeoCache[URL]={};x3dom.BinaryContainerLoader.bufferGeoCache[URL].buffers=[];x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload=true;x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise=new Promise(function(resolve,reject){var xhr=new XMLHttpRequest();xhr.open("GET",URL);xhr.responseType="arraybuffer";xhr.onload=function(e)
+{if(xhr.status!=200)
+{reject();}
 else
-{x3dom.BinaryContainerLoader.bufferGeoCache[URL]={};x3dom.BinaryContainerLoader.bufferGeoCache[URL].buffers=[];x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise=new Promise(function(resolve,reject){var xhr=new XMLHttpRequest();xhr.open("GET",URL);xhr.responseType="arraybuffer";xhr.onload=function(e)
-{if(shape._webgl==undefined)
-{x3dom.BinaryContainerLoader.bufferGeoCache[URL]=undefined;reject();return;}
-if(xhr.status!=200)
-{shape._nameSpace.doc.downloadCount-=1;reject();return;}
-initBufferViews(xhr.response);initAccessors();computeNormals(xhr.response);resolve(xhr.response);shape._nameSpace.doc.downloadCount-=1;shape._nameSpace.doc.needRender=true;}
+{resolve(xhr.response);}}
 xhr.onerror=function(e)
-{shape._nameSpace.doc.downloadCount-=1;reject();}
-x3dom.RequestManager.addRequest(xhr);shape._nameSpace.doc.downloadCount+=1;});}}};x3dom.DrawableCollection=function(drawableCollectionConfig){this.collection=[];this.viewMatrix=drawableCollectionConfig.viewMatrix;this.projMatrix=drawableCollectionConfig.projMatrix;this.sceneMatrix=drawableCollectionConfig.sceneMatrix;this.viewarea=drawableCollectionConfig.viewArea;var scene=this.viewarea._scene;var env=scene.getEnvironment();var viewpoint=scene.getViewpoint();this.near=viewpoint.getNear();this.pixelHeightAtDistOne=viewpoint.getImgPlaneHeightAtDistOne()/this.viewarea._height;this.context=drawableCollectionConfig.context;this.gl=drawableCollectionConfig.gl;this.viewFrustum=this.viewarea.getViewfrustum(this.sceneMatrix);this.worldVol=new x3dom.fields.BoxVolume();this.frustumCulling=drawableCollectionConfig.frustumCulling&&(this.viewFrustum!=null);this.smallFeatureThreshold=drawableCollectionConfig.smallFeatureThreshold;this.sortOpaque=(this.smallFeatureThreshold>0&&env._lowPriorityThreshold<1);this.sortTrans=drawableCollectionConfig.sortTrans;this.prioLevels=10;this.maxTreshold=100;this.sortBySortKey=false;this.sortByPriority=false;this.numberOfNodes=0;this.length=0;};x3dom.DrawableCollection.prototype.cull=function(transform,graphState,singlePath,planeMask){var node=graphState.boundedNode;if(!node||!node._vf.render){return-1;}
+{reject();}
+x3dom.RequestManager.addRequest(xhr);});}
+x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise.then(function(arraybuffer){if(shape._webgl==undefined)
+{x3dom.BinaryContainerLoader.bufferGeoCache[URL]=undefined;return;}
+initBufferViews(arraybuffer);initAccessors();computeNormals(arraybuffer);if(x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload)
+{x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload=false;shape._nameSpace.doc.decrementDownloads();shape._nameSpace.doc.needRender=true;}}).catch(function()
+{if(x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload)
+{x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload=false;shape._nameSpace.doc.decrementDownloads();}});}};x3dom.BinaryContainerLoader.setupBufferInterpolator=function(interpolator)
+{var getKeys=function(interpolator,accessor,arraybuffer)
+{var view=interpolator._cf.views.nodes[accessor._vf.view];var byteOffset=accessor._vf.byteOffset+view._vf.byteOffset;var byteLength=accessor._vf.count*accessor._vf.components;var componentType=accessor._vf.componentType;var data=x3dom.BinaryContainerLoader.getArrayBufferFromType(componentType,arraybuffer,byteOffset,byteLength);for(var i=0,n=data.length;i<n;i++)
+{data[i]=data[i]/interpolator._vf.duration}
+return data;};var getKeyValues=function(interpolator,accessor,arraybuffer)
+{var view=interpolator._cf.views.nodes[accessor._vf.view];var byteOffset=accessor._vf.byteOffset+view._vf.byteOffset;var byteLength=accessor._vf.count*accessor._vf.components;var componentType=accessor._vf.componentType;var data=x3dom.BinaryContainerLoader.getArrayBufferFromType(componentType,arraybuffer,byteOffset,byteLength);return interpolator.keyValueFromAccessor(data,componentType);};var initAccessors=function(arraybuffer)
+{var key;var keyValue;var accessors=interpolator._cf.accessors.nodes;for(var i=0;i<accessors.length;i++)
+{var accessor=accessors[i];switch(accessor._vf.bufferType)
+{case"SAMPLER_INPUT":key=getKeys(interpolator,accessor,arraybuffer);break;case"SAMPLER_OUTPUT":keyValue=getKeyValues(interpolator,accessor,arraybuffer);break;}}
+if(interpolator._vf.interpolation==="STEP")
+{var stepKey=key.slice();var stepValue=keyValue.slice();for(var i=1,n=key.length;i<n;i++)
+{stepKey.splice(i*2,0,key[i]);}
+for(var i=0,n=keyValue.length;i<n;i++)
+{stepValue.splice(i*2+1,0,keyValue[i]);}
+key=stepKey;keyValue=stepValue;}
+interpolator._vf.key=key;interpolator._vf.keyValue=keyValue;};var URL=interpolator._nameSpace.getURL(interpolator._vf.buffer);if(x3dom.BinaryContainerLoader.bufferGeoCache[URL]==undefined)
+{interpolator._nameSpace.doc.incrementDownloads();x3dom.BinaryContainerLoader.bufferGeoCache[URL]={};x3dom.BinaryContainerLoader.bufferGeoCache[URL].buffers=[];x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload=true;x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise=new Promise(function(resolve,reject){var xhr=new XMLHttpRequest();xhr.open("GET",URL);xhr.responseType="arraybuffer";xhr.onload=function(e)
+{if(xhr.status!=200)
+{reject();}
+else
+{resolve(xhr.response);}}
+xhr.onerror=function(e)
+{reject();}
+x3dom.RequestManager.addRequest(xhr);});}
+x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise.then(function(arraybuffer)
+{if(interpolator==undefined)
+{x3dom.BinaryContainerLoader.bufferGeoCache[URL]=undefined;return;}
+initAccessors(arraybuffer);if(x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload)
+{x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload=false;interpolator._nameSpace.doc.decrementDownloads();interpolator._nameSpace.doc.needRender=true;}}).catch(function()
+{if(x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload)
+{x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload=false;interpolator._nameSpace.doc.decrementDownloads();}});};x3dom.BinaryContainerLoader.getArrayBufferFromType=function(componentType,arraybuffer,byteOffset,byteLength)
+{switch(componentType)
+{case 5120:return new Int8Array(arraybuffer,byteOffset,byteLength);case 5121:return new Uint8Array(arraybuffer,byteOffset,byteLength);case 5122:return new Int16Array(arraybuffer,byteOffset,byteLength);case 5123:return new Uint16Array(arraybuffer,byteOffset,byteLength);case 5125:return new Uint32Array(arraybuffer,byteOffset,byteLength);case 5126:return new Float32Array(arraybuffer,byteOffset,byteLength);}}
+x3dom.DrawableCollection=function(drawableCollectionConfig){this.collection=[];this.viewMatrix=drawableCollectionConfig.viewMatrix;this.projMatrix=drawableCollectionConfig.projMatrix;this.sceneMatrix=drawableCollectionConfig.sceneMatrix;this.viewarea=drawableCollectionConfig.viewArea;var scene=this.viewarea._scene;var env=scene.getEnvironment();var viewpoint=scene.getViewpoint();this.near=viewpoint.getNear();this.pixelHeightAtDistOne=viewpoint.getImgPlaneHeightAtDistOne()/this.viewarea._height;this.context=drawableCollectionConfig.context;this.gl=drawableCollectionConfig.gl;this.viewFrustum=this.viewarea.getViewfrustum(this.sceneMatrix);this.worldVol=new x3dom.fields.BoxVolume();this.frustumCulling=drawableCollectionConfig.frustumCulling&&(this.viewFrustum!=null);this.smallFeatureThreshold=drawableCollectionConfig.smallFeatureThreshold;this.sortOpaque=(this.smallFeatureThreshold>0&&env._lowPriorityThreshold<1);this.sortTrans=drawableCollectionConfig.sortTrans;this.prioLevels=10;this.maxTreshold=100;this.sortBySortKey=false;this.sortByPriority=false;this.numberOfNodes=0;this.length=0;};x3dom.DrawableCollection.prototype.cull=function(transform,graphState,singlePath,planeMask){var node=graphState.boundedNode;if(!node||!node._vf.render){return-1;}
 var volume=node.getVolume();var MASK_SET=63;if(this.frustumCulling&&graphState.needCulling){var wvol;if(singlePath&&!graphState.worldVolume.isValid()){graphState.worldVolume.transformFrom(transform,volume);wvol=graphState.worldVolume;}
 else if(planeMask<MASK_SET){this.worldVol.transformFrom(transform,volume);wvol=this.worldVol;}
 if(planeMask<MASK_SET)
@@ -1017,25 +1035,18 @@ else
 data=atob(data);else
 data=unescape(data);return data;}
 x3dom.debug.logError('no shader found');}};x3dom.glTF2Loader=function(nameSpace)
-{this._nameSpace=nameSpace;this._binaryData=null;this._prefix="gltf";this._nodeNamePrefix=this._prefix+"NODE";this._animationPrefix="CLIP";this._channelPrefix="CHANNEL";this._clockPrefix=this._prefix+"CLOCK";this._interpolatorPrefix=this._prefix+"INTR";this._cameraPrefix=this._prefix+"CAM";}
+{this._nameSpace=nameSpace;}
 x3dom.glTF2Loader.prototype.load=function(input,binary)
 {this._gltf=this._getGLTF(input,binary);var x3dScene=this._generateX3DScene();var sceneID=this._gltf.scene||0;var scene=this._gltf.scenes[sceneID];for(var i=0;i<scene.nodes.length;i++)
 {var node=this._gltf.nodes[scene.nodes[i]];this._traverseNodes(node,x3dScene,scene.nodes[i]);}
 if(this._gltf.animations)
-{this._gltf.animations.forEach(function(animation,a_i)
-{this._generateX3DAnimationNodes(x3dScene,animation,a_i);},this);}
-console.log(x3dScene);return x3dScene;};x3dom.glTF2Loader.prototype._findLongestInput=function(animation)
-{var duration=-1;animation.channels.forEach(function(channel)
-{var input_accessor=this._gltf.accessors[animation.samplers[channel.sampler].input];duration=Math.max(input_accessor.max[0],duration);},this);return duration;};x3dom.glTF2Loader.prototype._generateX3DAnimationNodes=function(x3dScene,animation,a_i)
-{var animation_length=this._findLongestInput(animation);var animationID=this._animationPrefix+a_i;this._generateX3DAnimationClock(x3dScene,animation_length,animationID);animation.channels.forEach(function(channel,c_i)
-{this._generateX3DAnimation(x3dScene,animation_length,animation.samplers[channel.sampler],channel.target,animationID,this._channelPrefix+c_i);},this);};x3dom.glTF2Loader.prototype._generateX3DAnimationClock=function(parent,duration,aniID)
-{var clock=document.createElement('TimeSensor');clock.setAttribute('loop','true');clock.setAttribute('cycleInterval',duration);clock.setAttribute('DEF',this._clockPrefix+aniID);parent.appendChild(clock);};x3dom.glTF2Loader.prototype._generateX3DAnimation=function(parent,duration,sampler,target,animID,chID)
-{var aniID=animID+chID;var input_accessor=this._gltf.accessors[sampler.input];var output_accessor=this._gltf.accessors[sampler.output];var path2Interpolator={'translation':'PositionInterpolator','rotation':'OrientationInterpolator','scale':'PositionInterpolator','weight':'ScalarInterpolator'};var interpolator=path2Interpolator[target.path];var views=this._gltf.bufferViews;var input_view=views[input_accessor.bufferView];input_view.id=input_accessor.bufferView;var output_view=views[output_accessor.bufferView];output_view.id=output_accessor.bufferView;var bufferURI=x3dom.Utils.dataURIToObjectURL(this._gltf.buffers[input_view.buffer].uri);var interNode=document.createElement(interpolator);var interDEF=this._interpolatorPrefix+aniID;interNode.setAttribute('DEF',interDEF);interNode.setAttribute('key','sampler.input.array');interNode.setAttribute('keyValue','sampler.output.array');interNode.setAttribute('buffer',bufferURI);interNode.interpolation=sampler.interpolation||'LINEAR';var input_accessor_dom=this._generateX3DBufferAccessor('SAMPLER_INPUT',input_accessor,input_accessor.bufferView);input_accessor_dom.duration=duration;interNode.appendChild(input_accessor_dom);interNode.appendChild(this._generateX3DBufferAccessor('SAMPLER_OUTPUT',output_accessor,output_accessor.bufferView));interNode.appendChild(this._generateX3DBufferView(input_view));interNode.appendChild(this._generateX3DBufferView(output_view));parent.appendChild(interNode);function _createROUTEElement(fromField,fromNode,toField,toNode)
-{var route=document.createElement('ROUTE');route.setAttribute('fromField',fromField);route.setAttribute('fromNode',fromNode);route.setAttribute('toField',toField);route.setAttribute('toNode',toNode);return route;};var targetDEF=this._nodeNamePrefix+this._gltf.nodes[target.node].name;var routeTS2INT=_createROUTEElement("fraction_changed",this._clockPrefix+animID,"set_fraction",interDEF);var routeINT2NODE=_createROUTEElement("value_changed",interDEF,"set_"+target.path,targetDEF);parent.appendChild(routeTS2INT);parent.appendChild(routeINT2NODE);};x3dom.glTF2Loader.prototype._traverseNodes=function(node,parent,index)
-{var x3dNode=this._generateX3DNode(node,parent,index);parent.appendChild(x3dNode);if(node.children)
+{for(var i=0;i<this._gltf.animations.length;i++)
+{var animation=this._gltf.animations[i];var animationID="glTF_ANIMATION_"+i;this._generateX3DAnimationNodes(x3dScene,animation,animationID);}}
+return x3dScene;};x3dom.glTF2Loader.prototype._traverseNodes=function(node,parent,index)
+{var x3dNode=this._generateX3DNode(node,index);parent.appendChild(x3dNode);if(node.children)
 {for(var i=0;i<node.children.length;i++)
-{var child=this._gltf.nodes[node.children[i]];this._traverseNodes(child,x3dNode,node.children[i]);}}};x3dom.glTF2Loader.prototype._generateX3DNode=function(node,parent,index)
-{var x3dNode;if(node.matrix!=undefined)
+{var child=this._gltf.nodes[node.children[i]];this._traverseNodes(child,x3dNode,node.children[i]);}}};x3dom.glTF2Loader.prototype._generateX3DNode=function(node,index)
+{var x3dNode;node.name=(node.name)?node.name:index;if(node.matrix!=undefined)
 {x3dNode=this._generateX3DMatrixTransform(node);}
 else if(node.translation!=undefined||node.rotation!=undefined||node.scale!=undefined)
 {x3dNode=this._generateX3DTransform(node);}
@@ -1043,12 +1054,10 @@ else
 {x3dNode=this._generateX3DTransform(node);}
 if(node.mesh!=undefined)
 {var mesh=this._gltf.meshes[node.mesh];for(var i=0;i<mesh.primitives.length;i++)
-{var shape=this._generateX3DShape(mesh.primitives[i]);x3dNode.appendChild(shape);}}
+{x3dNode.appendChild(this._generateX3DShape(mesh.primitives[i]));}}
 if(node.camera!=undefined)
-{var camera=this._gltf.cameras[node.camera];var viewpoint=this._generateX3DViewpoint(camera);viewpoint.setAttribute('DEF',this._cameraPrefix+node.camera);x3dNode.appendChild(viewpoint);}
-if(!node.name)
-{node.name=index;}
-var nodeDEF=this._nodeNamePrefix+node.name;x3dNode.setAttribute("DEF",nodeDEF);return x3dNode;};x3dom.glTF2Loader.prototype._generateX3DScene=function()
+{x3dNode.appendChild(this._generateX3DViewpoint(node));}
+return x3dNode;};x3dom.glTF2Loader.prototype._generateX3DScene=function()
 {var scene=document.createElement("scene");return scene;};x3dom.glTF2Loader.prototype._generateX3DTransform=function(node)
 {var transform=document.createElement("transform");if(node.translation!=undefined)
 {transform.setAttribute("translation",node.translation.join(" "));}
@@ -1056,15 +1065,19 @@ if(node.rotation!=undefined)
 {transform.setAttribute("rotation",this._toAxisAngle(node.rotation).join(" "));}
 if(node.scale!=undefined)
 {transform.setAttribute("scale",node.scale.join(" "));}
+if(node.name!=undefined)
+{transform.setAttribute("DEF","glTF_NODE_"+node.name);}
 return transform;};x3dom.glTF2Loader.prototype._generateX3DMatrixTransform=function(node)
 {var matrixTransform=document.createElement("matrixtransform");if(node.matrix!=undefined)
 {matrixTransform.setAttribute("matrix",node.matrix.join(" "));}
+if(node.name!=undefined)
+{matrixTransform.setAttribute("DEF","glTF_NODE_"+node.name);}
 return matrixTransform;};x3dom.glTF2Loader.prototype._generateX3DGroup=function(node)
-{return document.createElement("group");};x3dom.glTF2Loader.prototype._generateX3DViewpoint=function(camera)
-{switch(camera.type)
-{case"orthographic":return this._generateX3DOrthoViewpoint(camera.orthographic);case"perspective":return this._generateX3DPerspectiveViewpoint(camera.perspective);default:return this._generateX3DPerspectiveViewpoint(camera.perspective);}};x3dom.glTF2Loader.prototype._generateX3DPerspectiveViewpoint=function(camera)
-{var viewpoint=document.createElement("viewpoint");var fov=camera.yfov||0.785398;var znear=camera.znear||-1;var zfar=camera.zfar||-1;viewpoint.setAttribute("fieldOfView",fov);viewpoint.setAttribute("zNear",znear);viewpoint.setAttribute("zFar",zfar);viewpoint.setAttribute("position","0 0 0");return viewpoint;};x3dom.glTF2Loader.prototype._generateX3DOrthoViewpoint=function(camera)
-{var viewpoint=document.createElement("orthoviewpoint");var xmag=camera.xmag||1;var ymag=camera.ymag||1;var znear=camera.znear||-1;var zfar=camera.zfar||-1;var fov=[-xmag,-ymag,xmag,ymag];viewpoint.setAttribute("fieldOfView",fov);viewpoint.setAttribute("zNear",znear);viewpoint.setAttribute("zFar",zfar);viewpoint.setAttribute("position","0 0 0");return viewpoint;};x3dom.glTF2Loader.prototype._generateX3DShape=function(primitive)
+{return document.createElement("group");};x3dom.glTF2Loader.prototype._generateX3DViewpoint=function(node)
+{var camera=this._gltf.cameras[node.camera];var cameraID="glTF_CAMERA_"+node.camera;switch(camera.type)
+{case"orthographic":return this._generateX3DOrthoViewpoint(cameraID,camera.orthographic);case"perspective":return this._generateX3DPerspectiveViewpoint(cameraID,camera.perspective);default:return this._generateX3DPerspectiveViewpoint(cameraID,camera.perspective);}};x3dom.glTF2Loader.prototype._generateX3DPerspectiveViewpoint=function(id,camera)
+{var viewpoint=document.createElement("viewpoint");var fov=camera.yfov||0.785398;var znear=camera.znear||-1;var zfar=camera.zfar||-1;viewpoint.setAttribute("DEF",id);viewpoint.setAttribute("fieldOfView",fov);viewpoint.setAttribute("zNear",znear);viewpoint.setAttribute("zFar",zfar);viewpoint.setAttribute("position","0 0 0");return viewpoint;};x3dom.glTF2Loader.prototype._generateX3DOrthoViewpoint=function(id,camera)
+{var viewpoint=document.createElement("orthoviewpoint");var xmag=camera.xmag||1;var ymag=camera.ymag||1;var znear=camera.znear||-1;var zfar=camera.zfar||-1;var fov=[-xmag,-ymag,xmag,ymag];viewpoint.setAttribute("DEF",id);viewpoint.setAttribute("fieldOfView",fov);viewpoint.setAttribute("zNear",znear);viewpoint.setAttribute("zFar",zfar);viewpoint.setAttribute("position","0 0 0");return viewpoint;};x3dom.glTF2Loader.prototype._generateX3DShape=function(primitive)
 {var shape=document.createElement("shape");var material=(primitive.material!=undefined)?this._gltf.materials[primitive.material]:{};shape.appendChild(this._generateX3DAppearance(material));shape.appendChild(this._generateX3DBufferGeometry(primitive));return shape;};x3dom.glTF2Loader.prototype._generateX3DAppearance=function(material)
 {var appearance=document.createElement("appearance");appearance.appendChild(this._generateX3DPhysicalMaterial(material));if(this._textureTransform)
 {appearance.appendChild(this._textureTransform);this._textureTransform=undefined;}
@@ -1133,7 +1146,15 @@ for(var i=0;i<views.length;i++)
 return bufferGeometry;}
 x3dom.glTF2Loader.prototype._generateX3DBufferView=function(view)
 {var bufferView=document.createElement("bufferview");bufferView.setAttribute("target",view.target);bufferView.setAttribute("byteOffset",view.byteOffset||0);bufferView.setAttribute("byteLength",view.byteLength);bufferView.setAttribute("id",view.id);return bufferView;};x3dom.glTF2Loader.prototype._generateX3DBufferAccessor=function(buffer,accessor,viewID)
-{var components=this._componentsOf(accessor.type);var bufferView=this._gltf.bufferViews[accessor.bufferView];var byteOffset=accessor.byteOffset;var bufferAccessor=document.createElement("bufferaccessor");bufferAccessor.setAttribute("bufferType",buffer.replace("_0",""));bufferAccessor.setAttribute("view",viewID);bufferAccessor.setAttribute("byteOffset",byteOffset||0);bufferAccessor.setAttribute("byteStride",bufferView.byteStride||0);bufferAccessor.setAttribute("normalized",accessor.normalized||false);bufferAccessor.setAttribute("components",components);bufferAccessor.setAttribute("componentType",accessor.componentType);bufferAccessor.setAttribute("count",accessor.count);return bufferAccessor;};x3dom.glTF2Loader.prototype._getCenterAndSize=function(primitive)
+{var components=this._componentsOf(accessor.type);var bufferView=this._gltf.bufferViews[accessor.bufferView];var byteOffset=accessor.byteOffset;var bufferAccessor=document.createElement("bufferaccessor");bufferAccessor.setAttribute("bufferType",buffer.replace("_0",""));bufferAccessor.setAttribute("view",viewID);bufferAccessor.setAttribute("byteOffset",byteOffset||0);bufferAccessor.setAttribute("byteStride",bufferView.byteStride||0);bufferAccessor.setAttribute("normalized",accessor.normalized||false);bufferAccessor.setAttribute("components",components);bufferAccessor.setAttribute("componentType",accessor.componentType);bufferAccessor.setAttribute("count",accessor.count);return bufferAccessor;};x3dom.glTF2Loader.prototype._generateX3DAnimationNodes=function(x3dScene,animation,animationID)
+{var duration=this._animationDuration(animation);var timeSensorID=animationID+"_TIMESENSOR";x3dScene.appendChild(this._generateX3DTimeSensor(timeSensorID,duration));for(var i=0;i<animation.channels.length;i++)
+{var channel=animation.channels[i];var path=channel.target.path;var node=channel.target.node;var sampler=animation.samplers[channel.sampler];var targetID="glTF_NODE_"+this._gltf.nodes[node].name;var interpolatorID=animationID+"_INTERPOLATOR_"+i;x3dScene.appendChild(this._generateX3DInterpolator(interpolatorID,path,sampler,duration));x3dScene.appendChild(this._createX3DRoute("fraction_changed",timeSensorID,"set_fraction",interpolatorID));x3dScene.appendChild(this._createX3DRoute("value_changed",interpolatorID,"set_"+path,targetID));}};x3dom.glTF2Loader.prototype._generateX3DTimeSensor=function(id,duration)
+{var clock=document.createElement('TimeSensor');clock.setAttribute('loop','true');clock.setAttribute('cycleInterval',duration);clock.setAttribute('DEF',id);return clock;};x3dom.glTF2Loader.prototype._generateX3DInterpolator=function(id,path,sampler,duration)
+{var interpolator;var interpolation=sampler.interpolation||"LINEAR";var accessorInput=this._gltf.accessors[sampler.input];var accessorOutput=this._gltf.accessors[sampler.output];var viewInput=this._gltf.bufferViews[accessorInput.bufferView];var viewOutput=this._gltf.bufferViews[accessorOutput.bufferView];switch(path)
+{case"scale":case"translation":interpolator=document.createElement("PositionInterpolator");break;case"rotation":interpolator=document.createElement("OrientationInterpolator");break;case"weight":interpolator=document.createElement("ScalarInterpolator");break;}
+interpolator.setAttribute('DEF',id);interpolator.setAttribute("buffer",this._bufferURI(sampler));interpolator.setAttribute("interpolation",interpolation);interpolator.setAttribute("duration",duration);interpolator.appendChild(this._generateX3DBufferAccessor('SAMPLER_INPUT',accessorInput,0));interpolator.appendChild(this._generateX3DBufferAccessor('SAMPLER_OUTPUT',accessorOutput,1));interpolator.appendChild(this._generateX3DBufferView(viewInput));interpolator.appendChild(this._generateX3DBufferView(viewOutput));return interpolator;};x3dom.glTF2Loader.prototype._createX3DRoute=function(fromField,fromNode,toField,toNode)
+{var route=document.createElement('ROUTE');route.setAttribute('fromField',fromField);route.setAttribute('fromNode',fromNode);route.setAttribute('toField',toField);route.setAttribute('toNode',toNode);return route;}
+x3dom.glTF2Loader.prototype._getCenterAndSize=function(primitive)
 {var size=[1,1,1];var center=[0,0,0];if(primitive.attributes.POSITION!=undefined)
 {var accessor=this._gltf.accessors[primitive.attributes.POSITION];size[0]=accessor.max[0]-accessor.min[0];size[1]=accessor.max[1]-accessor.min[1];size[2]=accessor.max[2]-accessor.min[2];center[0]=accessor.min[0]+size[0]*0.5;center[1]=accessor.min[1]+size[1]*0.5;center[2]=accessor.min[2]+size[2]*0.5;}
 return{center:center,size:size};};x3dom.glTF2Loader.prototype._getVertexCount=function(primitive)
@@ -1146,9 +1167,13 @@ x3dom.glTF2Loader.prototype._sizeInBytes=function(componentType)
 {switch(componentType)
 {case 5120:return 1;case 5121:return 1;case 5122:return 2;case 5123:return 2;case 5125:return 4;case 5126:return 4;}};x3dom.glTF2Loader.prototype._componentsOf=function(type)
 {switch(type)
-{case"SCALAR":return 1;case"VEC2":return 2;case"VEC3":return 3;case"VEC4":return 4;case"MAT2":return 4;case"MAT3":return 9;case"MAT4":return 16;}};x3dom.glTF2Loader.prototype._bufferURI=function(primitive)
-{var uri="";if(primitive.attributes.POSITION!=undefined)
-{var accessor=this._gltf.accessors[primitive.attributes.POSITION];var bufferView=this._gltf.bufferViews[accessor.bufferView];var buffer=this._gltf.buffers[bufferView.buffer];uri=x3dom.Utils.dataURIToObjectURL(buffer.uri);}
+{case"SCALAR":return 1;case"VEC2":return 2;case"VEC3":return 3;case"VEC4":return 4;case"MAT2":return 4;case"MAT3":return 9;case"MAT4":return 16;}};x3dom.glTF2Loader.prototype._bufferURI=function(value)
+{var uri="",accessorIdx;if(value.attributes!=undefined&&value.attributes.POSITION!=undefined)
+{accessorIdx=value.attributes.POSITION;}
+else if(value.input)
+{accessorIdx=value.input;}
+if(accessorIdx!=undefined)
+{var accessor=this._gltf.accessors[accessorIdx];var bufferView=this._gltf.bufferViews[accessor.bufferView];var buffer=this._gltf.buffers[bufferView.buffer];uri=x3dom.Utils.dataURIToObjectURL(buffer.uri);}
 return uri;};x3dom.glTF2Loader.prototype._primitiveType=function(mode)
 {switch(mode)
 {case 0:return"POINTS";case 1:return"LINES";case 2:return"LINE_LOOP";case 3:return"LINE_STRIP";case 4:return"TRIANGLES";case 5:return"TRIANGLE_STRIP";case 6:return"TRIANGLE_FAN";default:return"TRIANGLES";}};x3dom.glTF2Loader.prototype._isDefaultSampler=function(sampler)
@@ -1163,7 +1188,10 @@ var byteOffset=0;var header=new Uint32Array(input,byteOffset,3);if(header[0]==11
 {if(gltf.images!=undefined)
 {for(var i=0;i<gltf.images.length;i++)
 {var image=gltf.images[i];if(image.bufferView!=undefined)
-{var bufferView=gltf.bufferViews[image.bufferView];var imageData=new Uint8Array(buffer,byteOffset+bufferView.byteOffset,bufferView.byteLength);image.uri=x3dom.Utils.arrayBufferToObjectURL(imageData,image.mimeType);}}}};if(x3dom.glTF==null)
+{var bufferView=gltf.bufferViews[image.bufferView];var imageData=new Uint8Array(buffer,byteOffset+bufferView.byteOffset,bufferView.byteLength);image.uri=x3dom.Utils.arrayBufferToObjectURL(imageData,image.mimeType);}}}};x3dom.glTF2Loader.prototype._animationDuration=function(animation)
+{var duration=-1;for(var i=0;i<animation.channels.length;i++)
+{var channel=animation.channels[i];var sampler=animation.samplers[channel.sampler];var accessor=this._gltf.accessors[sampler.input];duration=Math.max(accessor.max[0],duration);}
+return duration;};if(x3dom.glTF==null)
 x3dom.glTF={};glTF_BUFFER_IDX={INDEX:0,POSITION:1,NORMAL:2,TEXCOORD:3,COLOR:4,TANGENT:6,BITANGENT:7};glTF_KHR_MATERIAL_COMMON_TECHNIQUE={BLINN:0,PHONG:1,LAMBERT:2,CONSTANT:3};PBR_MATERIAL_TECHNIQUE={METALLICROUGHNESS:0,SPECULARGLOSSINESS:1};x3dom.glTF.glTFMesh=function()
 {this.indexOffset=0;this.drawCount=0;this.numFaces=0;this.primitiveType=0;this.numCoords=0;this.buffers={};this.transform=new x3dom.fields.SFMatrix4f();this.material=null;};x3dom.glTF.glTFMesh.prototype.bindVertexAttribPointer=function(gl,shaderProgram)
 {if(this.buffers[x3dom.BUFFER_IDX.INDEX]){gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.buffers[x3dom.BUFFER_IDX.INDEX].idx);}
@@ -1670,7 +1698,7 @@ else if(this.canvas.vrDisplay&&this.canvas.vrDisplay.isPresenting)
 navInfo._vf.transitionTime=speed;ortho._bindAnimation=true;persp._bindAnimation=true;return(persp._vf.isActive)?0:1;};x3dom.Runtime.prototype.replaceWorld=function(scene){var x3dElement=this.doc.cloneNode(false);var child,name;while(child=scene.firstChild){name=child.nodeType===1?child.localName.toUpperCase():null;if(name=='HEAD'||name=='SCENE')x3dElement.appendChild(child);else{child.remove();}}
 this.doc.parentNode.replaceChild(x3dElement,this.doc);this.doc=x3dElement;x3dom.reload();return;};x3dom.Runtime.prototype.createX3DFromJS=function(jsobject,optionalURL){if(optionalURL){jsobject=x3dom.protoExpander.prototypeExpander(optionalURL,jsobject);}
 var jsonParser=new x3dom.JSONParser();return jsonParser.parseJavaScript(jsobject);};x3dom.Runtime.prototype.createX3DFromString=function(jsonOrXML,optionalURL){try{var jsobject=JSON.parse(jsonOrXML);return this.createX3DFromJS(jsobject,optionalURL);}catch(e){var parser=new DOMParser();var doc=parser.parseFromString(jsonOrXML,'application/xml');var scene=doc.querySelector('X3D');if(scene==null){doc=parser.parseFromString(jsonOrXML,'text/html');scene=doc.querySelector('X3D');}
-return scene;}};x3dom.Runtime.prototype.createX3DFromURLPromise=function(url,optionalURL){this.canvas.doc.downloadCount++;that=this;return fetch(url).then(function(r){return r.text();}).then(function(text){that.canvas.doc.downloadCount--;return that.createX3DFromString(text,optionalURL);}).catch(function(r){that.canvas.doc.downloadCount--;x3dom.debug.logError('fetch failed: '+r);return null;});};x3dom.Runtime.prototype.loadURL=function(url,optionalURL){that=this;this.createX3DFromURLPromise(url,optionalURL).then(function(x3d){if(x3d!=null)that.replaceWorld(x3d);else x3dom.debug.logError("loadURL: could not fetch or parse "+url);});};x3dom.userAgentFeature={supportsDOMAttrModified:false};(function loadX3DOM(){"use strict";var onload=function(){var i,j;var x3ds_unfiltered=document.getElementsByTagName('X3D');var x3ds=[];for(i=0;i<x3ds_unfiltered.length;i++){if(x3ds_unfiltered[i].hasRuntime===undefined)
+return scene;}};x3dom.Runtime.prototype.createX3DFromURLPromise=function(url,optionalURL){this.canvas.doc.incrementDownloads();that=this;return fetch(url).then(function(r){return r.text();}).then(function(text){that.canvas.doc.decrementDownloads();return that.createX3DFromString(text,optionalURL);}).catch(function(r){that.canvas.doc.decrementDownloads();x3dom.debug.logError('fetch failed: '+r);return null;});};x3dom.Runtime.prototype.loadURL=function(url,optionalURL){that=this;this.createX3DFromURLPromise(url,optionalURL).then(function(x3d){if(x3d!=null)that.replaceWorld(x3d);else x3dom.debug.logError("loadURL: could not fetch or parse "+url);});};x3dom.userAgentFeature={supportsDOMAttrModified:false};(function loadX3DOM(){"use strict";var onload=function(){var i,j;var x3ds_unfiltered=document.getElementsByTagName('X3D');var x3ds=[];for(i=0;i<x3ds_unfiltered.length;i++){if(x3ds_unfiltered[i].hasRuntime===undefined)
 x3ds.push(x3ds_unfiltered[i]);}
 var params;var settings=new x3dom.Properties();var validParams=array_to_object(['showLog','showStat','showProgress','PrimitiveQuality','components','loadpath','disableDoubleClick','backend','altImg','flashrenderer','swfpath','runtimeEnabled','keysEnabled','showTouchpoints','disableTouch','maxActiveDownloads']);var components,prefix;var showLoggingConsole=false;for(i=0;i<x3ds.length;i++){settings.setProperty("showLog",x3ds[i].getAttribute("showLog")||'false');settings.setProperty("showStat",x3ds[i].getAttribute("showStat")||'false');settings.setProperty("showProgress",x3ds[i].getAttribute("showProgress")||'true');settings.setProperty("PrimitiveQuality",x3ds[i].getAttribute("PrimitiveQuality")||'High');params=x3ds[i].getElementsByTagName('PARAM');for(j=0;j<params.length;j++){if(params[j].getAttribute('name')in validParams){settings.setProperty(params[j].getAttribute('name'),params[j].getAttribute('value'));}else{}}
 if(settings.getProperty('showLog')==='true'){showLoggingConsole=true;}
@@ -1795,7 +1823,7 @@ return ctx.pickRect(this._viewarea,x1,y1,x2,y2);};x3dom.X3DDocument.prototype.on
 if(this._viewarea._scene._vf.doPickPass)
 ctx.pickValue(this._viewarea,x,y,buttonState);this._viewarea.onMove(x,y,buttonState);};x3dom.X3DDocument.prototype.onMoveView=function(ctx,evt,touches,translation,rotation){if(!ctx||!this._viewarea){return;}
 this._scene.getNavigationInfo()._impl.onTouchDrag(this._viewarea,evt,touches,translation,rotation);};x3dom.X3DDocument.prototype.onDrag=function(ctx,x,y,buttonState){if(!ctx||!this._viewarea){return;}
-if(this._viewarea._scene._vf.doPickPass)
+if(this._viewarea._scene._vf.doPickPass&&!this._viewarea._isMoving)
 ctx.pickValue(this._viewarea,x,y,buttonState);this._viewarea.onDrag(x,y,buttonState);};x3dom.X3DDocument.prototype.onWheel=function(ctx,x,y,originalY){if(!ctx||!this._viewarea){return;}
 if(this._viewarea._scene._vf.doPickPass)
 ctx.pickValue(this._viewarea,x,originalY,0);this._viewarea.onDrag(x,y,2);};x3dom.X3DDocument.prototype.onMousePress=function(ctx,x,y,buttonState){if(!ctx||!this._viewarea){return;}
@@ -1826,7 +1854,11 @@ break;case 117:this._viewarea.uprightView();break;case 118:var that=this;(functi
 {if(!ctx){return;}
 ctx.shutdown(this._viewarea);};x3dom.X3DDocument.prototype.hasAnimationStateChanged=function(){if(!this._viewarea){return false;}
 return this._viewarea.hasAnimationStateChanged();};x3dom.X3DDocument.prototype.isAnimating=function(){if(!this._viewarea){return false;}
-return this._viewarea.isAnimating();};x3dom.MatrixMixer=function(beginTime,endTime){this.beginTime=beginTime||0;this.endTime=endTime||1;this.isMixing=false;this._beginMat=x3dom.fields.SFMatrix4f.identity();this._beginInvMat=x3dom.fields.SFMatrix4f.identity();this._beginLogMat=x3dom.fields.SFMatrix4f.identity();this._endMat=x3dom.fields.SFMatrix4f.identity();this._endLogMat=x3dom.fields.SFMatrix4f.identity();this._beginRot=new x3dom.fields.Quaternion();this._endRot=new x3dom.fields.Quaternion();this._beginPos=new x3dom.fields.SFVec3f();this._endPos=new x3dom.fields.SFVec3f();this._result=x3dom.fields.SFMatrix4f.identity();this._useQuaternion=false;};x3dom.MatrixMixer.prototype._calcFraction=function(time){var fraction=(time-this.beginTime)/(this.endTime-this.beginTime);return(Math.sin((fraction*Math.PI)-(Math.PI/2))+1)/2.0;};x3dom.MatrixMixer.prototype._isValid=function(){var angles=this._beginMat.inverse().mult(this._endMat).getEulerAngles();return(Math.abs(angles[0])!=Math.PI&&Math.abs(angles[1])!=Math.PI&&Math.abs(angles[2])!=Math.PI);};x3dom.MatrixMixer.prototype._prepareQuaternionAnimation=function(){this._beginRot.setValue(this._beginMat);this._endRot.setValue(this._endMat);this._beginPos=this._beginMat.e3();this._endPos=this._endMat.e3();this._useQuaternion=true;};x3dom.MatrixMixer.prototype._reset=function(){this.beginTime=0;this.endTime=0;this._useQuaternion=false;this.isMixing=false;};x3dom.MatrixMixer.prototype.isActive=function(){return(this.beginTime>0);};x3dom.MatrixMixer.prototype.setBeginMatrix=function(mat){this._beginMat.setValues(mat);this._beginInvMat=mat.inverse();this._beginLogMat=x3dom.fields.SFMatrix4f.zeroMatrix();};x3dom.MatrixMixer.prototype.setEndMatrix=function(mat){this._endMat.setValues(mat);if(!this._isValid()){this._prepareQuaternionAnimation();}
+return this._viewarea.isAnimating();};x3dom.X3DDocument.prototype.incrementDownloads=function()
+{this.downloadCount++;}
+x3dom.X3DDocument.prototype.decrementDownloads=function()
+{this.downloadCount--;}
+x3dom.MatrixMixer=function(beginTime,endTime){this.beginTime=beginTime||0;this.endTime=endTime||1;this.isMixing=false;this._beginMat=x3dom.fields.SFMatrix4f.identity();this._beginInvMat=x3dom.fields.SFMatrix4f.identity();this._beginLogMat=x3dom.fields.SFMatrix4f.identity();this._endMat=x3dom.fields.SFMatrix4f.identity();this._endLogMat=x3dom.fields.SFMatrix4f.identity();this._beginRot=new x3dom.fields.Quaternion();this._endRot=new x3dom.fields.Quaternion();this._beginPos=new x3dom.fields.SFVec3f();this._endPos=new x3dom.fields.SFVec3f();this._result=x3dom.fields.SFMatrix4f.identity();this._useQuaternion=false;};x3dom.MatrixMixer.prototype._calcFraction=function(time){var fraction=(time-this.beginTime)/(this.endTime-this.beginTime);return(Math.sin((fraction*Math.PI)-(Math.PI/2))+1)/2.0;};x3dom.MatrixMixer.prototype._isValid=function(){var angles=this._beginMat.inverse().mult(this._endMat).getEulerAngles();return(Math.abs(angles[0])!=Math.PI&&Math.abs(angles[1])!=Math.PI&&Math.abs(angles[2])!=Math.PI);};x3dom.MatrixMixer.prototype._prepareQuaternionAnimation=function(){this._beginRot.setValue(this._beginMat);this._endRot.setValue(this._endMat);this._beginPos=this._beginMat.e3();this._endPos=this._endMat.e3();this._useQuaternion=true;};x3dom.MatrixMixer.prototype._reset=function(){this.beginTime=0;this.endTime=0;this._useQuaternion=false;this.isMixing=false;};x3dom.MatrixMixer.prototype.isActive=function(){return(this.beginTime>0);};x3dom.MatrixMixer.prototype.setBeginMatrix=function(mat){this._beginMat.setValues(mat);this._beginInvMat=mat.inverse();this._beginLogMat=x3dom.fields.SFMatrix4f.zeroMatrix();};x3dom.MatrixMixer.prototype.setEndMatrix=function(mat){this._endMat.setValues(mat);if(!this._isValid()){this._prepareQuaternionAnimation();}
 this._endLogMat=this._endMat.mult(this._beginInvMat).log();this._logDiffMat=this._endLogMat.addScaled(this._beginLogMat,-1);};x3dom.MatrixMixer.prototype._mixQuaternion=function(fraction){var rotation=this._beginRot.slerp(this._endRot,fraction);var translation=this._beginPos.addScaled(this._endPos.subtract(this._beginPos),fraction);this._result.setRotate(rotation);this._result.setTranslate(translation);return this._result.copy();};x3dom.MatrixMixer.prototype._mixMatrix=function(fraction){return this._logDiffMat.multiply(fraction).add(this._beginLogMat).exp().mult(this._beginMat);};x3dom.MatrixMixer.prototype.mix=function(time){if(time<=this.beginTime){return this._beginMat;}else if(time>=this.endTime){this._reset();return this._endMat;}else{this.isMixing=true;var fraction=this._calcFraction(time);if(this._useQuaternion){return this._mixQuaternion(fraction);}else{return this._mixMatrix(fraction);}}};x3dom.InputTypes={NAVIGATION:1,INTERACTION:2};x3dom.Viewarea=function(document,scene){this._doc=document;this._scene=scene;document._nodeBag.viewarea.push(this);this._pickingInfo={pickPos:new x3dom.fields.SFVec3f(0,0,0),pickNorm:new x3dom.fields.SFVec3f(0,0,1),pickObj:null,firstObj:null,lastObj:null,lastClickObj:null,shadowObjectId:-1};this._currentInputType=x3dom.InputTypes.NAVIGATION;this._rotMat=x3dom.fields.SFMatrix4f.identity();this._transMat=x3dom.fields.SFMatrix4f.identity();this._movement=new x3dom.fields.SFVec3f(0,0,0);this._needNavigationMatrixUpdate=true;this._deltaT=0;this._flyMat=null;this._pitch=0;this._yaw=0;this._eyePos=new x3dom.fields.SFVec3f(0,0,0);this._width=400;this._height=300;this._dx=0;this._dy=0;this._lastX=-1;this._lastY=-1;this._pressX=-1;this._pressY=-1;this._lastButton=0;this._points=0;this._numRenderedNodes=0;this._pick=new x3dom.fields.SFVec3f(0,0,0);this._pickNorm=new x3dom.fields.SFVec3f(0,0,1);this._isAnimating=false;this._isMoving=false;this._lastTS=0;this._mixer=new x3dom.MatrixMixer();this._interpolator=new x3dom.FieldInterpolator();this._animationStateChanged=false;this.vrFrameData=null;this.gamepads=null;this.vrLeftViewMatrix=new x3dom.fields.SFMatrix4f();this.vrRightViewMatrix=new x3dom.fields.SFMatrix4f();this.vrLeftProjMatrix=new x3dom.fields.SFMatrix4f();this.vrRightProjMatrix=new x3dom.fields.SFMatrix4f();this.vrControllerManager=new x3dom.VRControllerManager();this.arc=null;};x3dom.Viewarea.prototype.setVRFrameData=function(vrFrameData)
 {this.vrFrameData=vrFrameData;if(this.vrFrameData)
 {this.vrLeftViewMatrix.setFromArray(this.vrFrameData.leftViewMatrix),this.vrRightViewMatrix.setFromArray(this.vrFrameData.rightViewMatrix)}};x3dom.Viewarea.prototype.updateGamepads=function(vrDisplay)
@@ -3167,6 +3199,8 @@ toNode._fieldWatchers[toField].push(function(msg){toNode._vf[toField]=msg;toNode
 if(!toNode._vf[toField]){pos=toField.indexOf(pre);if(pos===0){fieldName=toField.substr(pre.length,toField.length-1);if(toNode._vf[fieldName]!==undefined){toField=fieldName;}}
 else{pos=toField.indexOf(post);if(pos>0){fieldName=toField.substr(0,toField.length-post.length);if(toNode._vf[fieldName]!==undefined){toField=fieldName;}}}}
 var where=this._DEF+"&"+fromField+"&"+toNode._DEF+"&"+toField;if(this._routes[where]){this._fieldWatchers[fromField].splice(this._routes[where].from,1);toNode._fieldWatchers[toField].splice(this._routes[where].to,1);delete this._routes[where];}},fieldChanged:function(fieldName){},nodeChanged:function(){},callEvtHandler:function(eventType,event){var node=this;if(!node._xmlNode){return event.cancelBubble;}
+if(!node._xmlNode.getAttribute(eventType)&&!node._xmlNode[eventType])
+{return event.cancelBubble;}
 try{var attrib=node._xmlNode[eventType];event.target=node._xmlNode;if(typeof(attrib)==="function"){attrib.call(node._xmlNode,event);}
 else{var funcStr=node._xmlNode.getAttribute(eventType);var func=new Function('event',funcStr);func.call(node._xmlNode,event);}
 var list=node._listeners[event.type];if(list){for(var it=0;it<list.length;it++){list[it].call(node._xmlNode,event);}}}
@@ -4004,73 +4038,75 @@ if(this._vf.order>4)
 {var dist5=Math.abs(this._value5-this._value4);if(dist5>dist){dist=dist5;}}
 if(dist<=this._eps)
 {this._value1=this._value0;this._value2=this._value0;this._value3=this._value0;this._value4=this._value0;this._value5=this._value0;this.postMessage('value',this._value0);this.postMessage('isActive',false);this._lastTick=0;return false;}
-this.postMessage('value',this._value5);this._lastTick=now;return true;}}));x3dom.registerNodeType("CoordinateDamper","Followers",defineClass(x3dom.nodeTypes.X3DDamperNode,function(ctx){x3dom.nodeTypes.CoordinateDamper.superClass.call(this,ctx);this.addField_MFVec3f(ctx,'initialDestination',[]);this.addField_MFVec3f(ctx,'initialValue',[]);this.addField_MFVec3f(ctx,'value',[]);this.addField_MFVec3f(ctx,'destination',[]);x3dom.debug.logWarning("CoordinateDamper NYI");}));x3dom.registerNodeType("TexCoordDamper2D","Followers",defineClass(x3dom.nodeTypes.X3DDamperNode,function(ctx){x3dom.nodeTypes.TexCoordDamper2D.superClass.call(this,ctx);this.addField_MFVec2f(ctx,'initialDestination',[]);this.addField_MFVec2f(ctx,'initialValue',[]);this.addField_MFVec2f(ctx,'value',[]);this.addField_MFVec2f(ctx,'destination',[]);x3dom.debug.logWarning("TexCoordDamper2D NYI");}));x3dom.registerNodeType("X3DInterpolatorNode","Interpolation",defineClass(x3dom.nodeTypes.X3DChildNode,function(ctx){x3dom.nodeTypes.X3DInterpolatorNode.superClass.call(this,ctx);this.addField_MFFloat(ctx,'key',[]);this.addField_SFFloat(ctx,'set_fraction',0);this.addField_SFString(ctx,'buffer',"");this.addField_MFNode('views',x3dom.nodeTypes.BufferView);this.addField_MFNode('accessors',x3dom.nodeTypes.BufferAccessor);this.constructorFromType={"5120":Int8Array,"5121":Uint8Array,"5122":Int16Array,"5123":Uint16Array,"5125":Uint32Array,"5126":Float32Array};this.normalizeFromType={"5120":function(c){return Math.max(c/127.0,-1.0)},"5121":function(c){return c/255.0;},"5122":function(c){return Math.max(c/32767.0,-1.0)},"5123":function(c){return c/65535.0;},"5125":function(c){return c/4294967295;},"5126":function(c){return c;},};},{nodeChanged:function(){var scope=this;function initAccessors(arraybuffer)
-{var that=scope;var key,keyValue;scope._cf.accessors.nodes.forEach(function(accessor)
-{var view=findBufferView(accessor._vf.view);var byteOffset=accessor._vf.byteOffset+view._vf.byteOffset;var typeLength=accessor._vf.count*accessor._vf.components;var array;if(accessor._vf.bufferType==='SAMPLER_INPUT')
-{if(accessor._vf.componentType===5126)
-{array=new Float32Array(arraybuffer,byteOffset,typeLength);that.duration=accessor._xmlNode.duration;key=new x3dom.fields.MFFloat(array.map(function(a){return a/that.duration;}));}
-else
-{x3dom.debug.logWarning('glTF animation input needs to be FLOAT but is '+accessor._vf.componentType);}}
-if(accessor._vf.bufferType==='SAMPLER_OUTPUT')
-{array=new that.constructorFromType[accessor._vf.componentType](arraybuffer,byteOffset,typeLength);keyValue=that.keyValueFromAccessor(array,accessor._vf.componentType);}});if(scope._xmlNode.interpolation==='STEP')
-{var stepKey=key.copy();for(var i=1;i<key.length;i++)
-{stepKey.splice(i*2,0,key[i]);};var stepValue=keyValue.copy();for(var i=0;i<key.length-1;i++)
-{stepValue.splice(i*2+1,0,keyValue[i]);};key=stepKey;keyValue=stepValue;}
-scope._vf.key=key;scope._vf.keyValue=keyValue;}
-function findBufferView(view){return scope._cf.views.nodes.find(function(bview){return bview._vf.id===view});}
-if(this._vf.buffer){var URL=this._nameSpace.getURL(this._vf.buffer);if(x3dom.XHRCache[URL]&&x3dom.XHRCache[URL].response!==null)
-{initAccessors(x3dom.XHRCache[URL].response);return;}
-var xhr;if(x3dom.XHRCache[URL]===undefined)
-{xhr=new XMLHttpRequest();xhr.open("GET",URL);xhr.responseType="arraybuffer";x3dom.XHRCache[URL]=xhr;x3dom.RequestManager.addRequest(xhr);scope._nameSpace.doc.downloadCount+=1;xhr.counted=false;}
-else xhr=x3dom.XHRCache[URL];xhr.addEventListener('load',function(e)
-{if(!xhr.counted)
-{scope._nameSpace.doc.downloadCount-=1;xhr.counted=true;}
-if(xhr.status!=200)return;initAccessors(xhr.response);scope._nameSpace.doc.needRender=true;});xhr.onerror=function(e)
-{scope._nameSpace.doc.downloadCount-=1;return;}}},linearInterp:function(time,interp){if(time<=this._vf.key[0])
-return this._vf.keyValue[0];else if(time>=this._vf.key[this._vf.key.length-1])
-return this._vf.keyValue[this._vf.key.length-1];for(var i=0;i<this._vf.key.length-1;++i){if((this._vf.key[i]<time)&&(time<=this._vf.key[i+1]))
-return interp(this._vf.keyValue[i],this._vf.keyValue[i+1],(time-this._vf.key[i])/(this._vf.key[i+1]-this._vf.key[i]));}
-return this._vf.keyValue[0];},cubicSplineInterp:function(time,interp){if(time<=this._vf.key[0])
-return this._vf.keyValue[1];else if(time>=this._vf.key[this._vf.key.length-1])
-return this._vf.keyValue[this._vf.keyValue.length-2];var i,i3,interval,basis;for(i=0;i<this._vf.key.length-1;++i){if((this._vf.key[i]<time)&&(time<=this._vf.key[i+1])){i3=i*3;interval=this._vf.key[i+1]-this._vf.key[i];basis=this.cubicSplineBasis((time-this._vf.key[i])/interval,interval*this.duration);return interp(this._vf.keyValue[i3+2],this._vf.keyValue[i3+1],this._vf.keyValue[i3+3],this._vf.keyValue[i3+4],basis.h00,basis.h10,basis.h01,basis.h11);}}
+this.postMessage('value',this._value5);this._lastTick=now;return true;}}));x3dom.registerNodeType("CoordinateDamper","Followers",defineClass(x3dom.nodeTypes.X3DDamperNode,function(ctx){x3dom.nodeTypes.CoordinateDamper.superClass.call(this,ctx);this.addField_MFVec3f(ctx,'initialDestination',[]);this.addField_MFVec3f(ctx,'initialValue',[]);this.addField_MFVec3f(ctx,'value',[]);this.addField_MFVec3f(ctx,'destination',[]);x3dom.debug.logWarning("CoordinateDamper NYI");}));x3dom.registerNodeType("TexCoordDamper2D","Followers",defineClass(x3dom.nodeTypes.X3DDamperNode,function(ctx){x3dom.nodeTypes.TexCoordDamper2D.superClass.call(this,ctx);this.addField_MFVec2f(ctx,'initialDestination',[]);this.addField_MFVec2f(ctx,'initialValue',[]);this.addField_MFVec2f(ctx,'value',[]);this.addField_MFVec2f(ctx,'destination',[]);x3dom.debug.logWarning("TexCoordDamper2D NYI");}));x3dom.registerNodeType("X3DInterpolatorNode","Interpolation",defineClass(x3dom.nodeTypes.X3DChildNode,function(ctx){x3dom.nodeTypes.X3DInterpolatorNode.superClass.call(this,ctx);this.addField_MFFloat(ctx,'key',[]);this.addField_SFFloat(ctx,'set_fraction',0);this.addField_SFString(ctx,'buffer',"");this.addField_SFString(ctx,'interpolation',"LINEAR");this.addField_SFFloat(ctx,'duration',0);this.addField_MFNode('views',x3dom.nodeTypes.BufferView);this.addField_MFNode('accessors',x3dom.nodeTypes.BufferAccessor);this._lastValue=undefined;this.normalizeFromType={"5120":function(c){return Math.max(c/127.0,-1.0)},"5121":function(c){return c/255.0;},"5122":function(c){return Math.max(c/32767.0,-1.0)},"5123":function(c){return c/65535.0;},"5125":function(c){return c/4294967295;},"5126":function(c){return c;},};},{nodeChanged:function()
+{if(this._vf.buffer)
+{x3dom.BinaryContainerLoader.setupBufferInterpolator(this);}},linearInterp:function(time,interp)
+{if(this._vf.key.length==0)
+{return;}
+if(time<=this._vf.key[0])
+{return this._vf.keyValue[0];}
+else if(time>=this._vf.key[this._vf.key.length-1])
+{return this._vf.keyValue[this._vf.key.length-1];}
+for(var i=0,n=this._vf.key.length-1;i<n;++i)
+{if((this._vf.key[i]<time)&&(time<=this._vf.key[i+1]))
+{return interp(this._vf.keyValue[i],this._vf.keyValue[i+1],(time-this._vf.key[i])/(this._vf.key[i+1]-this._vf.key[i]));}}
+return this._vf.keyValue[0];},cubicSplineInterp:function(time,interp)
+{if(this._vf.key.length==0)
+{return;}
+var i,i3,interval,basis,t,intervalInSeconds;if(time<=this._vf.key[0])
+{return this._vf.keyValue[1];}
+else if(time>=this._vf.key[this._vf.key.length-1])
+{return this._vf.keyValue[this._vf.keyValue.length-2];}
+for(i=0,n=this._vf.key.length-1;i<n;++i)
+{if((this._vf.key[i]<time)&&(time<=this._vf.key[i+1]))
+{i3=i*3;interval=this._vf.key[i+1]-this._vf.key[i];t=(time-this._vf.key[i])/interval;intervalInSeconds=interval*this.duration;basis=this.cubicSplineBasis(t,intervalInSeconds);return interp(this._vf.keyValue[i3+2],this._vf.keyValue[i3+1],this._vf.keyValue[i3+3],this._vf.keyValue[i3+4],basis.h00,basis.h10,basis.h01,basis.h11);}}
 return this._vf.keyValue[0];},cubicSplineBasis:function(t,intervalInSeconds)
 {var t2=t*t;var t3=t2*t;var h01=-2*t3+3*t2;var h11=t3-t2;var h00=1-h01;var h10=h11-t2+t;return{'h00':h00,'h10':intervalInSeconds*h10,'h01':h01,'h11':intervalInSeconds*h11};},keyValueFromArray:function(array)
 {return array;}}));x3dom.XHRCache={};x3dom.registerNodeType("OrientationInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.OrientationInterpolator.superClass.call(this,ctx);this.addField_MFRotation(ctx,'keyValue',[]);},{fieldChanged:function(fieldName)
 {if(fieldName==="set_fraction")
-{var value;if(this._xmlNode.interpolation)
-{if(this._xmlNode.interpolation==='CUBICSPLINE')
-{var scope=this;value=this.cubicSplineInterp(this._vf.set_fraction,function(startInTangent,start,endOutTangent,end,h00,h10,h01,h11){function _applyBasis(axis)
+{var value;if(this._vf.interpolation==="CUBICSPLINE")
+{value=this.cubicSplineInterp(this._vf.set_fraction,function(startInTangent,start,endOutTangent,end,h00,h10,h01,h11){function _applyBasis(axis)
 {return h00*start[axis]+h10*startInTangent[axis]+h01*end[axis]+h11*endOutTangent[axis];}
-var result=new x3dom.fields.Quaternion(0,0,0,0);result.x=_applyBasis('x');result.y=_applyBasis('y');result.z=_applyBasis('z');result.w=_applyBasis('w');var s=Math.sqrt(1/result.dot(result));result.x*=s;result.y*=s;result.z*=s;result.w*=s;return result;});this.postMessage('value_changed',value);return;}}
-var value=this.linearInterp(this._vf.set_fraction,function(a,b,t){return a.slerp(b,t);});this.postMessage('value_changed',value);}},keyValueFromAccessor:function(array,type)
+var result=new x3dom.fields.Quaternion(0,0,0,0);result.x=_applyBasis('x');result.y=_applyBasis('y');result.z=_applyBasis('z');result.w=_applyBasis('w');var s=Math.sqrt(1/result.dot(result));result.x*=s;result.y*=s;result.z*=s;result.w*=s;return result;});}
+else
+{value=this.linearInterp(this._vf.set_fraction,function(a,b,t){return a.slerp(b,t);});}
+if(value!=undefined&&value!=this._lastValue)
+{this._lastValue=value;this.postMessage('value_changed',value);}}},keyValueFromAccessor:function(array,type)
 {var keyValue=new x3dom.fields.MFRotation();var normalize=this.normalizeFromType[type];array.forEach(function(val,i)
 {if(i%4==3){keyValue.push(new x3dom.fields.Quaternion(normalize(array[i-3]),normalize(array[i-2]),normalize(array[i-1]),normalize(val)));}})
 return keyValue;}}));x3dom.registerNodeType("PositionInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.PositionInterpolator.superClass.call(this,ctx);this.addField_MFVec3f(ctx,'keyValue',[]);},{fieldChanged:function(fieldName)
 {if(fieldName==="set_fraction")
-{var value;if(this._xmlNode.interpolation)
-{if(this._xmlNode.interpolation==='CUBICSPLINE')
-{var scope=this;value=this.cubicSplineInterp(this._vf.set_fraction,function(startInTangent,start,endOutTangent,end,h00,h10,h01,h11){function _applyBasis(axis)
+{var value;if(this._vf.interpolation==='CUBICSPLINE')
+{value=this.cubicSplineInterp(this._vf.set_fraction,function(startInTangent,start,endOutTangent,end,h00,h10,h01,h11){function _applyBasis(axis)
 {return h00*start[axis]+h10*startInTangent[axis]+h01*end[axis]+h11*endOutTangent[axis];}
-var result=new x3dom.fields.SFVec3f();result.x=_applyBasis('x');result.y=_applyBasis('y');result.z=_applyBasis('z');return result;});this.postMessage('value_changed',value);return;}}
-value=this.linearInterp(this._vf.set_fraction,function(a,b,t){var result=a.multiply(1.0-t);result.x+=t*b.x;result.y+=t*b.y;result.z+=t*b.z;return result;});this.postMessage('value_changed',value);}},keyValueFromAccessor:function(array)
+var result=new x3dom.fields.SFVec3f();result.x=_applyBasis('x');result.y=_applyBasis('y');result.z=_applyBasis('z');return result;});}
+else
+{value=this.linearInterp(this._vf.set_fraction,function(a,b,t){var result=a.multiply(1.0-t);result.x+=t*b.x;result.y+=t*b.y;result.z+=t*b.z;return result;});}
+if(value!=undefined&&value!=this._lastValue)
+{this._lastValue=value;this.postMessage('value_changed',value);}}},keyValueFromAccessor:function(array)
 {keyValue=new x3dom.fields.MFVec3f();array.forEach(function(val,i)
 {if(i%3==2){keyValue.push(new x3dom.fields.SFVec3f(array[i-2],array[i-1],val));}})
 return keyValue;}}));x3dom.registerNodeType("NormalInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.NormalInterpolator.superClass.call(this,ctx);this.addField_MFVec3f(ctx,'keyValue',[]);},{fieldChanged:function(fieldName)
 {if(fieldName==="set_fraction")
-{var value=this.linearInterp(this._vf.set_fraction,function(a,b,t){return a.multiply(1.0-t).add(b.multiply(t)).normalize();});this.postMessage('value_changed',value);}}}));x3dom.registerNodeType("ColorInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.ColorInterpolator.superClass.call(this,ctx);this.addField_MFColor(ctx,'keyValue',[]);},{fieldChanged:function(fieldName)
+{var value=this.linearInterp(this._vf.set_fraction,function(a,b,t){return a.multiply(1.0-t).add(b.multiply(t)).normalize();});if(value!=undefined&&value!=this._lastValue)
+{this._lastValue=value;this.postMessage('value_changed',value);}}}}));x3dom.registerNodeType("ColorInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.ColorInterpolator.superClass.call(this,ctx);this.addField_MFColor(ctx,'keyValue',[]);},{fieldChanged:function(fieldName)
 {if(fieldName==="set_fraction")
-{var value=this.linearInterp(this._vf.set_fraction,function(a,b,t){return a.multiply(1.0-t).add(b.multiply(t));});this.postMessage('value_changed',value);}}}));x3dom.registerNodeType("ScalarInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.ScalarInterpolator.superClass.call(this,ctx);this.addField_MFFloat(ctx,'keyValue',[]);},{fieldChanged:function(fieldName)
+{var value=this.linearInterp(this._vf.set_fraction,function(a,b,t){return a.multiply(1.0-t).add(b.multiply(t));});if(value!=undefined&&value!=this._lastValue)
+{this._lastValue=value;this.postMessage('value_changed',value);}}}}));x3dom.registerNodeType("ScalarInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.ScalarInterpolator.superClass.call(this,ctx);this.addField_MFFloat(ctx,'keyValue',[]);},{fieldChanged:function(fieldName)
 {if(fieldName==="set_fraction")
-{var value;if(this._xmlNode.interpolation)
-{if(this._xmlNode.interpolation==='CUBICSPLINE')
-{var scope=this;value=this.cubicSplineInterp(this._vf.set_fraction,function(startInTangent,start,endOutTangent,end,h00,h10,h01,h11){return h00*start+h10*startInTangent+h01*end+h11*endOutTangent;});this.postMessage('value_changed',value);return;}}
-value=this.linearInterp(this._vf.set_fraction,function(a,b,t){return(1.0-t)*a+t*b;});this.postMessage('value_changed',value);}},keyValueFromAccessor:function(array,type)
+{var value;if(this._vf.interpolation==='CUBICSPLINE')
+{var scope=this;value=this.cubicSplineInterp(this._vf.set_fraction,function(startInTangent,start,endOutTangent,end,h00,h10,h01,h11){return h00*start+h10*startInTangent+h01*end+h11*endOutTangent;});}
+else
+{value=this.linearInterp(this._vf.set_fraction,function(a,b,t){return(1.0-t)*a+t*b;});}
+if(value!=undefined&&value!=this._lastValue)
+{this._lastValue=value;this.postMessage('value_changed',value);}}},keyValueFromAccessor:function(array,type)
 {var normalize=this.normalizeFromType[type];return array.map(function(val)
 {return normalize(val);});}}));x3dom.registerNodeType("CoordinateInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.CoordinateInterpolator.superClass.call(this,ctx);this.addField_MFVec3f(ctx,'keyValue',[]);if(ctx&&ctx.xmlNode.hasAttribute('keyValue')){this._vf.keyValue=[];var arr=x3dom.fields.MFVec3f.parse(ctx.xmlNode.getAttribute('keyValue'));var key=this._vf.key.length>0?this._vf.key.length:1;var len=arr.length/key;for(var i=0;i<key;i++){var val=new x3dom.fields.MFVec3f();for(var j=0;j<len;j++){val.push(arr[i*len+j]);}
 this._vf.keyValue.push(val);}}},{fieldChanged:function(fieldName)
 {if(fieldName==="set_fraction")
 {var value=this.linearInterp(this._vf.set_fraction,function(a,b,t){var val=new x3dom.fields.MFVec3f();for(var i=0;i<a.length;i++)
-val.push(a[i].multiply(1.0-t).add(b[i].multiply(t)));return val;});this.postMessage('value_changed',value);}}}));x3dom.registerNodeType("SplinePositionInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.SplinePositionInterpolator.superClass.call(this,ctx);this.addField_MFVec3f(ctx,'keyValue',[]);this.addField_MFVec3f(ctx,'keyVelocity',[]);this.addField_SFBool(ctx,'closed',false);this.addField_SFBool(ctx,'normalizeVelocity',false);this.dtot=0.0;this.T0=[];this.T1=[];this.checkSanity=function(){var sane=(this._vf.key.length==this._vf.keyValue.length)&&((this._vf.key.length==this._vf.keyVelocity.length)||(this._vf.keyVelocity.length==2&&this._vf.key.length>=2)||(this._vf.keyVelocity.length==0));if(!sane)
+val.push(a[i].multiply(1.0-t).add(b[i].multiply(t)));return val;});if(value!=undefined&&value!=this._lastValue)
+{this._lastValue=value;this.postMessage('value_changed',value);}}}}));x3dom.registerNodeType("SplinePositionInterpolator","Interpolation",defineClass(x3dom.nodeTypes.X3DInterpolatorNode,function(ctx){x3dom.nodeTypes.SplinePositionInterpolator.superClass.call(this,ctx);this.addField_MFVec3f(ctx,'keyValue',[]);this.addField_MFVec3f(ctx,'keyVelocity',[]);this.addField_SFBool(ctx,'closed',false);this.addField_SFBool(ctx,'normalizeVelocity',false);this.dtot=0.0;this.T0=[];this.T1=[];this.checkSanity=function(){var sane=(this._vf.key.length==this._vf.keyValue.length)&&((this._vf.key.length==this._vf.keyVelocity.length)||(this._vf.keyVelocity.length==2&&this._vf.key.length>=2)||(this._vf.keyVelocity.length==0));if(!sane)
 x3dom.debug.logWarning("SplinePositionInterpolator Node: 'key' , 'keyValue' and/or 'keyVelocity' fields have inappropriate sizes");};this.calcDtot=function()
 {this.dtot=0.0;for(var i=0;i<this._vf.key.length-1;i++)
 {this.dtot+=Math.abs(this._vf.key[i]-this._vf.key[i+1]);}};this.calcAdjustedKeyVelocity=function()
@@ -4103,9 +4139,8 @@ case'set_fraction':{var value;if(this._vf.key.length>0.0){if(this._vf.set_fracti
 value=x3dom.fields.SFVec3f.copy(this._vf.keyValue[0]);else if(this._vf.set_fraction>=this._vf.key[this._vf.key.length-1])
 value=x3dom.fields.SFVec3f.copy(this._vf.keyValue[this._vf.key.length-1]);}
 for(var i=0;i<this._vf.key.length-1;i++){if((this._vf.key[i]<this._vf.set_fraction)&&(this._vf.set_fraction<=this._vf.key[i+1])){var s=(this._vf.set_fraction-this._vf.key[i])/(this._vf.key[i+1]-this._vf.key[i]);var S_H=new x3dom.fields.SFVec4f(2.0*s*s*s-3.0*s*s+1.0,-2.0*s*s*s+3.0*s*s,s*s*s-2.0*s*s+s,s*s*s-s*s);value=new x3dom.fields.SFVec3f(S_H.x*this._vf.keyValue[i].x+S_H.y*this._vf.keyValue[i+1].x+S_H.z*this.T0[i].x+S_H.w*this.T1[i+1].x,S_H.x*this._vf.keyValue[i].y+S_H.y*this._vf.keyValue[i+1].y+S_H.z*this.T0[i].y+S_H.w*this.T1[i+1].y,S_H.x*this._vf.keyValue[i].z+S_H.y*this._vf.keyValue[i+1].z+S_H.z*this.T0[i].z+S_H.w*this.T1[i+1].z);break;}}
-if(value!==undefined)
-this.postMessage('value_changed',value);else
-x3dom.debug.logWarning("SplinePositionInterpolator Node: value_changed is undefined!");}}}}));x3dom.registerNodeType("TimeSensor","Time",defineClass(x3dom.nodeTypes.X3DSensorNode,function(ctx){x3dom.nodeTypes.TimeSensor.superClass.call(this,ctx);if(ctx)
+if(value!=undefined&&value!=this._lastValue)
+{this._lastValue=value;this.postMessage('value_changed',value);}}}}}));x3dom.registerNodeType("TimeSensor","Time",defineClass(x3dom.nodeTypes.X3DSensorNode,function(ctx){x3dom.nodeTypes.TimeSensor.superClass.call(this,ctx);if(ctx)
 ctx.doc._nodeBag.timer.push(this);else
 x3dom.debug.logWarning("TimeSensor: No runtime context found!");this.addField_SFTime(ctx,'cycleInterval',1);this.addField_SFBool(ctx,'loop',false);this.addField_SFTime(ctx,'startTime',0);this.addField_SFTime(ctx,'stopTime',0);this.addField_SFTime(ctx,'pauseTime',0);this.addField_SFTime(ctx,'resumeTime',0);this.addField_SFTime(ctx,'cycleTime',0);this.addField_SFTime(ctx,'elapsedTime',0);this.addField_SFFloat(ctx,'fraction_changed',0);this.addField_SFBool(ctx,'isActive',false);this.addField_SFBool(ctx,'isPaused',false);this.addField_SFTime(ctx,'time',0);this.addField_SFBool(ctx,'first',true);this.addField_SFFloat(ctx,'firstCycle',0.0);this._prevCycle=-1;this._lastTime=0;this._cycleStopTime=0;this._activatedTime=0;if(this._vf.startTime>0){this._updateCycleStopTime();}
 this._backupStartTime=this._vf.startTime;this._backupStopTime=this._vf.stopTime;this._backupCycleInterval=this._vf.cycleInterval;},{tick:function(time)
@@ -4160,30 +4195,30 @@ else{x3dom.debug.logError('No Scene in resource');}
 var global=x3dom.getGlobal();if(that._childNodes.length>0&&that._childNodes[0]&&that._childNodes[0]._nameSpace)
 that._nameSpace.removeSpace(that._childNodes[0]._nameSpace);while(that._childNodes.length!==0)
 global['_remover']=that.removeChild(that._childNodes[0]);delete global['_remover'];if(newScene)
-{that.addChild(newScene);that.invalidateVolume();that._nameSpace.doc.downloadCount-=1;that._nameSpace.doc.needRender=true;x3dom.debug.logInfo('Inline: added '+that._vf.url[0]+' to scene.');var theScene=that._nameSpace.doc._scene;if(theScene){theScene.invalidateVolume();window.setTimeout(function(){that.invalidateVolume();theScene.updateVolume();that._nameSpace.doc.needRender=true;},1000);}
+{that.addChild(newScene);that.invalidateVolume();var theScene=that._nameSpace.doc._scene;if(theScene){theScene.invalidateVolume();window.setTimeout(function(){that.invalidateVolume();theScene.updateVolume();that._nameSpace.doc.needRender=true;that._nameSpace.doc.decrementDownloads();that._nameSpace.doc.needRender=true;x3dom.debug.logInfo('Inline: added '+that._vf.url[0]+' to scene.');},1000);}
 that.fireEvents("load");}
 newScene=null;nameSpace=null;inlScene=null;xml=null;},loadInline:function()
 {var that=this;var suffix=this.getSuffix();var isBinary=false;var xhr=new window.XMLHttpRequest();xhr.onreadystatechange=function()
 {if(xhr.readyState==4)
 {if(xhr.status===x3dom.nodeTypes.Inline.AwaitTranscoding)
 {if(that.count<that.numRetries)
-{that.count++;var refreshTime=+xhr.getResponseHeader("Refresh")||5;x3dom.debug.logInfo('XHR status: '+xhr.status+' - Await Transcoding ('+that.count+'/'+that.numRetries+'): '+'Next request in '+refreshTime+' seconds');window.setTimeout(function(){that._nameSpace.doc.downloadCount-=1;that.loadInline();},refreshTime*1000);}
+{that.count++;var refreshTime=+xhr.getResponseHeader("Refresh")||5;x3dom.debug.logInfo('XHR status: '+xhr.status+' - Await Transcoding ('+that.count+'/'+that.numRetries+'): '+'Next request in '+refreshTime+' seconds');window.setTimeout(function(){that._nameSpace.doc.decrementDownloads();;that.loadInline();},refreshTime*1000);}
 else
-{x3dom.debug.logError('XHR status: '+xhr.status+' - Await Transcoding ('+that.count+'/'+that.numRetries+'): '+'No Retries left');that._nameSpace.doc.downloadCount-=1;that.count=0;}}
+{x3dom.debug.logError('XHR status: '+xhr.status+' - Await Transcoding ('+that.count+'/'+that.numRetries+'): '+'No Retries left');that._nameSpace.doc.decrementDownloads();;that.count=0;}}
 else if(xhr.status==200||xhr.status==0)
 {x3dom.debug.logInfo('Inline: downloading '+that._vf.url[0]+' done.');that.count=0;var inlineScene;var namespace=that.addNameSpace();if(suffix==".gltf"||suffix==".glb")
 {if(xhr.response)
 {var loader=new x3dom.glTF2Loader(namespace);inlineScene=loader.load(xhr.response,isBinary);that.loadX3D(inlineScene,namespace);}
 else
-{x3dom.debug.logError('Invalide XHR Response');that.fireEvents("error");that._nameSpace.doc.downloadCount-=1;that.count=0;}}
+{x3dom.debug.logError('Invalide XHR Response');that.fireEvents("error");that._nameSpace.doc.decrementDownloads();;that.count=0;}}
 else if(suffix==".json")
 {if(xhr.response)
 {var json=x3dom.protoExpander.prototypeExpander(xhr.responseURL,xhr.response);var parser=new x3dom.JSONParser();var xml=parser.parseJavaScript(json);if(xml!==undefined&&xml!==null)
 {inlineScene=xml.getElementsByTagName('Scene')[0]||xml.getElementsByTagName('scene')[0];that.loadX3D(inlineScene,namespace);}
 else
-{that.fireEvents("error");that._nameSpace.doc.downloadCount-=1;that.count=0;}}
+{that.fireEvents("error");that._nameSpace.doc.decrementDownloads();that.count=0;}}
 else
-{x3dom.debug.logError('Invalide XHR Response');that.fireEvents("error");that._nameSpace.doc.downloadCount-=1;that.count=0;}}
+{x3dom.debug.logError('Invalide XHR Response');that.fireEvents("error");that._nameSpace.doc.decrementDownloads();that.count=0;}}
 else
 {var xml;if(navigator.appName=="Microsoft Internet Explorer")
 {xml=new DOMParser().parseFromString(xhr.responseText,"text/xml");}
@@ -4192,9 +4227,9 @@ else
 if(xml!==undefined&&xml!==null)
 {inlineScene=xml.getElementsByTagName('Scene')[0]||xml.getElementsByTagName('scene')[0];that.loadX3D(inlineScene,namespace);}
 else
-{that.fireEvents("error");that._nameSpace.doc.downloadCount-=1;that.count=0;}}}
+{that.fireEvents("error");that._nameSpace.doc.decrementDownloads();that.count=0;}}}
 else
-{x3dom.debug.logError('XHR status: '+xhr.status+' - XMLHttpRequest requires web server running!');that.fireEvents("error");that._nameSpace.doc.downloadCount-=1;that.count=0;}}};if(this._vf.url.length&&this._vf.url[0].length)
+{x3dom.debug.logError('XHR status: '+xhr.status+' - XMLHttpRequest requires web server running!');that.fireEvents("error");that._nameSpace.doc.decrementDownloads();that.count=0;}}};if(this._vf.url.length&&this._vf.url[0].length)
 {var xhrURI=this._nameSpace.getURL(this._vf.url[0]);xhr.open('GET',xhrURI,true);if(xhr.overrideMimeType)
 {if(suffix==".x3d")
 {xhr.overrideMimeType('text/xml');}
@@ -4204,8 +4239,9 @@ else if(suffix==".gltf")
 {isBinary=false;xhr.responseType="json";}
 else if(suffix==".glb")
 {isBinary=true;xhr.responseType="arraybuffer";}}
-this._nameSpace.doc.downloadCount+=1;try{x3dom.RequestManager.addRequest(xhr);}
-catch(ex){this.fireEvents("error");x3dom.debug.logError(this._vf.url[0]+": "+ex);}}},addNameSpace:function()
+try
+{this._nameSpace.doc.incrementDownloads();x3dom.RequestManager.addRequest(xhr);}
+catch(ex){this.fireEvents("error");x3dom.debug.logError(this._vf.url[0]+": "+ex);this._nameSpace.doc.decrementDownloads();}}},addNameSpace:function()
 {var nsName=(this._vf.nameSpaceName.length!=0)?this._vf.nameSpaceName.toString().replace(' ',''):"";var nameSpace=new x3dom.NodeNameSpace(nsName,this._nameSpace.doc);var url=this._vf.url.length?this._vf.url[0]:"";if((url[0]==='/')||(url.indexOf(":")>=0))
 {nameSpace.setBaseURL(url);}
 else
@@ -4336,10 +4372,10 @@ return parts;}},loadInline:function()
 xhr.overrideMimeType('text/xml');xhr.onreadystatechange=function()
 {if(xhr.readyState!=4){return xhr;}
 if(xhr.status===x3dom.nodeTypes.Inline.AwaitTranscoding){if(that.count<that.numRetries)
-{that.count++;var refreshTime=+xhr.getResponseHeader("Refresh")||5;x3dom.debug.logInfo('XHR status: '+xhr.status+' - Await Transcoding ('+that.count+'/'+that.numRetries+'): '+'Next request in '+refreshTime+' seconds');window.setTimeout(function(){that._nameSpace.doc.downloadCount-=1;that.loadInline();},refreshTime*1000);return xhr;}
+{that.count++;var refreshTime=+xhr.getResponseHeader("Refresh")||5;x3dom.debug.logInfo('XHR status: '+xhr.status+' - Await Transcoding ('+that.count+'/'+that.numRetries+'): '+'Next request in '+refreshTime+' seconds');window.setTimeout(function(){that._nameSpace.doc.decrementDownloads();that.loadInline();},refreshTime*1000);return xhr;}
 else
-{x3dom.debug.logError('XHR status: '+xhr.status+' - Await Transcoding ('+that.count+'/'+that.numRetries+'): '+'No Retries left');that._nameSpace.doc.downloadCount-=1;that.count=0;return xhr;}}
-else if((xhr.status!==200)&&(xhr.status!==0)){that.fireEvents("error");x3dom.debug.logError('XHR status: '+xhr.status+' - XMLHttpRequest requires web server running!');that._nameSpace.doc.downloadCount-=1;that.count=0;return xhr;}
+{x3dom.debug.logError('XHR status: '+xhr.status+' - Await Transcoding ('+that.count+'/'+that.numRetries+'): '+'No Retries left');that._nameSpace.doc.decrementDownloads();that.count=0;return xhr;}}
+else if((xhr.status!==200)&&(xhr.status!==0)){that.fireEvents("error");x3dom.debug.logError('XHR status: '+xhr.status+' - XMLHttpRequest requires web server running!');that._nameSpace.doc.decrementDownloads();that.count=0;return xhr;}
 else if((xhr.status==200)||(xhr.status==0)){that.count=0;}
 x3dom.debug.logInfo('Inline: downloading '+that._vf.url[0]+' done.');var inlScene=null,newScene=null,nameSpace=null,xml=null;if(navigator.appName!="Microsoft Internet Explorer")
 xml=xhr.responseXML;else
@@ -4359,10 +4395,10 @@ else{if(xml&&xml.localName){x3dom.debug.logError('No Scene in '+xml.localName);}
 var global=x3dom.getGlobal();if(that._childNodes.length>0&&that._childNodes[0]&&that._childNodes[0]._nameSpace){that._nameSpace.removeSpace(that._childNodes[0]._nameSpace);}
 while(that._childNodes.length!==0){global['_remover']=that.removeChild(that._childNodes[0]);}
 delete global['_remover'];if(newScene)
-{that.addChild(newScene);that.invalidateVolume();that._nameSpace.doc.downloadCount-=1;that._nameSpace.doc.needRender=true;x3dom.debug.logInfo('Inline: added '+that._vf.url[0]+' to scene.');var theScene=that._nameSpace.doc._scene;if(theScene){theScene.invalidateVolume();window.setTimeout(function(){that.invalidateVolume();theScene.updateVolume();that._nameSpace.doc.needRender=true;},1000);}
+{that.addChild(newScene);that.invalidateVolume();that._nameSpace.doc.decrementDownloads();that._nameSpace.doc.needRender=true;x3dom.debug.logInfo('Inline: added '+that._vf.url[0]+' to scene.');var theScene=that._nameSpace.doc._scene;if(theScene){theScene.invalidateVolume();window.setTimeout(function(){that.invalidateVolume();theScene.updateVolume();that._nameSpace.doc.needRender=true;},1000);}
 that.appendAPI();that.fireEvents("load");}
 newScene=null;inlScene=null;xml=null;return xhr;};if(this._vf.url.length&&this._vf.url[0].length)
-{var xhrURI=this._nameSpace.getURL(this._vf.url[0]);xhr.open('GET',xhrURI,true);this._nameSpace.doc.downloadCount+=1;try{x3dom.RequestManager.addRequest(xhr);}
+{var xhrURI=this._nameSpace.getURL(this._vf.url[0]);xhr.open('GET',xhrURI,true);this._nameSpace.doc.incrementDownloads();try{x3dom.RequestManager.addRequest(xhr);}
 catch(ex){this.fireEvents("error");x3dom.debug.logError(this._vf.url[0]+": "+ex);}}}}));x3dom.registerNodeType("X3DBackgroundNode","EnvironmentalEffects",defineClass(x3dom.nodeTypes.X3DBindableNode,function(ctx){x3dom.nodeTypes.X3DBackgroundNode.superClass.call(this,ctx);var trans=(ctx&&ctx.autoGen)?1:0;this.addField_SFString(ctx,'crossOrigin','');this.addField_MFColor(ctx,'groundColor',[]);this.addField_MFFloat(ctx,'groundAngle',[]);this.addField_MFColor(ctx,'skyColor',[new x3dom.fields.SFColor(0,0,0)]);this.addField_MFFloat(ctx,'skyAngle',[]);this.addField_SFFloat(ctx,'transparency',trans);this._dirty=true;},{getSkyColor:function(){return new x3dom.fields.SFColor(0,0,0);},getTransparency:function(){return 0;},getTexUrl:function(){return[];}}));x3dom.registerNodeType("X3DFogNode","EnvironmentalEffects",defineClass(x3dom.nodeTypes.X3DBindableNode,function(ctx){x3dom.nodeTypes.X3DFogNode.superClass.call(this,ctx);this.addField_SFColor(ctx,'color',1,1,1);this.addField_SFString(ctx,'fogType',"LINEAR");this.addField_SFFloat(ctx,'visibilityRange',0);},{}));x3dom.registerNodeType("Fog","EnvironmentalEffects",defineClass(x3dom.nodeTypes.X3DFogNode,function(ctx){x3dom.nodeTypes.Fog.superClass.call(this,ctx);},{}));x3dom.registerNodeType("Background","EnvironmentalEffects",defineClass(x3dom.nodeTypes.X3DBackgroundNode,function(ctx){x3dom.nodeTypes.Background.superClass.call(this,ctx);this.addField_MFString(ctx,'backUrl',[]);this.addField_MFString(ctx,'bottomUrl',[]);this.addField_MFString(ctx,'frontUrl',[]);this.addField_MFString(ctx,'leftUrl',[]);this.addField_MFString(ctx,'rightUrl',[]);this.addField_MFString(ctx,'topUrl',[]);this.addField_SFBool(ctx,'scaling',false);},{fieldChanged:function(fieldName)
 {if(fieldName.indexOf("Url")>0||fieldName=="transparency"||fieldName.search("sky")>=0||fieldName.search("ground")>=0){this._dirty=true;}
 else if(fieldName.indexOf("bind")>=0){this.bind(this._vf.bind);}},getSkyColor:function(){return this._vf.skyColor;},getGroundColor:function(){return this._vf.groundColor;},getTransparency:function(){return this._vf.transparency;},getTexUrl:function(){return[this._nameSpace.getURL(this._vf.backUrl[0]),this._nameSpace.getURL(this._vf.frontUrl[0]),this._nameSpace.getURL(this._vf.bottomUrl[0]),this._nameSpace.getURL(this._vf.topUrl[0]),this._nameSpace.getURL(this._vf.leftUrl[0]),this._nameSpace.getURL(this._vf.rightUrl[0])];}}));x3dom.registerNodeType("X3DEnvironmentNode","EnvironmentalEffects",defineClass(x3dom.nodeTypes.X3DBindableNode,function(ctx){x3dom.nodeTypes.X3DEnvironmentNode.superClass.call(this,ctx);}));x3dom.registerNodeType("Environment","EnvironmentalEffects",defineClass(x3dom.nodeTypes.X3DEnvironmentNode,function(ctx){x3dom.nodeTypes.Environment.superClass.call(this,ctx);this.addField_SFBool(ctx,'sortTrans',true);this.addField_SFBool(ctx,'shadowExcludeTransparentObjects',false);this.addField_SFString(ctx,'gammaCorrectionDefault',"linear");this.addField_SFString(ctx,'tonemapping',"none");this.addField_SFBool(ctx,'frustumCulling',true);this.addField_SFBool(ctx,'smallFeatureCulling',false);this.addField_SFFloat(ctx,'smallFeatureThreshold',1.0);this.addField_SFBool(ctx,'occlusionCulling',false);this.addField_SFFloat(ctx,'occlusionVisibilityThreshold',0.0);this.addField_SFBool(ctx,'lowPriorityCulling',false);this.addField_SFFloat(ctx,'lowPriorityThreshold',1.0);this.addField_SFBool(ctx,'tessellationDetailCulling',false);this.addField_SFFloat(ctx,'tessellationErrorThreshold',0.0);this.addField_SFBool(ctx,'enableARC',false);this.addField_SFFloat(ctx,'minFrameRate',1.0);this.addField_SFFloat(ctx,'maxFrameRate',62.5);this.addField_SFFloat(ctx,'userDataFactor',-1);this.addField_SFFloat(ctx,'smallFeatureFactor',-1);this.addField_SFFloat(ctx,'occlusionVisibilityFactor',-1);this.addField_SFFloat(ctx,'lowPriorityFactor',-1);this.addField_SFFloat(ctx,'tessellationErrorFactor',-1);this.addField_SFBool(ctx,'SSAO',false);this.addField_SFFloat(ctx,'SSAOradius',0.7);this.addField_SFFloat(ctx,'SSAOamount',0.3);this.addField_SFInt32(ctx,'SSAOrandomTextureSize',4);this.addField_SFInt32(ctx,'SSAOblurDepthTreshold',1);this._validGammaCorrectionTypes=["none","fastlinear","linear"];this.checkSanity();},{checkSanity:function()
@@ -4914,7 +4950,7 @@ this.invalidateVolume();this._mesh._numFaces=this._mesh._indices[0].length/3;thi
 var currentURL=shape._nameSpace.getURL(this._vf['url'][this._currentURLIdx]);var urlSuffix=currentURL.substr(currentURL.lastIndexOf('.'));if(urlSuffix.substr(0,4)=='.src')
 {var srcUsedWarnMessage="Legacy SRC format used for content for \""+currentURL+"\". "+"It is recommended to use a binary-glTF-conformant .glb container instead.";x3dom.debug.logWarning(srcUsedWarnMessage);console.warn(srcUsedWarnMessage);ExternalGeometrySRC.updateRenderData(shape,shaderProgram,gl,viewarea,context,this._mesh,this._vf['url'],this._currentURLIdx);return;}
 if(x3dom.BinaryContainerLoader.outOfMemory){return;}
-shape._webgl.internalDownloadCount=1;shape._nameSpace.doc.downloadCount=1;xhr=new XMLHttpRequest();var encoding=(currentURL.indexOf(".glb")!=-1)?"binary":"ascii";var xhr=new XMLHttpRequest();xhr.open("GET",this._nameSpace.getURL(this._vf['url'][this._currentURLIdx]),true);xhr.responseType=(encoding=="binary")?"arraybuffer":"json";x3dom.RequestManager.addRequest(xhr);xhr.onerror=function(){x3dom.debug.logError("Unable to load GLB data from URL \""+currentURL+"\"");};xhr.onload=function(){shape._webgl.internalDownloadCount=0;shape._nameSpace.doc.downloadCount=0;shape._webgl.primType=[];shape._webgl.indexOffset=[];shape._webgl.drawCount=[];if((xhr.status==200||xhr.status==0)){var glTF=new x3dom.glTF.glTFLoader(true);glTF.load(xhr.response,function()
+shape._webgl.internalDownloadCount=1;shape._nameSpace.doc.incrementDownloads();xhr=new XMLHttpRequest();var encoding=(currentURL.indexOf(".glb")!=-1)?"binary":"ascii";var xhr=new XMLHttpRequest();xhr.open("GET",this._nameSpace.getURL(this._vf['url'][this._currentURLIdx]),true);xhr.responseType=(encoding=="binary")?"arraybuffer":"json";x3dom.RequestManager.addRequest(xhr);xhr.onerror=function(){x3dom.debug.logError("Unable to load GLB data from URL \""+currentURL+"\"");};xhr.onload=function(){shape._webgl.internalDownloadCount=0;shape._nameSpace.doc.decrementDownloads();shape._webgl.primType=[];shape._webgl.indexOffset=[];shape._webgl.drawCount=[];if((xhr.status==200||xhr.status==0)){var glTF=new x3dom.glTF.glTFLoader(true);glTF.load(xhr.response,function()
 {if(glTF.header.sceneLength>0)
 {glTF.loaded={};glTF.loaded.meshes={};glTF.loaded.meshCount=0;if(currentURL.includes('#'))
 {var split=currentURL.split('#');var meshName=split[split.length-1];glTF.getMesh(shape,shaderProgram,gl,meshName);}
@@ -4945,7 +4981,7 @@ return vol;}}));var ExternalGeometrySRC={updateRenderData:function(shape,shaderP
 {var xhr;if(urls.length==0||currentURLIndex>=urls.length)
 {return;}
 if(x3dom.BinaryContainerLoader.outOfMemory){return;}
-shape._webgl.internalDownloadCount=1;shape._nameSpace.doc.downloadCount=1;xhr=new XMLHttpRequest();xhr.open("GET",shape._nameSpace.getURL(urls[currentURLIndex]),true);xhr.responseType="arraybuffer";xhr.send(null);xhr.onerror=function(){x3dom.debug.logError("Unable to load SRC data from URL \""+urls[currentURLIndex]+"\"");};xhr.onload=function(){shape._webgl.internalDownloadCount=0;shape._nameSpace.doc.downloadCount=0;var responseBeginUint32=new Uint32Array(xhr.response,0,12);var srcHeaderSize,srcBodySize,srcBodyOffset;var srcHeaderView,srcBodyView;var srcHeaderObj;if((xhr.status==200||xhr.status==0)&&responseBeginUint32.length>=3){srcHeaderSize=responseBeginUint32[2];srcBodyOffset=srcHeaderSize+12;srcBodySize=xhr.response.byteLength-srcBodyOffset;if(srcHeaderSize>0&&srcBodySize>=0)
+shape._webgl.internalDownloadCount=1;shape._nameSpace.doc.incrementDownloads();xhr=new XMLHttpRequest();xhr.open("GET",shape._nameSpace.getURL(urls[currentURLIndex]),true);xhr.responseType="arraybuffer";xhr.send(null);xhr.onerror=function(){x3dom.debug.logError("Unable to load SRC data from URL \""+urls[currentURLIndex]+"\"");};xhr.onload=function(){shape._webgl.internalDownloadCount=0;shape._nameSpace.doc.decrementDownloads();var responseBeginUint32=new Uint32Array(xhr.response,0,12);var srcHeaderSize,srcBodySize,srcBodyOffset;var srcHeaderView,srcBodyView;var srcHeaderObj;if((xhr.status==200||xhr.status==0)&&responseBeginUint32.length>=3){srcHeaderSize=responseBeginUint32[2];srcBodyOffset=srcHeaderSize+12;srcBodySize=xhr.response.byteLength-srcBodyOffset;if(srcHeaderSize>0&&srcBodySize>=0)
 {srcHeaderView=new Uint8Array(xhr.response,12,srcHeaderSize);srcBodyView=new Uint8Array(xhr.response,srcBodyOffset,srcBodySize);try
 {srcHeaderObj=JSON.parse(String.fromCharCode.apply(null,srcHeaderView));}
 catch(exc)
@@ -5374,4 +5410,4 @@ return;}}));x3dom.registerNodeType("IntegerSequencer","EventUtilities",defineCla
 {if(fieldName==='set_boolean'){this.postMessage('triggerValue',this._vf.integerKey);}
 return;}}));x3dom.registerNodeType("TimeTrigger","EventUtilities",defineClass(x3dom.nodeTypes.X3DTriggerNode,function(ctx){x3dom.nodeTypes.TimeTrigger.superClass.call(this,ctx);this.addField_SFBool(ctx,'set_boolean');},{fieldChanged:function(fieldName)
 {if(fieldName==='set_boolean'){this.postMessage('triggerTime',Date.now()/1000);}
-return;}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'0640c363aa2f8573523a4213ec4ca6716024c576',date:'Mon Jan 28 17:14:50 2019 +0100'};
+return;}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'5bb9a10d7d0d1ecc7ee987114a3802ed13c4ae28',date:'Tue Jan 29 20:14:27 2019 +0100'};

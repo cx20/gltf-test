@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 0640c363aa2f8573523a4213ec4ca6716024c576 - Mon Jan 28 17:14:50 2019 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 5bb9a10d7d0d1ecc7ee987114a3802ed13c4ae28 - Tue Jan 29 20:14:27 2019 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -3989,7 +3989,7 @@ x3dom.Utils.createTexture2D = function(gl, doc, src, bgnd, crossOrigin, scale, g
 
 	image.src = src;
 
-	doc.downloadCount++;
+	doc.incrementDownloads();
 
 	image.onload = function() {
 		
@@ -4018,18 +4018,18 @@ x3dom.Utils.createTexture2D = function(gl, doc, src, bgnd, crossOrigin, scale, g
 		texture.height = image.height;
 		texture.ready = true;
 
-		doc.downloadCount--;
+		doc.decrementDownloads();
 		doc.needRender = true;
 	};
 
     image.onerror = function(error)
     {
         x3dom.Utils.tryDDSLoading(texture, gl, doc, src, genMipMaps, flipY).then( function() {
-            doc.downloadCount--;
+            doc.decrementDownloads();
             doc.needRender = true;
         }, function() {
             x3dom.debug.logError("[Utils|createTexture2D] Can't load Image: " + src);
-            doc.downloadCount--;
+            doc.decrementDownloads();
         });
 	};
 
@@ -4156,12 +4156,14 @@ x3dom.Utils.createTextureCube = function(gl, doc, src, bgnd, crossOrigin, scale,
 
     if ( src.length == 1 )
     {
-        x3dom.Utils.tryDDSLoading(texture, gl, doc, src, genMipMaps, flipY).then( function() {
-            doc.downloadCount--;
+        doc.incrementDownloads();
+
+        x3dom.Utils.tryDDSLoading(texture, gl, doc, src[0], genMipMaps, flipY).then( function() {
+            doc.decrementDownloads();
             doc.needRender = true;
         }, function() {
             x3dom.debug.logError("[Utils|createTexture2D] Can't load Image: " + src);
-            doc.downloadCount--;
+            doc.decrementDownloads();
         });
     }
     else if ( src.length == 6 )
@@ -4190,7 +4192,7 @@ x3dom.Utils.createTextureCube = function(gl, doc, src, bgnd, crossOrigin, scale,
             }
 
             texture.pendingTextureLoads++;
-            doc.downloadCount++;
+            doc.incrementDownloads();
 
             image.onload = (function(texture, face, image, swap) {
                 return function() {
@@ -4211,7 +4213,7 @@ x3dom.Utils.createTextureCube = function(gl, doc, src, bgnd, crossOrigin, scale,
                     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
                     texture.pendingTextureLoads--;
-                    doc.downloadCount--;
+                    doc.decrementDownloads();
 
                     if (texture.pendingTextureLoads < 0) {
                         //Save image size also for cube tex
@@ -4233,7 +4235,7 @@ x3dom.Utils.createTextureCube = function(gl, doc, src, bgnd, crossOrigin, scale,
 
             image.onerror = function()
             {
-                doc.downloadCount--;
+                doc.decrementDownloads();
 
                 x3dom.debug.logError("[Utils|createTextureCube] Can't load CubeMap!");
             };
@@ -4242,8 +4244,6 @@ x3dom.Utils.createTextureCube = function(gl, doc, src, bgnd, crossOrigin, scale,
             image.src = src[i];
         }
     }
-
-
 
 	return texture;
 };
@@ -6070,14 +6070,14 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
         xmlhttp0.open("GET", shape._nameSpace.getURL(binGeo._vf.index), true);
         xmlhttp0.responseType = "arraybuffer";
 
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //xmlhttp0.send(null);
         x3dom.RequestManager.addRequest( xmlhttp0 );
 
         xmlhttp0.onload = function()
         {
-            shape._nameSpace.doc.downloadCount -= 1;
+            shape._nameSpace.doc.decrementDownloads();
             shape._webgl.internalDownloadCount -= 1;
 
             if (xmlhttp0.status != 200) {
@@ -6154,14 +6154,14 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
         xmlhttp.open("GET", shape._nameSpace.getURL(binGeo._vf.coord), true);
         xmlhttp.responseType = "arraybuffer";
 
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //xmlhttp.send(null);
         x3dom.RequestManager.addRequest( xmlhttp );
 
         xmlhttp.onload = function()
         {
-            shape._nameSpace.doc.downloadCount -= 1;
+            shape._nameSpace.doc.decrementDownloads();
             shape._webgl.internalDownloadCount -= 1;
 
             if (xmlhttp.status != 200) {
@@ -6272,14 +6272,14 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
         xmlhttp1.open("GET", shape._nameSpace.getURL(binGeo._vf.coord), true);
         xmlhttp1.responseType = "arraybuffer";
 
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //xmlhttp1.send(null);
         x3dom.RequestManager.addRequest( xmlhttp1 );
 
         xmlhttp1.onload = function()
         {
-            shape._nameSpace.doc.downloadCount -= 1;
+            shape._nameSpace.doc.decrementDownloads();
             shape._webgl.internalDownloadCount -= 1;
 
             if (xmlhttp1.status != 200) {
@@ -6371,14 +6371,14 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
         xmlhttp2.open("GET", shape._nameSpace.getURL(binGeo._vf.normal), true);
         xmlhttp2.responseType = "arraybuffer";
 
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //xmlhttp2.send(null);
         x3dom.RequestManager.addRequest( xmlhttp2 );
 
         xmlhttp2.onload = function()
         {
-            shape._nameSpace.doc.downloadCount -= 1;
+            shape._nameSpace.doc.decrementDownloads();
             shape._webgl.internalDownloadCount -= 1;
 
             if (xmlhttp2.status != 200) {
@@ -6433,7 +6433,7 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
         xmlhttp3.open("GET", shape._nameSpace.getURL(binGeo._vf.texCoord), true);
         xmlhttp3.responseType = "arraybuffer";
 
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //xmlhttp3.send(null);
         x3dom.RequestManager.addRequest( xmlhttp3 );
@@ -6443,7 +6443,7 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
             var i, j;
             var tmp;
 
-            shape._nameSpace.doc.downloadCount -= 1;
+            shape._nameSpace.doc.decrementDownloads();
             shape._webgl.internalDownloadCount -= 1;
 
             if (xmlhttp3.status != 200) {
@@ -6522,14 +6522,14 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
         xmlhttp4.open("GET", shape._nameSpace.getURL(binGeo._vf.color), true);
         xmlhttp4.responseType = "arraybuffer";
 
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //xmlhttp4.send(null);
         x3dom.RequestManager.addRequest( xmlhttp4 );
 
         xmlhttp4.onload = function()
         {
-            shape._nameSpace.doc.downloadCount -= 1;
+            shape._nameSpace.doc.decrementDownloads();
             shape._webgl.internalDownloadCount -= 1;
 
             if (xmlhttp4.status != 200) {
@@ -6584,14 +6584,14 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
         xmlhttp5.open("GET", shape._nameSpace.getURL(binGeo._vf.normal), true);
         xmlhttp5.responseType = "arraybuffer";
 
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //xmlhttp2.send(null);
         x3dom.RequestManager.addRequest( xmlhttp5 );
 
         xmlhttp5.onload = function()
         {
-            shape._nameSpace.doc.downloadCount -= 1;
+            shape._nameSpace.doc.decrementDownloads();
             shape._webgl.internalDownloadCount -= 1;
 
             if (xmlhttp5.status != 200) {
@@ -6646,14 +6646,14 @@ x3dom.BinaryContainerLoader.setupBinGeo = function(shape, sp, gl, viewarea, curr
         xmlhttp6.open("GET", shape._nameSpace.getURL(binGeo._vf.normal), true);
         xmlhttp6.responseType = "arraybuffer";
 
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //xmlhttp2.send(null);
         x3dom.RequestManager.addRequest( xmlhttp6 );
 
         xmlhttp6.onload = function()
         {
-            shape._nameSpace.doc.downloadCount -= 1;
+            shape._nameSpace.doc.decrementDownloads();
             shape._webgl.internalDownloadCount -= 1;
 
             if (xmlhttp6.status != 200) {
@@ -6909,11 +6909,11 @@ x3dom.BinaryContainerLoader.setupPopGeo = function(shape, sp, gl, viewarea, curr
     //use the DownloadManager to prioritize loading
 
     for (var i = 0; i < dataURLs.length; ++i) {
-        shape._nameSpace.doc.downloadCount += 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         (function(idx) {
             downloadCallbacks.push(function(data) {
-                shape._nameSpace.doc.downloadCount -= 1;
+                shape._nameSpace.doc.decrementDownloads();
                 return uploadDataToGPU(data, idx);
             });
         })(i);
@@ -6979,6 +6979,9 @@ x3dom.BinaryContainerLoader.setupBufferGeo = function(shape, sp, gl, viewarea, c
     // 0 := no BG, 1 := indexed BG, -1 := non-indexed BG
     shape._webgl.bufferGeometry = (bufferGeo._indexed) ? 1 : -1;
 
+    bufferGeo._mesh._numCoords = bufferGeo._vf.vertexCount[0];
+    bufferGeo._mesh._numFaces = bufferGeo._vf.vertexCount[0] / 3;
+    
     var initAccessors = function()
     {
         var accessors = bufferGeo._cf.accessors.nodes;
@@ -7097,30 +7100,10 @@ x3dom.BinaryContainerLoader.setupBufferGeo = function(shape, sp, gl, viewarea, c
             var byteOffset = posAccessor._vf.byteOffset + posView._vf.byteOffset;
             var byteLength = posAccessor._vf.count * posAccessor._vf.components;
 
-            if(posAccessor._vf.componentType == 5120)
-            {
-                positions = new Int8Array(arraybuffer, byteOffset, byteLength);
-            }
-            if(posAccessor._vf.componentType == 5121)
-            {
-                positions = new Uint8Array(arraybuffer, byteOffset, byteLength);
-            }
-            else if(posAccessor._vf.componentType == 5122)
-            {
-                positions = new Int16Array(arraybuffer, byteOffset, byteLength);
-            }
-            else if(posAccessor._vf.componentType == 5123)
-            {
-                positions = new Uint16Array(arraybuffer, byteOffset, byteLength);
-            }
-            else if(posAccessor._vf.componentType == 5125)
-            {
-                positions = new Uint32Array(arraybuffer, byteOffset, byteLength);
-            }
-            else if(posAccessor._vf.componentType == 5126)
-            {
-                positions = new Float32Array(arraybuffer, byteOffset, byteLength);
-            }
+            positions = x3dom.BinaryContainerLoader.getArrayBufferFromType(posAccessor._vf.componentType, 
+                                                                           arraybuffer,
+                                                                           byteOffset,
+                                                                           byteLength);
         }
 
         return positions;
@@ -7137,18 +7120,10 @@ x3dom.BinaryContainerLoader.setupBufferGeo = function(shape, sp, gl, viewarea, c
             var byteOffset = idxAccessor._vf.byteOffset + idxView._vf.byteOffset;
             var byteLength = idxAccessor._vf.count * idxAccessor._vf.components;
 
-            if(idxAccessor._vf.componentType == 5121)
-            {
-                indices = new Uint8Array(arraybuffer, byteOffset, byteLength);
-            }
-            else if(idxAccessor._vf.componentType == 5123)
-            {
-                indices = new Uint16Array(arraybuffer, byteOffset, byteLength);
-            }
-            else if(idxAccessor._vf.componentType == 5125)
-            {
-                indices = new Uint32Array(arraybuffer, byteOffset, byteLength);
-            }
+            indices = x3dom.BinaryContainerLoader.getArrayBufferFromType(idxAccessor._vf.componentType, 
+                                                                         arraybuffer,
+                                                                         byteOffset,
+                                                                         byteLength);
         }
 
         return indices;
@@ -7233,26 +7208,13 @@ x3dom.BinaryContainerLoader.setupBufferGeo = function(shape, sp, gl, viewarea, c
     {
         URL = shape._nameSpace.getURL(bufferGeo._vf.buffer);
 
-        if(x3dom.BinaryContainerLoader.bufferGeoCache[URL] != undefined)
+        if(x3dom.BinaryContainerLoader.bufferGeoCache[URL] == undefined)
         {
-            x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise.then( function(arraybuffer) {
+            shape._nameSpace.doc.incrementDownloads();
 
-                if(shape._webgl == undefined)
-                {
-                    x3dom.BinaryContainerLoader.bufferGeoCache[URL] = undefined;
-                    return;
-                }
-
-                initBufferViews(arraybuffer);
-                initAccessors();
-                computeNormals(arraybuffer);
-
-            });
-        }
-        else
-        {
             x3dom.BinaryContainerLoader.bufferGeoCache[URL] = {};
             x3dom.BinaryContainerLoader.bufferGeoCache[URL].buffers = [];
+            x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload = true;
             x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise = new Promise(function(resolve, reject) {
 
                 var xhr = new XMLHttpRequest();
@@ -7263,47 +7225,216 @@ x3dom.BinaryContainerLoader.setupBufferGeo = function(shape, sp, gl, viewarea, c
         
                 xhr.onload = function(e)
                 {
-                    if(shape._webgl == undefined)
-                    {
-                        x3dom.BinaryContainerLoader.bufferGeoCache[URL] = undefined;
-                        reject();
-                        return;
-                    }
-
                     if(xhr.status != 200)
                     {
-                        shape._nameSpace.doc.downloadCount -= 1;
                         reject();
-                        return;
                     }
-        
-                    initBufferViews(xhr.response);
-
-                    initAccessors();
-
-                    computeNormals(xhr.response);
-
-                    resolve(xhr.response);
-                
-                    shape._nameSpace.doc.downloadCount -= 1;
-        
-                    shape._nameSpace.doc.needRender = true;
+                    else
+                    {
+                        resolve(xhr.response);
+                    }
                 }
         
                 xhr.onerror = function(e)
                 {
-                    shape._nameSpace.doc.downloadCount -= 1;
                     reject();
                 }
         
                 x3dom.RequestManager.addRequest( xhr );
-        
-                shape._nameSpace.doc.downloadCount += 1;
             });    
-             
-        }      
+        }
+
+        x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise.then( function(arraybuffer) {
+
+            if(shape._webgl == undefined)
+            {
+                x3dom.BinaryContainerLoader.bufferGeoCache[URL] = undefined;
+                return;
+            }
+
+            initBufferViews(arraybuffer);
+            initAccessors();
+            computeNormals(arraybuffer);
+
+            if( x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload )
+            {
+                x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload = false;
+                shape._nameSpace.doc.decrementDownloads();
+                shape._nameSpace.doc.needRender = true;
+            }
+
+        }).catch(function()
+        {
+            if( x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload )
+            {
+                x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload = false;
+                shape._nameSpace.doc.decrementDownloads();
+            }
+        });     
     }
 };
+
+/** setup/download buffer geometry */
+x3dom.BinaryContainerLoader.setupBufferInterpolator = function(interpolator)
+{
+    var getKeys = function(interpolator, accessor, arraybuffer)
+    {
+        var view          = interpolator._cf.views.nodes[accessor._vf.view];
+        var byteOffset    = accessor._vf.byteOffset + view._vf.byteOffset;
+        var byteLength    = accessor._vf.count * accessor._vf.components;
+        var componentType = accessor._vf.componentType;
+
+        var data = x3dom.BinaryContainerLoader.getArrayBufferFromType(componentType, 
+                                                                      arraybuffer,
+                                                                      byteOffset,
+                                                                      byteLength);
+
+        for( var i = 0, n = data.length; i < n; i++)
+        {
+            data[i] = data[i] / interpolator._vf.duration
+        }
+
+        return data;
+    };
+
+    var getKeyValues = function(interpolator, accessor, arraybuffer)
+    {
+        var view          = interpolator._cf.views.nodes[accessor._vf.view];
+        var byteOffset    = accessor._vf.byteOffset + view._vf.byteOffset;
+        var byteLength    = accessor._vf.count * accessor._vf.components;
+        var componentType = accessor._vf.componentType;
+
+        var data = x3dom.BinaryContainerLoader.getArrayBufferFromType(componentType, 
+                                                                      arraybuffer,
+                                                                      byteOffset,
+                                                                      byteLength);
+
+        return interpolator.keyValueFromAccessor(data, componentType);
+    };
+
+    var initAccessors = function(arraybuffer)
+    {
+        var key;
+        var keyValue;
+        var accessors  = interpolator._cf.accessors.nodes;
+        
+        for(var i = 0; i < accessors.length; i++)
+        {
+            var accessor = accessors[i];
+
+            switch(accessor._vf.bufferType)
+            {
+                case "SAMPLER_INPUT":
+                    key = getKeys(interpolator, accessor, arraybuffer);
+                    break;
+                case "SAMPLER_OUTPUT":
+                    keyValue = getKeyValues(interpolator, accessor, arraybuffer);
+                    break;
+            }
+        }
+
+
+        //modify for STEP
+        if (interpolator._vf.interpolation === "STEP")
+        {
+            var stepKey   = key.slice();
+            var stepValue = keyValue.slice();
+
+            for(var i = 1, n = key.length; i<n; i++)
+            {
+                stepKey.splice(i*2, 0, key[i]);
+            }
+
+            for(var i = 0, n = keyValue.length; i<n; i++)
+            {
+                stepValue.splice(i*2+1, 0, keyValue[i]);
+            }
+
+            key = stepKey;
+            keyValue = stepValue;
+        }
+
+        interpolator._vf.key = key;
+        interpolator._vf.keyValue = keyValue;
+    };
+
+    var URL = interpolator._nameSpace.getURL(interpolator._vf.buffer);
+
+    if(x3dom.BinaryContainerLoader.bufferGeoCache[URL] == undefined)
+    {
+        interpolator._nameSpace.doc.incrementDownloads();
+
+        x3dom.BinaryContainerLoader.bufferGeoCache[URL] = {};
+        x3dom.BinaryContainerLoader.bufferGeoCache[URL].buffers = [];
+        x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload = true;
+        x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise = new Promise(function(resolve, reject) {
+
+            var xhr = new XMLHttpRequest();
+
+            xhr.open("GET", URL);
+
+            xhr.responseType = "arraybuffer";
+
+            xhr.onload = function(e)
+            {
+                if(xhr.status != 200)
+                {
+                    reject();
+                }
+                else
+                {
+                    resolve(xhr.response);
+                } 
+            }
+    
+            xhr.onerror = function(e)
+            {
+                reject();
+            }
+    
+            x3dom.RequestManager.addRequest( xhr );
+        });
+    }
+
+    x3dom.BinaryContainerLoader.bufferGeoCache[URL].promise.then( function(arraybuffer)
+    {
+        if(interpolator == undefined)
+        {
+            x3dom.BinaryContainerLoader.bufferGeoCache[URL] = undefined;
+            return;
+        }
+
+        initAccessors(arraybuffer);
+
+        if( x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload )
+        {
+            x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload = false;
+            interpolator._nameSpace.doc.decrementDownloads();
+            interpolator._nameSpace.doc.needRender = true;
+        }
+        
+    }).catch( function()
+    {
+        if( x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload )
+        {
+            x3dom.BinaryContainerLoader.bufferGeoCache[URL].decrementDownload = false;
+            interpolator._nameSpace.doc.decrementDownloads();
+        }
+    });
+};
+
+x3dom.BinaryContainerLoader.getArrayBufferFromType = function(componentType, arraybuffer, byteOffset, byteLength)
+{
+    switch(componentType)
+    {
+        case 5120: return new Int8Array(arraybuffer, byteOffset, byteLength);
+        case 5121: return new Uint8Array(arraybuffer, byteOffset, byteLength);
+        case 5122: return new Int16Array(arraybuffer, byteOffset, byteLength);
+        case 5123: return new Uint16Array(arraybuffer, byteOffset, byteLength);
+        case 5125: return new Uint32Array(arraybuffer, byteOffset, byteLength);
+        case 5126: return new Float32Array(arraybuffer, byteOffset, byteLength);
+    }
+}
 /*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
@@ -8835,14 +8966,6 @@ x3dom.glTF.glTFLoader.prototype._loadShaderSource = function(shaderNode)
 x3dom.glTF2Loader = function(nameSpace)
 {
     this._nameSpace = nameSpace;
-    this._binaryData = null;
-    this._prefix = "gltf";
-    this._nodeNamePrefix = this._prefix + "NODE";
-    this._animationPrefix = "CLIP";
-    this._channelPrefix = "CHANNEL";
-    this._clockPrefix = this._prefix + "CLOCK";
-    this._interpolatorPrefix = this._prefix + "INTR";
-    this._cameraPrefix = this._prefix + "CAM";
 }
 
 /**
@@ -8873,138 +8996,16 @@ x3dom.glTF2Loader.prototype.load = function(input, binary)
     //Get the animations
     if ( this._gltf.animations )
     { 
-        this._gltf.animations.forEach( function( animation, a_i )
+        for( var i = 0; i < this._gltf.animations.length; i++)
         {
-            this._generateX3DAnimationNodes( x3dScene, animation, a_i );  
-        }, this );
+            var animation   = this._gltf.animations[i];
+            var animationID = "glTF_ANIMATION_" + i;
+
+            this._generateX3DAnimationNodes( x3dScene, animation, animationID );  
+        }
     }
 
-    console.log(x3dScene);
-
     return x3dScene;
-};
-
-/**
- * find animation input with longest duration 
- * @param {Node} animation - the animation node
- */
-x3dom.glTF2Loader.prototype._findLongestInput = function (animation)
-{   
-    var duration = -1;
-    animation.channels.forEach( function (channel)
-    {
-        var input_accessor = 
-            this._gltf.accessors[    
-                animation.samplers[
-                    channel.sampler].input];
-        duration = Math.max(input_accessor.max[0], duration);
-    }, this);
-    return duration;
-};
-
-
-/**
- * generate necessary animation nodes
- * @param {X3DNode} x3dScene - A X3D-Node
- * @param {Node} animation - animatio node
- * @param {Number} a_i - animation index
- */
-x3dom.glTF2Loader.prototype._generateX3DAnimationNodes = function(x3dScene, animation, a_i)
-{
-    var animation_length = this._findLongestInput( animation );
-    var animationID = this._animationPrefix + a_i;
-    this._generateX3DAnimationClock( x3dScene, animation_length, animationID );
-    animation.channels.forEach (function ( channel, c_i )
-    {
-        this._generateX3DAnimation( x3dScene, animation_length,
-                                   animation.samplers[channel.sampler], channel.target,
-                                   animationID, this._channelPrefix + c_i );
-    }, this);
-};
-
-/**
- * generate and  append TimeSensor
- * @param {X3DNode} parent - A X3D-Node
- * @param {Number} duration - cycle interval
- * @param {String} aniID - DEF name
- */
-x3dom.glTF2Loader.prototype._generateX3DAnimationClock = function(parent, duration, aniID)
-{
-    var clock = document.createElement('TimeSensor');
-    clock.setAttribute('loop','true');
-    clock.setAttribute('cycleInterval', duration);
-    clock.setAttribute('DEF', this._clockPrefix + aniID);
-    parent.appendChild(clock);
-};
-
-/**
- * generate and  append ROUTE, Interpolator, TimeSensor combos
- * @param {X3DNode} parent - A X3D-Node
- * @param {Number} duration - cycle interval, for normalization
- * @param {Object} sampler - glTF sampler
- * @param {Object} target - glTF target
- * @param {String} animID - animation name
- * @param {String} chID - channel name, for DEF construction
- */
-x3dom.glTF2Loader.prototype._generateX3DAnimation = function(parent, duration, sampler, target, animID, chID)
-{
-    var aniID = animID + chID;
-    var input_accessor = this._gltf.accessors[sampler.input];
-    var output_accessor = this._gltf.accessors[sampler.output];
-
-    var path2Interpolator = {
-        'translation' : 'PositionInterpolator' ,
-        'rotation' : 'OrientationInterpolator' ,
-        'scale' : 'PositionInterpolator',
-        'weight' : 'ScalarInterpolator' // not sure
-    };
-
-    var interpolator = path2Interpolator[target.path];
-
-    var views = this._gltf.bufferViews;
-    var input_view = views[input_accessor.bufferView];
-    input_view.id = input_accessor.bufferView; //fix to cached viewID
-    var output_view = views[output_accessor.bufferView];
-    output_view.id = output_accessor.bufferView;
-    var bufferURI = x3dom.Utils.dataURIToObjectURL(this._gltf.buffers[input_view.buffer].uri); //output_view hopefully has same buffer
-    
-    var interNode = document.createElement(interpolator);
-    var interDEF = this._interpolatorPrefix + aniID;
-    interNode.setAttribute('DEF', interDEF);
-    interNode.setAttribute('key', 'sampler.input.array');
-    interNode.setAttribute('keyValue', 'sampler.output.array');
-    interNode.setAttribute('buffer', bufferURI);
-
-    interNode.interpolation=sampler.interpolation || 'LINEAR';
-    
-    var input_accessor_dom = this._generateX3DBufferAccessor('SAMPLER_INPUT', input_accessor, input_accessor.bufferView); 
-    input_accessor_dom.duration = duration;
-
-    interNode.appendChild(input_accessor_dom);
-    interNode.appendChild(this._generateX3DBufferAccessor('SAMPLER_OUTPUT', output_accessor, output_accessor.bufferView));
-    
-    interNode.appendChild(this._generateX3DBufferView(input_view));
-    interNode.appendChild(this._generateX3DBufferView(output_view));
-
-    parent.appendChild(interNode);
-
-    function _createROUTEElement(fromField, fromNode, toField, toNode)
-    {
-        var route = document.createElement('ROUTE');
-        route.setAttribute('fromField', fromField);
-        route.setAttribute('fromNode', fromNode);
-        route.setAttribute('toField', toField);
-        route.setAttribute('toNode', toNode);
-        return route;
-    };
-    
-    var targetDEF = this._nodeNamePrefix + this._gltf.nodes[target.node].name;
-    
-    var routeTS2INT = _createROUTEElement("fraction_changed", this._clockPrefix + animID, "set_fraction", interDEF);
-    var routeINT2NODE = _createROUTEElement("value_changed", interDEF, "set_" + target.path, targetDEF);
- 
-    parent.appendChild(routeTS2INT);
-    parent.appendChild(routeINT2NODE);
 };
 
 /**
@@ -9014,7 +9015,7 @@ x3dom.glTF2Loader.prototype._generateX3DAnimation = function(parent, duration, s
  */
 x3dom.glTF2Loader.prototype._traverseNodes = function(node, parent, index)
 {
-    var x3dNode = this._generateX3DNode(node, parent, index);
+    var x3dNode = this._generateX3DNode(node, index);
 
     parent.appendChild(x3dNode);
 
@@ -9033,9 +9034,11 @@ x3dom.glTF2Loader.prototype._traverseNodes = function(node, parent, index)
  * Generates a X3D node from a glTF node
  * @param {Object} node - A glTF-Node
  */
-x3dom.glTF2Loader.prototype._generateX3DNode = function(node, parent, index)
+x3dom.glTF2Loader.prototype._generateX3DNode = function(node, index)
 {
     var x3dNode;
+    
+    node.name = (node.name) ? node.name : index; 
 
     if( node.matrix != undefined )
     {
@@ -9051,36 +9054,21 @@ x3dom.glTF2Loader.prototype._generateX3DNode = function(node, parent, index)
     {
         x3dNode = this._generateX3DTransform(node); // always use Transform in case of animations
     }
-
+    
     if( node.mesh != undefined )
     {
         var mesh = this._gltf.meshes[node.mesh];
 
         for( var i = 0; i < mesh.primitives.length; i++ )
         {
-            var shape = this._generateX3DShape(mesh.primitives[i]);
-
-            x3dNode.appendChild(shape);
+            x3dNode.appendChild(this._generateX3DShape(mesh.primitives[i]));
         }
     }
 
     if( node.camera != undefined )
     {
-        var camera = this._gltf.cameras[node.camera];
-        var viewpoint = this._generateX3DViewpoint(camera);
-        viewpoint.setAttribute('DEF', this._cameraPrefix + node.camera);
-
-        x3dNode.appendChild(viewpoint);
+        x3dNode.appendChild(this._generateX3DViewpoint(node));
     }
-
-    if ( !node.name )
-    {
-        node.name = index;
-    }
-    
-    var nodeDEF = this._nodeNamePrefix + node.name;
-
-    x3dNode.setAttribute( "DEF", nodeDEF );
 
     return x3dNode;
 };
@@ -9118,6 +9106,11 @@ x3dom.glTF2Loader.prototype._generateX3DTransform = function(node)
         transform.setAttribute("scale", node.scale.join(" "));
     }
 
+    if( node.name != undefined )
+    {
+        transform.setAttribute( "DEF", "glTF_NODE_" + node.name );
+    }
+
     return transform;
 };
 
@@ -9133,6 +9126,11 @@ x3dom.glTF2Loader.prototype._generateX3DMatrixTransform = function(node)
     if( node.matrix != undefined )
     {
         matrixTransform.setAttribute("matrix", node.matrix.join(" ") );
+    }
+
+    if( node.name != undefined )
+    {
+        matrixTransform.setAttribute( "DEF", "glTF_NODE_" + node.name );
     }
 
     return matrixTransform;
@@ -9154,16 +9152,19 @@ x3dom.glTF2Loader.prototype._generateX3DGroup = function(node)
  * @param {Object} camera - A glTF camera node
  * @return {Viewpoint}
  */
-x3dom.glTF2Loader.prototype._generateX3DViewpoint = function(camera)
+x3dom.glTF2Loader.prototype._generateX3DViewpoint = function(node)
 {
+    var camera = this._gltf.cameras[node.camera];
+    var cameraID = "glTF_CAMERA_" + node.camera;
+
     switch(camera.type)
     {
         case "orthographic":
-            return this._generateX3DOrthoViewpoint(camera.orthographic);
+            return this._generateX3DOrthoViewpoint(cameraID, camera.orthographic);
         case "perspective":
-            return this._generateX3DPerspectiveViewpoint(camera.perspective);
+            return this._generateX3DPerspectiveViewpoint(cameraID, camera.perspective);
         default:
-            return this._generateX3DPerspectiveViewpoint(camera.perspective);
+            return this._generateX3DPerspectiveViewpoint(cameraID, camera.perspective);
     }
 };
 
@@ -9173,7 +9174,7 @@ x3dom.glTF2Loader.prototype._generateX3DViewpoint = function(camera)
  * @param {Object} camera - A glTF camera node
  * @return {Viewpoint}
  */
-x3dom.glTF2Loader.prototype._generateX3DPerspectiveViewpoint = function(camera)
+x3dom.glTF2Loader.prototype._generateX3DPerspectiveViewpoint = function(id, camera)
 {
     var viewpoint = document.createElement("viewpoint");
 
@@ -9181,6 +9182,7 @@ x3dom.glTF2Loader.prototype._generateX3DPerspectiveViewpoint = function(camera)
     var znear = camera.znear || -1;
     var zfar  = camera.zfar  || -1;
 
+    viewpoint.setAttribute("DEF", id);
     viewpoint.setAttribute("fieldOfView", fov);
     viewpoint.setAttribute("zNear", znear);
     viewpoint.setAttribute("zFar", zfar);
@@ -9195,7 +9197,7 @@ x3dom.glTF2Loader.prototype._generateX3DPerspectiveViewpoint = function(camera)
  * @param {Object} camera - A glTF camera node
  * @return {OrthoViewpoint}
  */
-x3dom.glTF2Loader.prototype._generateX3DOrthoViewpoint = function(camera)
+x3dom.glTF2Loader.prototype._generateX3DOrthoViewpoint = function(id, camera)
 {
     var viewpoint = document.createElement("orthoviewpoint");
 
@@ -9205,6 +9207,7 @@ x3dom.glTF2Loader.prototype._generateX3DOrthoViewpoint = function(camera)
     var zfar  = camera.zfar  || -1;
     var fov   = [-xmag, -ymag, xmag, ymag];
 
+    viewpoint.setAttribute("DEF", id);
     viewpoint.setAttribute("fieldOfView", fov);
     viewpoint.setAttribute("zNear", znear);
     viewpoint.setAttribute("zFar", zfar);
@@ -9591,6 +9594,125 @@ x3dom.glTF2Loader.prototype._generateX3DBufferAccessor = function(buffer, access
 };
 
 /**
+ * generate necessary animation nodes
+ * @param {X3DNode} x3dScene - A X3D-Node
+ * @param {Node} animation - animatio node
+ * @param {Number} a_i - animation index
+ */
+x3dom.glTF2Loader.prototype._generateX3DAnimationNodes = function(x3dScene, animation, animationID)
+{
+    var duration     = this._animationDuration( animation );
+    var timeSensorID = animationID + "_TIMESENSOR";
+    
+    x3dScene.appendChild(this._generateX3DTimeSensor(timeSensorID, duration));
+    
+    for(var i = 0; i < animation.channels.length; i++)
+    {
+        var channel        = animation.channels[i];
+        var path           = channel.target.path;
+        var node           = channel.target.node;  
+        var sampler        = animation.samplers[channel.sampler];
+        var targetID       = "glTF_NODE_" + this._gltf.nodes[node].name;
+        var interpolatorID = animationID + "_INTERPOLATOR_" + i;
+
+        x3dScene.appendChild(this._generateX3DInterpolator(interpolatorID,
+                                                           path,
+                                                           sampler,
+                                                           duration));
+
+        x3dScene.appendChild(this._createX3DRoute("fraction_changed", 
+                                                  timeSensorID,
+                                                  "set_fraction",
+                                                  interpolatorID));
+
+        x3dScene.appendChild(this._createX3DRoute("value_changed",
+                                                  interpolatorID,
+                                                  "set_" + path,
+                                                  targetID));
+    }
+};
+
+/**
+ * generate and  append TimeSensor
+ * @param {X3DNode} parent - A X3D-Node
+ * @param {Number} duration - cycle interval
+ * @param {String} aniID - DEF name
+ */
+x3dom.glTF2Loader.prototype._generateX3DTimeSensor = function(id, duration)
+{
+    var clock = document.createElement('TimeSensor');
+
+    clock.setAttribute('loop','true');
+    clock.setAttribute('cycleInterval', duration);
+    clock.setAttribute('DEF', id);
+
+    return clock;
+};
+
+/**
+ * generate and  append ROUTE, Interpolator, TimeSensor combos
+ * @param {X3DNode} parent - A X3D-Node
+ * @param {Number} duration - cycle interval, for normalization
+ * @param {Object} sampler - glTF sampler
+ * @param {Object} target - glTF target
+ * @param {String} animID - animation name
+ * @param {String} chID - channel name, for DEF construction
+ */
+x3dom.glTF2Loader.prototype._generateX3DInterpolator = function(id, path, sampler, duration)
+{
+    var interpolator;
+    var interpolation  = sampler.interpolation || "LINEAR";
+    var accessorInput  = this._gltf.accessors[sampler.input];
+    var accessorOutput = this._gltf.accessors[sampler.output];
+    var viewInput      = this._gltf.bufferViews[accessorInput.bufferView];
+    var viewOutput     = this._gltf.bufferViews[accessorOutput.bufferView];
+
+    switch(path)
+    {
+        case "scale":
+        case "translation":
+            interpolator = document.createElement("PositionInterpolator");
+            break;
+        case "rotation":
+            interpolator = document.createElement("OrientationInterpolator");
+            break;
+        case "weight":
+            interpolator = document.createElement("ScalarInterpolator");
+            break;
+    }
+
+    interpolator.setAttribute('DEF', id);
+    interpolator.setAttribute("buffer", this._bufferURI(sampler));
+    interpolator.setAttribute("interpolation", interpolation);
+    interpolator.setAttribute("duration", duration);
+
+    interpolator.appendChild(this._generateX3DBufferAccessor('SAMPLER_INPUT', accessorInput, 0)); 
+    interpolator.appendChild(this._generateX3DBufferAccessor('SAMPLER_OUTPUT', accessorOutput, 1));
+    
+    interpolator.appendChild(this._generateX3DBufferView(viewInput));
+    interpolator.appendChild(this._generateX3DBufferView(viewOutput));
+
+    return interpolator;
+};
+
+/**
+ * Traverses all glTF nodes
+ * @param {Object} node - A glTF-Node
+ * @param {X3DNode} parent - A X3D-Node
+ */
+x3dom.glTF2Loader.prototype._createX3DRoute = function(fromField, fromNode, toField, toNode)
+{
+    var route = document.createElement('ROUTE');
+
+    route.setAttribute('fromField', fromField);
+    route.setAttribute('fromNode', fromNode);
+    route.setAttribute('toField', toField);
+    route.setAttribute('toNode', toNode);
+
+    return route;
+}
+
+/**
  */
 x3dom.glTF2Loader.prototype._getCenterAndSize = function(primitive)
 {
@@ -9659,15 +9781,25 @@ x3dom.glTF2Loader.prototype._componentsOf = function(type)
     }
 };
 
-x3dom.glTF2Loader.prototype._bufferURI = function(primitive)
+x3dom.glTF2Loader.prototype._bufferURI = function(value)
 {
-    var uri = "";
+    var uri = "",
+        accessorIdx;
 
-    if(primitive.attributes.POSITION != undefined)
+    if(value.attributes != undefined && value.attributes.POSITION != undefined)
     {
-        var accessor = this._gltf.accessors[ primitive.attributes.POSITION ];
+        accessorIdx = value.attributes.POSITION;    
+    }
+    else if(value.input)
+    {
+        accessorIdx = value.input;
+    }
+
+    if(accessorIdx != undefined)
+    {
+        var accessor = this._gltf.accessors[accessorIdx];
         var bufferView = this._gltf.bufferViews[accessor.bufferView];
-        var buffer = this._gltf.buffers[bufferView.buffer];
+        var buffer     = this._gltf.buffers[bufferView.buffer];
 
         uri = x3dom.Utils.dataURIToObjectURL(buffer.uri);
     }
@@ -9775,6 +9907,26 @@ x3dom.glTF2Loader.prototype._convertBinaryImages = function(gltf, buffer, byteOf
             }
         }
     }
+};
+
+/**
+ * find animation input with longest duration 
+ * @param {Node} animation - the animation node
+ */
+x3dom.glTF2Loader.prototype._animationDuration = function (animation)
+{   
+    var duration = -1;
+
+    for( var i = 0; i < animation.channels.length; i++)
+    {
+        var channel  = animation.channels[i];
+        var sampler  = animation.samplers[channel.sampler];
+        var accessor = this._gltf.accessors[sampler.input];
+
+        duration = Math.max(accessor.max[0], duration);
+    }
+
+    return duration;
 };
 
 /**
@@ -14281,16 +14433,16 @@ x3dom.Runtime.prototype.createX3DFromString = function(jsonOrXML, optionalURL) {
  * @returns A Promise resolved to the x3d element
  */
 x3dom.Runtime.prototype.createX3DFromURLPromise = function(url, optionalURL) {
-    this.canvas.doc.downloadCount++;
+    this.canvas.doc.incrementDownloads();
     that = this;
     return fetch(url)
         .then(function(r) { return r.text(); })
         .then(function(text) {
-            that.canvas.doc.downloadCount--;
+            that.canvas.doc.decrementDownloads();
             return that.createX3DFromString(text, optionalURL);
         })
         .catch(function(r) {
-            that.canvas.doc.downloadCount--;
+            that.canvas.doc.decrementDownloads();
             x3dom.debug.logError('fetch failed: ' + r);
             return null;
         });
@@ -15962,7 +16114,7 @@ x3dom.X3DDocument.prototype.onDrag = function (ctx, x, y, buttonState) {
         return;
     }
 
-    if (this._viewarea._scene._vf.doPickPass)
+    if (this._viewarea._scene._vf.doPickPass && !this._viewarea._isMoving)
         ctx.pickValue(this._viewarea, x, y, buttonState);
     this._viewarea.onDrag(x, y, buttonState);
 };
@@ -16296,6 +16448,16 @@ x3dom.X3DDocument.prototype.isAnimating = function () {
 
     return this._viewarea.isAnimating();
 };
+
+x3dom.X3DDocument.prototype.incrementDownloads = function()
+{
+    this.downloadCount++;
+}
+
+x3dom.X3DDocument.prototype.decrementDownloads = function()
+{
+    this.downloadCount--;
+}
 
 /**
  * X3DOM JavaScript Library
@@ -17979,7 +18141,6 @@ x3dom.Viewarea.prototype.onDrag = function(x, y, buttonState) {
     if (this._currentInputType == x3dom.InputTypes.NAVIGATION) {
         this._scene.getNavigationInfo()._impl.onDrag(this, x, y, buttonState);
     }
-
 };
 
 /**
@@ -35871,6 +36032,11 @@ x3dom.registerNodeType(
                     return event.cancelBubble;
                 }
 
+                if(!node._xmlNode.getAttribute(eventType) && !node._xmlNode[eventType])
+                {
+                    return event.cancelBubble;
+                }
+
                 try {
                     var attrib = node._xmlNode[eventType];
                     event.target = node._xmlNode;
@@ -47326,24 +47492,38 @@ x3dom.registerNodeType(
              /**
              * The url to the binary file, that contains the buffer data.
              * @var {x3dom.fields.SFString} buffer
-             * @memberof x3dom.nodeTypes.BufferGeometry
+             * @memberof x3dom.nodeTypes.X3DInterpolatorNode
              * @initvalue ""
              * @field x3dom
              * @instance
              */
             this.addField_SFString(ctx, 'buffer', "");
 
+            /**
+             * Contains the interpolation method
+             * @var {x3dom.fields.SFString} interpolation
+             * @memberof x3dom.nodeTypes.X3DInterpolatorNode
+             * @initvalue "LINEAR"
+             * @field x3dom
+             * @instance
+             */
+            this.addField_SFString(ctx, 'interpolation', "LINEAR");
+
+            /**
+             * Specifies the duration
+             * @var {x3dom.fields.SFString} duration
+             * @memberof x3dom.nodeTypes.X3DInterpolatorNode
+             * @initvalue "0"
+             * @field x3dom
+             * @instance
+             */
+            this.addField_SFFloat(ctx, 'duration', 0);
+
             this.addField_MFNode('views', x3dom.nodeTypes.BufferView );
             this.addField_MFNode('accessors', x3dom.nodeTypes.BufferAccessor );
 
-            this.constructorFromType = {
-                "5120": Int8Array,
-                "5121": Uint8Array,
-                "5122": Int16Array,
-                "5123": Uint16Array,
-                "5125": Uint32Array,
-                "5126": Float32Array
-            };
+            this._lastValue = undefined;
+
             this.normalizeFromType = {
                 "5120": function(c) {return Math.max(c / 127.0, -1.0)},
                 "5121": function(c) {return c / 255.0;},
@@ -47355,146 +47535,82 @@ x3dom.registerNodeType(
         
         },
         {
-            nodeChanged: function () {
-                var scope = this;
-                function initAccessors (arraybuffer)
+            nodeChanged: function ()
+            {
+                if (this._vf.buffer)
                 {
-                    var that = scope;
-                    var key, keyValue;
-                    scope._cf.accessors.nodes.forEach(function(accessor)
-                    {
-                        var view = findBufferView(accessor._vf.view);
-                        var byteOffset = accessor._vf.byteOffset + view._vf.byteOffset;
-                        var typeLength = accessor._vf.count * accessor._vf.components;
-                        var array;
-                        if (accessor._vf.bufferType === 'SAMPLER_INPUT')
-                        {
-                            if(accessor._vf.componentType === 5126)
-                            {
-                                array = new Float32Array(arraybuffer, byteOffset, typeLength);
-                                that.duration = accessor._xmlNode.duration;
-                                key = new x3dom.fields.MFFloat( array.map(function(a){return a/that.duration;}) );
-                            }
-                            else 
-                            {
-                                x3dom.debug.logWarning('glTF animation input needs to be FLOAT but is '+ accessor._vf.componentType);
-                            }
-                        }
-                        if (accessor._vf.bufferType === 'SAMPLER_OUTPUT')
-                        {
-                            array = new that.constructorFromType[accessor._vf.componentType](arraybuffer, byteOffset, typeLength);
-                            keyValue = that.keyValueFromAccessor(array, accessor._vf.componentType);
-                        }
-                    });
-                    //modify for STEP
-                    if (scope._xmlNode.interpolation === 'STEP')
-                    {
-                        //keys: 0,0.5,1 -> 0,0.5,0.5,1,1
-                        //values: 1,2,3 -> 1,1  ,2  ,2,3
-
-                        var stepKey = key.copy();
-                        for(var i=1; i<key.length; i++)
-                        {
-                            stepKey.splice(i*2,0, key[i]);
-                        };
-                        var stepValue = keyValue.copy();
-                        for(var i=0; i<key.length-1; i++)
-                        {
-                            stepValue.splice(i*2+1, 0, keyValue[i]);
-                        };
-                        key = stepKey;
-                        keyValue = stepValue;
-                    }
-                    scope._vf.key = key;
-                    scope._vf.keyValue = keyValue;
-                }
-                
-                function findBufferView(view) {
-                    return scope._cf.views.nodes.find(function(bview){return bview._vf.id === view});
-                }
-                
-                if (this._vf.buffer) {
-                    //console.log(this);
-                    var URL = this._nameSpace.getURL(this._vf.buffer);
-                    if(x3dom.XHRCache[URL] && x3dom.XHRCache[URL].response !== null)
-                    {
-                        initAccessors(x3dom.XHRCache[URL].response);
-                        return;
-                    }
-                    var xhr;
-
-                    if (x3dom.XHRCache[URL] === undefined)
-                    {
-                        xhr = new XMLHttpRequest();
-
-                        xhr.open("GET", URL);//avoid getting twice, with geometry buffer
-
-                        xhr.responseType = "arraybuffer";
-                        x3dom.XHRCache[URL] = xhr;
-                        x3dom.RequestManager.addRequest( xhr );
-                        scope._nameSpace.doc.downloadCount += 1;
-                        xhr.counted = false;
-                    }
-                    else xhr = x3dom.XHRCache[URL];
-
-                    xhr.addEventListener('load', function(e)
-                    {
-                        if (!xhr.counted)
-                        {   
-                            scope._nameSpace.doc.downloadCount -= 1;
-                            xhr.counted = true;
-                        }
-                        if(xhr.status != 200) return;
-                        
-                        initAccessors(xhr.response);
-
-                        scope._nameSpace.doc.needRender = true;
-                    });
-
-                    xhr.onerror = function(e) // ok to do only once
-                    {
-                        scope._nameSpace.doc.downloadCount -= 1;
-                        return;
-                    }                            
+                    x3dom.BinaryContainerLoader.setupBufferInterpolator(this);
                 }
             },
 
-            linearInterp: function (time, interp) {
-                if (time <= this._vf.key[0])
-                    return this._vf.keyValue[0];
-
-                else if (time >= this._vf.key[this._vf.key.length-1])
-                    return this._vf.keyValue[this._vf.key.length-1];
-
-                for (var i = 0; i < this._vf.key.length-1; ++i) {
-                    if ((this._vf.key[i] < time) && (time <= this._vf.key[i+1]))
-                        return interp( this._vf.keyValue[i], this._vf.keyValue[i+1],
-                                (time - this._vf.key[i]) / (this._vf.key[i+1] - this._vf.key[i]) );
+            linearInterp: function (time, interp)
+            {
+                if(this._vf.key.length == 0)
+                {
+                    return;
                 }
+
+                if (time <= this._vf.key[0])
+                {
+                    return this._vf.keyValue[0];
+                }
+                else if (time >= this._vf.key[this._vf.key.length-1])
+                {
+                    return this._vf.keyValue[this._vf.key.length-1];
+                }
+                    
+                for (var i = 0, n = this._vf.key.length-1; i<n; ++i)
+                {
+                    if ((this._vf.key[i] < time) && (time <= this._vf.key[i+1]))
+                    {
+                        return interp( this._vf.keyValue[i],
+                                       this._vf.keyValue[i+1],
+                                       (time - this._vf.key[i]) / (this._vf.key[i+1] - this._vf.key[i]) );
+                    }            
+                }
+
                 return this._vf.keyValue[0];
             },
 
-            cubicSplineInterp: function (time, interp) {
-                
+            cubicSplineInterp: function (time, interp)
+            {
+                if(this._vf.key.length == 0)
+                {
+                    return;
+                }
+
+                var i, i3, interval, basis, t, intervalInSeconds; 
+
                 if (time <= this._vf.key[0])
+                {
                     return this._vf.keyValue[1];
-
+                }
                 else if (time >= this._vf.key[this._vf.key.length-1])
+                {
                     return this._vf.keyValue[this._vf.keyValue.length-2];
+                }
+                    
+                for (i = 0, n = this._vf.key.length-1; i < n; ++i)
+                {
+                    if ((this._vf.key[i] < time) && (time <= this._vf.key[i+1]))
+                    {
+                        i3                = i*3;
+                        interval          = this._vf.key[i+1] - this._vf.key[i];
+                        t                 = (time - this._vf.key[i]) / interval;
+                        intervalInSeconds = interval * this.duration;
+                        basis             = this.cubicSplineBasis( t, intervalInSeconds );
 
-                var i, i3, interval, basis; 
-
-                for (i = 0; i < this._vf.key.length-1; ++i) {
-                    if ((this._vf.key[i] < time) && (time <= this._vf.key[i+1])) {
-                        i3 = i*3;
-                        interval = this._vf.key[i+1] - this._vf.key[i];
-                        basis = this.cubicSplineBasis( (time - this._vf.key[i]) / interval, interval * this.duration );
-                        return interp( 
-                                this._vf.keyValue[i3+2], this._vf.keyValue[i3+1], this._vf.keyValue[i3+3], this._vf.keyValue[i3+4],
-                                basis.h00, basis.h10, basis.h01, basis.h11                       
-                                );
+                        return interp( this._vf.keyValue[i3+2],
+                                       this._vf.keyValue[i3+1],
+                                       this._vf.keyValue[i3+3],
+                                       this._vf.keyValue[i3+4],
+                                       basis.h00,
+                                       basis.h10,
+                                       basis.h01,
+                                       basis.h11 );
                     }
                 }
+
                 return this._vf.keyValue[0];
             },
 
@@ -47507,8 +47623,12 @@ x3dom.registerNodeType(
                 var h00 = 1 - h01; //2*t3 - 3*t2 + 1;
                 var h10 = h11 - t2 + t; //t3 - 2*t2 + t;
                 
-
-                return {'h00':h00, 'h10': intervalInSeconds * h10, 'h01':h01, 'h11': intervalInSeconds * h11};
+                return {
+                    'h00':h00,
+                    'h10': intervalInSeconds * h10,
+                    'h01':h01,
+                    'h11': intervalInSeconds * h11
+                };
             },
 
             keyValueFromArray: function (array) // to be redefined by interpolators
@@ -47574,46 +47694,48 @@ x3dom.registerNodeType(
                 if(fieldName === "set_fraction")
                 {
                     var value;
-                    if (this._xmlNode.interpolation)
+  
+                    if (this._vf.interpolation === "CUBICSPLINE")
                     {
-                        if (this._xmlNode.interpolation === 'CUBICSPLINE')
-                        {
-                            var scope = this;
-                            value = this.cubicSplineInterp(this._vf.set_fraction, function (startInTangent, start, endOutTangent, end, h00, h10, h01, h11) {
+                        value = this.cubicSplineInterp(this._vf.set_fraction, function (startInTangent, start, endOutTangent, end, h00, h10, h01, h11) {
 
-                                function _applyBasis(axis)//p0, m0, p1, m1, axis)
-                                {                                   
-                                    return h00 * start[axis] + h10 * startInTangent[axis] + h01 * end[axis] + h11 * endOutTangent[axis];
-                                }
-                                
-                                var result = new x3dom.fields.Quaternion(0, 0, 0, 0);
+                            function _applyBasis(axis)//p0, m0, p1, m1, axis)
+                            {                                   
+                                return h00 * start[axis] + h10 * startInTangent[axis] + h01 * end[axis] + h11 * endOutTangent[axis];
+                            }
+                            
+                            var result = new x3dom.fields.Quaternion(0, 0, 0, 0);
 
-                                // do not use Quaternion methods to avoid generating objects
+                            // do not use Quaternion methods to avoid generating objects
 
-                                result.x = _applyBasis('x');
-                                result.y = _applyBasis('y');
-                                result.z = _applyBasis('z');
-                                result.w = _applyBasis('w');
+                            result.x = _applyBasis('x');
+                            result.y = _applyBasis('y');
+                            result.z = _applyBasis('z');
+                            result.w = _applyBasis('w');
 
-                                var s = Math.sqrt(1/result.dot(result));
+                            var s = Math.sqrt(1/result.dot(result));
 
-                                result.x *= s;
-                                result.y *= s;
-                                result.z *= s;
-                                result.w *= s;
+                            result.x *= s;
+                            result.y *= s;
+                            result.z *= s;
+                            result.w *= s;
 
-                                return result;//normalize(result);
-                          
-                            });
-                            this.postMessage('value_changed', value);
-                            return;
-                        }
+                            return result;//normalize(result);
+                        
+                        });
                     }
-                    
-                    var value = this.linearInterp(this._vf.set_fraction, function (a, b, t) {
-                        return a.slerp(b, t);
-                    });
-                    this.postMessage('value_changed', value);
+                    else
+                    {
+                        value = this.linearInterp(this._vf.set_fraction, function (a, b, t) {
+                            return a.slerp(b, t);
+                        });
+                    }
+
+                    if(value != undefined && value != this._lastValue)
+                    {
+                        this._lastValue = value;
+                        this.postMessage('value_changed', value);
+                    }
                 }
             },
             
@@ -47684,65 +47806,42 @@ x3dom.registerNodeType(
                 if(fieldName === "set_fraction")
                 {
                     var value;
-                    if (this._xmlNode.interpolation)
+       
+                    if (this._vf.interpolation === 'CUBICSPLINE')
                     {
-                        if (this._xmlNode.interpolation === 'CUBICSPLINE')
-                        {
-                            var scope = this;
-                            value = this.cubicSplineInterp(this._vf.set_fraction, function (startInTangent, start, endOutTangent, end, h00, h10, h01, h11) {
+                        value = this.cubicSplineInterp(this._vf.set_fraction, function (startInTangent, start, endOutTangent, end, h00, h10, h01, h11) {
 
-/* the gltf formula
-A spline segment between two keyframes is represented in a cubic Hermite spline form
+                            function _applyBasis(axis)//p0, m0, p1, m1, axis)
+                            {                                   
+                                return h00 * start[axis] + h10 * startInTangent[axis] + h01 * end[axis] + h11 * endOutTangent[axis];
+                            }
+                            
+                            var result = new x3dom.fields.SFVec3f();
 
-    p(t) = (2t^3 - 3t^2 + 1)p0 + (t^3 - 2t^2 + t)m0 + (-2t^3 + 3t^2)p1 + (t^3 - t^2)m1
+                            // do not use SFVec3f methods to avoid generating objects
 
-Where
-
-    t is a value between 0 and 1
-    p0 is the starting vertex at t = 0
-    m0 is the starting tangent at t = 0
-    p1 is the ending vertex at t = 1
-    m1 is the ending tangent at t = 1
-    p(t) is the resulting value
-
-Where at input offset tcurrent with keyframe index k
-
-    t = (tcurrent - tk) / (tk+1 - tk)
-    p0 = vk
-    m0 = (tk+1 - tk)bk
-    p1 = vk+1
-    m1 = (tk+1 - tk)ak+1
-*/
-
-                                function _applyBasis(axis)//p0, m0, p1, m1, axis)
-                                {                                   
-                                    return h00 * start[axis] + h10 * startInTangent[axis] + h01 * end[axis] + h11 * endOutTangent[axis];
-                                }
-                                
-                                var result = new x3dom.fields.SFVec3f();
-
-                                // do not use SFVec3f methods to avoid generating objects
-
-                                result.x = _applyBasis('x');
-                                result.y = _applyBasis('y');
-                                result.z = _applyBasis('z');
-                                return result;
-                          
-                            });
-                            this.postMessage('value_changed', value);
-                            return;
-                        }
+                            result.x = _applyBasis('x');
+                            result.y = _applyBasis('y');
+                            result.z = _applyBasis('z');
+                            return result;
+                        });
+                    }
+                    else
+                    {
+                        value = this.linearInterp(this._vf.set_fraction, function (a, b, t) {
+                            var result = a.multiply(1.0-t);
+                            result.x += t*b.x;
+                            result.y += t*b.y;
+                            result.z += t*b.z;
+                            return result;//a.multiply(1.0-t).add(b.multiply(t));
+                        });
                     }
                                         
-                    value = this.linearInterp(this._vf.set_fraction, function (a, b, t) {
-                        var result = a.multiply(1.0-t);
-                        result.x += t*b.x;
-                        result.y += t*b.y;
-                        result.z += t*b.z;
-                        return result;//a.multiply(1.0-t).add(b.multiply(t));
-                    });
-                    
-                    this.postMessage('value_changed', value);
+                    if(value != undefined && value != this._lastValue)
+                    {
+                        this._lastValue = value;
+                        this.postMessage('value_changed', value);
+                    }
                 }
             },
             
@@ -47819,7 +47918,11 @@ x3dom.registerNodeType(
                         return a.multiply(1.0-t).add(b.multiply(t)).normalize();
                     });
 
-                    this.postMessage('value_changed', value);
+                    if(value != undefined && value != this._lastValue)
+                    {
+                        this._lastValue = value;
+                        this.postMessage('value_changed', value);
+                    }
                 }
             }
         }
@@ -47878,7 +47981,11 @@ x3dom.registerNodeType(
                         return a.multiply(1.0-t).add(b.multiply(t));
                     });
 
-                    this.postMessage('value_changed', value);
+                    if(value != undefined && value != this._lastValue)
+                    {
+                        this._lastValue = value;
+                        this.postMessage('value_changed', value);
+                    }
                 }
             }
         }
@@ -47931,25 +48038,28 @@ x3dom.registerNodeType(
                 if(fieldName === "set_fraction")
                 {
                     var value;
-                    if (this._xmlNode.interpolation)
+
+                    if (this._vf.interpolation === 'CUBICSPLINE')
                     {
-                        if (this._xmlNode.interpolation === 'CUBICSPLINE')
-                        {
-                            var scope = this;
-                            value = this.cubicSplineInterp(this._vf.set_fraction, function (startInTangent, start, endOutTangent, end, h00, h10, h01, h11) {
+                        var scope = this;
+                        value = this.cubicSplineInterp(this._vf.set_fraction, function (startInTangent, start, endOutTangent, end, h00, h10, h01, h11) {
 
-                                return h00 * start + h10 * startInTangent + h01 * end + h11 * endOutTangent;
-                          
-                            });
-                            this.postMessage('value_changed', value);
-                            return;
-                        }
+                            return h00 * start + h10 * startInTangent + h01 * end + h11 * endOutTangent;
+                        
+                        });
                     }
-                    value = this.linearInterp(this._vf.set_fraction, function (a, b, t) {
-                        return (1.0-t)*a + t*b;
-                    });
-
-                    this.postMessage('value_changed', value);
+                    else
+                    {
+                        value = this.linearInterp(this._vf.set_fraction, function (a, b, t) {
+                            return (1.0-t)*a + t*b;
+                        });
+                    }
+                   
+                    if(value != undefined && value != this._lastValue)
+                    {
+                        this._lastValue = value;
+                        this.postMessage('value_changed', value);
+                    }
                 }
             },
 
@@ -48035,7 +48145,11 @@ x3dom.registerNodeType(
                         return val;
                     });
 
-                    this.postMessage('value_changed', value);
+                    if(value != undefined && value != this._lastValue)
+                    {
+                        this._lastValue = value;
+                        this.postMessage('value_changed', value);
+                    }
                 }
             }
         }
@@ -48277,10 +48391,11 @@ x3dom.registerNodeType(
 							}
 						}
 						
-						if(value !== undefined)
+						if(value != undefined && value != this._lastValue)
+						{
+							this._lastValue = value;
 							this.postMessage('value_changed', value);
-						else
-							x3dom.debug.logWarning("SplinePositionInterpolator Node: value_changed is undefined!");
+						}
 					}
 				}
             }
@@ -48957,14 +49072,6 @@ x3dom.registerNodeType(
                             setNamespace(that._vf.nameSpaceName, childDomNode, that._vf.mapDEFToID);
                             that._xmlNode.appendChild(childDomNode);    
                         }
-//                         Array.forEach ( inlScene.childNodes, function (childDomNode)
-//                         {
-//                             if(childDomNode instanceof Element)
-//                             {
-//                                 setNamespace(that._vf.nameSpaceName, childDomNode, that._vf.mapDEFToID);
-//                                 that._xmlNode.appendChild(childDomNode);
-//                             }
-//                         } );
                     }
                 }
                 else {
@@ -48987,11 +49094,6 @@ x3dom.registerNodeType(
                     that.addChild(newScene);
 
                     that.invalidateVolume();
-                    //that.invalidateCache();
-
-                    that._nameSpace.doc.downloadCount -= 1;
-                    that._nameSpace.doc.needRender = true;
-                    x3dom.debug.logInfo('Inline: added ' + that._vf.url[0] + ' to scene.');
 
                     // recalc changed scene bounding box twice
                     var theScene = that._nameSpace.doc._scene;
@@ -49006,6 +49108,9 @@ x3dom.registerNodeType(
 
                             theScene.updateVolume();
                             that._nameSpace.doc.needRender = true;
+                            that._nameSpace.doc.decrementDownloads();
+                            that._nameSpace.doc.needRender = true;
+                            x3dom.debug.logInfo('Inline: added ' + that._vf.url[0] + ' to scene.');
                         }, 1000 );
                     }
 
@@ -49045,7 +49150,7 @@ x3dom.registerNodeType(
                                                     'Next request in ' + refreshTime + ' seconds');
 
                                 window.setTimeout(function() {
-                                    that._nameSpace.doc.downloadCount -= 1;
+                                    that._nameSpace.doc.decrementDownloads();;
                                     that.loadInline();
                                 }, refreshTime * 1000);
                             }
@@ -49054,7 +49159,7 @@ x3dom.registerNodeType(
                                 x3dom.debug.logError('XHR status: ' + xhr.status + ' - Await Transcoding (' + that.count + '/' + that.numRetries + '): ' +
                                                      'No Retries left');
 
-                                that._nameSpace.doc.downloadCount -= 1;
+                                that._nameSpace.doc.decrementDownloads();;
 
                                 that.count = 0;
                             }
@@ -49085,7 +49190,7 @@ x3dom.registerNodeType(
 
                                     that.fireEvents("error");
 
-                                    that._nameSpace.doc.downloadCount -= 1;
+                                    that._nameSpace.doc.decrementDownloads();;
                                     that.count = 0;
                                 }
                             }
@@ -49108,7 +49213,7 @@ x3dom.registerNodeType(
                                     else
                                     {
                                         that.fireEvents("error");
-                                        that._nameSpace.doc.downloadCount -= 1;
+                                        that._nameSpace.doc.decrementDownloads();
                                         that.count = 0;
                                     }
                                 }
@@ -49118,7 +49223,7 @@ x3dom.registerNodeType(
 
                                     that.fireEvents("error");
 
-                                    that._nameSpace.doc.downloadCount -= 1;
+                                    that._nameSpace.doc.decrementDownloads();
                                     that.count = 0;
                                 }
                             }
@@ -49145,7 +49250,7 @@ x3dom.registerNodeType(
                                 else
                                 {
                                     that.fireEvents("error");
-                                    that._nameSpace.doc.downloadCount -= 1;
+                                    that._nameSpace.doc.decrementDownloads();
                                     that.count = 0;
                                 }
                             }
@@ -49156,7 +49261,7 @@ x3dom.registerNodeType(
 
                             that.fireEvents("error");
 
-                            that._nameSpace.doc.downloadCount -= 1;
+                            that._nameSpace.doc.decrementDownloads();
                             that.count = 0;
                         }
                     }
@@ -49191,14 +49296,15 @@ x3dom.registerNodeType(
                         }
                     }
 
-                    this._nameSpace.doc.downloadCount += 1;
-
-                    try {
+                    try
+                    {
+                        this._nameSpace.doc.incrementDownloads();
                         x3dom.RequestManager.addRequest(xhr);
                     }
                     catch(ex) {
                         this.fireEvents("error");
                         x3dom.debug.logError(this._vf.url[0] + ": " + ex);
+                        this._nameSpace.doc.decrementDownloads();
                     }
                 }
             },
@@ -50226,7 +50332,7 @@ x3dom.registerNodeType(
                                                 'Next request in ' + refreshTime + ' seconds');
                       
                             window.setTimeout(function() {
-                                that._nameSpace.doc.downloadCount -= 1;
+                                that._nameSpace.doc.decrementDownloads();
                                 that.loadInline();
                             }, refreshTime * 1000);
                             return xhr;
@@ -50235,7 +50341,7 @@ x3dom.registerNodeType(
                         {
                             x3dom.debug.logError('XHR status: ' + xhr.status + ' - Await Transcoding (' + that.count + '/' + that.numRetries + '): ' + 
                                                  'No Retries left');
-                            that._nameSpace.doc.downloadCount -= 1;
+                            that._nameSpace.doc.decrementDownloads();
                             that.count = 0;
                             return xhr;
                         }
@@ -50244,7 +50350,7 @@ x3dom.registerNodeType(
                         that.fireEvents("error");
                         x3dom.debug.logError('XHR status: ' + xhr.status + ' - XMLHttpRequest requires web server running!');
 
-                        that._nameSpace.doc.downloadCount -= 1;
+                        that._nameSpace.doc.decrementDownloads();
                         that.count = 0;
                         return xhr;
                     }
@@ -50338,7 +50444,7 @@ x3dom.registerNodeType(
                         that.invalidateVolume();
                         //that.invalidateCache();
 
-                        that._nameSpace.doc.downloadCount -= 1;
+                        that._nameSpace.doc.decrementDownloads();
                         that._nameSpace.doc.needRender = true;
                         x3dom.debug.logInfo('Inline: added ' + that._vf.url[0] + ' to scene.');
 
@@ -50376,7 +50482,7 @@ x3dom.registerNodeType(
 
                     xhr.open('GET', xhrURI, true);
 
-                    this._nameSpace.doc.downloadCount += 1;
+                    this._nameSpace.doc.incrementDownloads();
 
                     try {
                         //xhr.send(null);
@@ -60423,7 +60529,7 @@ x3dom.registerNodeType(
 
                 //TODO: check SOURCE child nodes
                 shape._webgl.internalDownloadCount  = 1;
-                shape._nameSpace.doc.downloadCount  = 1;
+                shape._nameSpace.doc.incrementDownloads();
 
                 //post request
                 xhr = new XMLHttpRequest();
@@ -60445,7 +60551,7 @@ x3dom.registerNodeType(
 
                 xhr.onload = function() {
                     shape._webgl.internalDownloadCount  = 0;
-                    shape._nameSpace.doc.downloadCount  = 0;
+                    shape._nameSpace.doc.decrementDownloads();
 
                     shape._webgl.primType    = [];
                     shape._webgl.indexOffset = [];
@@ -60617,7 +60723,7 @@ var ExternalGeometrySRC =
 
         //TODO: check SOURCE child nodes
         shape._webgl.internalDownloadCount  = 1;
-        shape._nameSpace.doc.downloadCount  = 1;
+        shape._nameSpace.doc.incrementDownloads();
 
         //TODO: check this object - when is it called, where is it really needed?
         //shape._webgl.makeSeparateTris = {...};
@@ -60639,7 +60745,7 @@ var ExternalGeometrySRC =
         //TODO: currently, we assume that the referenced file is always an SRC file
         xhr.onload = function() {
             shape._webgl.internalDownloadCount  = 0;
-            shape._nameSpace.doc.downloadCount  = 0;
+            shape._nameSpace.doc.decrementDownloads();
 
             var responseBeginUint32 = new Uint32Array(xhr.response, 0, 12);
 
@@ -66217,14 +66323,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '0640c363aa2f8573523a4213ec4ca6716024c576',
-    date:     'Mon Jan 28 17:14:50 2019 +0100'
+    revision: '5bb9a10d7d0d1ecc7ee987114a3802ed13c4ae28',
+    date:     'Tue Jan 29 20:14:27 2019 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '0640c363aa2f8573523a4213ec4ca6716024c576',
-    date:     'Mon Jan 28 17:14:50 2019 +0100'
+    revision: '5bb9a10d7d0d1ecc7ee987114a3802ed13c4ae28',
+    date:     'Tue Jan 29 20:14:27 2019 +0100'
 };
 
