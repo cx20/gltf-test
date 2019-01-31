@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 09fd64ac04505d0c98c203c81d719c72859e6479 - Thu Jan 31 11:55:22 2019 +0100 */
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 9ff30d3511b20d19e2247a0f4c418ca6919755a3 - Thu Jan 31 13:30:19 2019 +0100 */
 if(!Array.forEach){Array.forEach=function(array,fun,thisp){var len=array.length;for(var i=0;i<len;i++){if(i in array){fun.call(thisp,array[i],i,array);}}};}
 if(!Array.map){Array.map=function(array,fun,thisp){var len=array.length;var res=[];for(var i=0;i<len;i++){if(i in array){res[i]=fun.call(thisp,array[i],i,array);}}
 return res;};}
@@ -1152,7 +1152,7 @@ x3dom.glTF2Loader.prototype._generateX3DBufferView=function(view)
 {var channel=animation.channels[i];var path=channel.target.path;var node=channel.target.node;var sampler=animation.samplers[channel.sampler];var targetID="glTF_NODE_"+this._gltf.nodes[node].name;var interpolatorID=animationID+"_INTERPOLATOR_"+i;x3dScene.appendChild(this._generateX3DInterpolator(interpolatorID,path,sampler,duration));x3dScene.appendChild(this._createX3DRoute("fraction_changed",timeSensorID,"set_fraction",interpolatorID));x3dScene.appendChild(this._createX3DRoute("value_changed",interpolatorID,"set_"+path,targetID));}};x3dom.glTF2Loader.prototype._generateX3DTimeSensor=function(id,duration)
 {var clock=document.createElement('TimeSensor');clock.setAttribute('loop','true');clock.setAttribute('cycleInterval',duration);clock.setAttribute('DEF',id);return clock;};x3dom.glTF2Loader.prototype._generateX3DInterpolator=function(id,path,sampler,duration)
 {var interpolator;var interpolation=sampler.interpolation||"LINEAR";var accessorInput=this._gltf.accessors[sampler.input];var accessorOutput=this._gltf.accessors[sampler.output];var viewInput=this._gltf.bufferViews[accessorInput.bufferView];var viewOutput=this._gltf.bufferViews[accessorOutput.bufferView];switch(path)
-{case"scale":case"translation":interpolator=document.createElement("PositionInterpolator");break;case"rotation":interpolator=document.createElement("OrientationInterpolator");break;case"weight":interpolator=document.createElement("ScalarInterpolator");break;}
+{case"scale":case"translation":interpolator=document.createElement("PositionInterpolator");break;case"rotation":interpolator=document.createElement("OrientationInterpolator");break;case"weights":interpolator=document.createElement("ScalarInterpolator");break;}
 interpolator.setAttribute('DEF',id);interpolator.setAttribute("buffer",this._bufferURI(sampler));interpolator.setAttribute("interpolation",interpolation);interpolator.setAttribute("duration",duration);interpolator.appendChild(this._generateX3DBufferAccessor('SAMPLER_INPUT',accessorInput,0));interpolator.appendChild(this._generateX3DBufferAccessor('SAMPLER_OUTPUT',accessorOutput,1));interpolator.appendChild(this._generateX3DBufferView(viewInput));interpolator.appendChild(this._generateX3DBufferView(viewOutput));return interpolator;};x3dom.glTF2Loader.prototype._createX3DRoute=function(fromField,fromNode,toField,toNode)
 {var route=document.createElement('ROUTE');route.setAttribute('fromField',fromField);route.setAttribute('fromNode',fromNode);route.setAttribute('toField',toField);route.setAttribute('toNode',toNode);return route;}
 x3dom.glTF2Loader.prototype._getCenterAndSize=function(primitive)
@@ -2395,7 +2395,9 @@ if(properties.NORMALSPACE=="OBJECT")
 {shader+="    mat_n   = normalMatrix2;\n";}
 shader+="}\n";shader+="if ( isVR == 1.0) {\n";shader+="    if ( ( step( 0.5, gl_FragCoord.x / screenWidth ) - 0.5 ) * vrOffset < 0.0 ) discard;\n";shader+="}\n";if(properties.CLIPPLANES)
 {shader+="vec3 cappingColor = calculateClipPlanes();\n";}
-shader+="vec4 color;\n";shader+="vec4 texColor;\n";shader+="color.rgb = diffuseColor;\n";shader+="color.a = 1.0 - transparency;\n";shader+="vec3 _emissiveColor     = emissiveColor;\n";shader+="float _shininess        = shininess;\n";shader+="vec3 _specularColor     = specularColor;\n";shader+="float _ambientIntensity = ambientIntensity;\n";shader+="float _transparency     = transparency;\n";shader+="float _occlusion        = 1.0;\n";if(properties.PBR_MATERIAL&&properties.ISROUGHNESSMETALLIC)
+shader+="vec4 color;\n";shader+="vec4 texColor;\n";shader+="color.rgb = diffuseColor;\n";shader+="color.a = 1.0 - transparency;\n";shader+="vec3 _emissiveColor     = emissiveColor;\n";shader+="float _shininess        = shininess;\n";shader+="vec3 _specularColor     = specularColor;\n";shader+="float _ambientIntensity = ambientIntensity;\n";shader+="float _transparency     = transparency;\n";shader+="float _occlusion        = 1.0;\n";if(properties.ALPHAMODE=="OPAQUE")
+{shader+="color.a = 1.0;\n";}
+if(properties.PBR_MATERIAL&&properties.ISROUGHNESSMETALLIC)
 {shader+="float _metallic         = metallicFactor;\n";}
 if(properties.SEPARATEBACKMAT)
 {shader+="  if(!gl_FrontFacing) {\n";shader+="    color.rgb = backDiffuseColor;\n";shader+="    color.a = 1.0 - backTransparency;\n";shader+="    _transparency = 1.0 - backTransparency;\n";shader+="    _shininess = backShininess;\n";shader+="    _emissiveColor = backEmissiveColor;\n";shader+="    _specularColor = backSpecularColor;\n";shader+="    _ambientIntensity = backAmbientIntensity;\n";shader+="  }\n";}
@@ -2403,7 +2405,15 @@ if(properties.MULTIVISMAP||properties.MULTIDIFFALPMAP||properties.MULTISPECSHINM
 if(properties.MULTIVISMAP){shader+="idCoord.x = mod(roundedIDVisibility, multiVisibilityWidth) * (1.0 / multiVisibilityWidth) + (0.5 / multiVisibilityWidth);\n";shader+="idCoord.y = floor(roundedIDVisibility / multiVisibilityWidth) * (1.0 / multiVisibilityHeight) + (0.5 / multiVisibilityHeight);\n";shader+="vec4 visibility = texture2D( multiVisibilityMap, idCoord );\n";shader+="if (visibility.r < 1.0) discard; \n";}
 if(properties.MULTIDIFFALPMAP){shader+="idCoord.x = mod(roundedIDMaterial, multiDiffuseAlphaWidth) * (1.0 / multiDiffuseAlphaWidth) + (0.5 / multiDiffuseAlphaWidth);\n";shader+="idCoord.y = floor(roundedIDMaterial / multiDiffuseAlphaWidth) * (1.0 / multiDiffuseAlphaHeight) + (0.5 / multiDiffuseAlphaHeight);\n";shader+="vec4 diffAlpha = texture2D( multiDiffuseAlphaMap, idCoord );\n";shader+="color.rgb = "+x3dom.shader.decodeGamma(properties,"diffAlpha.rgb")+";\n";shader+="_transparency = 1.0 - diffAlpha.a;\n";shader+="color.a = diffAlpha.a;\n";}
 if(properties.MULTIEMIAMBMAP){shader+="idCoord.x = mod(roundedIDMaterial, multiDiffuseAlphaWidth) * (1.0 / multiDiffuseAlphaWidth) + (0.5 / multiDiffuseAlphaWidth);\n";shader+="idCoord.y = floor(roundedIDMaterial / multiDiffuseAlphaWidth) * (1.0 / multiDiffuseAlphaHeight) + (0.5 / multiDiffuseAlphaHeight);\n";shader+="vec4 emiAmb = texture2D( multiEmissiveAmbientMap, idCoord );\n";shader+="_emissiveColor = emiAmb.rgb;\n";shader+="_ambientIntensity = emiAmb.a;\n";}
-if(properties.VERTEXCOLOR){if(properties.COLCOMPONENTS===3&&properties.PBR_MATERIAL){shader+="color.rgb *= fragColor;\n";}else if(properties.COLCOMPONENTS===3&&!properties.PBR_MATERIAL){shader+="color.rgb = fragColor;\n";}else if(properties.COLCOMPONENTS===4&&properties.PBR_MATERIAL){shader+="color *= fragColor;\n";}else if(properties.COLCOMPONENTS===4&&!properties.PBR_MATERIAL){shader+="color = fragColor;\n";}}
+if(properties.VERTEXCOLOR)
+{if((properties.COLCOMPONENTS===3||properties.ALPHAMODE=="OPAQUE")&&properties.PBR_MATERIAL)
+{shader+="color.rgb *= fragColor.rgb;\n";}
+else if(properties.COLCOMPONENTS===3&&!properties.PBR_MATERIAL)
+{shader+="color.rgb = fragColor.rgb;\n";}
+else if(properties.COLCOMPONENTS===4&&properties.PBR_MATERIAL)
+{shader+="color *= fragColor;\n";}
+else if(properties.COLCOMPONENTS===4&&!properties.PBR_MATERIAL)
+{shader+="color = fragColor;\n";}}
 if(properties.UNLIT)
 {if(properties.DIFFUSEMAP)
 {if(properties.DIFFUSEMAPCHANNEL)
@@ -5411,4 +5421,4 @@ return;}}));x3dom.registerNodeType("IntegerSequencer","EventUtilities",defineCla
 {if(fieldName==='set_boolean'){this.postMessage('triggerValue',this._vf.integerKey);}
 return;}}));x3dom.registerNodeType("TimeTrigger","EventUtilities",defineClass(x3dom.nodeTypes.X3DTriggerNode,function(ctx){x3dom.nodeTypes.TimeTrigger.superClass.call(this,ctx);this.addField_SFBool(ctx,'set_boolean');},{fieldChanged:function(fieldName)
 {if(fieldName==='set_boolean'){this.postMessage('triggerTime',Date.now()/1000);}
-return;}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'09fd64ac04505d0c98c203c81d719c72859e6479',date:'Thu Jan 31 11:55:22 2019 +0100'};
+return;}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'9ff30d3511b20d19e2247a0f4c418ca6919755a3',date:'Thu Jan 31 13:30:19 2019 +0100'};

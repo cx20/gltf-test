@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 09fd64ac04505d0c98c203c81d719c72859e6479 - Thu Jan 31 11:55:22 2019 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 9ff30d3511b20d19e2247a0f4c418ca6919755a3 - Thu Jan 31 13:30:19 2019 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -9685,7 +9685,7 @@ x3dom.glTF2Loader.prototype._generateX3DInterpolator = function(id, path, sample
         case "rotation":
             interpolator = document.createElement("OrientationInterpolator");
             break;
-        case "weight":
+        case "weights":
             interpolator = document.createElement("ScalarInterpolator");
             break;
     }
@@ -26410,6 +26410,11 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
 	shader += "float _transparency     = transparency;\n";
 	shader += "float _occlusion        = 1.0;\n";
 
+	if(properties.ALPHAMODE == "OPAQUE")
+	{
+		shader += "color.a = 1.0;\n";
+	}
+
 	if(properties.PBR_MATERIAL && properties.ISROUGHNESSMETALLIC)
 	{	
 		shader += "float _metallic         = metallicFactor;\n";
@@ -26461,14 +26466,22 @@ x3dom.shader.DynamicShader.prototype.generateFragmentShader = function(gl, prope
         shader += "_ambientIntensity = emiAmb.a;\n";
     }
 			
-    if (properties.VERTEXCOLOR) {
-        if (properties.COLCOMPONENTS === 3 && properties.PBR_MATERIAL) {
-            shader += "color.rgb *= fragColor;\n";
-        } else if (properties.COLCOMPONENTS === 3 && !properties.PBR_MATERIAL) {
-            shader += "color.rgb = fragColor;\n";
-        } else if (properties.COLCOMPONENTS === 4 && properties.PBR_MATERIAL) {
+	if (properties.VERTEXCOLOR)
+	{
+		if ((properties.COLCOMPONENTS === 3 || properties.ALPHAMODE == "OPAQUE") && properties.PBR_MATERIAL)
+		{
+            shader += "color.rgb *= fragColor.rgb;\n";
+		}
+		else if (properties.COLCOMPONENTS === 3 && !properties.PBR_MATERIAL)
+		{
+            shader += "color.rgb = fragColor.rgb;\n";
+		}
+		else if (properties.COLCOMPONENTS === 4 && properties.PBR_MATERIAL)
+		{
             shader += "color *= fragColor;\n";
-        } else if (properties.COLCOMPONENTS === 4 && !properties.PBR_MATERIAL) {
+		}
+		else if (properties.COLCOMPONENTS === 4 && !properties.PBR_MATERIAL)
+		{
             shader += "color = fragColor;\n";
         }
     }
@@ -66334,14 +66347,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '09fd64ac04505d0c98c203c81d719c72859e6479',
-    date:     'Thu Jan 31 11:55:22 2019 +0100'
+    revision: '9ff30d3511b20d19e2247a0f4c418ca6919755a3',
+    date:     'Thu Jan 31 13:30:19 2019 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '09fd64ac04505d0c98c203c81d719c72859e6479',
-    date:     'Thu Jan 31 11:55:22 2019 +0100'
+    revision: '9ff30d3511b20d19e2247a0f4c418ca6919755a3',
+    date:     'Thu Jan 31 13:30:19 2019 +0100'
 };
 
