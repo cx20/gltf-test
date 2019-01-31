@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 5bb9a10d7d0d1ecc7ee987114a3802ed13c4ae28 - Tue Jan 29 20:14:27 2019 +0100 *//*
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 09fd64ac04505d0c98c203c81d719c72859e6479 - Thu Jan 31 11:55:22 2019 +0100 *//*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
  *
@@ -4605,6 +4605,14 @@ x3dom.Utils.checkDirtyLighting = function(viewarea)
 };
 
 /*****************************************************************************
+ * Checks for PhysicalEnvironmentLight change
+ *****************************************************************************/
+x3dom.Utils.checkDirtyPhysicalEnvironmentLight = function(viewarea, shaderProperties)
+{
+    return (!!shaderProperties.PHYSICALENVLIGHT != viewarea.hasPhysicalEnvironmentLight());
+};
+
+/*****************************************************************************
  * Checks for environment
  *****************************************************************************/
 x3dom.Utils.checkDirtyEnvironment = function(viewarea, shaderProperties)
@@ -5236,6 +5244,7 @@ x3dom.Utils.forbiddenBySOP = function (uri_string) {
     Scheme = Scheme || document.location.protocol;
     return !(Port === originPort && Host === document.location.host && Scheme === document.location.protocol);
 };
+
 /*
  * X3DOM JavaScript Library
  * http://www.x3dom.org
@@ -7294,7 +7303,7 @@ x3dom.BinaryContainerLoader.setupBufferInterpolator = function(interpolator)
             data[i] = data[i] / interpolator._vf.duration
         }
 
-        return data;
+        return new x3dom.fields.MFFloat( data );
     };
 
     var getKeyValues = function(interpolator, accessor, arraybuffer)
@@ -7337,8 +7346,8 @@ x3dom.BinaryContainerLoader.setupBufferInterpolator = function(interpolator)
         //modify for STEP
         if (interpolator._vf.interpolation === "STEP")
         {
-            var stepKey   = key.slice();
-            var stepValue = keyValue.slice();
+            var stepKey   = key.copy();
+            var stepValue = keyValue.copy();
 
             for(var i = 1, n = key.length; i<n; i++)
             {
@@ -17052,9 +17061,12 @@ x3dom.Viewarea.prototype.getLightsShadow = function() {
  * @returns {boolean}
  */
 x3dom.Viewarea.prototype.hasPhysicalEnvironmentLight = function () {
+    var light;
     for (var i=0; i<this._doc._nodeBag.lights.length; i++)
     {
-        if (x3dom.isa(this._doc._nodeBag.lights[i], x3dom.nodeTypes.PhysicalEnvironmentLight))
+        var light = this._doc._nodeBag.lights[i];
+        if (x3dom.isa(light, x3dom.nodeTypes.PhysicalEnvironmentLight) &&
+           light._vf.on)
         {
             return true;
         }
@@ -43723,20 +43735,19 @@ x3dom.registerNodeType(
             getShaderProperties: function(viewarea)
             {
                 if (this._shaderProperties == null ||
-                    this._dirty.shader == true     ||
+                    this._dirty.shader == true ||
+                    x3dom.Utils.checkDirtyEnvironment(viewarea, this._shaderProperties) ||
+                    x3dom.Utils.checkDirtyPhysicalEnvironmentLight (viewarea, this._shaderProperties) ||
                     (this._webgl !== undefined &&
-                     this._webgl.dirtyLighting != x3dom.Utils.checkDirtyLighting(viewarea) ) ||
-                    x3dom.Utils.checkDirtyEnvironment(viewarea, this._shaderProperties) == true)
+                     this._webgl.dirtyLighting != x3dom.Utils.checkDirtyLighting(viewarea) ))
                 {
                     this._shaderProperties = x3dom.Utils.generateProperties(viewarea, this);
-
                     this._dirty.shader = false;
                     if (this._webgl !== undefined)
                     {
                         this._webgl.dirtyLighting = x3dom.Utils.checkDirtyLighting(viewarea);
                     }
                 }
-
                 return this._shaderProperties;
             },
 
@@ -47597,7 +47608,7 @@ x3dom.registerNodeType(
                         i3                = i*3;
                         interval          = this._vf.key[i+1] - this._vf.key[i];
                         t                 = (time - this._vf.key[i]) / interval;
-                        intervalInSeconds = interval * this.duration;
+                        intervalInSeconds = interval * this._vf.duration;
                         basis             = this.cubicSplineBasis( t, intervalInSeconds );
 
                         return interp( this._vf.keyValue[i3+2],
@@ -66323,14 +66334,14 @@ x3dom.registerNodeType(
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '5bb9a10d7d0d1ecc7ee987114a3802ed13c4ae28',
-    date:     'Tue Jan 29 20:14:27 2019 +0100'
+    revision: '09fd64ac04505d0c98c203c81d719c72859e6479',
+    date:     'Thu Jan 31 11:55:22 2019 +0100'
 };
 
 
 x3dom.versionInfo = {
     version:  '1.7.3-dev',
-    revision: '5bb9a10d7d0d1ecc7ee987114a3802ed13c4ae28',
-    date:     'Tue Jan 29 20:14:27 2019 +0100'
+    revision: '09fd64ac04505d0c98c203c81d719c72859e6479',
+    date:     'Thu Jan 31 11:55:22 2019 +0100'
 };
 
