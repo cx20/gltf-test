@@ -72,25 +72,36 @@ var createScene = function(engine) {
         var light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
         var light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
 
-        // Skybox
-        var cubeTexture = new BABYLON.CubeTexture(
-            "../../textures/cube/skybox/",
-            scene,
-            ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]
-        );
-        scene.createDefaultSkybox(cubeTexture, true, 10000);
+        var environmentTexture;
+        var skyBox;
+        if (scene.environmentTexture) {
+            // Models with "EXT_lights_image_based" can supply their own environmentTexture.
+            environmentTexture = scene.environmentTexture;
+            var skyboxBlur = 0;
+            skybox = scene.createDefaultSkybox(environmentTexture.clone(), true,
+                (scene.activeCamera.maxZ - scene.activeCamera.minZ) / 2, skyboxBlur);
+        } else {
+            // Skybox
+            cubeTexture = new BABYLON.CubeTexture(
+                "../../textures/cube/skybox/",
+                scene,
+                ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]
+            );
+            scene.createDefaultSkybox(cubeTexture, true, 10000);
 /*
-        // If you care about the performance of createDefaultSkybox(), The following code can be used to avoid this. However, the environmental texture will not be applied.
-        // http://www.html5gamedevs.com/topic/36997-using-skybox-takes-time-to-display-is-it-a-usage-problem/?tab=comments#comment-211765
-        var skybox = BABYLON.Mesh.CreateBox("skyBox", 10000, scene);
-        var skyboxMaterial = new BABYLON.StandardMaterial("skyBoxMaterial", scene);
-        skyboxMaterial.backFaceCulling = false;
-        skyboxMaterial.reflectionTexture = cubeTexture;
-        skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
-        skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-        skyboxMaterial.disableLighting = true;
-        skybox.material = skyboxMaterial;
+            // If you care about the performance of createDefaultSkybox(), The following code can be used to avoid this. However, the environmental texture will not be applied.
+            // http://www.html5gamedevs.com/topic/36997-using-skybox-takes-time-to-display-is-it-a-usage-problem/?tab=comments#comment-211765
+            var skybox = BABYLON.Mesh.CreateBox("skyBox", 10000, scene);
+            var skyboxMaterial = new BABYLON.StandardMaterial("skyBoxMaterial", scene);
+            skyboxMaterial.backFaceCulling = false;
+            skyboxMaterial.reflectionTexture = cubeTexture;
+            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            skyboxMaterial.disableLighting = true;
+            skybox.material = skyboxMaterial;
 */
+            environmentTexture = cubeTexture;
+        }
         //scene.debugLayer.show(true, camera);
 
         guiBoundingBox.onChange(function (value) {
@@ -98,7 +109,7 @@ var createScene = function(engine) {
         });
 
         guiSkybox.onChange(function (value) {
-            scene.environmentTexture = value ? cubeTexture : null;
+            scene.environmentTexture = value ? environmentTexture : null;
         });
 
         guiDebug.onChange(function (value) {
