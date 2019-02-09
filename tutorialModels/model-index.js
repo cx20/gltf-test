@@ -10,9 +10,9 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'AnimatedMorphSphere', scale:1.0},
     {category:'tutorialModels', name:'SimpleMaterial', scale:1.0},
     {category:'tutorialModels', name:'SimpleMeshes', scale:1.0},
-    //{category:'tutorialModels', name:'SimpleTexture', scale:1.0},
+    {category:'tutorialModels', name:'SimpleTexture', scale:1.0},
     {category:'tutorialModels', name:'Cameras', scale:1.0},
-    //{category:'tutorialModels', name:'SimpleSkin', scale:1.0},
+    {category:'tutorialModels', name:'SimpleSkin', scale:1.0},
     {category:'tutorialModels', name:'InterpolationTest', scale:1.0, allAnimations:true},  // Play all model animations at the same time
 ];
 
@@ -37,7 +37,7 @@ TutorialModelIndex.getEmbeddedFolderName = function(name) {
         'AdvancedMaterial': '-Embedded-buffer',
         'SimpleOpacity': '-Embedded-buffer',
         'SimpleTexture': '-Embedded-buffer',
-        'SimpleSkin': '-Embedded-buffers'
+        //'SimpleSkin': '-Embedded-buffers'
     };
     var suffix = suffixHash[name] === undefined ? '-Embedded' : suffixHash[name];
     return 'glTF' + suffix;
