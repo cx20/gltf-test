@@ -31,7 +31,9 @@ uniform sampler2D metallicRoughnessTexture;
 uniform sampler2D occlusionTexture;
 #endif
 
+#ifdef HAS_ENV_MAP
 uniform samplerCube env;
+#endif
 
 uniform vec4 baseColorFactor;
 uniform float roughnessFactor;
@@ -187,13 +189,14 @@ void main() {
     );
 
 
+    vec3 color;
     // IBL
+#ifdef HAS_ENV_MAP
     vec3 brdf = sRGBtoLINEAR(texture2D(brdfLUT, vec2(NoV, 1.0 - alphaRoughness))).rgb;
     vec3 IBLcolor = sRGBtoLINEAR(textureCube(env, R)).rgb;
     vec3 IBLspecular = 1.0 * IBLcolor * (f0 * brdf.x + brdf.y);
-
-    vec3 color;
     color += IBLspecular;
+#endif
 
     color += lightContrib(vec3(5, 5, 5), vec3(3), core);
     color += lightContrib(vec3(-5, -5, -5), vec3(0.2, 0.4, 0.6), core);
@@ -213,5 +216,20 @@ void main() {
 #ifdef HAS_EMISSIVE_MAP
     color += em.rgb;
 #endif
+
+#ifdef BLEND
     gl_FragColor = LINEARtoSRGB(vec4(color, base.a));
+
+#elif defined(MASK)
+
+#ifndef ALPHA_CUTOFF
+#define ALPHA_CUTOFF 0.5
+#endif
+    if(base.a < ALPHA_CUTOFF)
+        discard;
+    gl_FragColor = LINEARtoSRGB(vec4(color,1));
+#else
+    // Opaque
+    gl_FragColor = LINEARtoSRGB(vec4(color,1));
+#endif
 }
