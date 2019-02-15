@@ -4,6 +4,13 @@ attribute vec2 TEXCOORD_0;
 attribute vec4 TANGENT;
 attribute vec3 COLOR_0;
 
+#ifdef HAS_SKINS
+attribute vec4 JOINTS_0;
+attribute vec4 WEIGHTS_0;
+#define JOINT_AMOUNT 26
+uniform mat4 jointMat[JOINT_AMOUNT];
+#endif // HAS_SKINS
+
 uniform mat4 M;
 uniform mat4 V;
 uniform mat4 P;
@@ -17,13 +24,24 @@ varying mat3 TBN;
 
 
 void main() {
-  uv = TEXCOORD_0;
-  normal = normalize((nM * vec4(NORMAL, 0)).xyz);
-  vec3 tangent = normalize(vec3(nM * vec4(TANGENT.xyz, 0.0)));
-  vec3 bitangent = cross(normal, tangent) * TANGENT.w;
-  TBN = mat3(tangent, bitangent, normal);
+    uv = TEXCOORD_0;
+    normal = normalize((nM * vec4(NORMAL, 0)).xyz);
+    vec3 tangent = normalize(vec3(nM * vec4(TANGENT.xyz, 0)));
+    vec3 bitangent = cross(normal, tangent) * TANGENT.w;
+    TBN = mat3(tangent, bitangent, normal);
 
-  vec4 position = M * vec4(POSITION, 1);
-  pos = position.xyz / position.w;
-  gl_Position = P * V * position;
+#ifdef HAS_SKINS
+    mat4 skinMat =
+        WEIGHTS_0.x * jointMat[int(JOINTS_0.x)] +
+        WEIGHTS_0.y * jointMat[int(JOINTS_0.y)] +
+        WEIGHTS_0.z * jointMat[int(JOINTS_0.z)] +
+        WEIGHTS_0.w * jointMat[int(JOINTS_0.w)];
+
+    vec4 position = M * skinMat * vec4(POSITION, 1);
+#else
+    vec4 position = M * vec4(POSITION,1);
+#endif// HAS_SKINS
+
+    pos = position.xyz / position.w;
+    gl_Position = P * V * position;
 }
