@@ -97,7 +97,7 @@ struct coreData {
     float alphaRoughness;
 };
 
-vec3 lightContrib(vec3 lightDir, vec3 lightColor, coreData core) {
+vec3 lightContrib(vec3 lightDir, coreData core) {
 
     vec3 L = normalize(lightDir);
     vec3 H = normalize(core.V + L);
@@ -113,7 +113,7 @@ vec3 lightContrib(vec3 lightDir, vec3 lightColor, coreData core) {
 
     vec3 specContrib = F * G * D / (4.0 * NoL * core.NoV);
     vec3 diffuseContrib = (1.0 - F) * core.diffuse * (1.0 - core.metallic);
-    vec3 color = NoL * lightColor * (diffuseContrib + specContrib);
+    vec3 color = NoL * (diffuseContrib + specContrib);
     return color;
 }
 
@@ -198,8 +198,8 @@ void main() {
     color += IBLspecular;
 #endif
 
-    color += lightContrib(vec3(5, 5, 5), vec3(3), core);
-    color += lightContrib(vec3(-5, -5, -5), vec3(0.2, 0.4, 0.6), core);
+    color += lightContrib(vec3(5, 5, 5), core) * vec3(2);
+    color += lightContrib(vec3(-5, -5, -5), core) * vec3(0.2, 0.4, 0.6);
 
     // gl_FragColor = vec4(uv, 0, 1);
     // gl_FragColor = (base) * vec4(vec3(max(LoN, 0.0)), 1);
