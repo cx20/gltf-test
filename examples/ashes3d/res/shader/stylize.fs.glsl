@@ -135,7 +135,7 @@ void main() {
 #ifdef HAS_METALLIC_ROUGHNESS_MAP
     vec3 rm = texture2D(metallicRoughnessTexture, uv).rgb;
 #else
-    vec3 rm = vec3(0);
+    vec3 rm = vec3(0, 0.7, 0);
 #endif
 
 #ifdef HAS_AO_MAP
