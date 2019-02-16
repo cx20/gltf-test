@@ -36,10 +36,11 @@ async function run() {
     let yoffset = 0;
 
     let screen = new Ashes.Screen('#screen');
+    let skybox = await Ashes.Asset.loadCubemap('https://but0n.github.io/Ashes/res/envmap/GoldenGateBridge2/');
 
     let scene = Ashes.EntityMgr.create('root');
     //let gltfroot = await Ashes.Asset.loadGLTF(gltf, screen, 'res/envmap/GoldenGateBridge2/');
-    let gltfroot = await Ashes.Asset.loadGLTF(gltf, screen, 'https://but0n.github.io/Ashes/res/envmap/GoldenGateBridge2/');
+    let gltfroot = await Ashes.Asset.loadGLTF(gltf, screen, skybox);
     scene.appendChild(gltfroot);
     //progressBar.parentElement.style.display = 'none';
     let root = gltfroot.components.Transform;
