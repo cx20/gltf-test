@@ -55,7 +55,7 @@ async function run() {
     let cam = Ashes.EntityMgr.addComponent(mainCamera, new Ashes.Camera(screen.width / screen.height));
     Ashes.vec3.set(cameraTrans.translate, 0, 0, 5);
 
-    //scene.appendChild(mainCamera);
+    scene.appendChild(mainCamera);
     //let control = new Ashes.OrbitControl(screen, mainCamera);
     Ashes.EntityMgr.addComponent(mainCamera, new Ashes.OrbitControl(screen, mainCamera));
 
