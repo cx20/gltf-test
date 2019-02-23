@@ -45,8 +45,12 @@ async function run() {
     let cameraTrans = mainCamera.components.Transform;
     let cam = EntityMgr.addComponent(mainCamera, new Camera(screen.width / screen.height));
 
-    //vec3.set(cameraTrans.translate, 0, 0, 0.1); // set a little bit z offset to allow you orbit around
-    vec3.set(cameraTrans.translate, 0, 0, 2); // set a little bit z offset to allow you orbit around
+    // TODO: It should be fixed for interim correspondence
+    if (file == "project_polly.glb") {
+        vec3.set(cameraTrans.translate, 0, 0, 0.1); // set a little bit z offset to allow you orbit around
+    } else {
+        vec3.set(cameraTrans.translate, 0, 0, 2); // set a little bit z offset to allow you orbit around
+    }
 
     scene.appendChild(mainCamera);
     EntityMgr.addComponent(mainCamera, new OrbitControl(screen, mainCamera));
@@ -62,6 +66,7 @@ async function run() {
     document.querySelector('body').appendChild(scene);
 
     // find a node, attach camera
+    // TODO: It should be fixed for interim correspondence
     let movingTarget = document.querySelectorAll('[data-name=Correction__MovingCamera]')[0];
     if (movingTarget !== undefined ) {
         movingTarget.appendChild(mainCamera);
