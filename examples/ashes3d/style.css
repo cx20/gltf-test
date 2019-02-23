@@ -1,8 +1,54 @@
+/* * { -webkit-tap-highlight-color:rgba(0,0,0,0); } */
 body {
-    margin: 0;
+	width: 100%;
+	padding: 0;
+    background-color: #ededed !important;
 }
-canvas {
-    width: 100%;
-    height: 100vh;
-    vertical-align: top;
+
+* {
+	transition: all .3s ease;
+}
+
+.gray {
+	filter: grayscale(100%);
+}
+
+#screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+body > ash-entity {
+  overflow: scroll;
+  width: 240px!important;
+  max-height: 400px;
+  opacity: 0.6;
+}
+ash-entity {
+	display: block;
+	width: 1000px;
+	min-height: 8px;
+	border-style: solid;
+	border-color: rgba(64, 195, 255, 0.5);
+	border-width: 1px 0 0 3px;
+	margin-left: 5px;
+	padding-left: 5px;
+	display: flex;
+	flex: 1 0 auto;
+	flex-direction: column;
+	color: #fff;
+	text-shadow: 0 0 1px rgb(221, 238, 255);
+	font-size: 6px;
+	cursor: pointer;
+	user-select: none;
+}
+ash-entity[meshrenderer] {
+	border-color: rgb(255, 171, 14, 0.5) !important;
+}
+ash-entity[animatons] {
+	border-color: rgba(14, 255, 54, 0.5) !important;
+}
+ash-entity[skin] {
+	border-color: rgba(14, 126, 255, 0.5) !important;
 }
