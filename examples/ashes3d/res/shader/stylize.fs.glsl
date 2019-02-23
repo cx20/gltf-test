@@ -210,7 +210,7 @@ void main() {
     color += IBLspecular;
 #endif
 
-    // color += lightContrib(vec3(4, 5, 5), core) * vec3(2);
+    color += lightContrib(vec3(2, 5, 2), core) * vec3(2);
     color += lightContrib(vec3(1, 1, 5), core) * vec3(1.0, 0.8902, 0.6902) * 4.0;
     color += lightContrib(vec3(-5, 3, -5), core) * vec3(0.6431, 0.9176, 1.0);
     // color += lightContrib(vec3(-5, 1, 5), core) * vec3(0.3515625, 0.796875, 0.95703125) * 4.;

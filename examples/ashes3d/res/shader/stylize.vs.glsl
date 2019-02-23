@@ -6,6 +6,9 @@ attribute vec4 TANGENT;
 attribute vec3 COLOR_0;
 
 #ifdef HAS_SKINS
+#ifndef JOINT_AMOUNT
+#define JOINT_AMOUNT 200
+#endif
 attribute vec4 JOINTS_0;
 attribute vec4 WEIGHTS_0;
 uniform mat4 jointMat[JOINT_AMOUNT];
@@ -28,17 +31,17 @@ void main() {
     uv = TEXCOORD_0;
     uv1 = TEXCOORD_1;
     vec3 skinedNormal = NORMAL;
-
+    vec4 position = vec4(POSITION, 1);
 #ifdef HAS_SKINS
     mat4 skinMat =
         WEIGHTS_0.x * jointMat[int(JOINTS_0.x)] +
         WEIGHTS_0.y * jointMat[int(JOINTS_0.y)] +
         WEIGHTS_0.z * jointMat[int(JOINTS_0.z)] +
         WEIGHTS_0.w * jointMat[int(JOINTS_0.w)];
-    vec4 position = M * skinMat * vec4(POSITION, 1);
+    position = M * skinMat * position;
     skinedNormal = (skinMat * vec4(skinedNormal, 0)).xyz;
 #else
-    vec4 position = M * vec4(POSITION,1);
+    position = M * position;
 #endif// HAS_SKINS
 
     normal = normalize((nM * vec4(skinedNormal, 0)).xyz);
