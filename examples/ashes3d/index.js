@@ -65,12 +65,12 @@ async function run() {
     
     document.querySelector('body').appendChild(scene);
 
-    // find a node, attach camera
-    // TODO: It should be fixed for interim correspondence
-    let movingTarget = document.querySelectorAll('[data-name=Correction__MovingCamera]')[0];
-    if (movingTarget !== undefined ) {
-        movingTarget.appendChild(mainCamera);
-        EntityMgr.hasNewMember = true;
+    let cameras =  Ashes.EntityMgr.getComponents('Camera');
+    if ( cameras.length > 0 ) {
+        setInterval(function(){
+            let cameraIndex = Math.floor(cameras.length * Math.random());
+            screen.mainCamera = cameras[cameraIndex];
+        }, 5000);
     }
 }
 
