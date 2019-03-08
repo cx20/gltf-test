@@ -6,7 +6,7 @@ varying vec3 normal;
 varying vec2 uv;
 varying vec2 uv1;
 varying vec3 pos;
-varying vec3 color;
+varying vec4 vColor;
 varying mat3 TBN;
 
 
@@ -138,6 +138,10 @@ void main() {
     vec4 base = sRGBtoLINEAR(texture2D(baseColorTexture, baseColorTexture_uv));
 #else
     vec4 base = vec4(1);
+#endif
+
+#if defined(COLOR_0_SIZE_3) || defined(COLOR_0_SIZE_4)
+    base *= vColor;
 #endif
 
 #ifdef BASECOLOR_FACTOR

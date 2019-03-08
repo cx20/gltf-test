@@ -3,7 +3,12 @@ attribute vec3 NORMAL;
 attribute vec2 TEXCOORD_0;
 attribute vec2 TEXCOORD_1;
 attribute vec4 TANGENT;
+
+#ifdef COLOR_0_SIZE_3
 attribute vec3 COLOR_0;
+#elif defined(COLOR_0_SIZE_4)
+attribute vec4 COLOR_0;
+#endif
 
 #ifdef HAS_SKINS
 #ifndef JOINT_AMOUNT
@@ -23,7 +28,7 @@ varying vec3 normal;
 varying vec2 uv;
 varying vec2 uv1;
 varying vec3 pos;
-varying vec3 color;
+varying vec4 vColor;
 varying mat3 TBN;
 
 
@@ -49,6 +54,11 @@ void main() {
     vec3 bitangent=cross(normal,tangent)*TANGENT.w;
     TBN=mat3(tangent,bitangent,normal);
 
+#ifdef COLOR_0_SIZE_3
+    vColor = vec4(COLOR_0, 1);
+#elif defined(COLOR_0_SIZE_4)
+    vColor = COLOR_0;
+#endif
     pos = position.xyz / position.w;
     gl_Position = P * V * position;
 }
