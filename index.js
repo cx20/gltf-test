@@ -353,10 +353,24 @@ function makeTutorialExtensionTestModelLinks() {
     }
 }
 
+function replaceContentName(type) {
+    var hashMap = {
+        "glTF": "[glTF]",
+        "glTF-Embedded": "[Embed]",
+        "glTF-Embedded-buffer": "[Embed]",
+        "glTF-Binary": "[Binary]",
+        "glTF-pbrSpecularGlossiness": "[SpecGloss]",
+        "glTF-Draco": "[Draco]",
+        "glTF-IBL": "[glTF-IBL]"
+    }
+    return hashMap[type] ? hashMap[type] : type;
+}
+
 function createlink(engineName, categoryName, modelName, type, scale)
 {
     var a = document.createElement('a');
-    a.textContent = type;
+    a.textContent = replaceContentName(type);
+    a.title = engineName + " : " + type;
     //var uri = engines[i].path;
     var engine = getEngineByName(engineName);
     var uri = engine.path;
