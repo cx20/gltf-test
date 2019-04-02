@@ -1,0 +1,13 @@
+{
+"companyName": "DefaultCompany",
+"productName": "GLTFLoader",
+"dataUrl": "webgl.data.unityweb",
+"asmCodeUrl": "webgl.asm.code.unityweb",
+"asmMemoryUrl": "webgl.asm.memory.unityweb",
+"asmFrameworkUrl": "webgl.asm.framework.unityweb",
+"TOTAL_MEMORY": 268435456,
+"graphicsAPI": ["WebGL 2.0", "WebGL 1.0"],
+"webglContextAttributes": {"preserveDrawingBuffer": false},
+"splashScreenStyle": "Dark",
+"backgroundColor": "#231F20"
+}

@@ -46,6 +46,9 @@ var engines = [{
 }, {
     name: 'Ashes',
     path: 'examples/ashes3d/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'Unity',
+    path: 'examples/unity/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function queryEngines(){
