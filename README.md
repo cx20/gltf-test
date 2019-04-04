@@ -14,12 +14,12 @@ https://cx20.github.io/gltf-test/?engines=Three.js,Babylon.js,Hilo3d
 
 |Model Name           |Models  |Formats  |Libraries|Tests  |
 |:--------------------|:------:|:-------:|:-------:|:-----:|
-|Simple models        |  11    |   2     |   16    |   352 |
-|More complex models  |  18    |   4     |   16    | 1,152 |
-|PBR Sample           |   9    |   4     |   16    |   576 |
-|Further PBR Sample   |   6    |   1     |   16    |    96 |
-|Feature Test models  |  11    |   3     |   16    |   528 |
-|Extension Test models|   4    |   1     |   16    |    64 |
+|Simple models        |  11    |   2     |   17    |   374 |
+|More complex models  |  18    |   4     |   17    | 1,224 |
+|PBR Sample           |   9    |   4     |   17    |   612 |
+|Further PBR Sample   |   6    |   1     |   17    |   102 |
+|Feature Test models  |  11    |   3     |   17    |   561 |
+|Extension Test models|   4    |   1     |   17    |    68 |
 
 ## Format Tests
 
