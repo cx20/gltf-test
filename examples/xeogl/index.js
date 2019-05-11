@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,32 +19,32 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var scale = modelInfo.scale;
-var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+let scale = modelInfo.scale;
+let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     url = modelInfo.url;
 }
 var ROTATE = true;
-var gui = new dat.GUI();
-var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let gui = new dat.GUI();
+let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 
 // Load glTF
-var model = new xeogl.GLTFModel({
+let model = new xeogl.GLTFModel({
     src: url,
     scale: [scale,scale,scale]
 });
 
-var skybox = new xeogl.Skybox({
+let skybox = new xeogl.Skybox({
     src: "../../textures/skybox/cloudySkyBox.jpg",
     active: true
 });
 
 // Get the default Scene off the Skybox
-var scene = skybox.scene;
+let scene = skybox.scene;
 
 scene.clearLights();
 
-var ambientLight = new xeogl.AmbientLight({
+let ambientLight = new xeogl.AmbientLight({
     //color: [1.0, 0.3, 0.7]
     color: [0.06, 0.06, 0.18]
 });
@@ -65,7 +65,7 @@ new xeogl.DirLight({
     space: "view"
 });
 
-var camera = scene.camera;
+let camera = scene.camera;
 if (modelInfo.name == "GearboxAssy" ) {
     camera.eye = [184.21, 10.54, -7.03];
     camera.look = [159.20, 17.02, 3.21];

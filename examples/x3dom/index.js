@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,7 +19,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var runtime;
+let runtime;
 
 document.onload = function () {
     x3d = document.getElementById("x3d");           
@@ -27,12 +27,12 @@ document.onload = function () {
     
     runtime = x3d.runtime;
     
-    var file = "../../" + modelInfo.category + "/" + modelInfo.path;
+    let file = "../../" + modelInfo.category + "/" + modelInfo.path;
     if(modelInfo.url) {
         file = modelInfo.url;
     }
-    //var type = modelInfo.path.includes("glTF-Binary") ? "Binary" : "";
-    var type = file.split('.').pop() == "glb" ? "Binary" : "";
+    //let type = modelInfo.path.includes("glTF-Binary") ? "Binary" : "";
+    let type = file.split('.').pop() == "glb" ? "Binary" : "";
 
     load(file, type);
 }
@@ -45,7 +45,7 @@ function onDownloadsFinished()
 
 function load(file, type)
 {
-    var suffix = (type == "Binary") ? ".glb" : ".gltf"; 
+    let suffix = (type == "Binary") ? ".glb" : ".gltf"; 
 
     type = (type != undefined) ? "-" + type : "";
     

@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }

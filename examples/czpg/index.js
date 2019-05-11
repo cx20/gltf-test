@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,15 +19,15 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     url = modelInfo.url;
 }
-var scale = modelInfo.scale;
-var modelName = modelInfo.name;
-var axis;
+let scale = modelInfo.scale;
+let modelName = modelInfo.name;
+let axis;
 
-var sceneNode;
+let sceneNode;
 window.addEventListener('load', function() {
     const renderer = new CZPG.Renderer('glpaper', { antialias: true, preserveDrawingBuffer: true }).setSize('100%', '100%').clear();
     const context = renderer.context;

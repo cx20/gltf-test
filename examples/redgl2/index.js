@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,21 +19,21 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var scale = modelInfo.scale;
-//var path = "../../sampleModels/" + modelInfo.path;
-var path = "../../" + modelInfo.category + "/" + modelInfo.path;
+let scale = modelInfo.scale;
+//let path = "../../sampleModels/" + modelInfo.path;
+let path = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     path = modelInfo.url;
 }
-var base = path.substr(0, path.lastIndexOf("/") + 1);
-var file = path.substr(path.lastIndexOf("/") + 1);
+let base = path.substr(0, path.lastIndexOf("/") + 1);
+let file = path.substr(path.lastIndexOf("/") + 1);
 
-var canvas;
+let canvas;
 canvas = document.getElementById('canvas');
 document.body.appendChild(canvas);
 RedGL(canvas, function (v) {
     if (v) {
-        var tWorld, tView, tScene, tController, tRenderer;
+        let tWorld, tView, tScene, tController, tRenderer;
         this['world'] = tWorld = RedWorld();
         tScene = RedScene(this);
         tController = RedObitController(this);
@@ -53,7 +53,7 @@ RedGL(canvas, function (v) {
             '../../textures/cube/skybox/pz.jpg',
             '../../textures/cube/skybox/nz.jpg'
         ]);
-        var tDLight = RedDirectionalLight(this)
+        let tDLight = RedDirectionalLight(this)
         tScene.addLight(tDLight)
         tDLight.x = 1;
         tDLight.y = 1;

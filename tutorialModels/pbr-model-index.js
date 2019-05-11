@@ -1,4 +1,4 @@
-var TutorialPbrModelIndex = {};
+let TutorialPbrModelIndex = {};
 
 TutorialPbrModelIndex.List = [
     {category:'tutorialModels', name:'Avocado', scale:30.0},	// copied from sampleModels
@@ -21,31 +21,31 @@ TutorialPbrModelIndex.HasPngScreenshot = [ // List of only models that have *.pn
 
 
 TutorialPbrModelIndex.getScreenshot = function(name) {
-    //var extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
-    var extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
+    //let extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
+    let extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
     extension = ((TutorialPbrModelIndex.HasPngScreenshot.indexOf(name) < 0) ? extension : 'png');
     return name + '/screenshot/screenshot.' + extension;
 };
 
 //TutorialPbrModelIndex.getEmbeddedFolderName = function(name) {
-//    var suffixHash = {
+//    let suffixHash = {
 //        'SimpleMaterial': '-buffer',
 //        'AdvancedMaterial': '-buffer',
 //        'SimpleOpacity': '-buffer',
 //        'SimpleTexture': '-buffer',
 //        'SimpleSkin': '-buffers'
 //    };
-//    var suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
+//    let suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
 //    return 'glTF-Embedded' + suffix;
 //};
 
 TutorialPbrModelIndex.getModelInfoCollection = function() {
-    var numModels = TutorialPbrModelIndex.List.length;
-    var modelInfoCollection = {};
-    for (var i = 0; i < numModels; ++i) {
-        var category = TutorialPbrModelIndex.List[i].category;
-        var name = TutorialPbrModelIndex.List[i].name;
-        var scale = TutorialPbrModelIndex.List[i].scale;
+    let numModels = TutorialPbrModelIndex.List.length;
+    let modelInfoCollection = {};
+    for (let i = 0; i < numModels; ++i) {
+        let category = TutorialPbrModelIndex.List[i].category;
+        let name = TutorialPbrModelIndex.List[i].name;
+        let scale = TutorialPbrModelIndex.List[i].scale;
         modelInfoCollection[name] = {
             category: category,
             name: name,
@@ -56,15 +56,15 @@ TutorialPbrModelIndex.getModelInfoCollection = function() {
 }
 
 TutorialPbrModelIndex.getCurrentModel = function() {
-    var modelInfoCollection = TutorialPbrModelIndex.getModelInfoCollection();
-    var queryString = window.location.search.substring(1);
-    var parts = queryString.replace(/\+/g, '%20').split('&');
-    var options = {};
-    for (var i = 0, len = parts.length; i < len; ++i) {
-        var subparts = parts[i].split('=');
+    let modelInfoCollection = TutorialPbrModelIndex.getModelInfoCollection();
+    let queryString = window.location.search.substring(1);
+    let parts = queryString.replace(/\+/g, '%20').split('&');
+    let options = {};
+    for (let i = 0, len = parts.length; i < len; ++i) {
+        let subparts = parts[i].split('=');
 
-        var name = decodeURIComponent(subparts[0]);
-        var value = subparts[1];
+        let name = decodeURIComponent(subparts[0]);
+        let value = subparts[1];
         if (value) {
             options[name] = decodeURIComponent(value);
         }

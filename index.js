@@ -1,4 +1,4 @@
-var engines = [{
+let engines = [{
     name: 'Three.js',
     path: 'examples/threejs/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
@@ -52,16 +52,16 @@ var engines = [{
 }];
 
 function queryEngines(){
-    var res = location.search.match(/engines=([\w\.,]+)/);
+    let res = location.search.match(/engines=([\w\.,]+)/);
     if(res && res[1]){
-        var engineDict = {};
+        let engineDict = {};
         engines.forEach(function(engine){
             engineDict[engine.name] = engine;
         });
 
         engines = [];
         res[1].split(',').forEach(function(engineName){
-            var engine = engineDict[engineName];
+            let engine = engineDict[engineName];
             if(engine){
                 engines.push(engine);
             }
@@ -70,9 +70,10 @@ function queryEngines(){
 }
 
 function getEngineByName(name) {
-    var result;
-    var numEngines = engines.length;
-    for (var i = 0; i < numEngines; ++i) {
+    let result;
+    let numEngines = engines.length;
+    let i;
+    for (i = 0; i < numEngines; ++i) {
         if (engines[i].name == name ) {
             break;
         }
@@ -81,34 +82,34 @@ function getEngineByName(name) {
 }
 
 function makeSampleModelLinks() {
-    var modelList = ModelIndex.List;
-    var numModels = modelList.length;
-    var numEngines = engines.length;
+    let modelList = ModelIndex.List;
+    let numModels = modelList.length;
+    let numEngines = engines.length;
 
-    var tableHead = document.querySelector('#modelTable thead tr');
-    var tableBody = document.querySelector('#modelTable tbody');
+    let tableHead = document.querySelector('#modelTable thead tr');
+    let tableBody = document.querySelector('#modelTable tbody');
 
-    var i, j;
+    let i, j;
     for (i = 0; i < numEngines; ++i) {
-        var th = document.createElement('th');
+        let th = document.createElement('th');
         th.textContent = engines[i].name;
         tableHead.appendChild(th);
     }
 
     for (j = 0; j < numModels; ++j) {
-        var modelName = modelList[j].name;
-        var scale = modelList[j].scale;
-        var tr = document.createElement('tr');
-        var tdName = document.createElement('td');
+        let modelName = modelList[j].name;
+        let scale = modelList[j].scale;
+        let tr = document.createElement('tr');
+        let tdName = document.createElement('td');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
-        var tdPic = document.createElement('td');
-        var img = document.createElement('img');
+        let tdPic = document.createElement('td');
+        let img = document.createElement('img');
         img.setAttribute('src', 'sampleModels/' + ModelIndex.getScreenshot(modelName));
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
-            var td = document.createElement('td');
+            let td = document.createElement('td');
             td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF', scale));
             td.appendChild(document.createElement('br'));
             td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Embedded', scale));
@@ -129,36 +130,36 @@ function makeSampleModelLinks() {
 }
 
 function makeTutorialModelLinks() {
-    var modelList = TutorialModelIndex.List;
-    var numModels = modelList.length;
-    var numEngines = engines.length;
+    let modelList = TutorialModelIndex.List;
+    let numModels = modelList.length;
+    let numEngines = engines.length;
 
-    var tableHead = document.querySelector('#tutorialModelTable thead tr');
-    var tableBody = document.querySelector('#tutorialModelTable tbody');
+    let tableHead = document.querySelector('#tutorialModelTable thead tr');
+    let tableBody = document.querySelector('#tutorialModelTable tbody');
 
-    var i, j;
+    let i, j;
     for (i = 0; i < numEngines; ++i) {
-        var th = document.createElement('th');
+        let th = document.createElement('th');
         th.textContent = engines[i].name;
         tableHead.appendChild(th);
     }
 
     for (j = 0; j < numModels; ++j) {
-        var modelName = modelList[j].name;
-        var scale = modelList[j].scale;
-        var tr = document.createElement('tr');
-        var tdName = document.createElement('td');
+        let modelName = modelList[j].name;
+        let scale = modelList[j].scale;
+        let tr = document.createElement('tr');
+        let tdName = document.createElement('td');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
-        var tdPic = document.createElement('td');
-        var img = document.createElement('img');
+        let tdPic = document.createElement('td');
+        let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 128);
         img.setAttribute('height', 128);
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
-            var td = document.createElement('td');
+            let td = document.createElement('td');
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             td.appendChild(document.createElement('br'));
             //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Embedded', scale));
@@ -172,36 +173,36 @@ function makeTutorialModelLinks() {
 }
 
 function makeTutorialPbrModelLinks() {
-    var modelList = TutorialPbrModelIndex.List;
-    var numModels = modelList.length;
-    var numEngines = engines.length;
+    let modelList = TutorialPbrModelIndex.List;
+    let numModels = modelList.length;
+    let numEngines = engines.length;
 
-    var tableHead = document.querySelector('#tutorialPbrModelTable thead tr');
-    var tableBody = document.querySelector('#tutorialPbrModelTable tbody');
+    let tableHead = document.querySelector('#tutorialPbrModelTable thead tr');
+    let tableBody = document.querySelector('#tutorialPbrModelTable tbody');
 
-    var i, j;
+    let i, j;
     for (i = 0; i < numEngines; ++i) {
-        var th = document.createElement('th');
+        let th = document.createElement('th');
         th.textContent = engines[i].name;
         tableHead.appendChild(th);
     }
 
     for (j = 0; j < numModels; ++j) {
-        var modelName = modelList[j].name;
-        var scale = modelList[j].scale;
-        var tr = document.createElement('tr');
-        var tdName = document.createElement('td');
+        let modelName = modelList[j].name;
+        let scale = modelList[j].scale;
+        let tr = document.createElement('tr');
+        let tdName = document.createElement('td');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
-        var tdPic = document.createElement('td');
-        var img = document.createElement('img');
+        let tdPic = document.createElement('td');
+        let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialPbrModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 128);
         img.setAttribute('height', 128);
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
-            var td = document.createElement('td');
+            let td = document.createElement('td');
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             td.appendChild(document.createElement('br'));
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
@@ -216,36 +217,36 @@ function makeTutorialPbrModelLinks() {
 }
 
 function makeTutorialFurtherPbrModelLinks() {
-    var modelList = TutorialFurtherPbrModelIndex.List;
-    var numModels = modelList.length;
-    var numEngines = engines.length;
+    let modelList = TutorialFurtherPbrModelIndex.List;
+    let numModels = modelList.length;
+    let numEngines = engines.length;
 
-    var tableHead = document.querySelector('#tutorialFurtherPbrModelTable thead tr');
-    var tableBody = document.querySelector('#tutorialFurtherPbrModelTable tbody');
+    let tableHead = document.querySelector('#tutorialFurtherPbrModelTable thead tr');
+    let tableBody = document.querySelector('#tutorialFurtherPbrModelTable tbody');
 
-    var i, j;
+    let i, j;
     for (i = 0; i < numEngines; ++i) {
-        var th = document.createElement('th');
+        let th = document.createElement('th');
         th.textContent = engines[i].name;
         tableHead.appendChild(th);
     }
 
     for (j = 0; j < numModels; ++j) {
-        var modelName = modelList[j].name;
-        var scale = modelList[j].scale;
-        var tr = document.createElement('tr');
-        var tdName = document.createElement('td');
+        let modelName = modelList[j].name;
+        let scale = modelList[j].scale;
+        let tr = document.createElement('tr');
+        let tdName = document.createElement('td');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
-        var tdPic = document.createElement('td');
-        var img = document.createElement('img');
+        let tdPic = document.createElement('td');
+        let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialFurtherPbrModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
         img.setAttribute('height', 128);
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
-            var td = document.createElement('td');
+            let td = document.createElement('td');
             td.setAttribute('width', '100');
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             //td.appendChild(document.createElement('br'));
@@ -259,36 +260,36 @@ function makeTutorialFurtherPbrModelLinks() {
 }
 
 function makeTutorialFeatureTestModelLinks() {
-    var modelList = TutorialFeatureTestModelIndex.List;
-    var numModels = modelList.length;
-    var numEngines = engines.length;
+    let modelList = TutorialFeatureTestModelIndex.List;
+    let numModels = modelList.length;
+    let numEngines = engines.length;
 
-    var tableHead = document.querySelector('#tutorialFeatureTestModelTable thead tr');
-    var tableBody = document.querySelector('#tutorialFeatureTestModelTable tbody');
+    let tableHead = document.querySelector('#tutorialFeatureTestModelTable thead tr');
+    let tableBody = document.querySelector('#tutorialFeatureTestModelTable tbody');
 
-    var i, j;
+    let i, j;
     for (i = 0; i < numEngines; ++i) {
-        var th = document.createElement('th');
+        let th = document.createElement('th');
         th.textContent = engines[i].name;
         tableHead.appendChild(th);
     }
 
     for (j = 0; j < numModels; ++j) {
-        var modelName = modelList[j].name;
-        var scale = modelList[j].scale;
-        var tr = document.createElement('tr');
-        var tdName = document.createElement('td');
+        let modelName = modelList[j].name;
+        let scale = modelList[j].scale;
+        let tr = document.createElement('tr');
+        let tdName = document.createElement('td');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
-        var tdPic = document.createElement('td');
-        var img = document.createElement('img');
+        let tdPic = document.createElement('td');
+        let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialFeatureTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
         img.setAttribute('height', 128);
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
-            var td = document.createElement('td');
+            let td = document.createElement('td');
             td.setAttribute('width', '100');
             if ( modelName == 'MorphPrimitivesTest' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
@@ -312,36 +313,36 @@ function makeTutorialFeatureTestModelLinks() {
 }
 
 function makeTutorialExtensionTestModelLinks() {
-    var modelList = TutorialExtensionTestModelIndex.List;
-    var numModels = modelList.length;
-    var numEngines = engines.length;
+    let modelList = TutorialExtensionTestModelIndex.List;
+    let numModels = modelList.length;
+    let numEngines = engines.length;
 
-    var tableHead = document.querySelector('#tutorialExtensionTestModelTable thead tr');
-    var tableBody = document.querySelector('#tutorialExtensionTestModelTable tbody');
+    let tableHead = document.querySelector('#tutorialExtensionTestModelTable thead tr');
+    let tableBody = document.querySelector('#tutorialExtensionTestModelTable tbody');
 
-    var i, j;
+    let i, j;
     for (i = 0; i < numEngines; ++i) {
-        var th = document.createElement('th');
+        let th = document.createElement('th');
         th.textContent = engines[i].name;
         tableHead.appendChild(th);
     }
 
     for (j = 0; j < numModels; ++j) {
-        var modelName = modelList[j].name;
-        var scale = modelList[j].scale;
-        var tr = document.createElement('tr');
-        var tdName = document.createElement('td');
+        let modelName = modelList[j].name;
+        let scale = modelList[j].scale;
+        let tr = document.createElement('tr');
+        let tdName = document.createElement('td');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
-        var tdPic = document.createElement('td');
-        var img = document.createElement('img');
+        let tdPic = document.createElement('td');
+        let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialExtensionTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
         img.setAttribute('height', 128);
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
-            var td = document.createElement('td');
+            let td = document.createElement('td');
             td.setAttribute('width', '100');
             if ( modelName == 'EnvironmentTest' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
@@ -357,7 +358,7 @@ function makeTutorialExtensionTestModelLinks() {
 }
 
 function replaceContentName(type) {
-    var hashMap = {
+    let hashMap = {
         "glTF": "[glTF]",
         "glTF-Embedded": "[Embed]",
         "glTF-Embedded-buffer": "[Embed]",
@@ -371,12 +372,12 @@ function replaceContentName(type) {
 
 function createlink(engineName, categoryName, modelName, type, scale)
 {
-    var a = document.createElement('a');
+    let a = document.createElement('a');
     a.textContent = replaceContentName(type);
     a.title = engineName + " : " + type;
-    //var uri = engines[i].path;
-    var engine = getEngineByName(engineName);
-    var uri = engine.path;
+    //let uri = engines[i].path;
+    let engine = getEngineByName(engineName);
+    let uri = engine.path;
     uri = uri.replace('{category}', categoryName);
     uri = uri.replace('{model}', modelName);
     uri = uri.replace('{type}', type);

@@ -24,9 +24,9 @@ var ROTATE = true;
 var AXIS = true;
 
 // GUI
-var gui = new dat.GUI();
-var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
-var guiAxis = gui.add(window, 'AXIS').name('Axis');
+let gui = new dat.GUI();
+let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let guiAxis = gui.add(window, 'AXIS').name('Axis');
 
 let canvas = document.getElementById("world");
 let width = window.innerWidth;

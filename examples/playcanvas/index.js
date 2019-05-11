@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -18,11 +18,11 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var decoderModule;
+let decoderModule;
 
 // create a PlayCanvas application
-var canvas = document.getElementById('application');
-var app = new pc.Application(canvas, {
+let canvas = document.getElementById('application');
+let app = new pc.Application(canvas, {
     mouse: new pc.Mouse(document.body),
     keyboard: new pc.Keyboard(window)
 });
@@ -37,7 +37,7 @@ window.addEventListener('resize', function() {
     app.resizeCanvas();
 });
 // create camera entity
-var camera = new pc.Entity('camera');
+let camera = new pc.Entity('camera');
 camera.addComponent('camera');
 camera.addComponent('script');
 app.root.addChild(camera);
@@ -64,7 +64,7 @@ app.assets.loadFromUrl('../../libs/playcanvas/v1.9.0-dev/orbit-camera.js', 'scri
     });
 });
 // set a prefiltered cubemap as the skybox
-var cubemapAsset = new pc.Asset('helipad', 'cubemap', {
+let cubemapAsset = new pc.Asset('helipad', 'cubemap', {
     url: "https://cdn.rawgit.com/playcanvas/playcanvas-gltf/5489ff62/viewer/cubemap/6079289/Helipad.dds"
 }, {
     "textures": [
@@ -90,13 +90,13 @@ cubemapAsset.ready(function () {
 });
 
 // root entity for loaded gltf scenes which can have more than one root entity
-var gltfRoot = new pc.Entity('gltf');
+let gltfRoot = new pc.Entity('gltf');
 app.root.addChild(gltfRoot);
 
 
 function loadScript(src) {
-    var head = document.getElementsByTagName('head')[0];
-    var script = document.createElement('script');
+    let head = document.getElementsByTagName('head')[0];
+    let script = document.createElement('script');
     script.type = 'text/javascript';
     script.src = src;
     return new Promise(function (resolve) {
@@ -124,43 +124,43 @@ function init(){
 }
 
 function onLoad() {
-    var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    let url = "../../" + modelInfo.category + "/" + modelInfo.path;
     if(modelInfo.url) {
         url = modelInfo.url;
     }
-    var scale = modelInfo.scale;
-    var basePath = url.substring(0, url.lastIndexOf("/")) + "/";
-    var ext = url.split(".").pop();
-    var isGlb = (ext == "glb") ? true : false;
+    let scale = modelInfo.scale;
+    let basePath = url.substring(0, url.lastIndexOf("/")) + "/";
+    let ext = url.split(".").pop();
+    let isGlb = (ext == "glb") ? true : false;
 
     // create directional light entity
-    var light = new pc.Entity('light');
+    let light = new pc.Entity('light');
     light.addComponent('light',);
     app.root.addChild(light);
     light.setEulerAngles(45, 0, 45);
  
     // rotator script
-    var Rotate = pc.createScript('rotate');
+    let Rotate = pc.createScript('rotate');
     Rotate.prototype.update = function (deltaTime) {
         this.entity.rotate(0, -deltaTime * 20, 0);
     };
     // glTF scene root that rotates
-    var gltfRoot = new pc.Entity('gltf');
+    let gltfRoot = new pc.Entity('gltf');
     gltfRoot.addComponent('script');
     gltfRoot.script.create('rotate');
     app.root.addChild(gltfRoot);
 
     if ( isGlb ) {
-        var req = new XMLHttpRequest();
+        let req = new XMLHttpRequest();
         req.open("get", url, true);
         req.responseType = isGlb ? "arraybuffer" : "";
         req.send(null);
 
         req.onload = function(){
-            var arrayBuffer = req.response;
+            let arrayBuffer = req.response;
             loadGlb(arrayBuffer, app.graphicsDevice, function (model, textures, animationClips) {
                 // Wrap the model as an asset and add to the asset registry
-                var asset = new pc.Asset('gltf', 'model', {
+                let asset = new pc.Asset('gltf', 'model', {
                     url: ''
                 });
                 asset.resource = model;
@@ -175,8 +175,8 @@ function onLoad() {
                 // Now that the model is created, after translateAnimation, we have to hook here
                 if (animationClips) {
                     for (i = 0; i < animationClips.length; i++) {
-                        for(var c = 0; c < animationClips[i].animCurves.length; c++) {
-                            var curve = animationClips[i].animCurves[c];
+                        for(let c = 0; c < animationClips[i].animCurves.length; c++) {
+                            let curve = animationClips[i].animCurves[c];
                             if (curve.animTargets[0].targetNode === "model")
                                 curve.animTargets[0].targetNode = gltfRoot;
                         }
@@ -189,7 +189,7 @@ function onLoad() {
                 }
                 if ( gltfRoot.animComponent ) {
                     // Add all animations to the model's animation component
-                    for (var i = 0; i < animationClips.length; i++) {
+                    for (let i = 0; i < animationClips.length; i++) {
                         animationClips[i].transferToRoot(gltfRoot);
                         gltfRoot.animComponent.addClip(animationClips[i]);
                     }
@@ -203,11 +203,11 @@ function onLoad() {
         }
     } else {
         app.assets.loadFromUrl(url, 'json', function (err, asset) {
-            var json = asset.resource;
-            var gltf = JSON.parse(json);
+            let json = asset.resource;
+            let gltf = JSON.parse(json);
             loadGltf(gltf, app.graphicsDevice, function (model, textures, animationClips) {
                 // Wrap the model as an asset and add to the asset registry
-                var asset = new pc.Asset('gltf', 'model', {
+                let asset = new pc.Asset('gltf', 'model', {
                     url: ''
                 });
                 asset.resource = model;
@@ -222,8 +222,8 @@ function onLoad() {
                 // Now that the model is created, after translateAnimation, we have to hook here
                 if (animationClips) {
                     for (i = 0; i < animationClips.length; i++) {
-                        for(var c = 0; c < animationClips[i].animCurves.length; c++) {
-                            var curve = animationClips[i].animCurves[c];
+                        for(let c = 0; c < animationClips[i].animCurves.length; c++) {
+                            let curve = animationClips[i].animCurves[c];
                             if (curve.animTargets[0].targetNode === "model")
                                 curve.animTargets[0].targetNode = gltfRoot;
                         }
@@ -236,7 +236,7 @@ function onLoad() {
                 }
                 if ( gltfRoot.animComponent ) {
                     // Add all animations to the model's animation component
-                    for (var i = 0; i < animationClips.length; i++) {
+                    for (let i = 0; i < animationClips.length; i++) {
                         animationClips[i].transferToRoot(gltfRoot);
                         gltfRoot.animComponent.addClip(animationClips[i]);
                     }

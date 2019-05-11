@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,17 +19,17 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     url = modelInfo.url;
 }
 
 var ROTATE = true;
-var gui = new dat.GUI();
-var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
-var scale = modelInfo.scale;
+let gui = new dat.GUI();
+let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let scale = modelInfo.scale;
 
-var app = clay.application.create('#main', {
+let app = clay.application.create('#main', {
     init: function (app) {
         // Create camera
         this._camera = app.createCamera([0, 2, 3], [0, 0, 0]);
@@ -47,7 +47,7 @@ var app = clay.application.create('#main', {
         });
         this._control.autoRotateSpeed = 20;
 
-        //var cube = app.createSphere();
+        //let cube = app.createSphere();
         // Skybox need a cubemap texture.
         app.loadTextureCube({
             px: '../../textures/cube/skybox/px.jpg',
@@ -57,7 +57,7 @@ var app = clay.application.create('#main', {
             pz: '../../textures/cube/skybox/pz.jpg',
             nz: '../../textures/cube/skybox/nz.jpg'
         }).then(function (cubemap) {
-            var skybox = new clay.plugin.Skybox({
+            let skybox = new clay.plugin.Skybox({
                 // Attach skybox to the scene.
                 scene: app.scene,
                 // Use the cubemap as environment

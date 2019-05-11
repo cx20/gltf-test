@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -24,36 +24,36 @@ var BOUNDING_BOX = false;
 var SKYBOX = true;
 var DEBUG = false;
 
-var createScene = function(engine) {
+let createScene = function(engine) {
 
-    var scene = new BABYLON.Scene(engine);
-    var mesh;
+    let scene = new BABYLON.Scene(engine);
+    let mesh;
     scene.clearColor = new BABYLON.Color3(1, 1, 1);
 
-    var scale = modelInfo.scale;
-    //var path = "../../sampleModels/" + modelInfo.path;
-    var path = "../../" + modelInfo.category + "/" + modelInfo.path;
+    let scale = modelInfo.scale;
+    //let path = "../../sampleModels/" + modelInfo.path;
+    let path = "../../" + modelInfo.category + "/" + modelInfo.path;
     if(modelInfo.url) {
         path = modelInfo.url;
     }
-    var base = path.substr(0, path.lastIndexOf("/") + 1);
-    var file = path.substr(path.lastIndexOf("/") + 1);
+    let base = path.substr(0, path.lastIndexOf("/") + 1);
+    let file = path.substr(path.lastIndexOf("/") + 1);
 
     // GUI
-    var gui = new dat.GUI();
-    var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
-    var guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
-    var guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
-    var guiDebug = gui.add(window, 'DEBUG').name('Debug');
+    let gui = new dat.GUI();
+    let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+    let guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
+    let guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
+    let guiDebug = gui.add(window, 'DEBUG').name('Debug');
 
     BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (plugin) {
         plugin.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
     });
 
-    var loader = BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
+    let loader = BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
         scene = newScene;
-        var parentMesh = scene.rootNodes[0];
+        let parentMesh = scene.rootNodes[0];
 
         if ( modelInfo.name == "GearboxAssy" ) {
             // TODO: Position adjustment required
@@ -61,23 +61,23 @@ var createScene = function(engine) {
             parentMesh.position.y -= 17.02 * scale;
             parentMesh.position.z += 3.21 * scale;
         }
-        var modelScaling = parentMesh.scaling;
+        let modelScaling = parentMesh.scaling;
         parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
-        var camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
+        let camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
         camera.attachControl(canvas, false, false);
         camera.wheelDeltaPercentage = 0.005;
         scene.activeCamera = camera;
 
-        var light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
-        var light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
+        let light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
+        let light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
 
-        var environmentTexture;
-        var skyBox;
+        let environmentTexture;
+        let skyBox;
         if (scene.environmentTexture) {
             // Models with "EXT_lights_image_based" can supply their own environmentTexture.
             environmentTexture = scene.environmentTexture;
-            var skyboxBlur = 0;
+            let skyboxBlur = 0;
             skybox = scene.createDefaultSkybox(environmentTexture.clone(), true,
                 (scene.activeCamera.maxZ - scene.activeCamera.minZ) / 2, skyboxBlur);
         } else {
@@ -91,8 +91,8 @@ var createScene = function(engine) {
 /*
             // If you care about the performance of createDefaultSkybox(), The following code can be used to avoid this. However, the environmental texture will not be applied.
             // http://www.html5gamedevs.com/topic/36997-using-skybox-takes-time-to-display-is-it-a-usage-problem/?tab=comments#comment-211765
-            var skybox = BABYLON.Mesh.CreateBox("skyBox", 10000, scene);
-            var skyboxMaterial = new BABYLON.StandardMaterial("skyBoxMaterial", scene);
+            let skybox = BABYLON.Mesh.CreateBox("skyBox", 10000, scene);
+            let skyboxMaterial = new BABYLON.StandardMaterial("skyBoxMaterial", scene);
             skyboxMaterial.backFaceCulling = false;
             skyboxMaterial.reflectionTexture = cubeTexture;
             skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
@@ -125,11 +125,11 @@ var createScene = function(engine) {
     return scene;
 };
 
-var canvas = document.querySelector("#renderCanvas");
-var engine = new BABYLON.Engine(canvas, true);
+let canvas = document.querySelector("#renderCanvas");
+let engine = new BABYLON.Engine(canvas, true);
 engine.enableOfflineSupport = false; // Suppress manifest reference
 
 window.addEventListener('resize', function() {
     engine.resize();
 });
-var scene = createScene(engine);
+let scene = createScene(engine);

@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,27 +19,27 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     url = modelInfo.url;
 }
-var scale = modelInfo.scale;
-var modelName = modelInfo.name;
-var axis;
-var diffuseEnvMap;
-var specularEnvMap;
-var brfdTexture;
-var model;
+let scale = modelInfo.scale;
+let modelName = modelInfo.name;
+let axis;
+let diffuseEnvMap;
+let specularEnvMap;
+let brfdTexture;
+let model;
 
 var ROTATE = true;
 var AXIS = true;
 var SKYBOX = true;
-var gui = new dat.GUI();
-var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
-var guiAxis = gui.add(window, 'AXIS').name('Axis');
-var guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
+let gui = new dat.GUI();
+let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let guiAxis = gui.add(window, 'AXIS').name('Axis');
+let guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
 
-var camera = new Hilo3d.PerspectiveCamera({
+let camera = new Hilo3d.PerspectiveCamera({
     aspect: innerWidth / innerHeight,
     fov:75,
     far: 2000,
@@ -47,7 +47,7 @@ var camera = new Hilo3d.PerspectiveCamera({
     z:3
 });
 
-var stage = new Hilo3d.Stage({
+let stage = new Hilo3d.Stage({
     container: document.body,
     camera: camera,
     clearColor: new Hilo3d.Color(0,0,0),
@@ -56,26 +56,26 @@ var stage = new Hilo3d.Stage({
     pixelRatio:1
 });
 
-var container = new Hilo3d.Node({
+let container = new Hilo3d.Node({
     onUpdate:function(){
         this.rotationY -= ROTATE ? 0.2 : 0;
     }
 }).addTo(stage);
 
-var directionLight = new Hilo3d.DirectionalLight({
+let directionLight = new Hilo3d.DirectionalLight({
     color:new Hilo3d.Color(0.8, 0.8, 0.8),
     direction:new Hilo3d.Vector3(1, -1, 0)
 }).addTo(stage);
 
 
-var ticker = new Hilo3d.Ticker(60);
+let ticker = new Hilo3d.Ticker(60);
 ticker.addTick(stage);
 ticker.addTick(Hilo3d.Tween);
 ticker.addTick(Hilo3d.Animation);
 ticker.start(true);
 
-var loadingElem = document.getElementById('loading');
-var loadQueue = new Hilo3d.LoadQueue([{
+let loadingElem = document.getElementById('loading');
+let loadQueue = new Hilo3d.LoadQueue([{
     type: 'CubeTexture',
     images: [
         '../../textures/cube/skybox/diffuse/bakedDiffuse_01.jpg',
@@ -104,7 +104,7 @@ var loadQueue = new Hilo3d.LoadQueue([{
     src:url,
     isMultiAnim: modelInfo.allAnimations !== true
 }]).on('load', function(e){
-    var progress = loadQueue.getLoaded()/loadQueue.getTotal();
+    let progress = loadQueue.getLoaded()/loadQueue.getTotal();
     if(progress >= 1){
         loadingElem.parentNode.removeChild(loadingElem);
     }
@@ -112,12 +112,12 @@ var loadQueue = new Hilo3d.LoadQueue([{
         loadingElem.innerHTML = 'loading ' + (progress*100).toFixed(2) + '% ...';
     }
 }).on('complete', function () {
-    var result = loadQueue.getAllContent();
+    let result = loadQueue.getAllContent();
     diffuseEnvMap = result[0];
     specularEnvMap = result[1];
     brfdTexture = result[2];
     model = window.model = result[3];
-    var node = model.node;
+    let node = model.node;
 
     switch(modelName){
         case 'VC':
@@ -144,7 +144,7 @@ var loadQueue = new Hilo3d.LoadQueue([{
     axis = new Hilo3d.AxisHelper();
     container.addChild(axis);
 
-    var skybox = new Hilo3d.Mesh({
+    let skybox = new Hilo3d.Mesh({
         geometry: new Hilo3d.BoxGeometry(),
         material: new Hilo3d.BasicMaterial({
             lightType: 'NONE',
@@ -154,7 +154,7 @@ var loadQueue = new Hilo3d.LoadQueue([{
     }).addTo(container);
     skybox.setScale(50);
 
-    var orbitControls = new OrbitControls(stage, {
+    let orbitControls = new OrbitControls(stage, {
         isLockMove:true,
         isLockZ:true,
     });

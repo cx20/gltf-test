@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,9 +19,9 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var terrain = Cesium.createDefaultTerrainProviderViewModels();
+let terrain = Cesium.createDefaultTerrainProviderViewModels();
 
-var viewer = new Cesium.Viewer('cesiumContainer', {
+let viewer = new Cesium.Viewer('cesiumContainer', {
     selectionIndicator : false,
     terrainProviderViewModels: terrain,
     selectedTerrainProviderViewModel: terrain[1],
@@ -31,20 +31,20 @@ var viewer = new Cesium.Viewer('cesiumContainer', {
 function createModel(url, height) {
     viewer.entities.removeAll();
 
-    var position = Cesium.Cartesian3.fromDegrees(139.691706, 35.689487, height);
-    var heading = Cesium.Math.toRadians(135);
-    var pitch = 0;
-    var roll = 0;
+    let position = Cesium.Cartesian3.fromDegrees(139.691706, 35.689487, height);
+    let heading = Cesium.Math.toRadians(135);
+    let pitch = 0;
+    let roll = 0;
 /*
-    var heading = Cesium.Math.toRadians(30);
-    var pitch = Cesium.Math.toRadians(0);
-    var roll = Cesium.Math.toRadians(0);
+    let heading = Cesium.Math.toRadians(30);
+    let pitch = Cesium.Math.toRadians(0);
+    let roll = Cesium.Math.toRadians(0);
 */
     
-    var hpr = new Cesium.HeadingPitchRoll(heading, pitch, roll);
-    var orientation = Cesium.Transforms.headingPitchRollQuaternion(position, hpr);
+    let hpr = new Cesium.HeadingPitchRoll(heading, pitch, roll);
+    let orientation = Cesium.Transforms.headingPitchRollQuaternion(position, hpr);
 
-    var entity = viewer.entities.add({
+    let entity = viewer.entities.add({
         //name : modelInfo.filename, // TODO: The `name` property is not available in Cesium 1.52
         position : position,
         orientation : orientation,
@@ -58,7 +58,7 @@ function createModel(url, height) {
     });
 }
 
-var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     url = modelInfo.url;
 }

@@ -1,4 +1,4 @@
-var ModelIndex = {};
+let ModelIndex = {};
 
 ModelIndex.List = [
     {category:'sampleModels', name:'Box', scale:1.0},
@@ -36,17 +36,17 @@ ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screensho
 ];
 
 ModelIndex.getScreenshot = function(name) {
-    var extension = ((ModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
+    let extension = ((ModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
     return name + '/screenshot/screenshot.' + extension;
 };
 
 ModelIndex.getModelInfoCollection = function() {
-    var numModels = ModelIndex.List.length;
-    var modelInfoCollection = {};
-    for (var i = 0; i < numModels; ++i) {
-        var category = ModelIndex.List[i].category;
-        var name = ModelIndex.List[i].name;
-        var scale = ModelIndex.List[i].scale;
+    let numModels = ModelIndex.List.length;
+    let modelInfoCollection = {};
+    for (let i = 0; i < numModels; ++i) {
+        let category = ModelIndex.List[i].category;
+        let name = ModelIndex.List[i].name;
+        let scale = ModelIndex.List[i].scale;
         modelInfoCollection[name] = {
             category: category,
             name: name,
@@ -57,15 +57,15 @@ ModelIndex.getModelInfoCollection = function() {
 }
 
 ModelIndex.getCurrentModel = function() {
-    var modelInfoCollection = ModelIndex.getModelInfoCollection();
-    var queryString = window.location.search.substring(1);
-    var parts = queryString.replace(/\+/g, '%20').split('&');
-    var options = {};
-    for (var i = 0, len = parts.length; i < len; ++i) {
-        var subparts = parts[i].split('=');
+    let modelInfoCollection = ModelIndex.getModelInfoCollection();
+    let queryString = window.location.search.substring(1);
+    let parts = queryString.replace(/\+/g, '%20').split('&');
+    let options = {};
+    for (let i = 0, len = parts.length; i < len; ++i) {
+        let subparts = parts[i].split('=');
 
-        var name = decodeURIComponent(subparts[0]);
-        var value = subparts[1];
+        let name = decodeURIComponent(subparts[0]);
+        let value = subparts[1];
         if (value) {
             options[name] = decodeURIComponent(value);
         }

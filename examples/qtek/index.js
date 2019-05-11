@@ -1,4 +1,4 @@
-var modelInfo = ModelIndex.getCurrentModel();
+let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
 }
@@ -19,13 +19,13 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var url = "../../" + modelInfo.category + "/" + modelInfo.path;
+let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 
-var ROTATE = true;
-var gui = new dat.GUI();
-var guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let ROTATE = true;
+let gui = new dat.GUI();
+let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 
-var viewer = new QMV.Viewer(document.getElementById('container'), {
+let viewer = new QMV.Viewer(document.getElementById('container'), {
     // Full config at
     // https://github.com/pissang/qtek-model-viewer/blob/master/src/defaultSceneConfig.js
     devicePixelRatio: 1,
