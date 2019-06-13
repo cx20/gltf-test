@@ -8,9 +8,6 @@ let engines = [{
     name: 'Cesium',
     path: 'examples/cesium/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
-    name: 'pex',
-    path: 'examples/pex/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
     name: 'Grimore.js',
     path: 'examples/grimoiregl/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
@@ -52,6 +49,9 @@ let engines = [{
 }, {
     name: 'Unity',
     path: 'examples/unity/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'pex',
+    path: 'examples/pex/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function queryEngines(){
