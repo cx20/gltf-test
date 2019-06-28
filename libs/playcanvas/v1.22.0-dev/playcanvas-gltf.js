@@ -1420,13 +1420,13 @@
 
                 buildHierarchy(resources);
                 success(createModel(resources), resources.textures, resources.animations);
-            });
 
-            if (gltf.hasOwnProperty('extensionsUsed')) {
-                if (gltf.extensionsUsed.indexOf('KHR_draco_mesh_compression') !== -1) {
-                    resources.decoderModule = null;
+                if (gltf.hasOwnProperty('extensionsUsed')) {
+                    if (gltf.extensionsUsed.indexOf('KHR_draco_mesh_compression') !== -1) {
+                        resources.decoderModule = null;
+                    }
                 }
-            }
+            });
         });
     }
 
