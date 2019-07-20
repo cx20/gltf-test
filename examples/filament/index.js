@@ -27,6 +27,7 @@ if(modelInfo.url) {
     mesh_url = modelInfo.url;
 }
 let basePath = getPathNameFromUrl(mesh_url);
+let scale = modelInfo.scale;
 
 function getPathNameFromUrl(path) {
     var result = path.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
@@ -48,7 +49,7 @@ class App {
         this.canvas = canvas;
         const engine = this.engine = Filament.Engine.create(this.canvas);
         const scene = this.scene = engine.createScene();
-        this.trackball = new Trackball(canvas, {startSpin: 0.035});
+        this.trackball = new Trackball(canvas, {startSpin: 0.006});
 
         const sunlight = Filament.EntityManager.get().create();
         Filament.LightManager.Builder(LightType.SUN)
@@ -69,7 +70,12 @@ class App {
         this.scene.setSkybox(skybox);
 
         const loader = engine.createAssetLoader();
-        const asset = this.asset = loader.createAssetFromJson(mesh_url);
+        if (mesh_url.split('.').pop() == 'glb') {
+            this.asset= loader.createAssetFromBinary(mesh_url);
+        } else {
+            this.asset= loader.createAssetFromJson(mesh_url);
+        }
+        const asset = this.asset;
 
         const messages = document.getElementById('messages');
 
@@ -116,10 +122,10 @@ class App {
         const width = this.canvas.width = window.innerWidth * dpr;
         const height = this.canvas.height = window.innerHeight * dpr;
         this.view.setViewport([0, 0, width, height]);
-        const y = -0.125, eye = [0, y, 2], center = [0, y, 0], up = [0, 1, 0];
+        const y = 0.3, eye = [0, y, 5*1/scale], center = [0, y, 0], up = [0, 1, 0];
         this.camera.lookAt(eye, center, up);
         const aspect = width / height;
         const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
-        this.camera.setProjectionFov(30, aspect, 1.0, 10.0, fov);
+        this.camera.setProjectionFov(30, aspect, 1.0, 10000.0, fov);
     }
 }
