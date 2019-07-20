@@ -52,6 +52,9 @@ let engines = [{
 }, {
     name: 'pex',
     path: 'examples/pex/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
+    name: 'filament',
+    path: 'examples/filament/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function queryEngines(){
