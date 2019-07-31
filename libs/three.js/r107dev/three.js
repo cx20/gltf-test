@@ -185,7 +185,7 @@
 
 	} );
 
-	var REVISION = '107dev';
+	var REVISION = '107';
 	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
 	var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
 	var CullFaceNone = 0;
@@ -334,6 +334,24 @@
 	var RGBADepthPacking = 3201;
 	var TangentSpaceNormalMap = 0;
 	var ObjectSpaceNormalMap = 1;
+
+	var ZeroStencilOp = 0;
+	var KeepStencilOp = 7680;
+	var ReplaceStencilOp = 7681;
+	var IncrementStencilOp = 7682;
+	var DecrementStencilOp = 7683;
+	var IncrementWrapStencilOp = 34055;
+	var DecrementWrapStencilOp = 34056;
+	var InvertStencilOp = 5386;
+
+	var NeverStencilFunc = 512;
+	var LessStencilFunc = 513;
+	var EqualStencilFunc = 514;
+	var LessEqualStencilFunc = 515;
+	var GreaterStencilFunc = 516;
+	var NotEqualStencilFunc = 517;
+	var GreaterEqualStencilFunc = 518;
+	var AlwaysStencilFunc = 519;
 
 	/**
 	 * @author alteredq / http://alteredqualia.com/
@@ -2331,6 +2349,8 @@
 	 * @author tschw
 	 */
 
+	var _vector;
+
 	function Matrix3() {
 
 		this.elements = [
@@ -2414,29 +2434,25 @@
 
 		},
 
-		applyToBufferAttribute: function () {
+		applyToBufferAttribute: function ( attribute ) {
 
-			var v1 = new Vector3();
+			if ( _vector === undefined ) _vector = new Vector3();
 
-			return function applyToBufferAttribute( attribute ) {
+			for ( var i = 0, l = attribute.count; i < l; i ++ ) {
 
-				for ( var i = 0, l = attribute.count; i < l; i ++ ) {
+				_vector.x = attribute.getX( i );
+				_vector.y = attribute.getY( i );
+				_vector.z = attribute.getZ( i );
 
-					v1.x = attribute.getX( i );
-					v1.y = attribute.getY( i );
-					v1.z = attribute.getZ( i );
+				_vector.applyMatrix3( this );
 
-					v1.applyMatrix3( this );
+				attribute.setXYZ( i, _vector.x, _vector.y, _vector.z );
 
-					attribute.setXYZ( i, v1.x, v1.y, v1.z );
+			}
 
-				}
+			return attribute;
 
-				return attribute;
-
-			};
-
-		}(),
+		},
 
 		multiply: function ( m ) {
 
@@ -3553,27 +3569,16 @@
 
 		},
 
-		clampScalar: function () {
+		clampScalar: function ( minVal, maxVal ) {
 
-			var min, max;
+			this.x = Math.max( minVal, Math.min( maxVal, this.x ) );
+			this.y = Math.max( minVal, Math.min( maxVal, this.y ) );
+			this.z = Math.max( minVal, Math.min( maxVal, this.z ) );
+			this.w = Math.max( minVal, Math.min( maxVal, this.w ) );
 
-			return function clampScalar( minVal, maxVal ) {
+			return this;
 
-				if ( min === undefined ) {
-
-					min = new Vector4();
-					max = new Vector4();
-
-				}
-
-				min.set( minVal, minVal, minVal, minVal );
-				max.set( maxVal, maxVal, maxVal, maxVal );
-
-				return this.clamp( min, max );
-
-			};
-
-		}(),
+		},
 
 		clampLength: function ( min, max ) {
 
@@ -4818,6 +4823,8 @@
 	 * @author bhouston / http://clara.io
 	 */
 
+	var _matrix, _quaternion;
+
 	function Euler( x, y, z, order ) {
 
 		this._x = x || 0;
@@ -5062,19 +5069,15 @@
 
 		},
 
-		setFromQuaternion: function () {
+		setFromQuaternion: function ( q, order, update ) {
 
-			var matrix = new Matrix4();
+			if ( _matrix === undefined ) _matrix = new Matrix4();
 
-			return function setFromQuaternion( q, order, update ) {
+			_matrix.makeRotationFromQuaternion( q );
 
-				matrix.makeRotationFromQuaternion( q );
+			return this.setFromRotationMatrix( _matrix, order, update );
 
-				return this.setFromRotationMatrix( matrix, order, update );
-
-			};
-
-		}(),
+		},
 
 		setFromVector3: function ( v, order ) {
 
@@ -5082,21 +5085,17 @@
 
 		},
 
-		reorder: function () {
+		reorder: function ( newOrder ) {
 
 			// WARNING: this discards revolution information -bhouston
 
-			var q = new Quaternion();
+			if ( _quaternion === undefined ) _quaternion = new Quaternion();
 
-			return function reorder( newOrder ) {
+			_quaternion.setFromEuler( this );
 
-				q.setFromEuler( this );
+			return this.setFromQuaternion( _quaternion, newOrder );
 
-				return this.setFromQuaternion( q, newOrder );
-
-			};
-
-		}(),
+		},
 
 		equals: function ( euler ) {
 
@@ -6800,6 +6799,8 @@
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
+	var _box;
+
 	function Sphere( center, radius ) {
 
 		this.center = ( center !== undefined ) ? center : new Vector3();
@@ -6818,39 +6819,35 @@
 
 		},
 
-		setFromPoints: function () {
+		setFromPoints: function ( points, optionalCenter ) {
 
-			var box = new Box3();
+			if ( _box === undefined ) _box = new Box3();
 
-			return function setFromPoints( points, optionalCenter ) {
+			var center = this.center;
 
-				var center = this.center;
+			if ( optionalCenter !== undefined ) {
 
-				if ( optionalCenter !== undefined ) {
+				center.copy( optionalCenter );
 
-					center.copy( optionalCenter );
+			} else {
 
-				} else {
+				_box.setFromPoints( points ).getCenter( center );
 
-					box.setFromPoints( points ).getCenter( center );
+			}
 
-				}
+			var maxRadiusSq = 0;
 
-				var maxRadiusSq = 0;
+			for ( var i = 0, il = points.length; i < il; i ++ ) {
 
-				for ( var i = 0, il = points.length; i < il; i ++ ) {
+				maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( points[ i ] ) );
 
-					maxRadiusSq = Math.max( maxRadiusSq, center.distanceToSquared( points[ i ] ) );
+			}
 
-				}
+			this.radius = Math.sqrt( maxRadiusSq );
 
-				this.radius = Math.sqrt( maxRadiusSq );
+			return this;
 
-				return this;
-
-			};
-
-		}(),
+		},
 
 		clone: function () {
 
@@ -8567,6 +8564,14 @@
 		this.depthTest = true;
 		this.depthWrite = true;
 
+		this.stencilFunc = AlwaysStencilFunc;
+		this.stencilRef = 0;
+		this.stencilMask = 0xff;
+		this.stencilFail = KeepStencilOp;
+		this.stencilZFail = KeepStencilOp;
+		this.stencilZPass = KeepStencilOp;
+		this.stencilWrite = false;
+
 		this.clippingPlanes = null;
 		this.clipIntersection = false;
 		this.clipShadows = false;
@@ -8766,6 +8771,14 @@
 			data.depthTest = this.depthTest;
 			data.depthWrite = this.depthWrite;
 
+			data.stencilWrite = this.stencilWrite;
+			data.stencilFunc = this.stencilFunc;
+			data.stencilRef = this.stencilRef;
+			data.stencilMask = this.stencilMask;
+			data.stencilFail = this.stencilFail;
+			data.stencilZFail = this.stencilZFail;
+			data.stencilZPass = this.stencilZPass;
+
 			// rotation (SpriteMaterial)
 			if ( this.rotation && this.rotation !== 0 ) data.rotation = this.rotation;
 
@@ -8858,6 +8871,14 @@
 			this.depthFunc = source.depthFunc;
 			this.depthTest = source.depthTest;
 			this.depthWrite = source.depthWrite;
+
+			this.stencilWrite = source.stencilWrite;
+			this.stencilFunc = source.stencilFunc;
+			this.stencilRef = source.stencilRef;
+			this.stencilMask = source.stencilMask;
+			this.stencilFail = source.stencilFail;
+			this.stencilZFail = source.stencilZFail;
+			this.stencilZPass = source.stencilZPass;
 
 			this.colorWrite = source.colorWrite;
 
@@ -11159,7 +11180,7 @@
 
 			}
 
-			function checkBufferGeometryIntersection( object, material, raycaster, ray, position, morphPosition, uv, a, b, c ) {
+			function checkBufferGeometryIntersection( object, material, raycaster, ray, position, morphPosition, uv, uv2, a, b, c ) {
 
 				vA.fromBufferAttribute( position, a );
 				vB.fromBufferAttribute( position, b );
@@ -11207,6 +11228,16 @@
 						uvC.fromBufferAttribute( uv, c );
 
 						intersection.uv = Triangle.getUV( intersectionPoint, vA, vB, vC, uvA, uvB, uvC, new Vector2() );
+
+					}
+
+					if ( uv2 ) {
+
+						uvA.fromBufferAttribute( uv2, a );
+						uvB.fromBufferAttribute( uv2, b );
+						uvC.fromBufferAttribute( uv2, c );
+
+						intersection.uv2 = Triangle.getUV( intersectionPoint, vA, vB, vC, uvA, uvB, uvC, new Vector2() );
 
 					}
 
@@ -11260,6 +11291,7 @@
 					var position = geometry.attributes.position;
 					var morphPosition = geometry.morphAttributes.position;
 					var uv = geometry.attributes.uv;
+					var uv2 = geometry.attributes.uv2;
 					var groups = geometry.groups;
 					var drawRange = geometry.drawRange;
 					var i, j, il, jl;
@@ -11286,7 +11318,7 @@
 									b = index.getX( j + 1 );
 									c = index.getX( j + 2 );
 
-									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, a, b, c );
+									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, uv2, a, b, c );
 
 									if ( intersection ) {
 
@@ -11311,7 +11343,7 @@
 								b = index.getX( i + 1 );
 								c = index.getX( i + 2 );
 
-								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, a, b, c );
+								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, uv2, a, b, c );
 
 								if ( intersection ) {
 
@@ -11344,7 +11376,7 @@
 									b = j + 1;
 									c = j + 2;
 
-									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, a, b, c );
+									intersection = checkBufferGeometryIntersection( this, groupMaterial, raycaster, ray, position, morphPosition, uv, uv2, a, b, c );
 
 									if ( intersection ) {
 
@@ -11369,7 +11401,7 @@
 								b = i + 1;
 								c = i + 2;
 
-								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, a, b, c );
+								intersection = checkBufferGeometryIntersection( this, material, raycaster, ray, position, morphPosition, uv, uv2, a, b, c );
 
 								if ( intersection ) {
 
@@ -12129,8 +12161,6 @@
 				vertices2 = geometry.vertices,
 				faces1 = this.faces,
 				faces2 = geometry.faces,
-				uvs1 = this.faceVertexUvs[ 0 ],
-				uvs2 = geometry.faceVertexUvs[ 0 ],
 				colors1 = this.colors,
 				colors2 = geometry.colors;
 
@@ -12212,23 +12242,25 @@
 
 			// uvs
 
-			for ( i = 0, il = uvs2.length; i < il; i ++ ) {
+			for ( var i = 0, il = geometry.faceVertexUvs.length; i < il; i ++ ) {
 
-				var uv = uvs2[ i ], uvCopy = [];
+				var faceVertexUvs2 = geometry.faceVertexUvs[ i ];
 
-				if ( uv === undefined ) {
+				if ( this.faceVertexUvs[ i ] === undefined ) this.faceVertexUvs[ i ] = [];
 
-					continue;
+				for ( var j = 0, jl = faceVertexUvs2.length; j < jl; j ++ ) {
+
+					var uvs2 = faceVertexUvs2[ j ], uvsCopy = [];
+
+					for ( var k = 0, kl = uvs2.length; k < kl; k ++ ) {
+
+						uvsCopy.push( uvs2[ k ].clone() );
+
+					}
+
+					this.faceVertexUvs[ i ].push( uvsCopy );
 
 				}
-
-				for ( var j = 0, jl = uv.length; j < jl; j ++ ) {
-
-					uvCopy.push( uv[ j ].clone() );
-
-				}
-
-				uvs1.push( uvCopy );
 
 			}
 
@@ -16192,22 +16224,18 @@
 
 		}
 
-		function getWireframeAttribute( geometry ) {
-
-			var attribute = wireframeAttributes[ geometry.id ];
-
-			if ( attribute ) return attribute;
+		function updateWireframeAttribute( geometry ) {
 
 			var indices = [];
 
 			var geometryIndex = geometry.index;
-			var geometryAttributes = geometry.attributes;
-
-			// console.time( 'wireframe' );
+			var geometryPosition = geometry.attributes.position;
+			var version = 0;
 
 			if ( geometryIndex !== null ) {
 
 				var array = geometryIndex.array;
+				version = geometryIndex.version;
 
 				for ( var i = 0, l = array.length; i < l; i += 3 ) {
 
@@ -16221,7 +16249,8 @@
 
 			} else {
 
-				var array = geometryAttributes.position.array;
+				var array = geometryPosition.array;
+				version = geometryPosition.version;
 
 				for ( var i = 0, l = ( array.length / 3 ) - 1; i < l; i += 3 ) {
 
@@ -16235,15 +16264,50 @@
 
 			}
 
-			// console.timeEnd( 'wireframe' );
-
-			attribute = new ( arrayMax( indices ) > 65535 ? Uint32BufferAttribute : Uint16BufferAttribute )( indices, 1 );
+			var attribute = new ( arrayMax( indices ) > 65535 ? Uint32BufferAttribute : Uint16BufferAttribute )( indices, 1 );
+			attribute.version = version;
 
 			attributes.update( attribute, 34963 );
 
+			//
+
+			var previousAttribute = wireframeAttributes[ geometry.id ];
+
+			if ( previousAttribute ) attributes.remove( previousAttribute );
+
+			//
+
 			wireframeAttributes[ geometry.id ] = attribute;
 
-			return attribute;
+		}
+
+		function getWireframeAttribute( geometry ) {
+
+			var currentAttribute = wireframeAttributes[ geometry.id ];
+
+			if ( currentAttribute ) {
+
+				var geometryIndex = geometry.index;
+
+				if ( geometryIndex !== null ) {
+
+					// if the attribute is obsolete, create a new one
+
+					if ( currentAttribute.version < geometryIndex.version ) {
+
+						updateWireframeAttribute( geometry );
+
+					}
+
+				}
+
+			} else {
+
+				updateWireframeAttribute( geometry );
+
+			}
+
+			return wireframeAttributes[ geometry.id ];
 
 		}
 
@@ -17750,7 +17814,7 @@
 
 	function WebGLProgram( renderer, extensions, code, material, shader, parameters, capabilities ) {
 
-		var gl = renderer.context;
+		var gl = renderer.getContext();
 
 		var defines = material.defines;
 
@@ -20561,6 +20625,15 @@
 			depthBuffer.setMask( material.depthWrite );
 			colorBuffer.setMask( material.colorWrite );
 
+			var stencilWrite = material.stencilWrite;
+			stencilBuffer.setTest( stencilWrite );
+			if ( stencilWrite ) {
+
+				stencilBuffer.setFunc( material.stencilFunc, material.stencilRef, material.stencilMask );
+				stencilBuffer.setOp( material.stencilFail, material.stencilZFail, material.stencilZPass );
+
+			}
+
 			setPolygonOffset( material.polygonOffset, material.polygonOffsetFactor, material.polygonOffsetUnits );
 
 		}
@@ -22720,11 +22793,9 @@
 	 * @author mrdoob / http://mrdoob.com/
 	 */
 
-	function WebXRManager( renderer ) {
+	function WebXRManager( renderer, gl ) {
 
 		var scope = this;
-
-		var gl = renderer.context;
 
 		var session = null;
 
@@ -23067,7 +23138,6 @@
 		// public properties
 
 		this.domElement = _canvas;
-		this.context = null;
 
 		// Debug configuration container
 		this.debug = {
@@ -23290,7 +23360,6 @@
 
 			info.programs = programCache.programs;
 
-			_this.context = _gl;
 			_this.capabilities = capabilities;
 			_this.extensions = extensions;
 			_this.properties = properties;
@@ -23304,7 +23373,7 @@
 
 		// vr
 
-		var vr = ( typeof navigator !== 'undefined' && 'xr' in navigator && 'supportsSession' in navigator.xr ) ? new WebXRManager( _this ) : new WebVRManager( _this );
+		var vr = ( typeof navigator !== 'undefined' && 'xr' in navigator && 'supportsSession' in navigator.xr ) ? new WebXRManager( _this, _gl ) : new WebVRManager( _this );
 
 		this.vr = vr;
 
@@ -27768,7 +27837,7 @@
 
 		// all vertices should lie on a conceptual sphere with a given radius
 
-		appplyRadius( radius );
+		applyRadius( radius );
 
 		// finally, create the uv data
 
@@ -27881,7 +27950,7 @@
 
 		}
 
-		function appplyRadius( radius ) {
+		function applyRadius( radius ) {
 
 			var vertex = new Vector3();
 
@@ -40059,7 +40128,13 @@
 
 		var glyph = data.glyphs[ char ] || data.glyphs[ '?' ];
 
-		if ( ! glyph ) return;
+		if ( ! glyph ) {
+
+			console.error( 'THREE.Font: character "' + char + '" does not exists in font family ' + data.familyName + '.' );
+
+			return;
+
+		}
 
 		var path = new ShapePath();
 
@@ -45079,6 +45154,8 @@
 	 * @author bhouston / http://clara.io
 	 */
 
+	var _startP, _startEnd;
+
 	function Line3( start, end ) {
 
 		this.start = ( start !== undefined ) ? start : new Vector3();
@@ -45163,32 +45240,32 @@
 
 		},
 
-		closestPointToPointParameter: function () {
+		closestPointToPointParameter: function ( point, clampToLine ) {
 
-			var startP = new Vector3();
-			var startEnd = new Vector3();
+			if ( _startP === undefined ) {
 
-			return function closestPointToPointParameter( point, clampToLine ) {
+				_startP = new Vector3();
+				_startEnd = new Vector3();
 
-				startP.subVectors( point, this.start );
-				startEnd.subVectors( this.end, this.start );
+			}
 
-				var startEnd2 = startEnd.dot( startEnd );
-				var startEnd_startP = startEnd.dot( startP );
+			_startP.subVectors( point, this.start );
+			_startEnd.subVectors( this.end, this.start );
 
-				var t = startEnd_startP / startEnd2;
+			var startEnd2 = _startEnd.dot( _startEnd );
+			var startEnd_startP = _startEnd.dot( _startP );
 
-				if ( clampToLine ) {
+			var t = startEnd_startP / startEnd2;
 
-					t = _Math.clamp( t, 0, 1 );
+			if ( clampToLine ) {
 
-				}
+				t = _Math.clamp( t, 0, 1 );
 
-				return t;
+			}
 
-			};
+			return t;
 
-		}(),
+		},
 
 		closestPointToPoint: function ( point, clampToLine, target ) {
 
@@ -48484,7 +48561,16 @@
 				console.warn( 'THREE.WebGLRenderer: .shadowMapCullFace has been removed. Set Material.shadowSide instead.' );
 
 			}
+		},
+		context: {
+			get: function () {
+
+				console.warn( 'THREE.WebGLRenderer: .context has been removed. Use .getContext() instead.' );
+				return this.getContext();
+
+			}
 		}
+
 	} );
 
 	Object.defineProperties( WebGLShadowMap.prototype, {
@@ -48881,6 +48967,7 @@
 	exports.AdditiveBlending = AdditiveBlending;
 	exports.AlphaFormat = AlphaFormat;
 	exports.AlwaysDepth = AlwaysDepth;
+	exports.AlwaysStencilFunc = AlwaysStencilFunc;
 	exports.AmbientLight = AmbientLight;
 	exports.AmbientLightProbe = AmbientLightProbe;
 	exports.AnimationClip = AnimationClip;
@@ -48958,6 +49045,8 @@
 	exports.DataTexture2DArray = DataTexture2DArray;
 	exports.DataTexture3D = DataTexture3D;
 	exports.DataTextureLoader = DataTextureLoader;
+	exports.DecrementStencilOp = DecrementStencilOp;
+	exports.DecrementWrapStencilOp = DecrementWrapStencilOp;
 	exports.DefaultLoadingManager = DefaultLoadingManager;
 	exports.DepthFormat = DepthFormat;
 	exports.DepthStencilFormat = DepthStencilFormat;
@@ -48976,6 +49065,7 @@
 	exports.EdgesHelper = EdgesHelper;
 	exports.EllipseCurve = EllipseCurve;
 	exports.EqualDepth = EqualDepth;
+	exports.EqualStencilFunc = EqualStencilFunc;
 	exports.EquirectangularReflectionMapping = EquirectangularReflectionMapping;
 	exports.EquirectangularRefractionMapping = EquirectangularRefractionMapping;
 	exports.Euler = Euler;
@@ -49006,6 +49096,8 @@
 	exports.GeometryUtils = GeometryUtils;
 	exports.GreaterDepth = GreaterDepth;
 	exports.GreaterEqualDepth = GreaterEqualDepth;
+	exports.GreaterEqualStencilFunc = GreaterEqualStencilFunc;
+	exports.GreaterStencilFunc = GreaterStencilFunc;
 	exports.GridHelper = GridHelper;
 	exports.Group = Group;
 	exports.HalfFloatType = HalfFloatType;
@@ -49018,6 +49110,8 @@
 	exports.ImageLoader = ImageLoader;
 	exports.ImageUtils = ImageUtils;
 	exports.ImmediateRenderObject = ImmediateRenderObject;
+	exports.IncrementStencilOp = IncrementStencilOp;
+	exports.IncrementWrapStencilOp = IncrementWrapStencilOp;
 	exports.InstancedBufferAttribute = InstancedBufferAttribute;
 	exports.InstancedBufferGeometry = InstancedBufferGeometry;
 	exports.InstancedInterleavedBuffer = InstancedInterleavedBuffer;
@@ -49034,7 +49128,9 @@
 	exports.InterpolateDiscrete = InterpolateDiscrete;
 	exports.InterpolateLinear = InterpolateLinear;
 	exports.InterpolateSmooth = InterpolateSmooth;
+	exports.InvertStencilOp = InvertStencilOp;
 	exports.JSONLoader = JSONLoader;
+	exports.KeepStencilOp = KeepStencilOp;
 	exports.KeyframeTrack = KeyframeTrack;
 	exports.LOD = LOD;
 	exports.LatheBufferGeometry = LatheBufferGeometry;
@@ -49043,6 +49139,8 @@
 	exports.LensFlare = LensFlare;
 	exports.LessDepth = LessDepth;
 	exports.LessEqualDepth = LessEqualDepth;
+	exports.LessEqualStencilFunc = LessEqualStencilFunc;
+	exports.LessStencilFunc = LessStencilFunc;
 	exports.Light = Light;
 	exports.LightProbe = LightProbe;
 	exports.LightProbeHelper = LightProbeHelper;
@@ -49105,11 +49203,13 @@
 	exports.NearestMipmapLinearFilter = NearestMipmapLinearFilter;
 	exports.NearestMipmapNearestFilter = NearestMipmapNearestFilter;
 	exports.NeverDepth = NeverDepth;
+	exports.NeverStencilFunc = NeverStencilFunc;
 	exports.NoBlending = NoBlending;
 	exports.NoColors = NoColors;
 	exports.NoToneMapping = NoToneMapping;
 	exports.NormalBlending = NormalBlending;
 	exports.NotEqualDepth = NotEqualDepth;
+	exports.NotEqualStencilFunc = NotEqualStencilFunc;
 	exports.NumberKeyframeTrack = NumberKeyframeTrack;
 	exports.Object3D = Object3D;
 	exports.ObjectLoader = ObjectLoader;
@@ -49194,6 +49294,7 @@
 	exports.RedFormat = RedFormat;
 	exports.ReinhardToneMapping = ReinhardToneMapping;
 	exports.RepeatWrapping = RepeatWrapping;
+	exports.ReplaceStencilOp = ReplaceStencilOp;
 	exports.ReverseSubtractEquation = ReverseSubtractEquation;
 	exports.RingBufferGeometry = RingBufferGeometry;
 	exports.RingGeometry = RingGeometry;
@@ -49292,6 +49393,7 @@
 	exports.ZeroCurvatureEnding = ZeroCurvatureEnding;
 	exports.ZeroFactor = ZeroFactor;
 	exports.ZeroSlopeEnding = ZeroSlopeEnding;
+	exports.ZeroStencilOp = ZeroStencilOp;
 	exports.sRGBEncoding = sRGBEncoding;
 
 	Object.defineProperty(exports, '__esModule', { value: true });

@@ -47,7 +47,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 	// Set to true to enable damping (inertia)
 	// If damping is enabled, you must call controls.update() in your animation loop
 	this.enableDamping = false;
-	this.dampingFactor = 0.25;
+	this.dampingFactor = 0.05;
 
 	// This option actually enables dollying in and out; left as "zoom" for backwards compatibility.
 	// Set to false to disable zooming
@@ -155,8 +155,17 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			}
 
-			spherical.theta += sphericalDelta.theta;
-			spherical.phi += sphericalDelta.phi;
+			if ( scope.enableDamping ) {
+
+				spherical.theta += sphericalDelta.theta * scope.dampingFactor;
+				spherical.phi += sphericalDelta.phi * scope.dampingFactor;
+
+			} else {
+
+				spherical.theta += sphericalDelta.theta;
+				spherical.phi += sphericalDelta.phi;
+
+			}
 
 			// restrict theta to be between desired limits
 			spherical.theta = Math.max( scope.minAzimuthAngle, Math.min( scope.maxAzimuthAngle, spherical.theta ) );
@@ -173,7 +182,16 @@ THREE.OrbitControls = function ( object, domElement ) {
 			spherical.radius = Math.max( scope.minDistance, Math.min( scope.maxDistance, spherical.radius ) );
 
 			// move target to panned location
-			scope.target.add( panOffset );
+
+			if ( scope.enableDamping === true ) {
+
+				scope.target.addScaledVector( panOffset, scope.dampingFactor );
+
+			} else {
+
+				scope.target.add( panOffset );
+
+			}
 
 			offset.setFromSpherical( spherical );
 
