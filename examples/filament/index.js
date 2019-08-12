@@ -26,7 +26,7 @@ let mesh_url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     mesh_url = modelInfo.url;
 }
-let basePath = getPathNameFromUrl(mesh_url);
+let basePath = convertRelativeToAbsUrl(getPathNameFromUrl(mesh_url)) + "/";
 let scale = modelInfo.scale;
 
 function getPathNameFromUrl(path) {
@@ -35,6 +35,12 @@ function getPathNameFromUrl(path) {
         result = '';
     }
     return result;
+}
+
+function convertRelativeToAbsUrl(relativePath) {
+    var anchor = document.createElement("a");
+    anchor.href = relativePath;
+    return anchor.href;
 }
 
 Filament.init([mesh_url, ibl_url, sky_url], () => {
@@ -122,10 +128,10 @@ class App {
         const width = this.canvas.width = window.innerWidth * dpr;
         const height = this.canvas.height = window.innerHeight * dpr;
         this.view.setViewport([0, 0, width, height]);
-        const y = 0.3, eye = [0, y, 5*1/scale], center = [0, y, 0], up = [0, 1, 0];
+        const y = 0.0, eye = [0, y, 10*1/scale], center = [0, y, 0], up = [0, 1, 0];
         this.camera.lookAt(eye, center, up);
         const aspect = width / height;
         const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
-        this.camera.setProjectionFov(30, aspect, 1.0, 10000.0, fov);
+        this.camera.setProjectionFov(30, aspect, 0.01, 10000.0, fov);
     }
 }
