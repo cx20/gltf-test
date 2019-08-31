@@ -56,7 +56,6 @@ class App {
         const engine = this.engine = Filament.Engine.create(this.canvas);
         const scene = this.scene = engine.createScene();
         this.trackball = new Trackball(canvas, {startSpin: 0.006});
-
         const sunlight = Filament.EntityManager.get().create();
         Filament.LightManager.Builder(LightType.SUN)
             .color([0.98, 0.92, 0.89])
@@ -117,7 +116,15 @@ class App {
     render() {
         const tcm = this.engine.getTransformManager();
         const inst = tcm.getInstance(this.asset.getRoot());
-        tcm.setTransform(inst, this.trackball.getMatrix());
+        if (modelInfo.name == "GearboxAssy" ) {
+            var m = mat4.create();
+            var t = vec3.create();
+            vec3.set(t, -159.20, -17.02, -3.21);
+            mat4.translate(m, m, t);
+            tcm.setTransform(inst, m);
+        } else {
+            tcm.setTransform(inst, this.trackball.getMatrix());
+        }
         inst.delete();
         this.renderer.render(this.swapChain, this.view);
         window.requestAnimationFrame(this.render);
