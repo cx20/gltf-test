@@ -59,7 +59,7 @@ class App {
         const sunlight = Filament.EntityManager.get().create();
         Filament.LightManager.Builder(LightType.SUN)
             .color([0.98, 0.92, 0.89])
-            .intensity(100000.0)
+            .intensity(50000.0)
             .direction([0.6, -1.0, -0.8])
             .sunAngularRadius(1.9)
             .sunHaloSize(10.0)
@@ -69,7 +69,7 @@ class App {
 
         const indirectLight = this.ibl = engine.createIblFromKtx(ibl_url);
         this.scene.setIndirectLight(indirectLight);
-        indirectLight.setIntensity(100000);
+        indirectLight.setIntensity(50000);
 
         const skybox = engine.createSkyFromKtx(sky_url);
         this.scene.setSkybox(skybox);
