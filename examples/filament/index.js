@@ -19,6 +19,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+let start = 0;
 const env = 'syferfontein_18d_clear_2k';
 const ibl_url = `../../textures/ktx/${env}/${env}_ibl.ktx`;
 const sky_url = `../../textures/ktx/${env}/${env}_skybox.ktx`;
@@ -30,7 +31,7 @@ let basePath = convertRelativeToAbsUrl(getPathNameFromUrl(mesh_url)) + "/";
 let scale = modelInfo.scale;
 
 function getPathNameFromUrl(path) {
-    var result = path.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
+    let result = path.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
     if (result.match(/^[^/]*\.[^/\.]*$/)) {
         result = '';
     }
@@ -38,7 +39,7 @@ function getPathNameFromUrl(path) {
 }
 
 function convertRelativeToAbsUrl(relativePath) {
-    var anchor = document.createElement("a");
+    let anchor = document.createElement("a");
     anchor.href = relativePath;
     return anchor.href;
 }
@@ -96,6 +97,8 @@ class App {
                 const entities = asset.getEntities();
                 scene.addEntities(entities);
                 messages.remove();
+                window.addEventListener('resize', this.resize);
+                window.requestAnimationFrame(this.render);
             }, 1);
         };
         asset.loadResources(onDone, onFetched, basePath);
@@ -109,16 +112,19 @@ class App {
         this.resize();
         this.render = this.render.bind(this);
         this.resize = this.resize.bind(this);
-        window.addEventListener('resize', this.resize);
-        window.requestAnimationFrame(this.render);
     }
 
-    render() {
+    render(timestamp) {
+       if (!start) start = timestamp;
+        let progress = (timestamp - start) / 1000;
+        let animator = this.asset.getAnimator();
+        animator.applyAnimation(0, progress);
+        animator.updateBoneMatrices();
         const tcm = this.engine.getTransformManager();
         const inst = tcm.getInstance(this.asset.getRoot());
         if (modelInfo.name == "GearboxAssy" ) {
-            var m = mat4.create();
-            var t = vec3.create();
+            let m = mat4.create();
+            let t = vec3.create();
             vec3.set(t, -159.20, -17.02, -3.21);
             mat4.translate(m, m, t);
             tcm.setTransform(inst, m);
