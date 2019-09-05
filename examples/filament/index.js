@@ -122,15 +122,18 @@ class App {
         animator.updateBoneMatrices();
         const tcm = this.engine.getTransformManager();
         const inst = tcm.getInstance(this.asset.getRoot());
+        let m = mat4.create();
+        let s = vec3.create();
+        let t = vec3.create();
+        vec3.set(s, scale, scale, scale);
+        mat4.scale(m, m, s);
         if (modelInfo.name == "GearboxAssy" ) {
-            let m = mat4.create();
-            let t = vec3.create();
             vec3.set(t, -159.20, -17.02, -3.21);
             mat4.translate(m, m, t);
-            tcm.setTransform(inst, m);
-        } else {
-            tcm.setTransform(inst, this.trackball.getMatrix());
         }
+        mat4.multiply(m, m, this.trackball.getMatrix());
+        tcm.setTransform(inst, m);
+        
         inst.delete();
         this.renderer.render(this.swapChain, this.view);
         window.requestAnimationFrame(this.render);
@@ -141,7 +144,7 @@ class App {
         const width = this.canvas.width = window.innerWidth * dpr;
         const height = this.canvas.height = window.innerHeight * dpr;
         this.view.setViewport([0, 0, width, height]);
-        const y = 0.0, eye = [0, y, 10*1/scale], center = [0, y, 0], up = [0, 1, 0];
+        const y = 0.0, eye = [0, y, 10], center = [0, y, 0], up = [0, 1, 0];
         this.camera.lookAt(eye, center, up);
         const aspect = width / height;
         const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
