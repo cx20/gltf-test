@@ -19,7 +19,6 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-let start = 0;
 const env = 'syferfontein_18d_clear_2k';
 const ibl_url = `../../textures/ktx/${env}/${env}_ibl.ktx`;
 const sky_url = `../../textures/ktx/${env}/${env}_skybox.ktx`;
@@ -97,8 +96,8 @@ class App {
                 const entities = asset.getEntities();
                 scene.addEntities(entities);
                 messages.remove();
-                window.addEventListener('resize', this.resize);
-                window.requestAnimationFrame(this.render);
+                this.animator = asset.getAnimator();
+                this.animationStartTime = Date.now();
             }, 1);
         };
         asset.loadResources(onDone, onFetched, basePath);
@@ -112,14 +111,11 @@ class App {
         this.resize();
         this.render = this.render.bind(this);
         this.resize = this.resize.bind(this);
+        window.addEventListener('resize', this.resize);
+        window.requestAnimationFrame(this.render);
     }
 
-    render(timestamp) {
-       if (!start) start = timestamp;
-        let progress = (timestamp - start) / 1000;
-        let animator = this.asset.getAnimator();
-        animator.applyAnimation(0, progress);
-        animator.updateBoneMatrices();
+    render() {
         const tcm = this.engine.getTransformManager();
         const inst = tcm.getInstance(this.asset.getRoot());
         let m = mat4.create();
@@ -133,8 +129,15 @@ class App {
         }
         mat4.multiply(m, m, this.trackball.getMatrix());
         tcm.setTransform(inst, m);
-        
         inst.delete();
+
+        if (this.animator) {
+            const ms = Date.now() - this.animationStartTime;
+            //this.animator.applyAnimation(0, (ms / 1000) % 1.0); // TODO: not animated correctly
+            this.animator.applyAnimation(0, ms / 1000);
+            this.animator.updateBoneMatrices();
+        }
+
         this.renderer.render(this.swapChain, this.view);
         window.requestAnimationFrame(this.render);
     }
