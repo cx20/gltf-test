@@ -91,7 +91,7 @@ if ( Object.assign === undefined ) {
 
 }
 
-var REVISION = '109dev';
+var REVISION = '109';
 var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
 var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
 var CullFaceNone = 0;
@@ -2167,9 +2167,11 @@ Object.assign( Vector3.prototype, {
 
 	angleTo: function ( v ) {
 
-		// assumes this and v are not the zero vector
+		var denominator = Math.sqrt( this.lengthSq() * v.lengthSq() );
 
-		var theta = this.dot( v ) / ( Math.sqrt( this.lengthSq() * v.lengthSq() ) );
+		if ( denominator === 0 ) console.error( 'THREE.Vector3: angleTo() can\'t handle zero length vectors.' );
+
+		var theta = this.dot( v ) / denominator;
 
 		// clamp, to handle numerical problems
 
@@ -8306,7 +8308,6 @@ function Material() {
 	this.type = 'Material';
 
 	this.fog = true;
-	this.lights = true;
 
 	this.blending = NormalBlending;
 	this.side = FrontSide;
@@ -8630,7 +8631,6 @@ Material.prototype = Object.assign( Object.create( EventDispatcher.prototype ), 
 		this.name = source.name;
 
 		this.fog = source.fog;
-		this.lights = source.lights;
 
 		this.blending = source.blending;
 		this.side = source.side;
@@ -8778,8 +8778,6 @@ function MeshBasicMaterial( parameters ) {
 
 	this.skinning = false;
 	this.morphTargets = false;
-
-	this.lights = false;
 
 	this.setValues( parameters );
 
@@ -14036,7 +14034,7 @@ var color_pars_vertex = "#ifdef USE_COLOR\n\tvarying vec3 vColor;\n#endif";
 
 var color_vertex = "#ifdef USE_COLOR\n\tvColor.xyz = color.xyz;\n#endif";
 
-var common = "#define PI 3.14159265359\n#define PI2 6.28318530718\n#define PI_HALF 1.5707963267949\n#define RECIPROCAL_PI 0.31830988618\n#define RECIPROCAL_PI2 0.15915494\n#define LOG2 1.442695\n#define EPSILON 1e-6\n#ifndef saturate\n#define saturate(a) clamp( a, 0.0, 1.0 )\n#endif\n#define whiteComplement(a) ( 1.0 - saturate( a ) )\nfloat pow2( const in float x ) { return x*x; }\nfloat pow3( const in float x ) { return x*x*x; }\nfloat pow4( const in float x ) { float x2 = x*x; return x2*x2; }\nfloat average( const in vec3 color ) { return dot( color, vec3( 0.3333 ) ); }\nhighp float rand( const in vec2 uv ) {\n\tconst highp float a = 12.9898, b = 78.233, c = 43758.5453;\n\thighp float dt = dot( uv.xy, vec2( a,b ) ), sn = mod( dt, PI );\n\treturn fract(sin(sn) * c);\n}\n#ifdef HIGH_PRECISION\n\tfloat precisionSafeLength( vec3 v ) { return length( v ); }\n#else\n\tfloat max3( vec3 v ) { return max( max( v.x, v.y ), v.z ); }\n\tfloat precisionSafeLength( vec3 v ) {\n\t\tfloat maxComponent = max3( abs( v ) );\n\t\treturn length( v / maxComponent ) * maxComponent;\n\t}\n#endif\nstruct IncidentLight {\n\tvec3 color;\n\tvec3 direction;\n\tbool visible;\n};\nstruct ReflectedLight {\n\tvec3 directDiffuse;\n\tvec3 directSpecular;\n\tvec3 indirectDiffuse;\n\tvec3 indirectSpecular;\n};\nstruct GeometricContext {\n\tvec3 position;\n\tvec3 normal;\n\tvec3 viewDir;\n#ifdef CLEARCOAT\n\tvec3 clearcoatNormal;\n#endif\n};\nvec3 transformDirection( in vec3 dir, in mat4 matrix ) {\n\treturn normalize( ( matrix * vec4( dir, 0.0 ) ).xyz );\n}\nvec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {\n\treturn normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );\n}\nvec3 projectOnPlane(in vec3 point, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\tfloat distance = dot( planeNormal, point - pointOnPlane );\n\treturn - distance * planeNormal + point;\n}\nfloat sideOfPlane( in vec3 point, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\treturn sign( dot( point - pointOnPlane, planeNormal ) );\n}\nvec3 linePlaneIntersect( in vec3 pointOnLine, in vec3 lineDirection, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\treturn lineDirection * ( dot( planeNormal, pointOnPlane - pointOnLine ) / dot( planeNormal, lineDirection ) ) + pointOnLine;\n}\nmat3 transposeMat3( const in mat3 m ) {\n\tmat3 tmp;\n\ttmp[ 0 ] = vec3( m[ 0 ].x, m[ 1 ].x, m[ 2 ].x );\n\ttmp[ 1 ] = vec3( m[ 0 ].y, m[ 1 ].y, m[ 2 ].y );\n\ttmp[ 2 ] = vec3( m[ 0 ].z, m[ 1 ].z, m[ 2 ].z );\n\treturn tmp;\n}\nfloat linearToRelativeLuminance( const in vec3 color ) {\n\tvec3 weights = vec3( 0.2126, 0.7152, 0.0722 );\n\treturn dot( weights, color.rgb );\n}\nbool isPerspectiveMatrix( mat4 projectionMatrix ) {\n  return projectionMatrix[ 2 ][ 3 ] == - 1.0;\n}";
+var common = "#define PI 3.14159265359\n#define PI2 6.28318530718\n#define PI_HALF 1.5707963267949\n#define RECIPROCAL_PI 0.31830988618\n#define RECIPROCAL_PI2 0.15915494\n#define LOG2 1.442695\n#define EPSILON 1e-6\n#ifndef saturate\n#define saturate(a) clamp( a, 0.0, 1.0 )\n#endif\n#define whiteComplement(a) ( 1.0 - saturate( a ) )\nfloat pow2( const in float x ) { return x*x; }\nfloat pow3( const in float x ) { return x*x*x; }\nfloat pow4( const in float x ) { float x2 = x*x; return x2*x2; }\nfloat average( const in vec3 color ) { return dot( color, vec3( 0.3333 ) ); }\nhighp float rand( const in vec2 uv ) {\n\tconst highp float a = 12.9898, b = 78.233, c = 43758.5453;\n\thighp float dt = dot( uv.xy, vec2( a,b ) ), sn = mod( dt, PI );\n\treturn fract(sin(sn) * c);\n}\n#ifdef HIGH_PRECISION\n\tfloat precisionSafeLength( vec3 v ) { return length( v ); }\n#else\n\tfloat max3( vec3 v ) { return max( max( v.x, v.y ), v.z ); }\n\tfloat precisionSafeLength( vec3 v ) {\n\t\tfloat maxComponent = max3( abs( v ) );\n\t\treturn length( v / maxComponent ) * maxComponent;\n\t}\n#endif\nstruct IncidentLight {\n\tvec3 color;\n\tvec3 direction;\n\tbool visible;\n};\nstruct ReflectedLight {\n\tvec3 directDiffuse;\n\tvec3 directSpecular;\n\tvec3 indirectDiffuse;\n\tvec3 indirectSpecular;\n};\nstruct GeometricContext {\n\tvec3 position;\n\tvec3 normal;\n\tvec3 viewDir;\n#ifdef CLEARCOAT\n\tvec3 clearcoatNormal;\n#endif\n};\nvec3 transformDirection( in vec3 dir, in mat4 matrix ) {\n\treturn normalize( ( matrix * vec4( dir, 0.0 ) ).xyz );\n}\nvec3 inverseTransformDirection( in vec3 dir, in mat4 matrix ) {\n\treturn normalize( ( vec4( dir, 0.0 ) * matrix ).xyz );\n}\nvec3 projectOnPlane(in vec3 point, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\tfloat distance = dot( planeNormal, point - pointOnPlane );\n\treturn - distance * planeNormal + point;\n}\nfloat sideOfPlane( in vec3 point, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\treturn sign( dot( point - pointOnPlane, planeNormal ) );\n}\nvec3 linePlaneIntersect( in vec3 pointOnLine, in vec3 lineDirection, in vec3 pointOnPlane, in vec3 planeNormal ) {\n\treturn lineDirection * ( dot( planeNormal, pointOnPlane - pointOnLine ) / dot( planeNormal, lineDirection ) ) + pointOnLine;\n}\nmat3 transposeMat3( const in mat3 m ) {\n\tmat3 tmp;\n\ttmp[ 0 ] = vec3( m[ 0 ].x, m[ 1 ].x, m[ 2 ].x );\n\ttmp[ 1 ] = vec3( m[ 0 ].y, m[ 1 ].y, m[ 2 ].y );\n\ttmp[ 2 ] = vec3( m[ 0 ].z, m[ 1 ].z, m[ 2 ].z );\n\treturn tmp;\n}\nfloat linearToRelativeLuminance( const in vec3 color ) {\n\tvec3 weights = vec3( 0.2126, 0.7152, 0.0722 );\n\treturn dot( weights, color.rgb );\n}\nbool isPerspectiveMatrix( mat4 m ) {\n  return m[ 2 ][ 3 ] == - 1.0;\n}";
 
 var cube_uv_reflection_fragment = "#ifdef ENVMAP_TYPE_CUBE_UV\n#define cubeUV_textureSize (1024.0)\nint getFaceFromDirection(vec3 direction) {\n\tvec3 absDirection = abs(direction);\n\tint face = -1;\n\tif( absDirection.x > absDirection.z ) {\n\t\tif(absDirection.x > absDirection.y )\n\t\t\tface = direction.x > 0.0 ? 0 : 3;\n\t\telse\n\t\t\tface = direction.y > 0.0 ? 1 : 4;\n\t}\n\telse {\n\t\tif(absDirection.z > absDirection.y )\n\t\t\tface = direction.z > 0.0 ? 2 : 5;\n\t\telse\n\t\t\tface = direction.y > 0.0 ? 1 : 4;\n\t}\n\treturn face;\n}\n#define cubeUV_maxLods1  (log2(cubeUV_textureSize*0.25) - 1.0)\n#define cubeUV_rangeClamp (exp2((6.0 - 1.0) * 2.0))\nvec2 MipLevelInfo( vec3 vec, float roughnessLevel, float roughness ) {\n\tfloat scale = exp2(cubeUV_maxLods1 - roughnessLevel);\n\tfloat dxRoughness = dFdx(roughness);\n\tfloat dyRoughness = dFdy(roughness);\n\tvec3 dx = dFdx( vec * scale * dxRoughness );\n\tvec3 dy = dFdy( vec * scale * dyRoughness );\n\tfloat d = max( dot( dx, dx ), dot( dy, dy ) );\n\td = clamp(d, 1.0, cubeUV_rangeClamp);\n\tfloat mipLevel = 0.5 * log2(d);\n\treturn vec2(floor(mipLevel), fract(mipLevel));\n}\n#define cubeUV_maxLods2 (log2(cubeUV_textureSize*0.25) - 2.0)\n#define cubeUV_rcpTextureSize (1.0 / cubeUV_textureSize)\nvec2 getCubeUV(vec3 direction, float roughnessLevel, float mipLevel) {\n\tmipLevel = roughnessLevel > cubeUV_maxLods2 - 3.0 ? 0.0 : mipLevel;\n\tfloat a = 16.0 * cubeUV_rcpTextureSize;\n\tvec2 exp2_packed = exp2( vec2( roughnessLevel, mipLevel ) );\n\tvec2 rcp_exp2_packed = vec2( 1.0 ) / exp2_packed;\n\tfloat powScale = exp2_packed.x * exp2_packed.y;\n\tfloat scale = rcp_exp2_packed.x * rcp_exp2_packed.y * 0.25;\n\tfloat mipOffset = 0.75*(1.0 - rcp_exp2_packed.y) * rcp_exp2_packed.x;\n\tbool bRes = mipLevel == 0.0;\n\tscale =  bRes && (scale < a) ? a : scale;\n\tvec3 r;\n\tvec2 offset;\n\tint face = getFaceFromDirection(direction);\n\tfloat rcpPowScale = 1.0 / powScale;\n\tif( face == 0) {\n\t\tr = vec3(direction.x, -direction.z, direction.y);\n\t\toffset = vec2(0.0+mipOffset,0.75 * rcpPowScale);\n\t\toffset.y = bRes && (offset.y < 2.0*a) ? a : offset.y;\n\t}\n\telse if( face == 1) {\n\t\tr = vec3(direction.y, direction.x, direction.z);\n\t\toffset = vec2(scale+mipOffset, 0.75 * rcpPowScale);\n\t\toffset.y = bRes && (offset.y < 2.0*a) ? a : offset.y;\n\t}\n\telse if( face == 2) {\n\t\tr = vec3(direction.z, direction.x, direction.y);\n\t\toffset = vec2(2.0*scale+mipOffset, 0.75 * rcpPowScale);\n\t\toffset.y = bRes && (offset.y < 2.0*a) ? a : offset.y;\n\t}\n\telse if( face == 3) {\n\t\tr = vec3(direction.x, direction.z, direction.y);\n\t\toffset = vec2(0.0+mipOffset,0.5 * rcpPowScale);\n\t\toffset.y = bRes && (offset.y < 2.0*a) ? 0.0 : offset.y;\n\t}\n\telse if( face == 4) {\n\t\tr = vec3(direction.y, direction.x, -direction.z);\n\t\toffset = vec2(scale+mipOffset, 0.5 * rcpPowScale);\n\t\toffset.y = bRes && (offset.y < 2.0*a) ? 0.0 : offset.y;\n\t}\n\telse {\n\t\tr = vec3(direction.z, -direction.x, direction.y);\n\t\toffset = vec2(2.0*scale+mipOffset, 0.5 * rcpPowScale);\n\t\toffset.y = bRes && (offset.y < 2.0*a) ? 0.0 : offset.y;\n\t}\n\tr = normalize(r);\n\tfloat texelOffset = 0.5 * cubeUV_rcpTextureSize;\n\tvec2 s = ( r.yz / abs( r.x ) + vec2( 1.0 ) ) * 0.5;\n\tvec2 base = offset + vec2( texelOffset );\n\treturn base + s * ( scale - 2.0 * texelOffset );\n}\n#define cubeUV_maxLods3 (log2(cubeUV_textureSize*0.25) - 3.0)\nvec4 textureCubeUV( sampler2D envMap, vec3 reflectedDirection, float roughness ) {\n\tfloat roughnessVal = roughness* cubeUV_maxLods3;\n\tfloat r1 = floor(roughnessVal);\n\tfloat r2 = r1 + 1.0;\n\tfloat t = fract(roughnessVal);\n\tvec2 mipInfo = MipLevelInfo(reflectedDirection, r1, roughness);\n\tfloat s = mipInfo.y;\n\tfloat level0 = mipInfo.x;\n\tfloat level1 = level0 + 1.0;\n\tlevel1 = level1 > 5.0 ? 5.0 : level1;\n\tlevel0 += min( floor( s + 0.5 ), 5.0 );\n\tvec2 uv_10 = getCubeUV(reflectedDirection, r1, level0);\n\tvec4 color10 = envMapTexelToLinear(texture2D(envMap, uv_10));\n\tvec2 uv_20 = getCubeUV(reflectedDirection, r2, level0);\n\tvec4 color20 = envMapTexelToLinear(texture2D(envMap, uv_20));\n\tvec4 result = mix(color10, color20, t);\n\treturn vec4(result.rgb, 1.0);\n}\n#endif";
 
@@ -14128,7 +14126,7 @@ var normal_fragment_begin = "#ifdef FLAT_SHADED\n\tvec3 fdx = vec3( dFdx( vViewP
 
 var normal_fragment_maps = "#ifdef OBJECTSPACE_NORMALMAP\n\tnormal = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;\n\t#ifdef FLIP_SIDED\n\t\tnormal = - normal;\n\t#endif\n\t#ifdef DOUBLE_SIDED\n\t\tnormal = normal * ( float( gl_FrontFacing ) * 2.0 - 1.0 );\n\t#endif\n\tnormal = normalize( normalMatrix * normal );\n#elif defined( TANGENTSPACE_NORMALMAP )\n\t#ifdef USE_TANGENT\n\t\tmat3 vTBN = mat3( tangent, bitangent, normal );\n\t\tvec3 mapN = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;\n\t\tmapN.xy = normalScale * mapN.xy;\n\t\tnormal = normalize( vTBN * mapN );\n\t#else\n\t\tnormal = perturbNormal2Arb( -vViewPosition, normal, normalScale, normalMap );\n\t#endif\n#elif defined( USE_BUMPMAP )\n\tnormal = perturbNormalArb( -vViewPosition, normal, dHdxy_fwd() );\n#endif";
 
-var normalmap_pars_fragment = "#ifdef USE_NORMALMAP\n\tuniform sampler2D normalMap;\n\tuniform vec2 normalScale;\n#endif\n#ifdef OBJECTSPACE_NORMALMAP\n\tuniform mat3 normalMatrix;\n#endif\n#if ! defined ( USE_TANGENT ) && ( defined ( TANGENTSPACE_NORMALMAP ) || defined ( USE_CLEARCOAT_NORMALMAP ) )\n\tvec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm, vec2 normalScale, in sampler2D normalMap ) {\n\t\tvec3 q0 = vec3( dFdx( eye_pos.x ), dFdx( eye_pos.y ), dFdx( eye_pos.z ) );\n\t\tvec3 q1 = vec3( dFdy( eye_pos.x ), dFdy( eye_pos.y ), dFdy( eye_pos.z ) );\n\t\tvec2 st0 = dFdx( vUv.st );\n\t\tvec2 st1 = dFdy( vUv.st );\n\t\tfloat scale = sign( st1.t * st0.s - st0.t * st1.s );\n\t\tvec3 S = normalize( ( q0 * st1.t - q1 * st0.t ) * scale );\n\t\tvec3 T = normalize( ( - q0 * st1.s + q1 * st0.s ) * scale );\n\t\tvec3 N = normalize( surf_norm );\n\t\tvec3 mapN = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;\n\t\tmapN.xy *= normalScale;\n\t\t#ifdef DOUBLE_SIDED\n\t\t\tvec3 NfromST = cross( S, T );\n\t\t\tif( dot( NfromST, N ) > 0.0 ) {\n\t\t\t\tS *= -1.0;\n\t\t\t\tT *= -1.0;\n\t\t\t}\n\t\t#else\n\t\t\tmapN.xy *= ( float( gl_FrontFacing ) * 2.0 - 1.0 );\n\t\t#endif\n\t\tmat3 tsn = mat3( S, T, N );\n\t\treturn normalize( tsn * mapN );\n\t}\n#endif";
+var normalmap_pars_fragment = "#ifdef USE_NORMALMAP\n\tuniform sampler2D normalMap;\n\tuniform vec2 normalScale;\n#endif\n#ifdef OBJECTSPACE_NORMALMAP\n\tuniform mat3 normalMatrix;\n#endif\n#if ! defined ( USE_TANGENT ) && ( defined ( TANGENTSPACE_NORMALMAP ) || defined ( USE_CLEARCOAT_NORMALMAP ) )\n\tvec3 perturbNormal2Arb( vec3 eye_pos, vec3 surf_norm, vec2 normalScale, in sampler2D normalMap ) {\n\t\tvec3 q0 = vec3( dFdx( eye_pos.x ), dFdx( eye_pos.y ), dFdx( eye_pos.z ) );\n\t\tvec3 q1 = vec3( dFdy( eye_pos.x ), dFdy( eye_pos.y ), dFdy( eye_pos.z ) );\n\t\tvec2 st0 = dFdx( vUv.st );\n\t\tvec2 st1 = dFdy( vUv.st );\n\t\tfloat scale = sign( st1.t * st0.s - st0.t * st1.s );\n\t\tvec3 S = normalize( ( q0 * st1.t - q1 * st0.t ) * scale );\n\t\tvec3 T = normalize( ( - q0 * st1.s + q1 * st0.s ) * scale );\n\t\tvec3 N = normalize( surf_norm );\n\t\tvec3 mapN = texture2D( normalMap, vUv ).xyz * 2.0 - 1.0;\n\t\tmapN.xy *= normalScale;\n\t\t#ifdef DOUBLE_SIDED\n\t\t\tbool frontFacing = dot( cross( S, T ), N ) > 0.0;\n\t\t\tmapN.xy *= ( float( frontFacing ) * 2.0 - 1.0 );\n\t\t#else\n\t\t\tmapN.xy *= ( float( gl_FrontFacing ) * 2.0 - 1.0 );\n\t\t#endif\n\t\tmat3 tsn = mat3( S, T, N );\n\t\treturn normalize( tsn * mapN );\n\t}\n#endif";
 
 var clearcoat_normal_fragment_begin = "#ifdef CLEARCOAT\n\tvec3 clearcoatNormal = geometryNormal;\n#endif";
 
@@ -15542,10 +15540,6 @@ function WebGLCapabilities( gl, extensions, parameters ) {
 
 	var maxSamples = isWebGL2 ? gl.getParameter( 36183 ) : 0;
 
-	var multiviewExt = extensions.get( 'OVR_multiview2' );
-	var multiview = isWebGL2 && !! multiviewExt && ! gl.getContextAttributes().antialias;
-	var maxMultiviewViews = multiview ? gl.getParameter( multiviewExt.MAX_VIEWS_OVR ) : 0;
-
 	return {
 
 		isWebGL2: isWebGL2,
@@ -15570,10 +15564,7 @@ function WebGLCapabilities( gl, extensions, parameters ) {
 		floatFragmentTextures: floatFragmentTextures,
 		floatVertexTextures: floatVertexTextures,
 
-		maxSamples: maxSamples,
-
-		multiview: multiview,
-		maxMultiviewViews: maxMultiviewViews
+		maxSamples: maxSamples
 
 	};
 
@@ -16369,7 +16360,7 @@ function DataTexture2DArray( data, width, height, depth ) {
 
 	Texture.call( this, null );
 
-	this.image = { data: data, width: width, height: height, depth: depth };
+	this.image = { data: data || null, width: width || 1, height: height || 1, depth: depth || 1 };
 
 	this.magFilter = NearestFilter;
 	this.minFilter = NearestFilter;
@@ -16403,7 +16394,7 @@ function DataTexture3D( data, width, height, depth ) {
 
 	Texture.call( this, null );
 
-	this.image = { data: data, width: width, height: height, depth: depth };
+	this.image = { data: data || null, width: width || 1, height: height || 1, depth: depth || 1 };
 
 	this.magFilter = NearestFilter;
 	this.minFilter = NearestFilter;
@@ -17531,15 +17522,15 @@ function generatePrecision( parameters ) {
 
 	if ( parameters.precision === "highp" ) {
 
-		precisionstring += "\n#define HIGH_PRECISION;";
+		precisionstring += "\n#define HIGH_PRECISION";
 
 	} else if ( parameters.precision === "mediump" ) {
 
-		precisionstring += "\n#define MEDIUM_PRECISION;";
+		precisionstring += "\n#define MEDIUM_PRECISION";
 
 	} else if ( parameters.precision === "lowp" ) {
 
-		precisionstring += "\n#define LOW_PRECISION;";
+		precisionstring += "\n#define LOW_PRECISION";
 
 	}
 
@@ -17765,28 +17756,13 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters 
 
 			parameters.logarithmicDepthBuffer ? '#define USE_LOGDEPTHBUF' : '',
 			parameters.logarithmicDepthBuffer && ( parameters.isWebGL2 || extensions.get( 'EXT_frag_depth' ) ) ? '#define USE_LOGDEPTHBUF_EXT' : '',
+
 			'uniform mat4 modelMatrix;',
+			'uniform mat4 modelViewMatrix;',
+			'uniform mat4 projectionMatrix;',
+			'uniform mat4 viewMatrix;',
+			'uniform mat3 normalMatrix;',
 			'uniform vec3 cameraPosition;',
-
-			numMultiviewViews > 0 ? [
-				'uniform mat4 modelViewMatrices[' + numMultiviewViews + '];',
-				'uniform mat3 normalMatrices[' + numMultiviewViews + '];',
-				'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
-				'uniform mat4 projectionMatrices[' + numMultiviewViews + '];',
-
-				'#define modelViewMatrix modelViewMatrices[VIEW_ID]',
-				'#define normalMatrix normalMatrices[VIEW_ID]',
-				'#define viewMatrix viewMatrices[VIEW_ID]',
-				'#define projectionMatrix projectionMatrices[VIEW_ID]'
-
-			].join( '\n' ) : [
-
-				'uniform mat4 modelViewMatrix;',
-				'uniform mat4 projectionMatrix;',
-				'uniform mat4 viewMatrix;',
-				'uniform mat3 normalMatrix;',
-
-			].join( '\n' ),
 
 			'#ifdef USE_INSTANCING',
 
@@ -17907,14 +17883,8 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters 
 
 			( ( material.extensions ? material.extensions.shaderTextureLOD : false ) || parameters.envMap ) && ( parameters.isWebGL2 || extensions.get( 'EXT_shader_texture_lod' ) ) ? '#define TEXTURE_LOD_EXT' : '',
 
+			'uniform mat4 viewMatrix;',
 			'uniform vec3 cameraPosition;',
-
-			numMultiviewViews > 0 ? [
-
-				'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
-				'#define viewMatrix viewMatrices[VIEW_ID]'
-
-			].join( '\n' ) : 'uniform mat4 viewMatrix;',
 
 			( parameters.toneMapping !== NoToneMapping ) ? '#define TONE_MAPPING' : '',
 			( parameters.toneMapping !== NoToneMapping ) ? ShaderChunk[ 'tonemapping_pars_fragment' ] : '', // this code is required here because it is used by the toneMapping() function defined below
@@ -17967,17 +17937,9 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters 
 		}
 
 		// GLSL 3.0 conversion
+
 		prefixVertex = [
 			'#version 300 es\n',
-
-			numMultiviewViews > 0 ? [
-
-				'#extension GL_OVR_multiview2 : require',
-				'layout(num_views = ' + numMultiviewViews + ') in;',
-				'#define VIEW_ID gl_ViewID_OVR'
-
-			].join( '\n' ) : '',
-
 			'#define attribute in',
 			'#define varying out',
 			'#define texture2D texture'
@@ -17985,12 +17947,6 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters 
 
 		prefixFragment = [
 			'#version 300 es\n',
-			numMultiviewViews > 0 ? [
-
-				'#extension GL_OVR_multiview2 : require',
-				'#define VIEW_ID gl_ViewID_OVR'
-
-			].join( '\n' ) : '',
 			'#define varying in',
 			isGLSL3ShaderMaterial ? '' : 'out highp vec4 pc_fragColor;',
 			isGLSL3ShaderMaterial ? '' : '#define gl_FragColor pc_fragColor',
@@ -18005,6 +17961,59 @@ function WebGLProgram( renderer, extensions, code, material, shader, parameters 
 			'#define texture2DProjGradEXT textureProjGrad',
 			'#define textureCubeGradEXT textureGrad'
 		].join( '\n' ) + '\n' + prefixFragment;
+
+		// Multiview
+
+		if ( numMultiviewViews > 0 ) {
+
+			prefixVertex = prefixVertex.replace(
+				'#version 300 es\n',
+				[
+					'#version 300 es\n',
+					'#extension GL_OVR_multiview2 : require',
+					'layout(num_views = ' + numMultiviewViews + ') in;',
+					'#define VIEW_ID gl_ViewID_OVR'
+				].join( '\n' )
+			);
+
+			prefixVertex = prefixVertex.replace(
+				[
+					'uniform mat4 modelViewMatrix;',
+					'uniform mat4 projectionMatrix;',
+					'uniform mat4 viewMatrix;',
+					'uniform mat3 normalMatrix;'
+				].join( '\n' ),
+				[
+					'uniform mat4 modelViewMatrices[' + numMultiviewViews + '];',
+					'uniform mat4 projectionMatrices[' + numMultiviewViews + '];',
+					'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
+					'uniform mat3 normalMatrices[' + numMultiviewViews + '];',
+
+					'#define modelViewMatrix modelViewMatrices[VIEW_ID]',
+					'#define projectionMatrix projectionMatrices[VIEW_ID]',
+					'#define viewMatrix viewMatrices[VIEW_ID]',
+					'#define normalMatrix normalMatrices[VIEW_ID]'
+				].join( '\n' )
+			);
+
+			prefixFragment = prefixFragment.replace(
+				'#version 300 es\n',
+				[
+					'#version 300 es\n',
+					'#extension GL_OVR_multiview2 : require',
+					'#define VIEW_ID gl_ViewID_OVR'
+				].join( '\n' )
+			);
+
+			prefixFragment = prefixFragment.replace(
+				'uniform mat4 viewMatrix;',
+				[
+					'uniform mat4 viewMatrices[' + numMultiviewViews + '];',
+					'#define viewMatrix viewMatrices[VIEW_ID]'
+				].join( '\n' )
+			);
+
+		}
 
 	}
 
@@ -19295,7 +19304,6 @@ function MeshDepthMaterial( parameters ) {
 	this.wireframeLinewidth = 1;
 
 	this.fog = false;
-	this.lights = false;
 
 	this.setValues( parameters );
 
@@ -19375,7 +19383,6 @@ function MeshDistanceMaterial( parameters ) {
 	this.displacementBias = 0;
 
 	this.fog = false;
-	this.lights = false;
 
 	this.setValues( parameters );
 
@@ -21841,53 +21848,45 @@ function WebGLTextures( _gl, extensions, state, properties, capabilities, utils,
 
 			} else if ( isMultiview ) {
 
-				if ( capabilities.multiview ) {
+				var width = renderTarget.width;
+				var height = renderTarget.height;
+				var numViews = renderTarget.numViews;
 
-					var width = renderTarget.width;
-					var height = renderTarget.height;
-					var numViews = renderTarget.numViews;
+				_gl.bindFramebuffer( 36160, renderTargetProperties.__webglFramebuffer );
 
-					_gl.bindFramebuffer( 36160, renderTargetProperties.__webglFramebuffer );
+				var ext = extensions.get( 'OVR_multiview2' );
 
-					var ext = extensions.get( 'OVR_multiview2' );
+				info.memory.textures += 2;
 
-					info.memory.textures += 2;
+				var colorTexture = _gl.createTexture();
+				_gl.bindTexture( 35866, colorTexture );
+				_gl.texParameteri( 35866, 10240, 9728 );
+				_gl.texParameteri( 35866, 10241, 9728 );
+				_gl.texImage3D( 35866, 0, 32856, width, height, numViews, 0, 6408, 5121, null );
+				ext.framebufferTextureMultiviewOVR( 36160, 36064, colorTexture, 0, 0, numViews );
 
-					var colorTexture = _gl.createTexture();
-					_gl.bindTexture( 35866, colorTexture );
-					_gl.texParameteri( 35866, 10240, 9728 );
-					_gl.texParameteri( 35866, 10241, 9728 );
-					_gl.texImage3D( 35866, 0, 32856, width, height, numViews, 0, 6408, 5121, null );
-					ext.framebufferTextureMultiviewOVR( 36160, 36064, colorTexture, 0, 0, numViews );
+				var depthStencilTexture = _gl.createTexture();
+				_gl.bindTexture( 35866, depthStencilTexture );
+				_gl.texParameteri( 35866, 10240, 9728 );
+				_gl.texParameteri( 35866, 10241, 9728 );
+				_gl.texImage3D( 35866, 0, 35056, width, height, numViews, 0, 34041, 34042, null );
+				ext.framebufferTextureMultiviewOVR( 36160, 33306, depthStencilTexture, 0, 0, numViews );
 
-					var depthStencilTexture = _gl.createTexture();
-					_gl.bindTexture( 35866, depthStencilTexture );
-					_gl.texParameteri( 35866, 10240, 9728 );
-					_gl.texParameteri( 35866, 10241, 9728 );
-					_gl.texImage3D( 35866, 0, 35056, width, height, numViews, 0, 34041, 34042, null );
-					ext.framebufferTextureMultiviewOVR( 36160, 33306, depthStencilTexture, 0, 0, numViews );
+				var viewFramebuffers = new Array( numViews );
+				for ( var i = 0; i < numViews; ++ i ) {
 
-					var viewFramebuffers = new Array( numViews );
-					for ( var i = 0; i < numViews; ++ i ) {
-
-						viewFramebuffers[ i ] = _gl.createFramebuffer();
-						_gl.bindFramebuffer( 36160, viewFramebuffers[ i ] );
-						_gl.framebufferTextureLayer( 36160, 36064, colorTexture, 0, i );
-
-					}
-
-					renderTargetProperties.__webglColorTexture = colorTexture;
-					renderTargetProperties.__webglDepthStencilTexture = depthStencilTexture;
-					renderTargetProperties.__webglViewFramebuffers = viewFramebuffers;
-
-					_gl.bindFramebuffer( 36160, null );
-					_gl.bindTexture( 35866, null );
-
-				} else {
-
-					console.warn( 'THREE.WebGLRenderer: WebGLMultiviewRenderTarget can only be used with WebGL2 and Multiview extension support.' );
+					viewFramebuffers[ i ] = _gl.createFramebuffer();
+					_gl.bindFramebuffer( 36160, viewFramebuffers[ i ] );
+					_gl.framebufferTextureLayer( 36160, 36064, colorTexture, 0, i );
 
 				}
+
+				renderTargetProperties.__webglColorTexture = colorTexture;
+				renderTargetProperties.__webglDepthStencilTexture = depthStencilTexture;
+				renderTargetProperties.__webglViewFramebuffers = viewFramebuffers;
+
+				_gl.bindFramebuffer( 36160, null );
+				_gl.bindTexture( 35866, null );
 
 			}
 
@@ -22307,13 +22306,49 @@ function WebGLMultiview( renderer, gl ) {
 
 	var DEFAULT_NUMVIEWS = 2;
 
-	var capabilities = renderer.capabilities;
+	var extensions = renderer.extensions;
 	var properties = renderer.properties;
-
-	var maxNumViews = capabilities.maxMultiviewViews;
 
 	var renderTarget, currentRenderTarget;
 	var mat3, mat4, cameraArray, renderSize;
+
+	var available;
+	var maxNumViews = 0;
+
+	//
+
+	function isAvailable() {
+
+		if ( available === undefined ) {
+
+			var extension = extensions.get( 'OVR_multiview2' );
+
+			available = extension !== null && gl.getContextAttributes().antialias === false;
+
+			if ( available ) {
+
+				maxNumViews = gl.getParameter( extension.MAX_VIEWS_OVR );
+				renderTarget = new WebGLMultiviewRenderTarget( 0, 0, DEFAULT_NUMVIEWS );
+
+				renderSize = new Vector2();
+				mat4 = [];
+				mat3 = [];
+				cameraArray = [];
+
+				for ( var i = 0; i < maxNumViews; i ++ ) {
+
+					mat4[ i ] = new Matrix4();
+					mat3[ i ] = new Matrix3();
+
+				}
+
+			}
+
+		}
+
+		return available;
+
+	}
 
 	function getCameraArray( camera ) {
 
@@ -22324,8 +22359,6 @@ function WebGLMultiview( renderer, gl ) {
 		return cameraArray;
 
 	}
-
-	//
 
 	function updateCameraProjectionMatricesUniform( camera, uniforms ) {
 
@@ -22373,7 +22406,7 @@ function WebGLMultiview( renderer, gl ) {
 
 	function isMultiviewCompatible( camera ) {
 
-		if ( ! camera.isArrayCamera ) return true;
+		if ( camera.isArrayCamera === undefined ) return true;
 
 		var cameras = camera.cameras;
 
@@ -22407,7 +22440,6 @@ function WebGLMultiview( renderer, gl ) {
 			var viewport = camera.cameras[ 0 ].viewport;
 
 			renderTarget.setSize( viewport.z, viewport.w );
-
 			renderTarget.setNumViews( camera.cameras.length );
 
 		} else {
@@ -22421,7 +22453,7 @@ function WebGLMultiview( renderer, gl ) {
 
 	function attachCamera( camera ) {
 
-		if ( ! isMultiviewCompatible( camera ) ) return;
+		if ( isMultiviewCompatible( camera ) === false ) return;
 
 		currentRenderTarget = renderer.getRenderTarget();
 		resizeRenderTarget( camera );
@@ -22434,6 +22466,7 @@ function WebGLMultiview( renderer, gl ) {
 		if ( renderTarget !== renderer.getRenderTarget() ) return;
 
 		renderer.setRenderTarget( currentRenderTarget );
+
 		flush( camera );
 
 	}
@@ -22473,28 +22506,7 @@ function WebGLMultiview( renderer, gl ) {
 
 	}
 
-
-	if ( renderer.capabilities.multiview ) {
-
-		renderTarget = new WebGLMultiviewRenderTarget( 0, 0, DEFAULT_NUMVIEWS );
-
-		renderSize = new Vector2();
-		mat4 = [];
-		mat3 = [];
-		cameraArray = [];
-
-		var maxViews = capabilities.maxMultiviewViews;
-
-		for ( var i = 0; i < maxViews; i ++ ) {
-
-			mat4[ i ] = new Matrix4();
-			mat3[ i ] = new Matrix3();
-
-		}
-
-	}
-
-
+	this.isAvailable = isAvailable;
 	this.attachCamera = attachCamera;
 	this.detachCamera = detachCamera;
 	this.updateCameraProjectionMatricesUniform = updateCameraProjectionMatricesUniform;
@@ -23030,6 +23042,8 @@ function WebXRManager( renderer, gl ) {
 
 	var session = null;
 
+	// var framebufferScaleFactor = 1.0;
+
 	var referenceSpace = null;
 	var referenceSpaceType = 'local-floor';
 
@@ -23117,7 +23131,9 @@ function WebXRManager( renderer, gl ) {
 
 	}
 
-	this.setFramebufferScaleFactor = function ( value ) {
+	this.setFramebufferScaleFactor = function ( /* value */ ) {
+
+		// framebufferScaleFactor = value;
 
 	};
 
@@ -23144,6 +23160,7 @@ function WebXRManager( renderer, gl ) {
 			session.addEventListener( 'selectend', onSessionEvent );
 			session.addEventListener( 'end', onSessionEnd );
 
+			// eslint-disable-next-line no-undef
 			session.updateRenderState( { baseLayer: new XRWebGLLayer( session, gl ) } );
 
 			session.requestReferenceSpace( referenceSpaceType ).then( onRequestReferenceSpace );
@@ -24158,7 +24175,7 @@ function WebGLRenderer( parameters ) {
 
 		if ( object.isInstancedMesh ) {
 
-			renderer.renderInstances( geometry, drawStart, drawCount, object.instanceMatrix.count );
+			renderer.renderInstances( geometry, drawStart, drawCount, object.count );
 
 		} else if ( geometry.isInstancedBufferGeometry ) {
 
@@ -24490,7 +24507,7 @@ function WebGLRenderer( parameters ) {
 
 		}
 
-		if ( capabilities.multiview ) {
+		if ( vr.enabled && multiview.isAvailable() ) {
 
 			multiview.attachCamera( camera );
 
@@ -24550,13 +24567,13 @@ function WebGLRenderer( parameters ) {
 
 		state.setPolygonOffset( false );
 
-		if ( capabilities.multiview ) {
-
-			multiview.detachCamera( camera );
-
-		}
-
 		if ( vr.enabled ) {
+
+			if ( multiview.isAvailable() ) {
+
+				multiview.detachCamera( camera );
+
+			}
 
 			vr.submitFrame();
 
@@ -24709,9 +24726,9 @@ function WebGLRenderer( parameters ) {
 
 				_currentArrayCamera = camera;
 
-				if ( capabilities.multiview ) {
+				if ( vr.enabled && multiview.isAvailable() ) {
 
-					renderObject(	object, scene, camera, geometry, material, group );
+					renderObject( object, scene, camera, geometry, material, group );
 
 				} else {
 
@@ -24909,9 +24926,10 @@ function WebGLRenderer( parameters ) {
 
 		// store the light setup it was created for
 
+		materialProperties.needsLights = materialNeedsLights( material );
 		materialProperties.lightsStateVersion = lightsStateVersion;
 
-		if ( material.lights ) {
+		if ( materialProperties.needsLights ) {
 
 			// wire up the material to this renderer's lighting state
 
@@ -24977,7 +24995,7 @@ function WebGLRenderer( parameters ) {
 
 				material.needsUpdate = true;
 
-			} else if ( material.lights && materialProperties.lightsStateVersion !== lights.state.version ) {
+			} else if ( materialProperties.needsLights && ( materialProperties.lightsStateVersion !== lights.state.version ) ) {
 
 				material.needsUpdate = true;
 
@@ -25161,7 +25179,7 @@ function WebGLRenderer( parameters ) {
 			p_uniforms.setValue( _gl, 'toneMappingExposure', _this.toneMappingExposure );
 			p_uniforms.setValue( _gl, 'toneMappingWhitePoint', _this.toneMappingWhitePoint );
 
-			if ( material.lights ) {
+			if ( materialProperties.needsLights ) {
 
 				// the current material requires lighting info
 
@@ -25768,6 +25786,14 @@ function WebGLRenderer( parameters ) {
 
 	}
 
+	function materialNeedsLights( material ) {
+
+		return material.isMeshLambertMaterial || material.isMeshPhongMaterial ||
+			material.isMeshStandardMaterial || material.isShadowMaterial ||
+			( material.isShaderMaterial && material.lights === true );
+
+	}
+
 	//
 	this.setFramebuffer = function ( value ) {
 
@@ -26311,7 +26337,6 @@ function SpriteMaterial( parameters ) {
 
 	this.sizeAttenuation = true;
 
-	this.lights = false;
 	this.transparent = true;
 
 	this.setValues( parameters );
@@ -27003,6 +27028,8 @@ function InstancedMesh( geometry, material, count ) {
 
 	this.instanceMatrix = new BufferAttribute( new Float32Array( count * 16 ), 16 );
 
+	this.count = count;
+
 }
 
 InstancedMesh.prototype = Object.assign( Object.create( Mesh.prototype ), {
@@ -27048,8 +27075,6 @@ function LineBasicMaterial( parameters ) {
 	this.linewidth = 1;
 	this.linecap = 'round';
 	this.linejoin = 'round';
-
-	this.lights = false;
 
 	this.setValues( parameters );
 
@@ -27435,8 +27460,6 @@ function PointsMaterial( parameters ) {
 	this.sizeAttenuation = true;
 
 	this.morphTargets = false;
-
-	this.lights = false;
 
 	this.setValues( parameters );
 
@@ -32843,7 +32866,6 @@ function MeshNormalMaterial( parameters ) {
 	this.wireframeLinewidth = 1;
 
 	this.fog = false;
-	this.lights = false;
 
 	this.skinning = false;
 	this.morphTargets = false;
@@ -33069,8 +33091,6 @@ function MeshMatcapMaterial( parameters ) {
 	this.skinning = false;
 	this.morphTargets = false;
 	this.morphNormals = false;
-
-	this.lights = false;
 
 	this.setValues( parameters );
 
