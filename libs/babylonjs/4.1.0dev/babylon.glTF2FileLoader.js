@@ -2031,6 +2031,7 @@ var GLTFLoader = /** @class */ (function () {
         else {
             var promises = new Array();
             var babylonMesh_1 = new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Mesh"](name, this._babylonScene);
+            babylonMesh_1.overrideMaterialSideOrientation = this._babylonScene.useRightHandedSystem ? babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Material"].CounterClockWiseSideOrientation : babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Material"].ClockWiseSideOrientation;
             this._createMorphTargets(context, node, mesh, primitive, babylonMesh_1);
             promises.push(this._loadVertexDataAsync(context, primitive, babylonMesh_1).then(function (babylonGeometry) {
                 return _this._loadMorphTargetsAsync(context, primitive, babylonMesh_1, babylonGeometry).then(function () {
@@ -2133,10 +2134,12 @@ var GLTFLoader = /** @class */ (function () {
         else if (primitive.targets.length !== node._numMorphTargets) {
             throw new Error(context + ": Primitives do not have the same number of targets");
         }
+        var targetNames = mesh.extras ? mesh.extras.targetNames : null;
         babylonMesh.morphTargetManager = new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["MorphTargetManager"](babylonMesh.getScene());
         for (var index = 0; index < primitive.targets.length; index++) {
             var weight = node.weights ? node.weights[index] : mesh.weights ? mesh.weights[index] : 0;
-            babylonMesh.morphTargetManager.addTarget(new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["MorphTarget"]("morphTarget" + index, weight, babylonMesh.getScene()));
+            var name_4 = targetNames ? targetNames[index] : "morphTarget" + index;
+            babylonMesh.morphTargetManager.addTarget(new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["MorphTarget"](name_4, weight, babylonMesh.getScene()));
             // TODO: tell the target whether it has positions, normals, tangents
         }
     };
@@ -2733,6 +2736,13 @@ var GLTFLoader = /** @class */ (function () {
                 return new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["VertexBuffer"](_this._babylonScene.getEngine(), data, kind, false);
             });
         }
+        // Load joint indices as a float array since the shaders expect float data but glTF uses unsigned byte/short.
+        // This prevents certain platforms (e.g. D3D) from having to convert the data to float on the fly.
+        else if (kind === babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["VertexBuffer"].MatricesIndicesKind) {
+            accessor._babylonVertexBuffer = this._loadFloatAccessorAsync("/accessors/" + accessor.index, accessor).then(function (data) {
+                return new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["VertexBuffer"](_this._babylonScene.getEngine(), data, kind, false);
+            });
+        }
         else {
             var bufferView_2 = ArrayItem.Get(context + "/bufferView", this._gltf.bufferViews, accessor.bufferView);
             accessor._babylonVertexBuffer = this._loadVertexBufferViewAsync(bufferView_2, kind).then(function (babylonBuffer) {
@@ -2811,7 +2821,7 @@ var GLTFLoader = /** @class */ (function () {
     };
     GLTFLoader.prototype._createDefaultMaterial = function (name, babylonDrawMode) {
         var babylonMaterial = new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["PBRMaterial"](name, this._babylonScene);
-        babylonMaterial.sideOrientation = this._babylonScene.useRightHandedSystem ? babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Material"].CounterClockWiseSideOrientation : babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Material"].ClockWiseSideOrientation;
+        // Moved to mesh so user can change materials on gltf meshes: babylonMaterial.sideOrientation = this._babylonScene.useRightHandedSystem ? Material.CounterClockWiseSideOrientation : Material.ClockWiseSideOrientation;
         babylonMaterial.fillMode = babylonDrawMode;
         babylonMaterial.enableSpecularAntiAliasing = true;
         babylonMaterial.useRadianceOverAlpha = !this._parent.transparencyAsCoverage;
@@ -3003,7 +3013,7 @@ var GLTFLoader = /** @class */ (function () {
             promises.push(this.loadImageAsync("/images/" + image.index, image).then(function (data) {
                 var name = image.uri || _this._fileName + "#image" + image.index;
                 var dataUrl = "data:" + _this._uniqueRootUrl + name;
-                babylonTexture.updateURL(dataUrl, new Blob([data], { type: image.mimeType }));
+                babylonTexture.updateURL(dataUrl, data);
             }));
         }
         babylonTexture.wrapU = samplerData.wrapU;
@@ -3275,8 +3285,8 @@ var GLTFLoader = /** @class */ (function () {
     };
     GLTFLoader.prototype._forEachExtensions = function (action) {
         for (var _i = 0, _a = GLTFLoader._ExtensionNames; _i < _a.length; _i++) {
-            var name_4 = _a[_i];
-            var extension = this._extensions[name_4];
+            var name_5 = _a[_i];
+            var extension = this._extensions[name_5];
             if (extension.enabled) {
                 action(extension);
             }
@@ -3284,10 +3294,10 @@ var GLTFLoader = /** @class */ (function () {
     };
     GLTFLoader.prototype._applyExtensions = function (property, functionName, actionAsync) {
         for (var _i = 0, _a = GLTFLoader._ExtensionNames; _i < _a.length; _i++) {
-            var name_5 = _a[_i];
-            var extension = this._extensions[name_5];
+            var name_6 = _a[_i];
+            var extension = this._extensions[name_6];
             if (extension.enabled) {
-                var id = name_5 + "." + functionName;
+                var id = name_6 + "." + functionName;
                 var loaderProperty = property;
                 loaderProperty._activeLoaderExtensionFunctions = loaderProperty._activeLoaderExtensionFunctions || {};
                 var activeLoaderExtensionFunctions = loaderProperty._activeLoaderExtensionFunctions;

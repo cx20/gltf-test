@@ -934,8 +934,7 @@ var OBJFileLoader = /** @class */ (function () {
             curPositionInIndices = 0;
         };
         /**
-         * Create triangles from polygons by recursion
-         * The best to understand how it works is to draw it in the same time you get the recursion.
+         * Create triangles from polygons
          * It is important to notice that a triangle is a polygon
          * We get 5 patterns of face defined in OBJ File :
          * facePattern1 = ["1","2","3","4","5","6"]
@@ -947,15 +946,11 @@ var OBJFileLoader = /** @class */ (function () {
          * @param face Array[String] The indices of elements
          * @param v Integer The variable to increment
          */
-        var getTriangles = function (face, v) {
+        var getTriangles = function (faces, v) {
             //Work for each element of the array
-            if (v + 1 < face.length) {
+            for (var faceIndex = v; faceIndex < faces.length - 1; faceIndex++) {
                 //Add on the triangle variable the indexes to obtain triangles
-                triangles.push(face[0], face[v], face[v + 1]);
-                //Incrementation for recursion
-                v += 1;
-                //Recursion
-                getTriangles(face, v);
+                triangles.push(faces[0], faces[faceIndex], faces[faceIndex + 1]);
             }
             //Result obtained after 2 iterations:
             //Pattern1 => triangle = ["1","2","3","1","3","4"];
@@ -1115,7 +1110,7 @@ var OBJFileLoader = /** @class */ (function () {
         var lines = data.split('\n');
         //Look at each line
         for (var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim();
+            var line = lines[i].trim().replace(/\s\s/g, " ");
             var result;
             //Comment or newLine
             if (line.length === 0 || line.charAt(0) === '#') {
@@ -1408,7 +1403,7 @@ var OBJFileLoader = /** @class */ (function () {
     /**
      * Defines if UVs are optimized by default during load.
      */
-    OBJFileLoader.OPTIMIZE_WITH_UV = false;
+    OBJFileLoader.OPTIMIZE_WITH_UV = true;
     /**
      * Invert model on y-axis (does a model scaling inversion)
      */
@@ -1479,6 +1474,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "STLFileLoader", function() { return STLFileLoader; });
 /* harmony import */ var babylonjs_Misc_tools__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! babylonjs/Misc/tools */ "babylonjs/Misc/observable");
 /* harmony import */ var babylonjs_Misc_tools__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(babylonjs_Misc_tools__WEBPACK_IMPORTED_MODULE_0__);
+
 
 
 
@@ -3082,22 +3078,22 @@ var GLTFLoaderBase = /** @class */ (function () {
             var blendFunc = functions.blendFuncSeparate;
             if (blendFunc) {
                 if (blendFunc[0] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].SRC_ALPHA && blendFunc[1] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE_MINUS_SRC_ALPHA && blendFunc[2] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE && blendFunc[3] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE) {
-                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Engine"].ALPHA_COMBINE;
+                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Constants"].ALPHA_COMBINE;
                 }
                 else if (blendFunc[0] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE && blendFunc[1] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE && blendFunc[2] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ZERO && blendFunc[3] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE) {
-                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Engine"].ALPHA_ONEONE;
+                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Constants"].ALPHA_ONEONE;
                 }
                 else if (blendFunc[0] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].SRC_ALPHA && blendFunc[1] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE && blendFunc[2] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ZERO && blendFunc[3] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE) {
-                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Engine"].ALPHA_ADD;
+                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Constants"].ALPHA_ADD;
                 }
                 else if (blendFunc[0] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ZERO && blendFunc[1] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE_MINUS_SRC_COLOR && blendFunc[2] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE && blendFunc[3] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE) {
-                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Engine"].ALPHA_SUBTRACT;
+                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Constants"].ALPHA_SUBTRACT;
                 }
                 else if (blendFunc[0] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].DST_COLOR && blendFunc[1] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ZERO && blendFunc[2] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE && blendFunc[3] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE) {
-                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Engine"].ALPHA_MULTIPLY;
+                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Constants"].ALPHA_MULTIPLY;
                 }
                 else if (blendFunc[0] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].SRC_ALPHA && blendFunc[1] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE_MINUS_SRC_COLOR && blendFunc[2] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE && blendFunc[3] === _glTFLoaderInterfaces__WEBPACK_IMPORTED_MODULE_0__["EBlendingFunction"].ONE) {
-                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Engine"].ALPHA_MAXIMIZED;
+                    shaderMaterial.alphaMode = babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Constants"].ALPHA_MAXIMIZED;
                 }
             }
         }
@@ -5933,6 +5929,7 @@ var GLTFLoader = /** @class */ (function () {
         else {
             var promises = new Array();
             var babylonMesh_1 = new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Mesh"](name, this._babylonScene);
+            babylonMesh_1.overrideMaterialSideOrientation = this._babylonScene.useRightHandedSystem ? babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Material"].CounterClockWiseSideOrientation : babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Material"].ClockWiseSideOrientation;
             this._createMorphTargets(context, node, mesh, primitive, babylonMesh_1);
             promises.push(this._loadVertexDataAsync(context, primitive, babylonMesh_1).then(function (babylonGeometry) {
                 return _this._loadMorphTargetsAsync(context, primitive, babylonMesh_1, babylonGeometry).then(function () {
@@ -6035,10 +6032,12 @@ var GLTFLoader = /** @class */ (function () {
         else if (primitive.targets.length !== node._numMorphTargets) {
             throw new Error(context + ": Primitives do not have the same number of targets");
         }
+        var targetNames = mesh.extras ? mesh.extras.targetNames : null;
         babylonMesh.morphTargetManager = new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["MorphTargetManager"](babylonMesh.getScene());
         for (var index = 0; index < primitive.targets.length; index++) {
             var weight = node.weights ? node.weights[index] : mesh.weights ? mesh.weights[index] : 0;
-            babylonMesh.morphTargetManager.addTarget(new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["MorphTarget"]("morphTarget" + index, weight, babylonMesh.getScene()));
+            var name_4 = targetNames ? targetNames[index] : "morphTarget" + index;
+            babylonMesh.morphTargetManager.addTarget(new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["MorphTarget"](name_4, weight, babylonMesh.getScene()));
             // TODO: tell the target whether it has positions, normals, tangents
         }
     };
@@ -6635,6 +6634,13 @@ var GLTFLoader = /** @class */ (function () {
                 return new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["VertexBuffer"](_this._babylonScene.getEngine(), data, kind, false);
             });
         }
+        // Load joint indices as a float array since the shaders expect float data but glTF uses unsigned byte/short.
+        // This prevents certain platforms (e.g. D3D) from having to convert the data to float on the fly.
+        else if (kind === babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["VertexBuffer"].MatricesIndicesKind) {
+            accessor._babylonVertexBuffer = this._loadFloatAccessorAsync("/accessors/" + accessor.index, accessor).then(function (data) {
+                return new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["VertexBuffer"](_this._babylonScene.getEngine(), data, kind, false);
+            });
+        }
         else {
             var bufferView_2 = ArrayItem.Get(context + "/bufferView", this._gltf.bufferViews, accessor.bufferView);
             accessor._babylonVertexBuffer = this._loadVertexBufferViewAsync(bufferView_2, kind).then(function (babylonBuffer) {
@@ -6713,7 +6719,7 @@ var GLTFLoader = /** @class */ (function () {
     };
     GLTFLoader.prototype._createDefaultMaterial = function (name, babylonDrawMode) {
         var babylonMaterial = new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["PBRMaterial"](name, this._babylonScene);
-        babylonMaterial.sideOrientation = this._babylonScene.useRightHandedSystem ? babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Material"].CounterClockWiseSideOrientation : babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["Material"].ClockWiseSideOrientation;
+        // Moved to mesh so user can change materials on gltf meshes: babylonMaterial.sideOrientation = this._babylonScene.useRightHandedSystem ? Material.CounterClockWiseSideOrientation : Material.ClockWiseSideOrientation;
         babylonMaterial.fillMode = babylonDrawMode;
         babylonMaterial.enableSpecularAntiAliasing = true;
         babylonMaterial.useRadianceOverAlpha = !this._parent.transparencyAsCoverage;
@@ -6905,7 +6911,7 @@ var GLTFLoader = /** @class */ (function () {
             promises.push(this.loadImageAsync("/images/" + image.index, image).then(function (data) {
                 var name = image.uri || _this._fileName + "#image" + image.index;
                 var dataUrl = "data:" + _this._uniqueRootUrl + name;
-                babylonTexture.updateURL(dataUrl, new Blob([data], { type: image.mimeType }));
+                babylonTexture.updateURL(dataUrl, data);
             }));
         }
         babylonTexture.wrapU = samplerData.wrapU;
@@ -7177,8 +7183,8 @@ var GLTFLoader = /** @class */ (function () {
     };
     GLTFLoader.prototype._forEachExtensions = function (action) {
         for (var _i = 0, _a = GLTFLoader._ExtensionNames; _i < _a.length; _i++) {
-            var name_4 = _a[_i];
-            var extension = this._extensions[name_4];
+            var name_5 = _a[_i];
+            var extension = this._extensions[name_5];
             if (extension.enabled) {
                 action(extension);
             }
@@ -7186,10 +7192,10 @@ var GLTFLoader = /** @class */ (function () {
     };
     GLTFLoader.prototype._applyExtensions = function (property, functionName, actionAsync) {
         for (var _i = 0, _a = GLTFLoader._ExtensionNames; _i < _a.length; _i++) {
-            var name_5 = _a[_i];
-            var extension = this._extensions[name_5];
+            var name_6 = _a[_i];
+            var extension = this._extensions[name_6];
             if (extension.enabled) {
-                var id = name_5 + "." + functionName;
+                var id = name_6 + "." + functionName;
                 var loaderProperty = property;
                 loaderProperty._activeLoaderExtensionFunctions = loaderProperty._activeLoaderExtensionFunctions || {};
                 var activeLoaderExtensionFunctions = loaderProperty._activeLoaderExtensionFunctions;
