@@ -13,7 +13,7 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'SimpleTexture', scale:1.0},
     {category:'tutorialModels', name:'Cameras', scale:1.0},
     {category:'tutorialModels', name:'SimpleSkin', scale:1.0},
-    {category:'tutorialModels', name:'InterpolationTest', scale:1.0, allAnimations:true},  // Play all model animations at the same time
+    {category:'tutorialModels', name:'InterpolationTest', scale:0.2, allAnimations:true},  // Play all model animations at the same time
 ];
 
 TutorialModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
