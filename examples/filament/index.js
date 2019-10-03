@@ -133,9 +133,11 @@ class App {
 
         if (this.animator) {
             const ms = Date.now() - this.animationStartTime;
-            //this.animator.applyAnimation(0, (ms / 1000) % 1.0); // TODO: not animated correctly
-            this.animator.applyAnimation(0, ms / 1000);
-            this.animator.updateBoneMatrices();
+            for (let i = 0; i < this.asset.getAnimator().getAnimationCount(); i++ ) {
+                //this.animator.applyAnimation(i, (ms / 1000) % 1.0); // TODO: not animated correctly
+                this.animator.applyAnimation(i, ms / 1000);
+                this.animator.updateBoneMatrices();
+            }
         }
 
         this.renderer.render(this.swapChain, this.view);
