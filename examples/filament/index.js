@@ -55,7 +55,8 @@ class App {
         this.canvas = canvas;
         const engine = this.engine = Filament.Engine.create(this.canvas);
         const scene = this.scene = engine.createScene();
-        this.trackball = new Trackball(canvas, {startSpin: 0.006});
+        //this.trackball = new Trackball(canvas, {startSpin: 0.006});
+        this.trackball = new Trackball(canvas, {startSpin: 0.000});
         const sunlight = Filament.EntityManager.get().create();
         Filament.LightManager.Builder(LightType.SUN)
             .color([0.98, 0.92, 0.89])
