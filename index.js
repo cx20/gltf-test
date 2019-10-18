@@ -8,6 +8,9 @@ let engines = [{
     name: 'Cesium',
     path: 'examples/cesium/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
+    name: 'ArcGISJSAPI',
+    path: 'examples/arcgisjsapi/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
     name: 'Grimore.js',
     path: 'examples/grimoiregl/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {

@@ -1,0 +1,77 @@
+html,
+body,
+#viewDiv {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+}
+
+#rotateToggle {
+  background: #fff;
+  padding: 10px;
+}
+
+#topbar {
+  background: #fff;
+  padding: 10px;
+}
+
+#loadingOverlay {
+  position: fixed;
+  display: block;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 100;
+}
+
+#loadingImg {
+  left: 50%;
+  top: 50%;
+  position: absolute;
+  z-index: 100;
+}
+
+#messagepanel {
+    position: absolute;
+    display: none;
+    width: 400px;
+    height: 200px;
+    top: 50%;
+    left: 50%;
+    margin: -100px 0 0 -200px;
+    background: white;
+    padding: 1em;
+    text-align: left;
+    vertical-align: middle;
+    z-index: 200;
+  }
+
+
+.action-button {
+  font-size: 16px;
+  background-color: transparent;
+  border: 1px solid #d3d3d3;
+  color: #6e6e6e;
+  height: 32px;
+  width: 32px;
+  text-align: center;
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+.action-button:hover,
+.action-button:focus {
+  background: #0079c1;
+  color: #e4e4e4;
+}
+
+.active {
+  background: #0079c1;
+  color: #e4e4e4;
+}
