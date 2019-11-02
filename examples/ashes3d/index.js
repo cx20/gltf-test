@@ -20,7 +20,7 @@ if (!modelInfo) {
 }
 
 let { Asset, EntityMgr, Camera, vec3, quat, Screen, OrbitControl, MeshRenderer, Filter, Shader, Material, QuadMesh } = Ashes;
-let CDN = 'https://but0n.github.io/Ashes/'
+let assetRoot = 'https://but0n.github.io/Ashes/'
 
 let scale = modelInfo.scale;
 let path = "../../" + modelInfo.category + "/" + modelInfo.path;
@@ -36,7 +36,9 @@ async function run() {
 
     let screen = new Screen('#screen');
     screen.bgColor = [0.2,0.2,0.2,1];
-    let skybox = await Asset.loadCubemap(CDN + 'res/envmap/GoldenGateBridge2/');
+    //let skybox  = await Asset.loadCubemap(assetRoot + 'res/envmap/GoldenGateBridge2/');
+    let specEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad/', 'hdr');
+    let diffEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad_diff/', 'hdr');
 
     let scene = EntityMgr.create('root');
 
@@ -56,7 +58,8 @@ async function run() {
     EntityMgr.addComponent(mainCamera, new OrbitControl(screen, mainCamera));
 
     // Load gltf scene
-    let gltfroot = await Asset.loadGLTF(gltf, screen, skybox);
+    //let gltfroot = await Asset.loadGLTF(gltf, screen, skybox);
+    let gltfroot = await Asset.loadGLTF(gltf, screen, specEnv, diffEnv);
     scene.appendChild(gltfroot);
     
     let root = gltfroot.components.Transform;
