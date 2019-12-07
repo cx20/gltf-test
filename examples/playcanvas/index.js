@@ -44,7 +44,7 @@ app.root.addChild(camera);
 camera.setLocalPosition(0, 0, 1);
 
 // make the camera interactive
-app.assets.loadFromUrl('../../libs/playcanvas/v1.22.0-dev/orbit-camera.js', 'script', function (err, asset) {
+app.assets.loadFromUrl('../../libs/playcanvas/v1.25.0-dev/orbit-camera.js', 'script', function (err, asset) {
     camera.script.create('orbitCamera', {
         attributes: {
             inertiaFactor: 0,
@@ -107,13 +107,13 @@ function loadScript(src) {
 
 function init(){
     if (true) {//typeof WebAssembly !== 'object') {
-        loadScript('../../libs/playcanvas/v1.22.0-dev/draco_decoder.js').then(function () {
+        loadScript('../../libs/playcanvas/v1.25.0-dev/draco_decoder.js').then(function () {
             decoderModule = DracoDecoderModule();
             onLoad();
         });
     } else {
-        loadScript('../../libs/playcanvas/v1.22.0-dev/draco_wasm_wrapper.js').then(function () {
-            fetch('../../libs/playcanvas/v1.22.0-dev/draco_decoder.wasm').then(function (response) {
+        loadScript('../../libs/playcanvas/v1.25.0-dev/draco_wasm_wrapper.js').then(function () {
+            fetch('../../libs/playcanvas/v1.25.0-dev/draco_decoder.wasm').then(function (response) {
                 response.arrayBuffer().then(function (arrayBuffer) {
                     decoderModule = DracoDecoderModule({ wasmBinary: arrayBuffer });
                     onLoad();
@@ -158,12 +158,12 @@ function onLoad() {
 
         req.onload = function(){
             let arrayBuffer = req.response;
-            loadGlb(arrayBuffer, app.graphicsDevice, function (model, textures, animationClips) {
+            loadGlb(arrayBuffer, app.graphicsDevice, function (err, res) {
                 // Wrap the model as an asset and add to the asset registry
                 let asset = new pc.Asset('gltf', 'model', {
                     url: ''
                 });
-                asset.resource = model;
+                asset.resource = res.model;
                 asset.loaded = true;
                 app.assets.add(asset);
 
@@ -183,7 +183,7 @@ function onLoad() {
                     }
                 }
 
-                gltfRoot.model.model = model;
+                gltfRoot.model.model = res.model;
                 if ( animationClips && animationClips.length > 0 ) {
                     gltfRoot.animComponent = new AnimationComponent();
                 }
@@ -205,12 +205,12 @@ function onLoad() {
         app.assets.loadFromUrl(url, 'json', function (err, asset) {
             let json = asset.resource;
             let gltf = JSON.parse(json);
-            loadGltf(gltf, app.graphicsDevice, function (model, textures, animationClips) {
+            loadGltf(gltf, app.graphicsDevice, function (err, res) {
                 // Wrap the model as an asset and add to the asset registry
                 let asset = new pc.Asset('gltf', 'model', {
                     url: ''
                 });
-                asset.resource = model;
+                asset.resource = res.model;
                 asset.loaded = true;
                 app.assets.add(asset);
 
@@ -230,7 +230,7 @@ function onLoad() {
                     }
                 }
 
-                gltfRoot.model.model = model;
+                gltfRoot.model.model = res.model;
                 if ( animationClips && animationClips.length > 0 ) {
                     gltfRoot.animComponent = new AnimationComponent();
                 }
