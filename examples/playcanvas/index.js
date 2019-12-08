@@ -45,23 +45,9 @@ camera.setLocalPosition(0, 0, 1);
 
 // make the camera interactive
 app.assets.loadFromUrl('../../libs/playcanvas/v1.25.0-dev/orbit-camera.js', 'script', function (err, asset) {
-    camera.script.create('orbitCamera', {
-        attributes: {
-            inertiaFactor: 0,
-            distanceMin: 0,
-            distanceMax: 0,
-            pitchAngleMax: 90,
-            pitchAngleMin: -90,
-            frameOnStart: true
-        }
-    });
+    camera.script.create('orbitCamera');
     camera.script.create('keyboardInput');
-    camera.script.create('mouseInput', {
-        attributes: {
-            orbitSensitivity: 0.3,
-            distanceSensitivity: 0.15
-        }
-    });
+    camera.script.create('mouseInput');
 });
 // set a prefiltered cubemap as the skybox
 let cubemapAsset = new pc.Asset('helipad', 'cubemap', {
@@ -146,6 +132,13 @@ function onLoad() {
     };
     // glTF scene root that rotates
     let gltfRoot = new pc.Entity('gltf');
+
+    var localScale = gltfRoot.getLocalScale();
+    localScale.x = scale / 5;
+    localScale.y = scale / 5;
+    localScale.z = scale / 5;
+    gltfRoot.setLocalScale(localScale);
+
     gltfRoot.addComponent('script');
     gltfRoot.script.create('rotate');
     app.root.addChild(gltfRoot);
@@ -166,7 +159,9 @@ function onLoad() {
                 asset.resource = res.model;
                 asset.loaded = true;
                 app.assets.add(asset);
-
+                var textures = res.textures;
+                var animationClips = res.animations;
+        
                 // add the loaded scene to the hierarchy
                 gltfRoot.addComponent('model', {
                     asset: asset
@@ -213,6 +208,8 @@ function onLoad() {
                 asset.resource = res.model;
                 asset.loaded = true;
                 app.assets.add(asset);
+                var textures = res.textures;
+                var animationClips = res.animations;
 
                 // add the loaded scene to the hierarchy
                 gltfRoot.addComponent('model', {
