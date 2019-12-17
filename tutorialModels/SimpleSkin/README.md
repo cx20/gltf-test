@@ -1,8 +1,9 @@
 # SimpleSkin
 
-## Under construction! 
+A simple example for vertex skinning in glTF 2.0. 
 
-Parts of the skinning specification may be changed for glTF 1.1
+Details about skinning using this particular model are explained in the
+[skinning section of the glTF tutorial](https://github.com/javagl/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_019_SimpleSkin.md).
 
 ## Screenshot
 
