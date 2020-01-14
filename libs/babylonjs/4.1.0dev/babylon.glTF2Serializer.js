@@ -97,9 +97,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ ({
 
 /***/ "../../node_modules/tslib/tslib.es6.js":
-/*!*****************************************************************!*\
-  !*** C:/Dev/Babylon/Babylon.js/node_modules/tslib/tslib.es6.js ***!
-  \*****************************************************************/
+/*!***********************************************************!*\
+  !*** E:/Repos/Babylon.js/node_modules/tslib/tslib.es6.js ***!
+  \***********************************************************/
 /*! exports provided: __extends, __assign, __rest, __decorate, __param, __metadata, __awaiter, __generator, __exportStar, __values, __read, __spread, __spreadArrays, __await, __asyncGenerator, __asyncDelegator, __asyncValues, __makeTemplateObject, __importStar, __importDefault */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -1729,7 +1729,7 @@ var _Exporter = /** @class */ (function () {
         return true;
     };
     /**
-     * Lazy load a local engine with premultiplied alpha set to false
+     * Lazy load a local engine
      */
     _Exporter.prototype._getLocalEngine = function () {
         if (!this._localEngine) {
@@ -1737,7 +1737,7 @@ var _Exporter = /** @class */ (function () {
             localCanvas.id = "WriteCanvas";
             localCanvas.width = 2048;
             localCanvas.height = 2048;
-            this._localEngine = new babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Engine"](localCanvas, true, { premultipliedAlpha: false, preserveDrawingBuffer: true });
+            this._localEngine = new babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Engine"](localCanvas, true, { premultipliedAlpha: babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Tools"].IsSafari(), preserveDrawingBuffer: true });
             this._localEngine.setViewport(new babylonjs_Maths_math__WEBPACK_IMPORTED_MODULE_1__["Viewport"](0, 0, 1, 1));
         }
         return this._localEngine;
