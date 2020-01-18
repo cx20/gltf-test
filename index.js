@@ -132,6 +132,10 @@ function makeSampleModelLinks() {
             //td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-techniqueWebGL', scale));
             td.appendChild(document.createElement('br'));
             td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Draco', scale));
+            if (modelName == 'Monster') {
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Quantized', scale));
+            }
             tr.appendChild(td);
         }
         tableBody.appendChild(tr);
@@ -175,6 +179,10 @@ function makeTutorialModelLinks() {
             //td.appendChild(document.createElement('br'));
             //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Embedded-buffer', scale));
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, TutorialModelIndex.getEmbeddedFolderName(modelName), scale));
+            if (modelName == 'AnimatedMorphCube') {
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Quantized', scale));
+            }
             tr.appendChild(td);
         }
         tableBody.appendChild(tr);
@@ -219,6 +227,10 @@ function makeTutorialPbrModelLinks() {
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
             td.appendChild(document.createElement('br'));
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
+            if (modelName == 'Avocado' || modelName == 'Lantern') {
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Quantized', scale));
+            }
             tr.appendChild(td);
         }
         tableBody.appendChild(tr);
@@ -378,6 +390,7 @@ function replaceContentName(type) {
         "glTF-Binary": "[Binary]",
         "glTF-pbrSpecularGlossiness": "[SpecGloss]",
         "glTF-Draco": "[Draco]",
+        "glTF-Quantized": "[Quantized]",
         "glTF-IBL": "[glTF-IBL]"
     }
     return hashMap[type] ? hashMap[type] : type;
