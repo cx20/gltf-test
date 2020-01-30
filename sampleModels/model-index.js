@@ -17,6 +17,7 @@ ModelIndex.List = [
     {category:'sampleModels', name:'RiggedSimple', scale:0.2},
     {category:'sampleModels', name:'RiggedFigure', scale:1.0},
     {category:'sampleModels', name:'CesiumMan', scale:1.0},
+    {category:'sampleModels', name:'Fox', scale:0.02},
     {category:'sampleModels', name:'BrainStem', scale:1.0},
     {category:'sampleModels', name:'VC', scale:0.2}
 ];
@@ -31,8 +32,13 @@ ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screensho
     'VC'
 ];
 
+ModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
+    'Fox'
+];
+	
 ModelIndex.getScreenshot = function(name) {
     let extension = ((ModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
+    if (ModelIndex.HasJpgScreenshot.indexOf(name) >= 0) extension = 'jpg';
     return name + '/screenshot/screenshot.' + extension;
 };
 
