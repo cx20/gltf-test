@@ -105,9 +105,14 @@ function init() {
         let animations = gltf.animations;
         if ( animations && animations.length ) {
             mixer = new THREE.AnimationMixer( object );
-            for ( let i = 0; i < animations.length; i ++ ) {
-                let animation = animations[ i ];
+            if (modelInfo.name == "Fox" ) {
+                let animation = animations[2]; // 0:Survey, 1:Walk, 2:Run
                 mixer.clipAction( animation ).play();
+            } else {
+                for ( let i = 0; i < animations.length; i ++ ) {
+                    let animation = animations[ i ];
+                    mixer.clipAction( animation ).play();
+                }
             }
         }
 
