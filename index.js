@@ -130,8 +130,10 @@ function makeSampleModelLinks() {
             //td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
             //td.appendChild(document.createElement('br'));
             //td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-techniqueWebGL', scale));
-            td.appendChild(document.createElement('br'));
-            td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Draco', scale));
+            if (modelName != 'RiggedSimple' && modelName != 'RiggedFigure' && modelName != 'CesiumMan') {
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Draco', scale));
+            }
             if (modelName == 'Duck' || modelName == 'Monster') {
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Quantized', scale));
