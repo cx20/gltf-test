@@ -97,7 +97,7 @@
 
 	}
 
-	var REVISION = '113dev';
+	var REVISION = '113';
 	var MOUSE = { LEFT: 0, MIDDLE: 1, RIGHT: 2, ROTATE: 0, DOLLY: 1, PAN: 2 };
 	var TOUCH = { ROTATE: 0, PAN: 1, DOLLY_PAN: 2, DOLLY_ROTATE: 3 };
 	var CullFaceNone = 0;
@@ -3736,9 +3736,11 @@
 
 		projectOnVector: function ( v ) {
 
-			// v cannot be the zero v
+			var denominator = v.lengthSq();
 
-			var scalar = v.dot( this ) / v.lengthSq();
+			if ( denominator === 0 ) { return this.set( 0, 0, 0 ); }
+
+			var scalar = v.dot( this ) / denominator;
 
 			return this.copy( v ).multiplyScalar( scalar );
 
@@ -3765,7 +3767,7 @@
 
 			var denominator = Math.sqrt( this.lengthSq() * v.lengthSq() );
 
-			if ( denominator === 0 ) { console.error( 'THREE.Vector3: angleTo() can\'t handle zero length vectors.' ); }
+			if ( denominator === 0 ) { return Math.PI / 2; }
 
 			var theta = this.dot( v ) / denominator;
 
@@ -18733,9 +18735,9 @@
 				extensionDrawbuffers: material.extensions && material.extensions.drawbuffers,
 				extensionShaderTextureLOD: material.extensions && material.extensions.shaderTextureLOD,
 
-				rendererExtensionFragDepth: isWebGL2 || extensions.get( 'EXT_frag_depth' ) !== undefined,
-				rendererExtensionDrawBuffers: isWebGL2 || extensions.get( 'WEBGL_draw_buffers' ) !== undefined,
-				rendererExtensionShaderTextureLod: isWebGL2 || extensions.get( 'EXT_shader_texture_lod' ) !== undefined,
+				rendererExtensionFragDepth: isWebGL2 || extensions.get( 'EXT_frag_depth' ) !== null,
+				rendererExtensionDrawBuffers: isWebGL2 || extensions.get( 'WEBGL_draw_buffers' ) !== null,
+				rendererExtensionShaderTextureLod: isWebGL2 || extensions.get( 'EXT_shader_texture_lod' ) !== null,
 
 				onBeforeCompile: material.onBeforeCompile
 
@@ -24525,6 +24527,8 @@
 
 			currentRenderState.setupLights( camera );
 
+			var compiled = {};
+
 			scene.traverse( function ( object ) {
 
 				if ( object.material ) {
@@ -24533,13 +24537,19 @@
 
 						for ( var i = 0; i < object.material.length; i ++ ) {
 
-							initMaterial( object.material[ i ], scene, object );
+							if ( object.material[ i ].uuid in compiled === false ) {
+
+								initMaterial( object.material[ i ], scene, object );
+								compiled[ object.material[ i ].uuid ] = true;
+
+							}
 
 						}
 
-					} else {
+					} else if ( object.material.uuid in compiled === false ) {
 
 						initMaterial( object.material, scene, object );
+						compiled[ object.material.uuid ] = true;
 
 					}
 
@@ -27370,6 +27380,8 @@
 		this.instanceMatrix = new BufferAttribute( new Float32Array( count * 16 ), 16 );
 
 		this.count = count;
+
+		this.frustumCulled = false;
 
 	}
 
@@ -34762,8 +34774,9 @@
 		// (0,0,0,0,1,1,1,0,0,0,0,0,0,0) --> (0,0,1,1,0,0)
 		optimize: function () {
 
-			var times = this.times,
-				values = this.values,
+			// times or values may be shared with other tracks, so overwriting is unsafe
+			var times = AnimationUtils.arraySlice( this.times ),
+				values = AnimationUtils.arraySlice( this.values ),
 				stride = this.getValueSize(),
 
 				smoothInterpolation = this.getInterpolation() === InterpolateSmooth,
@@ -34857,6 +34870,11 @@
 
 				this.times = AnimationUtils.arraySlice( times, 0, writeIndex );
 				this.values = AnimationUtils.arraySlice( values, 0, writeIndex * stride );
+
+			} else {
+
+				this.times = times;
+				this.values = values;
 
 			}
 
