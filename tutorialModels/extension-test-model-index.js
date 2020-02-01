@@ -1,7 +1,7 @@
 let TutorialExtensionTestModelIndex = {};
 
 TutorialExtensionTestModelIndex.List = [
-    {category:'tutorialModels', name:'ClearCoatTest', scale:1.0},
+    {category:'tutorialModels', name:'ClearCoatTest', scale:0.3},
     {category:'tutorialModels', name:'EnvironmentTest', scale:0.3},
     {category:'tutorialModels', name:'Lights', scale:1.0},
     {category:'tutorialModels', name:'SpecGlossVsMetalRough', scale:10.0},
