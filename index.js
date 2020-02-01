@@ -375,6 +375,10 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-IBL', scale));
+            } else if ( modelName == 'ClearCoatTest' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
             } else {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             }
