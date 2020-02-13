@@ -5,7 +5,6 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'EnvironmentTest', scale:0.3},
     {category:'tutorialModels', name:'Lights', scale:1.0},
     {category:'tutorialModels', name:'SpecGlossVsMetalRough', scale:10.0},
-    {category:'tutorialModels', name:'TechniquesWebGLTest', scale:1.0},
     {category:'tutorialModels', name:'TextureTransformTest', scale:1.0},
     {category:'tutorialModels', name:'UnlitTest', scale:1.0}
 ];
