@@ -82,24 +82,18 @@ class App {
             this.asset= loader.createAssetFromJson(mesh_url);
         }
         const asset = this.asset;
-
         const messages = document.getElementById('messages');
 
-        // Crudely indicate progress by printing the URL of each resource as it is loaded.
-        // Note that we wait 1 ms after the last asset has downloaded, but before finalization.
-        // This gives the browser time to display the latest status.
+        // Crudely indicate progress by printing the URI of each resource as it is loaded.
         const onFetched = (uri) => messages.innerText += `Downloaded ${uri}\n`;
-        const onDone = (finalize) => {
-            messages.innerText += 'Finalizing...\n'
-            setTimeout(() => {
-                finalize();
-                loader.delete();
-                const entities = asset.getEntities();
-                scene.addEntities(entities);
-                messages.remove();
-                this.animator = asset.getAnimator();
-                this.animationStartTime = Date.now();
-            }, 1);
+        const onDone = () => {
+            // Destroy the asset loader.
+            loader.delete();
+            const entities = asset.getEntities();
+            scene.addEntities(entities);
+            messages.remove();
+            this.animator = asset.getAnimator();
+            this.animationStartTime = Date.now();
         };
         asset.loadResources(onDone, onFetched, basePath);
 
