@@ -82,7 +82,7 @@ function init() {
     loader.setCrossOrigin( 'anonymous' );
 
     var dracoLoader = new THREE.DRACOLoader();
-    dracoLoader.setDecoderPath( '../../libs/three.js/r114dev/draco/gltf/' );
+    dracoLoader.setDecoderPath( '../../libs/three.js/r114/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
     let scale = modelInfo.scale;
@@ -138,7 +138,7 @@ function init() {
     scene.add(axis);
 
     renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.outputEncoding = THREE.sRGBEncoding; // if >r112, please specify outputEncoding instead of gammaOutput
+    renderer.outputEncoding = THREE.sRGBEncoding; // if >r112, specify outputEncoding instead of gammaOutput
     renderer.setClearColor( 0xaaaaaa );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
