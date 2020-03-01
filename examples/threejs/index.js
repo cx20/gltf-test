@@ -138,8 +138,7 @@ function init() {
     scene.add(axis);
 
     renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.gammaOutput = true; // if >r88, models are dark unless you activate gammaOutput
-    renderer.gammaFactor = 2.2;
+    renderer.outputEncoding = THREE.sRGBEncoding; // if >r112, please specify outputEncoding instead of gammaOutput
     renderer.setClearColor( 0xaaaaaa );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
