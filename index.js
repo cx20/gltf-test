@@ -222,16 +222,26 @@ function makeTutorialPbrModelLinks() {
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
-            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
-            td.appendChild(document.createElement('br'));
-            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
-            td.appendChild(document.createElement('br'));
-            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
-            td.appendChild(document.createElement('br'));
-            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
-            if (modelName == 'Avocado' || modelName == 'Lantern') {
+            if (modelName == 'FlightHelmet' || modelName == 'Sponza') {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            } else if (modelName == 'DamagedHelmet') {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Quantized', scale));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Embedded', scale));
+            } else {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
+                if (modelName == 'Avocado' || modelName == 'Lantern') {
+                    td.appendChild(document.createElement('br'));
+                    td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Quantized', scale));
+                }
             }
             tr.appendChild(td);
         }
