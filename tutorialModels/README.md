@@ -17,20 +17,35 @@
 
 ## PBR models
 
-| Model                             | Screenshot                                       | Normal Map         | Occlusion Map      | Emissive Map       |
-|-----------------------------------|:------------------------------------------------:|:------------------:|:------------------:|:------------------:|
-| [Avocado](Avocado)                | ![](Avocado/screenshot/screenshot.jpg)           | :white_check_mark: | :white_check_mark: |                    |
-| [Barramundi Fish](BarramundiFish) | ![](BarramundiFish/screenshot/screenshot.jpg)    | :white_check_mark: | :white_check_mark: |                    |
-| [Boom Box](BoomBox)               | ![](BoomBox/screenshot/screenshot.jpg)           | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| [Corset](Corset)                  | ![](Corset/screenshot/screenshot.jpg)            | :white_check_mark: | :white_check_mark: |                    |
-| [Lantern](Lantern)                | ![](Lantern/screenshot/screenshot.jpg)           | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Model                                         | Screenshot                                       | Normal Map         | Occlusion Map      | Emissive Map       |
+|-----------------------------------------------|:------------------------------------------------:|:------------------:|:------------------:|:------------------:|
+| [Avocado](Avocado)                            | ![](Avocado/screenshot/screenshot.jpg)           | :white_check_mark: |                    |                    |
+| [Barramundi Fish](BarramundiFish)             | ![](BarramundiFish/screenshot/screenshot.jpg)    | :white_check_mark: | :white_check_mark: |                    |
+| [Boom Box](BoomBox)                           | ![](BoomBox/screenshot/screenshot.jpg)           | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| [Corset](Corset)                              | ![](Corset/screenshot/screenshot.jpg)            | :white_check_mark: | :white_check_mark: |                    |
+| [Damaged Helmet](DamagedHelmet)               | ![](DamagedHelmet/screenshot/screenshot.png)     | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| [Flight Helmet](FlightHelmet)                 | ![](FlightHelmet/screenshot/screenshot.jpg)      | :white_check_mark: | :white_check_mark: |                    |
+| [Lantern](Lantern)                            | ![](Lantern/screenshot/screenshot.jpg)           | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| [Water Bottle](WaterBottle)                   | ![](WaterBottle/screenshot/screenshot.jpg)       | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 
 ## Further PBR models
 
-| Model                                                  | Screenshot                                                      | Description|
-|--------------------------------------------------------|-----------------------------------------------------------------|------------|
+| Model                                                  | Screenshot                                                      | Description |
+|--------------------------------------------------------|-----------------------------------------------------------------|-------------|
 | [Two Sided Plane](TwoSidedPlane)                       | ![](TwoSidedPlane/screenshot/screenshot.jpg)                    | A plane having the two sided material parameter enabled.       |
 | [Cube](Cube)                                           | ![](Cube/screenshot/screenshot.jpg)                             | A cube with non-smoothed faces.                                |
 | [Animated Cube](AnimatedCube)                          | ![](AnimatedCube/screenshot/screenshot.gif)                     | Same as previous cube having a linear rotation animation.      |
 | [Suzanne](Suzanne)                                     | ![](Suzanne/screenshot/screenshot.jpg)                          | Suzanne from Blender with smoothed faces.                      |
 | [Sci Fi Helmet](SciFiHelmet)                           | ![](SciFiHelmet/screenshot/screenshot.jpg)                      | Sci Fi Helmet having unsigned integer indices.                 |
+| [Antique Camera](AntiqueCamera)                        | ![](AntiqueCamera/screenshot/screenshot.png)                    | Old camera model having various materials.                       |
+
+## Extension Test Models
+
+| Model                                                 | Screenshot                                                    | Description |
+|-------------------------------------------------------|---------------------------------------------------------------|-------------|
+| [Clearcoat Test](ClearCoatTest)                       | ![](ClearCoatTest/screenshot/screenshot.jpg)                  | Tests if the KHR_materials_clearcoat extension is supported properly. |
+| [Environment Test](EnvironmentTest)                   | ![](EnvironmentTest/screenshot/screenshot.png)                | A simple `scene` with metal and dielectric spheres that range between 0 and 1 roughness. Useful for testing environment lighting. |
+| [SpecGloss Vs MetalRough](SpecGlossVsMetalRough)      | ![](SpecGlossVsMetalRough/screenshot/screenshot.jpg)          | Tests if the KHR_materials_pbrSpecularGlossiness extension is supported properly. |
+| [Texture Transform Test](TextureTransformTest)        | ![](TextureTransformTest/screenshot/screenshot.jpg)           | Tests if the KHR_texture_transform extension is supported properly. |
+| [Unlit Test](UnlitTest)                               | ![](UnlitTest/screenshot/screenshot.png)                      | Tests if the KHR_materials_unlit extension is supported properly. |
+
