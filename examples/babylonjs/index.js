@@ -88,7 +88,8 @@ let createScene = function(engine) {
             
             // If you are worried about performance, you can speed up reading by using a .dds or .env file.
             // https://doc.babylonjs.com/how_to/use_hdr_environment
-            cubeTexture = new BABYLON.CubeTexture("https://rawcdn.githack.com/BabylonJS/Babylon.js/a39255322bf0d9cf910cf70233ca34581963f462/Playground/textures/SpecularHDR.env", scene);
+            //cubeTexture = new BABYLON.CubeTexture("https://rawcdn.githack.com/BabylonJS/Babylon.js/a39255322bf0d9cf910cf70233ca34581963f462/Playground/textures/SpecularHDR.env", scene);
+            cubeTexture = new BABYLON.CubeTexture("https://rawcdn.githack.com/BabylonJS/Babylon.js/a39255322bf0d9cf910cf70233ca34581963f462/Playground/textures/country.env", scene);
             
             scene.createDefaultSkybox(cubeTexture, true, 10000);
 /*
