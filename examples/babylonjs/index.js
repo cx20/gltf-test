@@ -82,11 +82,14 @@ let createScene = function(engine) {
                 (scene.activeCamera.maxZ - scene.activeCamera.minZ) / 2, skyboxBlur);
         } else {
             // Skybox
-            cubeTexture = new BABYLON.CubeTexture(
-                "../../textures/cube/skybox/",
-                scene,
-                ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]
-            );
+            
+            // Using CubeTexture can reduce the size of the texture, but it will take longer to load because of the need to calculate spherical harmonics.
+            //cubeTexture = new BABYLON.CubeTexture("../../textures/cube/skybox/", scene, ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]);
+            
+            // If you are worried about performance, you can speed up reading by using a .dds or .env file.
+            // https://doc.babylonjs.com/how_to/use_hdr_environment
+            cubeTexture = new BABYLON.CubeTexture("https://rawcdn.githack.com/BabylonJS/Babylon.js/a39255322bf0d9cf910cf70233ca34581963f462/Playground/textures/SpecularHDR.env", scene);
+            
             scene.createDefaultSkybox(cubeTexture, true, 10000);
 /*
             // If you care about the performance of createDefaultSkybox(), The following code can be used to avoid this. However, the environmental texture will not be applied.
