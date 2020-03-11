@@ -177,6 +177,7 @@ function init() {
     window.addEventListener( 'resize', resize, false );
 }
 
+/*
 // https://github.com/mrdoob/three.js/tree/dev/examples/textures/cube/skybox
 function getEnvMap() {
     let path = '../../textures/cube/skybox/';
@@ -185,6 +186,24 @@ function getEnvMap() {
         path + 'px' + format, path + 'nx' + format,
         path + 'py' + format, path + 'ny' + format,
         path + 'pz' + format, path + 'nz' + format
+    ];
+    let loader = new THREE.CubeTextureLoader();
+    loader.setCrossOrigin( 'anonymous' );
+    let envMap = loader.load( urls );
+    envMap.format = THREE.RGBFormat;
+    // The color of the environment map is displayed brighter than r98
+    // https://github.com/mrdoob/three.js/issues/15285
+    envMap.encoding = THREE.sRGBEncoding;
+    return envMap;
+}
+*/
+function getEnvMap() {
+    let path = '../../textures/papermill/specular/specular_';
+    let format = '.jpg';
+    let urls = [
+        path + 'right_0' + format, path + 'left_0' + format,
+        path + 'top_0' + format, path + 'bottom_0' + format,
+        path + 'front_0' + format, path + 'back_0' + format
     ];
     let loader = new THREE.CubeTextureLoader();
     loader.setCrossOrigin( 'anonymous' );
