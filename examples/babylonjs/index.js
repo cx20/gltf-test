@@ -85,11 +85,14 @@ let createScene = function(engine) {
             
             // Using CubeTexture can reduce the size of the texture, but it will take longer to load because of the need to calculate spherical harmonics.
             //cubeTexture = new BABYLON.CubeTexture("../../textures/cube/skybox/", scene, ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]);
+            //cubeTexture = new BABYLON.CubeTexture("../../textures/papermill/environment/", scene, ["environment_right_0.jpg", "environment_top_0.jpg", "environment_front_0.jpg", "environment_left_0.jpg", "environment_bottom_0.jpg", "environment_back_0.jpg"]);
             
             // If you are worried about performance, you can speed up reading by using a .dds or .env file.
             // https://doc.babylonjs.com/how_to/use_hdr_environment
-            //cubeTexture = new BABYLON.CubeTexture("https://rawcdn.githack.com/BabylonJS/Babylon.js/a39255322bf0d9cf910cf70233ca34581963f462/Playground/textures/SpecularHDR.env", scene);
-            cubeTexture = new BABYLON.CubeTexture("https://rawcdn.githack.com/BabylonJS/Babylon.js/a39255322bf0d9cf910cf70233ca34581963f462/Playground/textures/country.env", scene);
+            cubeTexture = new BABYLON.CubeTexture("../../textures/env/papermillSpecularHDR.env", scene);
+            //cubeTexture = new BABYLON.CubeTexture.CreateFromPrefilteredData("../../textures/dds/papermillSpecularHDR.dds", scene);
+            
+            //cubeTexture.gammaSpace = true;
             
             scene.createDefaultSkybox(cubeTexture, true, 10000);
 /*
