@@ -78,21 +78,37 @@ let loadingElem = document.getElementById('loading');
 let loadQueue = new Hilo3d.LoadQueue([{
     type: 'CubeTexture',
     images: [
+/*
         '../../textures/cube/skybox/diffuse/bakedDiffuse_01.jpg',
         '../../textures/cube/skybox/diffuse/bakedDiffuse_02.jpg',
         '../../textures/cube/skybox/diffuse/bakedDiffuse_03.jpg',
         '../../textures/cube/skybox/diffuse/bakedDiffuse_04.jpg',
         '../../textures/cube/skybox/diffuse/bakedDiffuse_05.jpg',
         '../../textures/cube/skybox/diffuse/bakedDiffuse_06.jpg'
+*/
+        '../../textures/papermill/diffuse/diffuse_right_0.jpg',
+        '../../textures/papermill/diffuse/diffuse_left_0.jpg',
+        '../../textures/papermill/diffuse/diffuse_top_0.jpg',
+        '../../textures/papermill/diffuse/diffuse_bottom_0.jpg',
+        '../../textures/papermill/diffuse/diffuse_front_0.jpg',
+        '../../textures/papermill/diffuse/diffuse_back_0.jpg',
     ]
 }, {
     type: 'CubeTexture',
+/*
     right: '../../textures/cube/skybox/px.jpg',
     left: '../../textures/cube/skybox/nx.jpg',
     top: '../../textures/cube/skybox/py.jpg',
     bottom: '../../textures/cube/skybox/ny.jpg',
     front: '../../textures/cube/skybox/pz.jpg',
     back: '../../textures/cube/skybox/nz.jpg',
+*/
+    right: '../../textures/papermill/specular/specular_right_0.jpg',
+    left: '../../textures/papermill/specular/specular_left_0.jpg',
+    top: '../../textures/papermill/specular/specular_top_0.jpg',
+    bottom: '../../textures/papermill/specular/specular_bottom_0.jpg',
+    front: '../../textures/papermill/specular/specular_front_0.jpg',
+    back: '../../textures/papermill/specular/specular_back_0.jpg',
     magFilter: Hilo3d.constants.LINEAR,
     minFilter: Hilo3d.constants.LINEAR_MIPMAP_LINEAR
 },{
