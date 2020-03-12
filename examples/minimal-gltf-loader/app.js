@@ -2834,6 +2834,7 @@ var Utils = Utils || {};
         // loading asset --------------------
         // TODO: use webpack to pack these
         uris: [
+/*
             '../../textures/cube/skybox/px.jpg',
             '../../textures/cube/skybox/nx.jpg',
             '../../textures/cube/skybox/py.jpg',
@@ -2847,6 +2848,23 @@ var Utils = Utils || {};
             '../../textures/cube/skybox/diffuse/bakedDiffuse_04.jpg',
             '../../textures/cube/skybox/diffuse/bakedDiffuse_05.jpg',
             '../../textures/cube/skybox/diffuse/bakedDiffuse_06.jpg',
+
+            // @tmp, ugly, load brdfLUT here
+            '../../textures/brdfLUT.png'
+*/
+            '../../textures/papermill/specular/specular_right_0.jpg',
+            '../../textures/papermill/specular/specular_left_0.jpg',
+            '../../textures/papermill/specular/specular_top_0.jpg',
+            '../../textures/papermill/specular/specular_bottom_0.jpg',
+            '../../textures/papermill/specular/specular_front_0.jpg',
+            '../../textures/papermill/specular/specular_back_0.jpg',
+            // ibl diffuse
+            '../../textures/papermill/diffuse/diffuse_right_0.jpg',
+            '../../textures/papermill/diffuse/diffuse_left_0.jpg',
+            '../../textures/papermill/diffuse/diffuse_top_0.jpg',
+            '../../textures/papermill/diffuse/diffuse_bottom_0.jpg',
+            '../../textures/papermill/diffuse/diffuse_front_0.jpg',
+            '../../textures/papermill/diffuse/diffuse_back_0.jpg',
 
             // @tmp, ugly, load brdfLUT here
             '../../textures/brdfLUT.png'
