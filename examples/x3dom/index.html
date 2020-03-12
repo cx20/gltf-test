@@ -30,10 +30,16 @@
     <Scene>
         <navigationinfo headlight="false"></navigationinfo>
         <environment tonemapping="reinhard"></environment>
+<!--
         <physicalenvironmentlight diffuse="https://x3dom.org/download/assets/pbr/papermillDiffuse.dds"
                                   specular="https://x3dom.org/download/assets/pbr/papermillSpecular.dds">
         </physicalenvironmentlight>
         <background backURL="https://x3dom.org/download/assets/pbr/papermillDiffuse.dds"></background>
+-->
+        <physicalenvironmentlight diffuse="https://x3dom.org/download/assets/pbr/papermillDiffuse.dds"
+                                  specular="../../textures/dds/papermillSpecularHDR.dds">
+        </physicalenvironmentlight>
+        <background backURL="../../textures/dds/papermillSpecularHDR.dds"></background>
         <Transform translation="0 0 0">
             <Inline id="inline" url="" nameSpaceName="gltf" mapDEFToID="true"></Inline>
         </Transform>
