@@ -50,12 +50,20 @@ let app = clay.application.create('#main', {
         //let cube = app.createSphere();
         // Skybox need a cubemap texture.
         app.loadTextureCube({
+/*
             px: '../../textures/cube/skybox/px.jpg',
             nx: '../../textures/cube/skybox/nx.jpg',
             py: '../../textures/cube/skybox/py.jpg',
             ny: '../../textures/cube/skybox/ny.jpg',
             pz: '../../textures/cube/skybox/pz.jpg',
             nz: '../../textures/cube/skybox/nz.jpg'
+*/
+            px: '../../textures/papermill/specular/specular_right_0.jpg',
+            nx: '../../textures/papermill/specular/specular_left_0.jpg',
+            py: '../../textures/papermill/specular/specular_top_0.jpg',
+            ny: '../../textures/papermill/specular/specular_bottom_0.jpg',
+            pz: '../../textures/papermill/specular/specular_front_0.jpg',
+            nz: '../../textures/papermill/specular/specular_back_0.jpg'
         }).then(function (cubemap) {
             let skybox = new clay.plugin.Skybox({
                 // Attach skybox to the scene.
@@ -65,7 +73,8 @@ let app = clay.application.create('#main', {
             });
         });
         
-        app.createAmbientCubemapLight('../../textures/hdr/pisa.hdr', 0.7, 0.7);
+        //app.createAmbientCubemapLight('../../textures/hdr/pisa.hdr', 0.7, 0.7);
+        app.createAmbientCubemapLight('https://media.githubusercontent.com/media/ux3d/glTF-Sample-Environments/master/papermill.hdr', 0.7, 0.7);
 
         // Load specified model. return a load promise to make sure the look will be start after model loaded.
         return app.loadModel(url, {textureConvertToPOT: true}).then((function (result) {
