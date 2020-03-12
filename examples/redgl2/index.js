@@ -46,12 +46,20 @@ RedGL(canvas, function (v) {
         tScene['grid'] = RedGrid(this);
         //tScene['axis'] = RedAxis(this);
         tScene.skyBox = RedSkyBox(this, [
+/*
             '../../textures/cube/skybox/px.jpg',
             '../../textures/cube/skybox/nx.jpg',
             '../../textures/cube/skybox/py.jpg',
             '../../textures/cube/skybox/ny.jpg',
             '../../textures/cube/skybox/pz.jpg',
             '../../textures/cube/skybox/nz.jpg'
+*/
+            '../../textures/papermill/specular/specular_right_0.jpg',
+            '../../textures/papermill/specular/specular_left_0.jpg',
+            '../../textures/papermill/specular/specular_top_0.jpg',
+            '../../textures/papermill/specular/specular_bottom_0.jpg',
+            '../../textures/papermill/specular/specular_front_0.jpg',
+            '../../textures/papermill/specular/specular_back_0.jpg'
         ]);
         let tDLight = RedDirectionalLight(this)
         tScene.addLight(tDLight)
@@ -83,12 +91,20 @@ RedGL(canvas, function (v) {
             },
             RedBitmapCubeTexture(this, // environmentTexture
                 [
+/*
                     '../../textures/cube/skybox/px.jpg',
                     '../../textures/cube/skybox/nx.jpg',
                     '../../textures/cube/skybox/py.jpg',
                     '../../textures/cube/skybox/ny.jpg',
                     '../../textures/cube/skybox/pz.jpg',
                     '../../textures/cube/skybox/nz.jpg'
+*/
+                    '../../textures/papermill/specular/specular_right_0.jpg',
+                    '../../textures/papermill/specular/specular_left_0.jpg',
+                    '../../textures/papermill/specular/specular_top_0.jpg',
+                    '../../textures/papermill/specular/specular_bottom_0.jpg',
+                    '../../textures/papermill/specular/specular_front_0.jpg',
+                    '../../textures/papermill/specular/specular_back_0.jpg'
                 ]
             )
         );
