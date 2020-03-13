@@ -19,7 +19,8 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-const env = 'syferfontein_18d_clear_2k';
+//const env = 'syferfontein_18d_clear_2k';
+const env = 'papermill';
 const ibl_url = `../../textures/ktx/${env}/${env}_ibl.ktx`;
 const sky_url = `../../textures/ktx/${env}/${env}_skybox.ktx`;
 let mesh_url = "../../" + modelInfo.category + "/" + modelInfo.path;
