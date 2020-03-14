@@ -3,10 +3,10 @@ let TutorialPbrModelIndex = {};
 TutorialPbrModelIndex.List = [
     {category:'tutorialModels', name:'Avocado', scale:30.0},	// copied from sampleModels
     {category:'tutorialModels', name:'BarramundiFish', scale:5.0},	// copied from sampleModels
-    {category:'tutorialModels', name:'BoomBox', scale:80.0},
-    {category:'tutorialModels', name:'Corset', scale:25.0},
+    {category:'tutorialModels', name:'BoomBox', scale:100.0},
+    {category:'tutorialModels', name:'Corset', scale:30.0},
     {category:'tutorialModels', name:'DamagedHelmet', scale:1.0},
-    {category:'tutorialModels', name:'FlightHelmet', scale:5.0},
+    {category:'tutorialModels', name:'FlightHelmet', scale:3.0},
     {category:'tutorialModels', name:'Lantern', scale:0.06},
     {category:'tutorialModels', name:'WaterBottle', scale:10.0},
     {category:'tutorialModels', name:'Sponza', scale:1.0},
