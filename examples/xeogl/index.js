@@ -35,7 +35,8 @@ let model = new xeogl.GLTFModel({
 });
 
 let skybox = new xeogl.Skybox({
-    src: "../../textures/skybox/cloudySkyBox.jpg",
+    //src: "../../textures/skybox/cloudySkyBox.jpg",
+    src: "../../textures/skybox/papermill.jpg",
     active: true
 });
 
