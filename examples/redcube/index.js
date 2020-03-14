@@ -33,16 +33,9 @@ const renderer = new redcube.RedCube(
     url,
     canvas,
     [],
-    '../../../../textures/hdr/pisa'
+    //'../../../../textures/hdr/pisa'
+    '../../../../textures/hdr/papermill'
 );
-/*
-const renderer = new redcube.RedCube(
-    url,
-    canvas,
-    [],
-    'https://media.githubusercontent.com/media/ux3d/glTF-Sample-Environments/master/papermill' // TODO: Cannot be specified unless it is a relative path
-);
-*/
 
 renderer.init(() => {
 });
