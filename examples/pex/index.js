@@ -127,7 +127,8 @@ renderer.add(reflectionProbeEntity)
 
 const addEnvmap = async () => {
   if (!parseHdr) return
-  const buffer = await loadBinary(`../../textures/hdr/pisa.hdr`)
+  //const buffer = await loadBinary(`../../textures/hdr/pisa.hdr`)
+  const buffer = await loadBinary(`../../textures/hdr/papermill.hdr`)
   const hdrImg = parseHdr(buffer)
   const panorama = ctx.texture2D({
     data: hdrImg.data,
