@@ -49,6 +49,7 @@ app.assets.loadFromUrl('../../libs/playcanvas/v1.25.0-dev/orbit-camera.js', 'scr
     camera.script.create('keyboardInput');
     camera.script.create('mouseInput');
 });
+/*
 // set a prefiltered cubemap as the skybox
 let cubemapAsset = new pc.Asset('helipad', 'cubemap', {
     url: "https://cdn.rawgit.com/playcanvas/playcanvas-gltf/5489ff62/viewer/cubemap/6079289/Helipad.dds"
@@ -68,10 +69,30 @@ let cubemapAsset = new pc.Asset('helipad', 'cubemap', {
     "rgbm": true,
     "prefiltered": "Helipad.dds"
 });
+*/
+// set a prefiltered cubemap as the skybox
+let cubemapAsset = new pc.Asset('papermill', 'cubemap', {
+    url: "../../textures/dds/papermill.dds"
+}, {
+    "textures": [
+        "../../textures/papermill/specular/specular_right_0.jpg",
+        "../../textures/papermill/specular/specular_left_0.jpg",
+        "../../textures/papermill/specular/specular_top_0.jpg",
+        "../../textures/papermill/specular/specular_bottom_0.jpg",
+        "../../textures/papermill/specular/specular_front_0.jpg",
+        "../../textures/papermill/specular/specular_back_0.jpg",
+    ],
+    "magFilter": 1,
+    "minFilter": 5,
+    "anisotropy": 1,
+    "name": "Papermill",
+    "rgbm": true,
+    "prefiltered": "papermill.dds"
+});
 app.assets.add(cubemapAsset);
 app.assets.load(cubemapAsset);
 cubemapAsset.ready(function () {
-    app.scene.skyboxMip = 2;
+    app.scene.skyboxMip = 1;
     app.scene.setSkybox(cubemapAsset.resources);
 });
 
