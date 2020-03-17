@@ -35,7 +35,10 @@ let scene;
 let camera;
 let renderer;
 let controls;
-let envMap;
+let hdrCubeMap;
+let hdrCubeRenderTarget;
+let renderTarget;
+let cubeMap;
 
 init();
 animate();
@@ -54,16 +57,9 @@ function resize() {
 function init() {
     scene = new THREE.Scene();
 
+    // TODO: Probably the combination of IBL and light needs improvement
     hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 3.0 );
     scene.add(hemispheric);
-/*
-    let ambient = new THREE.AmbientLight( 0xffffff, 0.3 );
-    scene.add( ambient );
-
-    let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
-    directionalLight.position.set( 0.5, 0, 0.866 );
-    scene.add( directionalLight );
-*/
 
     camera = new THREE.PerspectiveCamera( 75, 1, 1, 10000 );
     camera.position.set(0, 2, 3);
@@ -82,7 +78,7 @@ function init() {
     loader.setCrossOrigin( 'anonymous' );
 
     var dracoLoader = new THREE.DRACOLoader();
-    dracoLoader.setDecoderPath( '../../libs/three.js/r114/draco/gltf/' );
+    dracoLoader.setDecoderPath( '../../libs/three.js/r115dev/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
     let scale = modelInfo.scale;
@@ -115,21 +111,63 @@ function init() {
                 }
             }
         }
-
-        envMap = getEnvMap();
+/*
+        cubeMap = getEnvMap();
         object.traverse( function( node ) {
             if ( node.isMesh ) {
                 let materials = Array.isArray( node.material ) ? node.material : [ node.material ];
                 materials.forEach( function( material ) {
                     // MeshBasicMaterial means that KHR_materials_unlit is set, so reflections are not needed.
                     if ( 'envMap' in material && !material.isMeshBasicMaterial ) {
-                        material.envMap = envMap;
+                        material.envMap = cubeMap;
                         material.needsUpdate = true;
                     }
                 } );
             }
         } );
-        scene.background = envMap;
+        scene.background = cubeMap;
+*/
+        var hdrUrls = [
+            'specular_right_0.hdr',
+            'specular_left_0.hdr',
+            'specular_top_0.hdr',
+            'specular_bottom_0.hdr',
+            'specular_front_0.hdr',
+            'specular_back_0.hdr'
+        ];
+        hdrCubeMap = new THREE.HDRCubeTextureLoader()
+            .setPath( 'https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/specular/' )
+            .setDataType( THREE.UnsignedByteType )
+            .load( hdrUrls, function () {
+
+                var pmremGenerator = new THREE.PMREMGenerator( renderer );
+                pmremGenerator.compileCubemapShader();
+
+                hdrCubeRenderTarget = pmremGenerator.fromCubemap( hdrCubeMap );
+
+                hdrCubeMap.magFilter = THREE.LinearFilter;
+                hdrCubeMap.needsUpdate = true;
+
+                renderTarget = hdrCubeRenderTarget;
+                cubeMap = hdrCubeMap;
+
+                var newEnvMap = renderTarget ? renderTarget.texture : null;
+
+                object.traverse( function( node ) {
+                    if ( node.isMesh ) {
+                        let materials = Array.isArray( node.material ) ? node.material : [ node.material ];
+                        materials.forEach( function( material ) {
+                            // MeshBasicMaterial means that KHR_materials_unlit is set, so reflections are not needed.
+                            if ( 'envMap' in material && !material.isMeshBasicMaterial ) {
+                                material.envMap = newEnvMap;
+                                material.needsUpdate = true;
+                            }
+                        } );
+                    }
+                } );
+
+                scene.background = cubeMap;
+            } );
 
         scene.add(object);
     });
@@ -165,10 +203,11 @@ function init() {
         axis.visible = value;
     });
     guiLights.onChange(function (value) {
+        // TODO: Improvement is needed when displaying KHR_lights_punctual samples.
         hemispheric.visible = value;
     });
     guiSkybox.onChange(function (value) {
-        scene.background = value ? envMap : null;
+        scene.background = value ? cubeMap : null;
     });
 
     document.body.appendChild( renderer.domElement );
@@ -224,4 +263,5 @@ function animate() {
 
 function render() {
     renderer.render( scene, camera );
+	
 }
