@@ -78,7 +78,7 @@ function init() {
     let loader = new THREE.GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
-    var dracoLoader = new THREE.DRACOLoader();
+    let dracoLoader = new THREE.DRACOLoader();
     dracoLoader.setDecoderPath( '../../libs/three.js/r115dev/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
@@ -113,7 +113,7 @@ function init() {
                 }
             }
         }
-        var hdrUrls = [
+        const hdrUrls = [
             'specular_right_0.hdr',
             'specular_left_0.hdr',
             'specular_top_0.hdr',
@@ -126,7 +126,7 @@ function init() {
             .setDataType( THREE.UnsignedByteType )
             .load( hdrUrls, function () {
 
-                var pmremGenerator = new THREE.PMREMGenerator( renderer );
+                let pmremGenerator = new THREE.PMREMGenerator( renderer );
                 pmremGenerator.compileCubemapShader();
 
                 hdrCubeRenderTarget = pmremGenerator.fromCubemap( hdrCubeMap );
@@ -137,7 +137,7 @@ function init() {
                 renderTarget = hdrCubeRenderTarget;
                 cubeMap = hdrCubeMap;
 
-                var newEnvMap = renderTarget ? renderTarget.texture : null;
+                let newEnvMap = renderTarget ? renderTarget.texture : null;
                 applyEnvMap(object, newEnvMap);
 
                 scene.background = cubeMap;
@@ -182,9 +182,9 @@ function init() {
         scene.background = value ? cubeMap : null;
     });
     guiIbl.onChange(function (value) {
-        var name = modelInfo.name;
-        var object = scene.getObjectByName(name);
-        var newEnvMap = (renderTarget && value) ? renderTarget.texture : null;
+        let name = modelInfo.name;
+        let object = scene.getObjectByName(name);
+        let newEnvMap = (renderTarget && value) ? renderTarget.texture : null;
         applyEnvMap(object, newEnvMap);
     });
     guiLights.onChange(function (value) {
