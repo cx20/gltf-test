@@ -21,7 +21,9 @@ if (!modelInfo) {
 
 var ROTATE = true;
 var BOUNDING_BOX = false;
-var SKYBOX = true;
+var CUBEMAP = true;
+var IBL = true;
+var LIGHTS = false; // The default is to use IBL instead of lights
 var DEBUG = false;
 
 let createScene = function(engine) {
@@ -43,7 +45,9 @@ let createScene = function(engine) {
     let gui = new dat.GUI();
     let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
     let guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
-    let guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
+    let guiCubeMap = gui.add(window, 'CUBEMAP').name('CubeMap');
+    let guiIbl = gui.add(window, 'IBL').name('IBL');
+    let guiLights = gui.add(window, 'LIGHTS').name('Lights');
     let guiDebug = gui.add(window, 'DEBUG').name('Debug');
 
     BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (plugin) {
@@ -71,9 +75,11 @@ let createScene = function(engine) {
 
         let light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
         let light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
+        light1.setEnabled(LIGHTS);
+        light2.setEnabled(LIGHTS);
 
         let environmentTexture;
-        let skyBox;
+        let skybox;
         if (scene.environmentTexture) {
             // Models with "EXT_lights_image_based" can supply their own environmentTexture.
             environmentTexture = scene.environmentTexture;
@@ -94,7 +100,7 @@ let createScene = function(engine) {
             
             //cubeTexture.gammaSpace = true;
             
-            scene.createDefaultSkybox(cubeTexture, true, 10000);
+            skybox = scene.createDefaultSkybox(cubeTexture, true, 10000);
 /*
             // If you care about the performance of createDefaultSkybox(), The following code can be used to avoid this. However, the environmental texture will not be applied.
             // http://www.html5gamedevs.com/topic/36997-using-skybox-takes-time-to-display-is-it-a-usage-problem/?tab=comments#comment-211765
@@ -115,8 +121,17 @@ let createScene = function(engine) {
             scene.forceShowBoundingBoxes = value;
         });
 
-        guiSkybox.onChange(function (value) {
+        guiCubeMap.onChange(function (value) {
+            skybox.visibility = value ? 1 : 0;
+        });
+
+        guiIbl.onChange(function (value) {
             scene.environmentTexture = value ? environmentTexture : null;
+        });
+
+        guiLights.onChange(function (value) {
+            light1.setEnabled(value);
+            light2.setEnabled(value);
         });
 
         guiDebug.onChange(function (value) {
