@@ -28,8 +28,9 @@ let gui;
 
 var ROTATE = true;
 var AXIS = true;
-var LIGHTS = true;
-var SKYBOX = true;
+var CUBEMAP = true;
+var IBL = true;
+var LIGHTS = false; // The default is to use IBL instead of lights
 
 let scene;
 let camera;
@@ -57,8 +58,8 @@ function resize() {
 function init() {
     scene = new THREE.Scene();
 
-    // TODO: Probably the combination of IBL and light needs improvement
     hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 3.0 );
+    hemispheric.visible = LIGHTS; // The default is to use IBL instead of lights
     scene.add(hemispheric);
 
     camera = new THREE.PerspectiveCamera( 75, 1, 1, 10000 );
@@ -111,22 +112,6 @@ function init() {
                 }
             }
         }
-/*
-        cubeMap = getEnvMap();
-        object.traverse( function( node ) {
-            if ( node.isMesh ) {
-                let materials = Array.isArray( node.material ) ? node.material : [ node.material ];
-                materials.forEach( function( material ) {
-                    // MeshBasicMaterial means that KHR_materials_unlit is set, so reflections are not needed.
-                    if ( 'envMap' in material && !material.isMeshBasicMaterial ) {
-                        material.envMap = cubeMap;
-                        material.needsUpdate = true;
-                    }
-                } );
-            }
-        } );
-        scene.background = cubeMap;
-*/
         var hdrUrls = [
             'specular_right_0.hdr',
             'specular_left_0.hdr',
@@ -152,24 +137,13 @@ function init() {
                 cubeMap = hdrCubeMap;
 
                 var newEnvMap = renderTarget ? renderTarget.texture : null;
-
-                object.traverse( function( node ) {
-                    if ( node.isMesh ) {
-                        let materials = Array.isArray( node.material ) ? node.material : [ node.material ];
-                        materials.forEach( function( material ) {
-                            // MeshBasicMaterial means that KHR_materials_unlit is set, so reflections are not needed.
-                            if ( 'envMap' in material && !material.isMeshBasicMaterial ) {
-                                material.envMap = newEnvMap;
-                                material.needsUpdate = true;
-                            }
-                        } );
-                    }
-                } );
+                applyEnvMap(object, newEnvMap);
 
                 scene.background = cubeMap;
             } );
 
         scene.add(object);
+        window.scene = scene;
     });
 
     axis = new THREE.AxesHelper(1000);
@@ -193,8 +167,9 @@ function init() {
     gui = new dat.GUI();
     let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
     let guiAxis = gui.add(window, 'AXIS').name('Axis');
+    let guiCubeMap = gui.add(window, 'CUBEMAP').name('CubeMap');
+    let guiIbl = gui.add(window, 'IBL').name('IBL');
     let guiLights = gui.add(window, 'LIGHTS').name('Lights');
-    let guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
 
     guiRotate.onChange(function (value) {
         controls.autoRotate = value;
@@ -202,18 +177,39 @@ function init() {
     guiAxis.onChange(function (value) {
         axis.visible = value;
     });
+    guiCubeMap.onChange(function (value) {
+        scene.background = value ? cubeMap : null;
+    });
+    guiIbl.onChange(function (value) {
+        var name = modelInfo.name;
+        var object = scene.getObjectByName(name);
+        var newEnvMap = (renderTarget && value) ? renderTarget.texture : null;
+        applyEnvMap(object, newEnvMap);
+    });
     guiLights.onChange(function (value) {
         // TODO: Improvement is needed when displaying KHR_lights_punctual samples.
         hemispheric.visible = value;
-    });
-    guiSkybox.onChange(function (value) {
-        scene.background = value ? cubeMap : null;
     });
 
     document.body.appendChild( renderer.domElement );
 
     resize();
     window.addEventListener( 'resize', resize, false );
+}
+
+function applyEnvMap(object, envMap) {
+    object.traverse( function( node ) {
+        if ( node.isMesh ) {
+            let materials = Array.isArray( node.material ) ? node.material : [ node.material ];
+            materials.forEach( function( material ) {
+                // MeshBasicMaterial means that KHR_materials_unlit is set, so reflections are not needed.
+                if ( 'envMap' in material && !material.isMeshBasicMaterial ) {
+                    material.envMap = envMap;
+                    material.needsUpdate = true;
+                }
+            } );
+        }
+    } );
 }
 
 /*
