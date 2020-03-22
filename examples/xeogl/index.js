@@ -25,8 +25,12 @@ if(modelInfo.url) {
     url = modelInfo.url;
 }
 var ROTATE = true;
+var CUBEMAP = true;
+var LIGHTS = true;
 let gui = new dat.GUI();
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let guiCubeMap = gui.add(window, 'CUBEMAP').name('CubeMap');
+let guiLights = gui.add(window, 'LIGHTS').name('Lights');
 
 // Load glTF
 let model = new xeogl.GLTFModel({
@@ -50,7 +54,7 @@ let ambientLight = new xeogl.AmbientLight({
     color: [0.06, 0.06, 0.18]
 });
 
-new xeogl.DirLight({
+let keyLight = new xeogl.DirLight({
     id: "keyLight",
     dir: [0.0, 0.0, 1.0],
     color: [1.0, 0.9, 0.9],
@@ -58,12 +62,22 @@ new xeogl.DirLight({
     space: "view"
 });
 
-new xeogl.DirLight({
+let fillLight = new xeogl.DirLight({
     id: "fillLight",
     dir: [0, 0, -5],
     color: [1.0, 0.9, 0.9],
     intensity: 0.5,
     space: "view"
+});
+
+guiCubeMap.onChange(function (value) {
+    skybox.active = value;
+});
+
+guiLights.onChange(function (value) {
+    ambientLight.intensity = value ? 1.0 : 0.0;
+    keyLight.intensity = value ? 0.5 : 0.0;
+    fillLight.intensity = value ? 0.5 : 0.0;
 });
 
 let camera = scene.camera;
