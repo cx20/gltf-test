@@ -30,14 +30,20 @@ let diffuseEnvMap;
 let specularEnvMap;
 let brfdTexture;
 let model;
+let skybox;
 
 var ROTATE = true;
 var AXIS = true;
-var SKYBOX = true;
+var CUBEMAP = true;
+var IBL = true;
+var LIGHTS = false; // The default is to use IBL instead of lights
+
 let gui = new dat.GUI();
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 let guiAxis = gui.add(window, 'AXIS').name('Axis');
-let guiSkybox = gui.add(window, 'SKYBOX').name('IBL');
+let guiCubeMap = gui.add(window, 'CUBEMAP').name('CubeMap');
+let guiIbl = gui.add(window, 'IBL').name('IBL');
+let guiLights = gui.add(window, 'LIGHTS').name('Lights');
 
 let camera = new Hilo3d.PerspectiveCamera({
     aspect: innerWidth / innerHeight,
@@ -66,7 +72,7 @@ let directionLight = new Hilo3d.DirectionalLight({
     color:new Hilo3d.Color(0.8, 0.8, 0.8),
     direction:new Hilo3d.Vector3(1, -1, 0)
 }).addTo(stage);
-
+directionLight.enabled = LIGHTS; // The default is to use IBL instead of lights
 
 let ticker = new Hilo3d.Ticker(60);
 ticker.addTick(stage);
@@ -160,7 +166,7 @@ let loadQueue = new Hilo3d.LoadQueue([{
     axis = new Hilo3d.AxisHelper();
     container.addChild(axis);
 
-    let skybox = new Hilo3d.Mesh({
+    skybox = new Hilo3d.Mesh({
         geometry: new Hilo3d.BoxGeometry(),
         material: new Hilo3d.BasicMaterial({
             lightType: 'NONE',
@@ -180,13 +186,16 @@ guiAxis.onChange(function (value) {
     axis.visible = value;
 });
 
-guiSkybox.onChange(function (value) {
+guiCubeMap.onChange(function (value) {
+    skybox.visible = value;
+});
+
+guiIbl.onChange(function (value) {
     if ( value ) {
         model.materials.forEach(function (material) {
             material.brdfLUT = brfdTexture;
             material.diffuseEnvMap = diffuseEnvMap;
             material.specularEnvMap = specularEnvMap;
-            directionLight.enabled = true;
             material.isDirty = true;
         });
     } else {
@@ -194,8 +203,11 @@ guiSkybox.onChange(function (value) {
             material.brdfLUT = null;
             material.diffuseEnvMap = null;
             material.specularEnvMap = null;
-            directionLight.enabled = false;
             material.isDirty = true;
         });
     }
+});
+
+guiLights.onChange(function (value) {
+    directionLight.enabled = value;
 });
