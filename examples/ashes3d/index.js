@@ -37,16 +37,19 @@ async function run() {
     let screen = new Screen('#screen');
     screen.bgColor = [0.2,0.2,0.2,1];
 
+    //let skybox  = await Asset.loadCubemap(assetRoot + 'res/envmap/GoldenGateBridge2/');
+    //let specEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad/', 'hdr');
+    //let diffEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad_diff/', 'hdr');
+
     Asset.cubemapOrder = [
-        'posx.',
-        'negx.',
-        'posy.',
-        'negy.',
-        'posz.',
-        'negz.',
+        'diffuse_right_0.',
+        'diffuse_left_0.',
+        'diffuse_top_0.',
+        'diffuse_bottom_0.',
+        'diffuse_front_0.',
+        'diffuse_back_0.',
     ];
-    // TODO: It requires the `papermill` diffuse texture instead of the `helipad`.
-    let diffEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad_diff/', 'hdr');
+    let diffEnv = await Asset.loadCubemap('https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/diffuse/', 'hdr');
     
     Asset.cubemapOrder = [
         'specular_right_0.',
@@ -56,14 +59,7 @@ async function run() {
         'specular_front_0.',
         'specular_back_0.',
     ];
-    
-    //let skybox  = await Asset.loadCubemap(assetRoot + 'res/envmap/GoldenGateBridge2/');
-    //let specEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad/', 'hdr');
-    //let diffEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad_diff/', 'hdr');
-
-    //let skybox  = await Asset.loadCubemap('https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/specular/', 'hdr');
     let specEnv = await Asset.loadCubemap('https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/specular/', 'hdr');
-    //let diffEnv = await Asset.loadCubemap('https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/specular/', 'hdr');
 
     let scene = EntityMgr.create('root');
 
