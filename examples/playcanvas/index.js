@@ -333,7 +333,7 @@ var Viewer = function (canvas) {
 
     // load orbit script
     app.assets.loadFromUrl(
-        "../../libs/playcanvas/v1.26.0-dev/orbit-camera.js",
+        "../../libs/playcanvas/v1.27.0-dev/orbit-camera.js",
         "script",
         function (err, asset) {
             // setup orbit script component
@@ -581,13 +581,13 @@ var viewer;
 
 function main(){
     if (true) {//typeof WebAssembly !== 'object') {
-        loadScript('../../libs/playcanvas/v1.26.0-dev/draco_decoder.js').then(function () {
+        loadScript('../../libs/playcanvas/v1.27.0-dev/draco_decoder.js').then(function () {
             decoderModule = DracoDecoderModule();
             onLoad();
         });
     } else {
-        loadScript('../../libs/playcanvas/v1.26.0-dev/draco_wasm_wrapper.js').then(function () {
-            fetch('../../libs/playcanvas/v1.26.0-dev/draco_decoder.wasm').then(function (response) {
+        loadScript('../../libs/playcanvas/v1.27.0-dev/draco_wasm_wrapper.js').then(function () {
+            fetch('../../libs/playcanvas/v1.27.0-dev/draco_decoder.wasm').then(function (response) {
                 response.arrayBuffer().then(function (arrayBuffer) {
                     decoderModule = DracoDecoderModule({ wasmBinary: arrayBuffer });
                     onLoad();
