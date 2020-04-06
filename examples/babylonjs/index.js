@@ -57,6 +57,7 @@ let createScene = function(engine) {
     let loader = BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
 
         scene = newScene;
+        
         let parentMesh = scene.rootNodes[0];
 
         if ( modelInfo.name == "GearboxAssy" ) {
@@ -64,6 +65,8 @@ let createScene = function(engine) {
             parentMesh.position.x += 159.20 * scale;
             parentMesh.position.y -= 17.02 * scale;
             parentMesh.position.z += 3.21 * scale;
+        } else if ( modelInfo.name == "Fox" ) {
+            scene.animationGroups[2].play(true); // 0:Survey, 1:Walk, 2:Run
         }
         let modelScaling = parentMesh.scaling;
         parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
