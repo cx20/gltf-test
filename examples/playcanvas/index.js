@@ -359,21 +359,11 @@ var Viewer = function (canvas) {
 
     app.start();
 
-    var graph = new Graph(app, 128);
-    app.on('prerender', function () {
-        if (self.showGraphs) {
-            graph.update();
-            graph.render();
-        }
-    });
-
     // store things
     this.app = app;
     this.camera = camera;
     this.light = light;
     this.entity = null;
-    this.graph = graph;
-    this.showGraphs = false;
 
     let url = "../../" + modelInfo.category + "/" + modelInfo.path;
     url = getAbsolutePathFromRelativePath(url);
@@ -401,8 +391,6 @@ Object.assign(Viewer.prototype, {
             this.asset.unload();
             this.asset = null;
         }
-
-        this.graph.clear();
 
         this.animationMap = { };
         //onAnimationsLoaded([]);
@@ -451,11 +439,6 @@ Object.assign(Viewer.prototype, {
             entity.animation.speed = speed;
         }
     },
-
-    setGraphs: function (show) {
-        this.showGraphs = show;
-    },
-
     _onLoaded: function (err, asset) {
         if (!err) {
 
@@ -488,37 +471,6 @@ Object.assign(Viewer.prototype, {
 
                 this.animationMap = animationMap;
                 //onAnimationsLoaded(Object.keys(this.animationMap));
-
-                var createAnimGraphs = function () {
-                    var extract = function (index) {
-                        return this[index];
-                    };
-
-                    var graph = this.graph;
-                    var animController = entity.animation.data.animController;
-                    var nodes = animController._nodes;
-                    var activePose = animController._activePose;
-
-                    for (var i = 0; i < nodes.length; ++i) {
-                        var node = nodes[i];
-
-                        graph.addGraph(node, new pc.Color(1, 0, 0, 1), extract.bind(activePose, i * 10 + 0));
-                        graph.addGraph(node, new pc.Color(0, 1, 0, 1), extract.bind(activePose, i * 10 + 1));
-                        graph.addGraph(node, new pc.Color(0, 0, 1, 1), extract.bind(activePose, i * 10 + 2));
-
-                        graph.addGraph(node, new pc.Color(1, 0, 0, 1), extract.bind(activePose, i * 10 + 3));
-                        graph.addGraph(node, new pc.Color(0, 1, 0, 1), extract.bind(activePose, i * 10 + 4));
-                        graph.addGraph(node, new pc.Color(0, 0, 1, 1), extract.bind(activePose, i * 10 + 5));
-                        graph.addGraph(node, new pc.Color(1, 1, 0, 1), extract.bind(activePose, i * 10 + 6));
-
-                        graph.addGraph(node, new pc.Color(1, 0, 0, 1), extract.bind(activePose, i * 10 + 7));
-                        graph.addGraph(node, new pc.Color(0, 1, 0, 1), extract.bind(activePose, i * 10 + 8));
-                        graph.addGraph(node, new pc.Color(0, 0, 1, 1), extract.bind(activePose, i * 10 + 9));
-                    }
-                };
-
-                // create animation graphs
-                setTimeout(createAnimGraphs.bind(this), 1000);
             }
 
             this.app.root.addChild(entity);
