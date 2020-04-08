@@ -1,5 +1,5 @@
 /*
- * PlayCanvas Engine v1.27.0-dev revision 31e6257
+ * PlayCanvas Engine v1.27.0-dev revision 8317fae
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 ;(function (root, factory) {
@@ -166,7 +166,7 @@ if (!String.prototype.startsWith) {
   }
   return result;
 }();
-var pc = {version:"1.27.0-dev", revision:"31e6257", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"1.27.0-dev", revision:"8317fae", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.");
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -6947,7 +6947,7 @@ pc.shaderChunks.glossPS = "#ifdef MAPFLOAT\nuniform float material_shininess;\n#
 pc.shaderChunks.instancingVS = "\nattribute vec4 instance_line1;\nattribute vec4 instance_line2;\nattribute vec4 instance_line3;\nattribute vec4 instance_line4;\n";
 pc.shaderChunks.lightDiffuseLambertPS = "float getLightDiffuse() {\n    return max(dot(dNormalW, -dLightDirNormW), 0.0);\n}\n";
 pc.shaderChunks.lightDirPointPS = "void getLightDirPoint(vec3 lightPosW) {\n    dLightDirW = vPositionW - lightPosW;\n    dLightDirNormW = normalize(dLightDirW);\n    dLightPosW = lightPosW;\n}\n";
-pc.shaderChunks.lightSpecularAnisoGGXPS = "// Anisotropic GGX\nfloat getLightSpecular() {\n    float PI = 3.141592653589793;\n    float roughness = (1.0 - dGlossiness) * (1.0 - dGlossiness);\n    float anisotropy = material_anisotropy * roughness;\n \n    float at = max((roughness + anisotropy), roughness / 4.0);\n    float ab = max((roughness - anisotropy), roughness / 4.0);\n    vec3 h = normalize(normalize(-dLightDirNormW) + normalize(dViewDirW));\n    float NoH = dot(dNormalW, h);\n    float ToH = dot(dTBN[0], h);\n    float BoH = dot(dTBN[1], h);\n    float a2 = at * ab;\n    vec3 v = vec3(ab * ToH, at * BoH, a2 * NoH);\n    float v2 = dot(v, v);\n    float w2 = a2 / v2;\n    float D = a2 * w2 * w2 * (1.0 / PI);\n    float ToV = dot(dTBN[0], dViewDirW);\n    float BoV = dot(dTBN[1], dViewDirW);\n    float ToL = dot(dTBN[0], -dLightDirNormW);\n    float BoL = dot(dTBN[1], -dLightDirNormW);\n    float NoV = dot(dNormalW, dViewDirW);\n    float NoL = dot(dNormalW, -dLightDirNormW);\n    float lambdaV = NoL * length(vec3(at * ToV, ab * BoV, NoV));\n    float lambdaL = NoV * length(vec3(at * ToL, ab * BoL, NoL));\n    float G = 0.5 / (lambdaV + lambdaL);\n    return D * G;\n}\n";
+pc.shaderChunks.lightSpecularAnisoGGXPS = "// Anisotropic GGX\nfloat getLightSpecular() {\n    float PI = 3.141592653589793;\n    float roughness = max((1.0 - dGlossiness) * (1.0 - dGlossiness), 0.001);\n    float anisotropy = material_anisotropy * roughness;\n \n    float at = max((roughness + anisotropy), roughness / 4.0);\n    float ab = max((roughness - anisotropy), roughness / 4.0);\n    vec3 h = normalize(normalize(-dLightDirNormW) + normalize(dViewDirW));\n    float NoH = dot(dNormalW, h);\n    float ToH = dot(dTBN[0], h);\n    float BoH = dot(dTBN[1], h);\n    float a2 = at * ab;\n    vec3 v = vec3(ab * ToH, at * BoH, a2 * NoH);\n    float v2 = dot(v, v);\n    float w2 = a2 / v2;\n    float D = a2 * w2 * w2 * (1.0 / PI);\n    float ToV = dot(dTBN[0], dViewDirW);\n    float BoV = dot(dTBN[1], dViewDirW);\n    float ToL = dot(dTBN[0], -dLightDirNormW);\n    float BoL = dot(dTBN[1], -dLightDirNormW);\n    float NoV = dot(dNormalW, dViewDirW);\n    float NoL = dot(dNormalW, -dLightDirNormW);\n    float lambdaV = NoL * length(vec3(at * ToV, ab * BoV, NoV));\n    float lambdaL = NoV * length(vec3(at * ToL, ab * BoL, NoL));\n    float G = 0.5 / (lambdaV + lambdaL);\n    return D * G;\n}\n";
 pc.shaderChunks.lightSpecularBlinnPS = "// Energy-conserving (hopefully) Blinn-Phong\nfloat getLightSpecular() {\n    vec3 h = normalize( -dLightDirNormW + dViewDirW );\n    float nh = max( dot( h, dNormalW ), 0.0 );\n    float specPow = exp2(dGlossiness * 11.0); // glossiness is linear, power is not; 0 - 2048\n    specPow = antiAliasGlossiness(specPow);\n    // Hack: On Mac OS X, calling pow with zero for the exponent generates hideous artifacts so bias up a little\n    specPow = max(specPow, 0.0001);\n    return pow(nh, specPow) * (specPow + 2.0) / 8.0;\n}\n";
 pc.shaderChunks.lightSpecularPhongPS = "float getLightSpecular() {\n    float specPow = dGlossiness;\n    specPow = antiAliasGlossiness(specPow);\n    // Hack: On Mac OS X, calling pow with zero for the exponent generates hideous artifacts so bias up a little\n    return pow(max(dot(dReflDirW, -dLightDirNormW), 0.0), specPow + 0.0001);\n}\n";
 pc.shaderChunks.lightmapDirPS = "uniform sampler2D texture_lightMap;\nuniform sampler2D texture_dirLightMap;\nvoid addLightMap() {\n    vec3 color = $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n    vec4 dir = texture2D(texture_dirLightMap, $UV);\n    if (dot(dir.xyz,vec3(1.0)) < 0.00001) {\n        dDiffuseLight += color;\n        return;\n    }\n    dLightDirNormW = normalize(dir.xyz * 2.0 - vec3(1.0));\n    float vlight = saturate(dot(dLightDirNormW, -dVertexNormalW));\n    float flight = saturate(dot(dLightDirNormW, -dNormalW));\n    float nlight = (flight / max(vlight,0.01)) * 0.5;\n    dDiffuseLight += color * nlight * 2.0;\n}\nvoid addDirLightMap() {\n    vec4 dir = texture2D(texture_dirLightMap, $UV);\n    if (dot(dir.xyz,vec3(1.0)) < 0.00001) return;\n    vec3 color = $texture2DSAMPLE(texture_lightMap, $UV).$CH;\n    dLightDirNormW = normalize(dir.xyz * 2.0 - vec3(1.0));\n    dSpecularLight += vec3(getLightSpecular()) * color;\n}\n";
@@ -7016,7 +7016,7 @@ pc.shaderChunks.precisionTestPS = "void main(void) {\n    gl_FragColor = vec4(21
 pc.shaderChunks.precisionTest2PS = "uniform sampler2D source;\nvec4 packFloat(float depth) {\n    const vec4 bit_shift = vec4(256.0 * 256.0 * 256.0, 256.0 * 256.0, 256.0, 1.0);\n    const vec4 bit_mask  = vec4(0.0, 1.0 / 256.0, 1.0 / 256.0, 1.0 / 256.0);\n    vec4 res = mod(depth * bit_shift * vec4(255), vec4(256) ) / vec4(255);\n    res -= res.xxyz * bit_mask;\n    return res;\n}\nvoid main(void) {\n    float c = texture2D(source, vec2(0.0)).r;\n    float diff = abs(c - 2147483648.0) / 2147483648.0;\n    gl_FragColor = packFloat(diff);\n}\n";
 pc.shaderChunks.prefilterCubemapPS = "varying vec2 vUv0;\nuniform samplerCube source;\nuniform vec4 params;\nfloat saturate(float x) {\n    return clamp(x, 0.0, 1.0);\n}\nfloat rnd(vec2 uv) {\n    return fract(sin(dot(uv, vec2(12.9898, 78.233) * 2.0)) * 43758.5453);\n}\nconst float PI = 3.14159265358979;\nvec3 hemisphereSample_cos(vec2 uv, mat3 vecSpace, vec3 cubeDir, float gloss) { // cos + lerped cone size (better than just lerped)\n    float phi = uv.y * 2.0 * PI;\n    float cosTheta = sqrt(1.0 - uv.x);\n    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);\n    vec3 sampleDir = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);\n    return normalize(mix(vecSpace * sampleDir, cubeDir, params.y));\n}\nvec3 hemisphereSample_phong(vec2 uv, mat3 vecSpace, vec3 cubeDir, float specPow) {\n    float phi = uv.y * 2.0 * PI;\n    float cosTheta = pow(1.0 - uv.x, 1.0 / (specPow + 1.0));\n    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);\n    vec3 sampleDir = vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);\n    return vecSpace * sampleDir;\n}\nmat3 matrixFromVector(vec3 n) { // frisvad\n    float a = 1.0 / (1.0 + n.z);\n    float b = -n.x * n.y * a;\n    vec3 b1 = vec3(1.0 - n.x * n.x * a, b, -n.x);\n    vec3 b2 = vec3(b, 1.0 - n.y * n.y * a, -n.y);\n    return mat3(b1, b2, n);\n}\nvec4 encodeRGBM(vec3 color) { // modified RGBM\n    vec4 encoded;\n    encoded.rgb = pow(color.rgb, vec3(0.5));\n    encoded.rgb *= 1.0 / 8.0;\n    encoded.a = saturate( max( max( encoded.r, encoded.g ), max( encoded.b, 1.0 / 255.0 ) ) );\n    encoded.a = ceil(encoded.a * 255.0) / 255.0;\n    encoded.rgb /= encoded.a;\n    return encoded;\n}\nvoid main(void) {\n    vec2 st = vUv0 * 2.0 - 1.0;\n    if (params.w==1.0 || params.w==3.0) {\n        st = 2.0 * floor(gl_FragCoord.xy) / (params.z - 1.0) - 1.0;\n    }\n    float face = params.x;\n    vec3 vec;\n    if (face==0.0) {\n        vec = vec3(1, -st.y, -st.x);\n    } else if (face==1.0) {\n        vec = vec3(-1, -st.y, st.x);\n    } else if (face==2.0) {\n        vec = vec3(st.x, 1, st.y);\n    } else if (face==3.0) {\n        vec = vec3(st.x, -1, -st.y);\n    } else if (face==4.0) {\n        vec = vec3(st.x, -st.y, 1);\n    } else {\n        vec = vec3(-st.x, -st.y, -1);\n    }\n    mat3 vecSpace = matrixFromVector(normalize(vec));\n    vec3 color = vec3(0.0);\n    const int samples = $NUMSAMPLES;\n    vec3 vect;\n    for(int i=0; i<samples; i++) {\n        float sini = sin(float(i));\n        float cosi = cos(float(i));\n        float rand = rnd(vec2(sini, cosi));\n        vect = hemisphereSample_$METHOD(vec2(float(i) / float(samples), rand), vecSpace, vec, params.y);\n        color += $textureCube(source, vect).rgb;\n    }\n    color /= float(samples);\n    gl_FragColor = params.w < 2.0? vec4(color, 1.0) : encodeRGBM(color);\n}\n";
 pc.shaderChunks.reflDirPS = "void getReflDir() {\n    dReflDirW = normalize(-reflect(dViewDirW, dNormalW));\n}\n";
-pc.shaderChunks.reflDirAnisoPS = "void getReflDir() {\n    float roughness = sqrt(1.0 - dGlossiness);\n    float anisotropy = material_anisotropy * roughness;\n    vec3 anisotropicDirection = anisotropy >= 0.0 ? dTBN[1] : dTBN[0];\n    vec3 anisotropicTangent = cross(anisotropicDirection, dViewDirW);\n    vec3 anisotropicNormal = cross(anisotropicTangent, anisotropicDirection);\n    vec3 bentNormal = normalize(mix(normalize(dNormalW), normalize(anisotropicNormal), anisotropy));\n    dReflDirW = reflect(-dViewDirW, bentNormal);\n}\n";
+pc.shaderChunks.reflDirAnisoPS = "void getReflDir() {\n    float roughness = sqrt(1.0 - min(dGlossiness, 1.0));\n    float anisotropy = material_anisotropy * roughness;\n    vec3 anisotropicDirection = anisotropy >= 0.0 ? dTBN[1] : dTBN[0];\n    vec3 anisotropicTangent = cross(anisotropicDirection, dViewDirW);\n    vec3 anisotropicNormal = cross(anisotropicTangent, anisotropicDirection);\n    vec3 bentNormal = normalize(mix(normalize(dNormalW), normalize(anisotropicNormal), anisotropy));\n    dReflDirW = reflect(-dViewDirW, bentNormal);\n}\n";
 pc.shaderChunks.reflectionCubePS = "uniform samplerCube texture_cubeMap;\nuniform float material_reflectivity;\nvoid addReflection() {\n    vec3 lookupVec = fixSeams(cubeMapProject(dReflDirW));\n    lookupVec.x *= -1.0;\n    dReflection += vec4($textureCubeSAMPLE(texture_cubeMap, lookupVec).rgb, material_reflectivity);\n}\n";
 pc.shaderChunks.reflectionDpAtlasPS = "uniform sampler2D texture_sphereMap;\nuniform float material_reflectivity;\nvec2 getDpAtlasUv(vec2 uv, float mip) {\n    vec4 rect;\n    float sx = saturate(mip - 2.0);\n    rect.x = sx * 0.5;\n    float t = mip - rect.x * 6.0;\n    float i = 1.0 - rect.x;\n    rect.y = min(t * 0.5, 0.75) * i + rect.x;\n    float st = saturate(t);\n    rect.z = (1.0 - st * 0.5) * i;\n    rect.w = rect.z * 0.5;\n    float rcRectZ = 1.0 / rect.z;\n    float scaleFactor = 0.00390625 * rcRectZ; // 0.0078125 = (256 + 2) / 256 - 1, 0.00390625 same for 512\n    vec2 scale = vec2(scaleFactor, scaleFactor * 2.0);\n    uv = uv * (vec2(1.0) - scale) + scale * 0.5;\n    uv = uv * rect.zw + rect.xy;\n    return uv;\n}\nvoid addReflection() {\n    vec3 reflDir = normalize(cubeMapProject(dReflDirW));\n    // Convert vector to DP coords\n    bool up = reflDir.y > 0.0;\n    float scale = 0.90909090909090909090909090909091;// 1.0 / 1.1;\n    vec3 reflDirWarp = reflDir.xzx * vec3(-0.25, 0.5, 0.25);\n    float reflDirVer = abs(reflDir.y) + 1.0;\n    reflDirWarp /= reflDirVer;\n    reflDirWarp *= scale;\n    reflDirWarp = vec3(0.75, 0.5, 0.25) - reflDirWarp;\n    vec2 tc = up? reflDirWarp.xy : reflDirWarp.zy;\n    float bias = saturate(1.0 - dGlossiness) * 5.0; // multiply by max mip level\n    float mip = floor(bias);\n    vec3 tex1 = $texture2DSAMPLE(texture_sphereMap, getDpAtlasUv(tc, mip)).rgb;\n    mip = min(mip + 1.0, 5.0);\n    vec3 tex2 = $texture2DSAMPLE(texture_sphereMap, getDpAtlasUv(tc, mip)).rgb;\n    tex1 = mix(tex1, tex2, fract(bias));\n    tex1 = processEnvironment(tex1);\n    dReflection += vec4(tex1, material_reflectivity);\n}\n";
 pc.shaderChunks.reflectionPrefilteredCubePS = "uniform samplerCube texture_prefilteredCubeMap128;\nuniform samplerCube texture_prefilteredCubeMap64;\nuniform samplerCube texture_prefilteredCubeMap32;\nuniform samplerCube texture_prefilteredCubeMap16;\nuniform samplerCube texture_prefilteredCubeMap8;\n#ifndef PMREM4\n#define PMREM4\nuniform samplerCube texture_prefilteredCubeMap4;\n#endif\nuniform float material_reflectivity;\nvoid addReflection() {\n    // Unfortunately, WebGL doesn't allow us using textureCubeLod. Therefore bunch of nasty workarounds is required.\n    // We fix mip0 to 128x128, so code is rather static.\n    // Mips smaller than 4x4 aren't great even for diffuse. Don't forget that we don't have bilinear filtering between different faces.\n    float bias = saturate(1.0 - dGlossiness) * 5.0; // multiply by max mip level\n    int index1 = int(bias);\n    int index2 = int(min(bias + 1.0, 7.0));\n    vec3 fixedReflDir = fixSeams(cubeMapProject(dReflDirW), bias);\n    fixedReflDir.x *= -1.0;\n    vec4 cubes[6];\n    cubes[0] = textureCube(texture_prefilteredCubeMap128, fixedReflDir);\n    cubes[1] = textureCube(texture_prefilteredCubeMap64, fixedReflDir);\n    cubes[2] = textureCube(texture_prefilteredCubeMap32, fixedReflDir);\n    cubes[3] = textureCube(texture_prefilteredCubeMap16, fixedReflDir);\n    cubes[4] = textureCube(texture_prefilteredCubeMap8, fixedReflDir);\n    cubes[5] = textureCube(texture_prefilteredCubeMap4, fixedReflDir);\n    // Also we don't have dynamic indexing in PS, so...\n    vec4 cube[2];\n    for(int i = 0; i < 6; i++) {\n        if (i == index1) {\n            cube[0] = cubes[i];\n        }\n        if (i == index2) {\n            cube[1] = cubes[i];\n        }\n    }\n    // another variant\n    /*if (index1==0){ cube[0]=cubes[0];\n    }else if (index1==1){ cube[0]=cubes[1];\n    }else if (index1==2){ cube[0]=cubes[2];\n    }else if (index1==3){ cube[0]=cubes[3];\n    }else if (index1==4){ cube[0]=cubes[4];\n    }else if (index1==5){ cube[0]=cubes[5];}\n    if (index2==0){ cube[1]=cubes[0];\n    }else if (index2==1){ cube[1]=cubes[1];\n    }else if (index2==2){ cube[1]=cubes[2];\n    }else if (index2==3){ cube[1]=cubes[3];\n    }else if (index2==4){ cube[1]=cubes[4];\n    }else if (index2==5){ cube[1]=cubes[5];}*/\n    vec4 cubeFinal = mix(cube[0], cube[1], fract(bias));\n    vec3 refl = processEnvironment($DECODE(cubeFinal).rgb);\n    dReflection += vec4(refl, material_reflectivity);\n}\n";
@@ -23337,20 +23337,6 @@ Object.assign(pc, function() {
   return {Http:Http, http:new Http};
 }());
 Object.assign(pc, function() {
-  var funcNameRegex = new RegExp("^\\s*function(?:\\s|\\s*\\/\\*.*\\*\\/\\s*)+([^\\(\\s\\/]*)\\s*");
-  var _getFuncName = function(func) {
-    if (typeof func !== "function") {
-      return undefined;
-    }
-    if ("name" in Function.prototype) {
-      return func.name;
-    }
-    if (func === Function || func === Function.prototype.constructor) {
-      return "Function";
-    }
-    var match = ("" + func).match(funcNameRegex);
-    return match ? match[1] : undefined;
-  };
   var createScript = function(name, app) {
     if (pc.script.legacy) {
       return null;
@@ -23376,9 +23362,9 @@ Object.assign(pc, function() {
       throw new Error("script class: '" + script + "' must be a constructor function (i.e. class).");
     }
     if (!(script.prototype instanceof pc.ScriptType)) {
-      throw new Error("script class: '" + _getFuncName(script) + "' does not extend pc.ScriptType.");
+      throw new Error("script class: '" + pc.ScriptType.__getScriptName(script) + "' does not extend pc.ScriptType.");
     }
-    name = name || script.__name || _getFuncName(script);
+    name = name || script.__name || pc.ScriptType.__getScriptName(script);
     if (createScript.reservedScripts[name]) {
       throw new Error("script name: '" + name + "' is reserved, please change script name");
     }
@@ -23403,6 +23389,7 @@ Object.assign(pc, function() {
   return {createScript:createScript, registerScript:registerScript};
 }());
 Object.assign(pc, function() {
+  var funcNameRegex = new RegExp("^\\s*function(?:\\s|\\s*\\/\\*.*\\*\\/\\s*)+([^\\(\\s\\/]*)\\s*");
   var ScriptType = function(args) {
     pc.EventHandler.call(this);
     var script = this.constructor;
@@ -23419,6 +23406,19 @@ Object.assign(pc, function() {
   ScriptType.prototype = Object.create(pc.EventHandler.prototype);
   ScriptType.prototype.constructor = ScriptType;
   ScriptType.__name = null;
+  ScriptType.__getScriptName = function(constructorFn) {
+    if (typeof constructorFn !== "function") {
+      return undefined;
+    }
+    if ("name" in Function.prototype) {
+      return constructorFn.name;
+    }
+    if (constructorFn === Function || constructorFn === Function.prototype.constructor) {
+      return "Function";
+    }
+    var match = ("" + constructorFn).match(funcNameRegex);
+    return match ? match[1] : undefined;
+  };
   Object.defineProperty(ScriptType, "attributes", {get:function() {
     if (!this.hasOwnProperty("__attributes")) {
       this.__attributes = new pc.ScriptAttributes(this);
@@ -24537,7 +24537,7 @@ Object.assign(pc, function() {
     this.scriptsOrder = options.scriptsOrder || [];
     this.scripts = new pc.ScriptRegistry(this);
     this.i18n = new pc.I18n(this);
-    this._sceneRegistry = new pc.SceneRegistry(this);
+    this.scenes = new pc.SceneRegistry(this);
     var self = this;
     this.defaultLayerWorld = new pc.Layer({name:"World", id:pc.LAYERID_WORLD});
     if (this.graphicsDevice.webgl2) {
@@ -24884,17 +24884,17 @@ Object.assign(pc, function() {
       done();
     }
   }, getSceneUrl:function(name) {
-    var entry = this._sceneRegistry.find(name);
+    var entry = this.scenes.find(name);
     if (entry) {
       return entry.url;
     }
     return null;
   }, loadSceneHierarchy:function(url, callback) {
-    this._sceneRegistry.loadSceneHierarchy(url, callback);
+    this.scenes.loadSceneHierarchy(url, callback);
   }, loadSceneSettings:function(url, callback) {
-    this._sceneRegistry.loadSceneSettings(url, callback);
+    this.scenes.loadSceneSettings(url, callback);
   }, loadScene:function(url, callback) {
-    this._sceneRegistry.loadScene(url, callback);
+    this.scenes.loadScene(url, callback);
   }, _preloadScripts:function(sceneData, callback) {
     if (!pc.script.legacy) {
       callback();
@@ -25015,7 +25015,7 @@ Object.assign(pc, function() {
       return;
     }
     for (var i = 0;i < scenes.length;i++) {
-      this._sceneRegistry.add(scenes[i].name, scenes[i].url);
+      this.scenes.add(scenes[i].name, scenes[i].url);
     }
   }, _parseAssets:function(assets) {
     var i, id;
@@ -25416,8 +25416,8 @@ Object.assign(pc, function() {
     this.context = null;
     this.scripts.destroy();
     this.scripts = null;
-    this._sceneRegistry.destroy();
-    this._sceneRegistry = null;
+    this.scenes.destroy();
+    this.scenes = null;
     this.lightmapper.destroy();
     this.lightmapper = null;
     this.batcher.destroyManager();
@@ -44374,10 +44374,37 @@ Object.assign(pc, function() {
       var interpolation = sampler.hasOwnProperty("interpolation") && interpMap.hasOwnProperty(sampler.interpolation) ? interpMap[sampler.interpolation] : pc.INTERPOLATION_LINEAR;
       curves.push(new pc.AnimCurve([], inputMap[sampler.input], outputMap[sampler.output], interpolation));
     }
+    var quatArrays = [];
     for (i = 0;i < animationData.channels.length;++i) {
       var channel = animationData.channels[i];
       var target = channel.target;
-      curves[channel.sampler]._paths.push(pc.AnimBinder.joinPath([nodes[target.node].name, target.path]));
+      var curve = curves[channel.sampler];
+      curve._paths.push(pc.AnimBinder.joinPath([nodes[target.node].name, target.path]));
+      if (target.path.startsWith("rotation") && curve.interpolation !== pc.INTERPOLATION_CUBIC) {
+        quatArrays.push(curve.output);
+      }
+    }
+    quatArrays.sort();
+    var prevIndex = null;
+    for (i = 0;i < quatArrays.length;++i) {
+      var index = quatArrays[i];
+      if (i === 0 || index !== prevIndex) {
+        var data = outputs[index];
+        if (data.components === 4) {
+          var d = data.data;
+          var len = d.length - 4;
+          for (var j = 0;j < len;j += 4) {
+            var dp = d[j + 0] * d[j + 4] + d[j + 1] * d[j + 5] + d[j + 2] * d[j + 6] + d[j + 3] * d[j + 7];
+            if (dp < 0) {
+              d[j + 4] *= -1;
+              d[j + 5] *= -1;
+              d[j + 6] *= -1;
+              d[j + 7] *= -1;
+            }
+          }
+        }
+        prevIndex = index;
+      }
     }
     var duration = inputs.reduce(function(value, input) {
       var data = input._data;
