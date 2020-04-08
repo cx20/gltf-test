@@ -314,6 +314,7 @@ var Viewer = function (canvas) {
         app.scene.toneMapping = pc.TONEMAP_ACES;
         app.scene.skyboxMip = 1;                        // Set the skybox to the 128x128 cubemap mipmap level
         app.scene.setSkybox(cubemapAsset.resources);
+        app.renderNextFrame = true;                     // ensure we render again when the cubemap arrives
     });
     app.assets.add(cubemapAsset);
     app.assets.load(cubemapAsset);
@@ -357,7 +358,10 @@ var Viewer = function (canvas) {
     light.setLocalEulerAngles(45, 30, 0);
     app.root.addChild(light);
 
-    app.start();
+    // disable autorender
+    app.autoRender = false;
+    self.prevCameraMat = new pc.Mat4();
+    app.on('update', self.update.bind(self));
 
     // store things
     this.app = app;
@@ -371,12 +375,15 @@ var Viewer = function (canvas) {
         url = modelInfo.url;
     }
     var filename = url.split('/').pop();
-    self.load(filename, url);
+    self.load(url, filename);
+
+    // start the application
+    app.start();
 };
 
 Object.assign(Viewer.prototype, {
     // reset the viewer, unloading resources
-    resetScene: function () {
+    resetScene: function() {
         var app = this.app;
 
         var entity = this.entity;
@@ -392,12 +399,12 @@ Object.assign(Viewer.prototype, {
             this.asset = null;
         }
 
-        this.animationMap = { };
+        this.animationMap = {};
         //onAnimationsLoaded([]);
     },
 
     // move the camera to view the loaded object
-    focusCamera: function () {
+    focusCamera: function() {
         var entity = this.entity;
         if (entity) {
             var camera = this.camera;
@@ -414,32 +421,51 @@ Object.assign(Viewer.prototype, {
         }
     },
 
-    // load model from the url
-    load: function (filename, url) {
-        this.app.assets.loadFromUrl(url, "container", this._onLoaded.bind(this), filename);
+    // load model at the url
+    load: function(url, filename) {
+        this.app.assets.loadFromUrlAndFilename(url, filename, "container", this._onLoaded.bind(this));
     },
 
     // play the animation
-    play: function (animationName) {
-        if (animationName) {
-            this.entity.animation.play(this.animationMap[animationName], 1);
-        } else {
-            this.entity.animation.playing = true;
+    play: function(animationName) {
+        if (this.entity && this.entity.animation) {
+            if (animationName) {
+                this.entity.animation.play(this.animationMap[animationName], 1);
+            } else {
+                this.entity.animation.playing = true;
+            }
         }
     },
 
     // stop playing animations
-    stop: function () {
-        this.entity.animation.playing = false;
-    },
-
-    setSpeed: function (speed) {
-        var entity = this.entity;
-        if (entity) {
-            entity.animation.speed = speed;
+    stop: function() {
+        if (this.entity && this.entity.animation) {
+            this.entity.animation.playing = false;
         }
     },
-    _onLoaded: function (err, asset) {
+
+    setSpeed: function(speed) {
+        if (this.entity && this.entity.animation) {
+            var entity = this.entity;
+            if (entity) {
+                entity.animation.speed = speed;
+            }
+        }
+    },
+    update: function () {
+        // if the camera has moved since the last render
+        var cameraWorldTransform = this.camera.getWorldTransform();
+        if (!this.prevCameraMat.equals(cameraWorldTransform)) {
+            this.prevCameraMat.copy(cameraWorldTransform);
+            this.app.renderNextFrame = true;
+        }
+        // or an animation is loaded and we're animating
+        if (this.entity && this.entity.animation && this.entity.animation.playing) {
+            this.app.renderNextFrame = true;
+        }
+    },
+
+    _onLoaded: function(err, asset) {
         if (!err) {
 
             this.resetScene();
@@ -457,7 +483,7 @@ Object.assign(Viewer.prototype, {
             // create animations
             if (resource.animations && resource.animations.length > 0) {
                 entity.addComponent('animation', {
-                    assets: resource.animations.map(function (asset) {
+                    assets: resource.animations.map(function(asset) {
                         return asset.id;
                     }),
                     speed: 1
