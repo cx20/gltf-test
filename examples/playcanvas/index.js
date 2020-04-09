@@ -504,6 +504,22 @@ Object.assign(Viewer.prototype, {
             this.asset = asset;
 
             this.focusCamera();
+
+            if (resource.model.name == "Fox.gltf/model/0" || resource.model.name == "Fox.glb/model/0") {
+                this.play("Run");
+            } else if (resource.model.name == "InterpolationTest.gltf/model/0") {
+                // TODO: Investigate how to run multiple animations simultaneously
+                // InterpolationTest.gltf contains the following animations
+                // "Step Scale
+                // "Linear Scale"
+                // "CubicSpline Scale"
+                // "Step Rotation"
+                // "CubicSpline Rotation"
+                // "Linear Rotation"
+                // "Step Translation"
+                // "CubicSpline Translation"
+                // "Linear Translation"
+            }
         }
     }
 });
