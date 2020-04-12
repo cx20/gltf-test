@@ -87,7 +87,7 @@ RedGL(canvas, function (v) {
                     v['resultMesh'].z =   -3.21 * scale;
                 } else if (modelInfo.name == "Fox") {
                     v.stopAnimation();
-                    v.playAnimation(v.parsingResult.animations[2])
+                    v.playAnimation(v.parsingResult.animations[2]);
                 }
                 
                 tScene.addChild(v['resultMesh']);
