@@ -81,10 +81,13 @@ RedGL(canvas, function (v) {
                 v['resultMesh'].scaleY = scale;
                 v['resultMesh'].scaleZ = scale;
                 
-                if (modelInfo.name == "GearboxAssy" ) {
+                if (modelInfo.name == "GearboxAssy") {
                     v['resultMesh'].x = -159.20 * scale;
                     v['resultMesh'].y =  -17.02 * scale;
                     v['resultMesh'].z =   -3.21 * scale;
+                } else if (modelInfo.name == "Fox") {
+                    v.stopAnimation();
+                    v.playAnimation(v.parsingResult.animations[2])
                 }
                 
                 tScene.addChild(v['resultMesh']);
