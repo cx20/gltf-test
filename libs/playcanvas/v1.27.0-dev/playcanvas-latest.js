@@ -1,5 +1,5 @@
 /*
- * PlayCanvas Engine v1.27.0-dev revision 2faa719
+ * PlayCanvas Engine v1.27.0-dev revision 78d7cb9
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 ;(function (root, factory) {
@@ -166,7 +166,7 @@ if (!String.prototype.startsWith) {
   }
   return result;
 }();
-var pc = {version:"1.27.0-dev", revision:"2faa719", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"1.27.0-dev", revision:"78d7cb9", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.");
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -3188,6 +3188,11 @@ Object.assign(pc, function() {
   var Ray = function Ray(origin, direction) {
     this.origin = origin || new pc.Vec3(0, 0, 0);
     this.direction = direction || new pc.Vec3(0, 0, -1);
+  };
+  Ray.prototype.set = function(origin, direction) {
+    this.origin.copy(origin);
+    this.direction.copy(direction);
+    return this;
   };
   return {Ray:Ray};
 }());
@@ -6268,6 +6273,9 @@ Object.assign(pc, function() {
     var ratio = Math.min(this._maxPixelRatio, window.devicePixelRatio);
     width *= ratio;
     height *= ratio;
+    if (this.canvas.width === width && this.canvas.height === height) {
+      return;
+    }
     this.canvas.width = width;
     this.canvas.height = height;
     this.fire(EVENT_RESIZE, width, height);
@@ -7046,7 +7054,7 @@ pc.shaderChunks.skinBatchTexVS = "attribute float vertex_boneIndices;\nuniform s
 pc.shaderChunks.skinConstVS = "attribute vec4 vertex_boneWeights;\nattribute vec4 vertex_boneIndices;\nuniform mat4 matrix_pose[BONE_LIMIT];\nmat4 getBoneMatrix(const in float i)\n{\n    mat4 bone = matrix_pose[int(i)];\n    return bone;\n}\n";
 pc.shaderChunks.skinTexVS = "attribute vec4 vertex_boneWeights;\nattribute vec4 vertex_boneIndices;\nuniform sampler2D texture_poseMap;\nuniform vec2 texture_poseMapSize;\nmat4 getBoneMatrix(const in float i)\n{\n    float j = i * 4.0;\n    float x = mod(j, float(texture_poseMapSize.x));\n    float y = floor(j / float(texture_poseMapSize.x));\n    float dx = 1.0 / float(texture_poseMapSize.x);\n    float dy = 1.0 / float(texture_poseMapSize.y);\n    y = dy * (y + 0.5);\n    vec4 v1 = texture2D(texture_poseMap, vec2(dx * (x + 0.5), y));\n    vec4 v2 = texture2D(texture_poseMap, vec2(dx * (x + 1.5), y));\n    vec4 v3 = texture2D(texture_poseMap, vec2(dx * (x + 2.5), y));\n    vec4 v4 = texture2D(texture_poseMap, vec2(dx * (x + 3.5), y));\n    mat4 bone = mat4(v1, v2, v3, v4);\n    return bone;\n}\n";
 pc.shaderChunks.skyboxPS = "varying vec3 vViewDir;\nuniform samplerCube texture_cubeMap;\nvoid main(void) {\n    gl_FragColor = textureCube(texture_cubeMap, fixSeams(vViewDir));\n}\n";
-pc.shaderChunks.skyboxVS = "attribute vec3 aPosition;\n#ifndef VIEWMATRIX\n#define VIEWMATRIX\nuniform mat4 matrix_view;\n#endif\nuniform mat4 matrix_projection;\nvarying vec3 vViewDir;\nvoid main(void)\n{\n    mat4 view = matrix_view;\n    view[3][0] = view[3][1] = view[3][2] = 0.0;\n    gl_Position = matrix_projection * view * vec4(aPosition, 1.0);\n    // Force skybox to far Z, regardless of the clip planes on the camera\n    // Subtract a tiny fudge factor to ensure floating point errors don't\n    // still push pixels beyond far Z. See:\n    // http://www.opengl.org/discussion_boards/showthread.php/171867-skybox-problem\n    gl_Position.z = gl_Position.w - 0.00001;\n    vViewDir = aPosition;\n    vViewDir.x *= -1.0;\n}\n";
+pc.shaderChunks.skyboxVS = "attribute vec3 aPosition;\n#ifndef VIEWMATRIX\n#define VIEWMATRIX\nuniform mat4 matrix_view;\n#endif\nuniform mat4 matrix_projectionSkybox;\nvarying vec3 vViewDir;\nvoid main(void)\n{\n    mat4 view = matrix_view;\n    view[3][0] = view[3][1] = view[3][2] = 0.0;\n    gl_Position = matrix_projectionSkybox * view * vec4(aPosition, 1.0);\n    // Force skybox to far Z, regardless of the clip planes on the camera\n    // Subtract a tiny fudge factor to ensure floating point errors don't\n    // still push pixels beyond far Z. See:\n    // http://www.opengl.org/discussion_boards/showthread.php/171867-skybox-problem\n    gl_Position.z = gl_Position.w - 0.00001;\n    vViewDir = aPosition;\n    vViewDir.x *= -1.0;\n}\n";
 pc.shaderChunks.skyboxHDRPS = "varying vec3 vViewDir;\nuniform samplerCube texture_cubeMap;\nvoid main(void) {\n    vec3 color = processEnvironment($textureCubeSAMPLE(texture_cubeMap, fixSeamsStatic(vViewDir, $FIXCONST)).rgb);\n    color = toneMap(color);\n    color = gammaCorrectOutput(color);\n    gl_FragColor = vec4(color, 1.0);\n}\n";
 pc.shaderChunks.skyboxPrefilteredCubePS = "varying vec3 vViewDir;\nuniform samplerCube texture_cubeMap;\nvec3 fixSeamsStretch(vec3 vec, float mipmapIndex, float cubemapSize) {\n    float scale = 1.0 - exp2(mipmapIndex) / cubemapSize;\n    float M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n    if (abs(vec.x) != M) vec.x *= scale;\n    if (abs(vec.y) != M) vec.y *= scale;\n    if (abs(vec.z) != M) vec.z *= scale;\n    return vec;\n}\nvoid main(void) {\n    vec3 color = textureCubeRGBM(texture_cubeMap, fixSeamsStretch(vViewDir, 0.0, 128.0));\n    color = toneMap(color);\n    color = gammaCorrectOutput(color);\n    gl_FragColor = vec4(color, 1.0);\n}\n";
 pc.shaderChunks.specularPS = "#ifdef MAPCOLOR\nuniform vec3 material_specular;\n#endif\n#ifdef MAPTEXTURE\nuniform sampler2D texture_specularMap;\n#endif\n#ifdef CLEARCOAT\nuniform float material_clearCoatSpecularity;\n#endif\nvoid getSpecularity() {\n    dSpecularity = vec3(1.0);\n    #ifdef MAPCOLOR\n        dSpecularity *= material_specular;\n    #endif\n    #ifdef MAPTEXTURE\n        dSpecularity *= texture2D(texture_specularMap, $UV).$CH;\n    #endif\n    #ifdef MAPVERTEX\n        dSpecularity *= saturate(vVertexColor.$VC);\n    #endif\n    #ifdef CLEARCOAT\n        ccSpecularity = vec3(1.0);\n        ccSpecularity *= material_clearCoatSpecularity;\n    #endif\n}\n";
@@ -9035,7 +9043,8 @@ Object.assign(pc, function() {
         }
       }
       material.setParameter("texture_cubeMap", usedTex);
-      material.cull = pc.CULLFACE_NONE;
+      material.cull = pc.CULLFACE_FRONT;
+      material.depthWrite = false;
       var skyLayer = this.layers.getLayerById(pc.LAYERID_SKYBOX);
       if (skyLayer) {
         var node = new pc.GraphNode;
@@ -9420,6 +9429,7 @@ Object.assign(pc, function() {
     this.library = library;
     var scope = device.scope;
     this.projId = scope.resolve("matrix_projection");
+    this.projSkyboxId = scope.resolve("matrix_projectionSkybox");
     this.viewId = scope.resolve("matrix_view");
     this.viewId3 = scope.resolve("matrix_view3");
     this.viewInvId = scope.resolve("matrix_viewInverse");
@@ -9670,6 +9680,7 @@ Object.assign(pc, function() {
           camera.calculateProjection(projMat, pc.VIEW_CENTER);
         }
         this.projId.setValue(projMat.data);
+        this.projSkyboxId.setValue(camera.getProjectionMatrixSkybox().data);
         if (camera.overrideCalculateTransform) {
           camera.calculateTransform(viewInvMat, pc.VIEW_CENTER);
         } else {
@@ -10518,6 +10529,7 @@ Object.assign(pc, function() {
         if (vrDisplay && vrDisplay.presenting) {
           device.setViewport(0, 0, halfWidth, device.height);
           this.projId.setValue(projL.data);
+          this.projSkyboxId.setValue(projL.data);
           this.viewInvId.setValue(viewInvL.data);
           this.viewId.setValue(viewL.data);
           this.viewId3.setValue(viewMat3L.data);
@@ -10530,6 +10542,7 @@ Object.assign(pc, function() {
           this._forwardDrawCalls++;
           device.setViewport(halfWidth, 0, halfWidth, device.height);
           this.projId.setValue(projR.data);
+          this.projSkyboxId.setValue(projR.data);
           this.viewInvId.setValue(viewInvR.data);
           this.viewId.setValue(viewR.data);
           this.viewId3.setValue(viewMat3R.data);
@@ -10547,6 +10560,7 @@ Object.assign(pc, function() {
               var view = views[v];
               device.setViewport(view.viewport.x, view.viewport.y, view.viewport.z, view.viewport.w);
               this.projId.setValue(view.projMat.data);
+              this.projSkyboxId.setValue(view.projMat.data);
               this.viewId.setValue(view.viewOffMat.data);
               this.viewInvId.setValue(view.viewInvOffMat.data);
               this.viewId3.setValue(view.viewMat3.data);
@@ -12048,6 +12062,7 @@ Object.assign(pc, function() {
     this._renderDepthRequests = 0;
     this._projMatDirty = true;
     this._projMat = new pc.Mat4;
+    this._projMatSkybox = new pc.Mat4;
     this._viewMatDirty = true;
     this._viewMat = new pc.Mat4;
     this._viewProjMatDirty = true;
@@ -12126,14 +12141,16 @@ Object.assign(pc, function() {
     return worldCoord;
   }, getClearOptions:function() {
     return this._clearOptions;
-  }, getProjectionMatrix:function() {
+  }, _evaluateProjectionMatrix:function() {
     if (this._projMatDirty) {
       if (this._projection === pc.PROJECTION_PERSPECTIVE) {
         this._projMat.setPerspective(this._fov, this._aspect, this._nearClip, this._farClip, this._horizontalFov);
+        this._projMatSkybox.copy(this._projMat);
       } else {
         var y = this._orthoHeight;
         var x = y * this._aspect;
         this._projMat.setOrtho(-x, x, -y, y, this._nearClip, this._farClip);
+        this._projMatSkybox.setPerspective(this._fov, this._aspect, this._nearClip, this._farClip);
       }
       var n = this._nearClip;
       var f = this._farClip;
@@ -12143,7 +12160,12 @@ Object.assign(pc, function() {
       this._shaderParams[3] = (1 + f / n) / 2;
       this._projMatDirty = false;
     }
+  }, getProjectionMatrix:function() {
+    this._evaluateProjectionMatrix();
     return this._projMat;
+  }, getProjectionMatrixSkybox:function() {
+    this._evaluateProjectionMatrix();
+    return this._projMatSkybox;
   }, getViewMatrix:function() {
     if (this._viewMatDirty) {
       var wtm = this._node.getWorldTransform();
@@ -22503,8 +22525,8 @@ Object.assign(pc, function() {
     this._pose = null;
     this.views = [];
     this.viewsPool = [];
-    this.position = new pc.Vec3;
-    this.rotation = new pc.Quat;
+    this._localPosition = new pc.Vec3;
+    this._localRotation = new pc.Quat;
     this._depthNear = .1;
     this._depthFar = 1E3;
     this._width = 0;
@@ -22681,8 +22703,8 @@ Object.assign(pc, function() {
     if (this._pose) {
       var posePosition = this._pose.transform.position;
       var poseOrientation = this._pose.transform.orientation;
-      this.position.set(posePosition.x, posePosition.y, posePosition.z);
-      this.rotation.set(poseOrientation.x, poseOrientation.y, poseOrientation.z, poseOrientation.w);
+      this._localPosition.set(posePosition.x, posePosition.y, posePosition.z);
+      this._localRotation.set(poseOrientation.x, poseOrientation.y, poseOrientation.z, poseOrientation.w);
       layer = frame.session.renderState.baseLayer;
       for (i = 0;i < this._pose.views.length;i++) {
         viewRaw = this._pose.views[i];
@@ -22697,8 +22719,8 @@ Object.assign(pc, function() {
         view.viewInvMat.set(viewRaw.transform.matrix);
       }
     }
-    this._camera.camera._node.setLocalPosition(this.position);
-    this._camera.camera._node.setLocalRotation(this.rotation);
+    this._camera.camera._node.setLocalPosition(this._localPosition);
+    this._camera.camera._node.setLocalRotation(this._localRotation);
     this.input.update(frame);
     if (this._type === pc.XRTYPE_AR && this.hitTest.supported) {
       this.hitTest.update(frame);
@@ -22848,9 +22870,15 @@ Object.assign(pc, function() {
     this._manager = manager;
     this._xrInputSource = xrInputSource;
     this._ray = new pc.Ray;
+    this._rayLocal = new pc.Ray;
     this._grip = false;
-    this._position = null;
-    this._rotation = null;
+    this._localTransform = null;
+    this._worldTransform = null;
+    this._position = new pc.Vec3;
+    this._rotation = new pc.Quat;
+    this._localPosition = null;
+    this._localRotation = null;
+    this._dirtyLocal = true;
     this._selecting = false;
     this._hitTestSources = [];
   };
@@ -22861,22 +22889,97 @@ Object.assign(pc, function() {
     if (!targetRayPose) {
       return;
     }
-    this._ray.origin.copy(targetRayPose.transform.position);
-    this._ray.direction.set(0, 0, -1);
-    quat.copy(targetRayPose.transform.orientation);
-    quat.transformVector(this._ray.direction, this._ray.direction);
     if (this._xrInputSource.gripSpace) {
       var gripPose = frame.getPose(this._xrInputSource.gripSpace, this._manager._referenceSpace);
       if (gripPose) {
         if (!this._grip) {
           this._grip = true;
-          this._position = new pc.Vec3;
-          this._rotation = new pc.Quat;
+          this._localTransform = new pc.Mat4;
+          this._worldTransform = new pc.Mat4;
+          this._localPosition = new pc.Vec3;
+          this._localRotation = new pc.Quat;
         }
-        this._position.copy(gripPose.transform.position);
-        this._rotation.copy(gripPose.transform.orientation);
+        this._dirtyLocal = true;
+        this._localPosition.copy(gripPose.transform.position);
+        this._localRotation.copy(gripPose.transform.orientation);
       }
     }
+    this._dirtyRay = true;
+    this._rayLocal.origin.copy(targetRayPose.transform.position);
+    this._rayLocal.direction.set(0, 0, -1);
+    quat.copy(targetRayPose.transform.orientation);
+    quat.transformVector(this._rayLocal.direction, this._rayLocal.direction);
+  };
+  XrInputSource.prototype._updateTransforms = function() {
+    var dirty;
+    if (this._dirtyLocal) {
+      dirty = true;
+      this._dirtyLocal = false;
+      this._localTransform.setTRS(this._localPosition, this._localRotation, pc.Vec3.ONE);
+    }
+    var parent = this._manager.camera.parent;
+    if (parent) {
+      dirty = dirty || parent._dirtyLocal || parent._dirtyWorld;
+      if (dirty) {
+        var parentTransform = this._manager.camera.parent.getWorldTransform();
+        this._worldTransform.mul2(parentTransform, this._localTransform);
+      }
+    } else {
+      this._worldTransform.copy(this._localTransform);
+    }
+    return dirty;
+  };
+  XrInputSource.prototype._updateRayTransforms = function() {
+    var dirty = this._dirtyRay;
+    this._dirtyRay = false;
+    var parent = this._manager.camera.parent;
+    if (parent) {
+      dirty = dirty || parent._dirtyLocal || parent._dirtyWorld;
+      if (dirty) {
+        var parentTransform = this._manager.camera.parent.getWorldTransform();
+        parentTransform.getTranslation(this._position);
+        this._rotation.setFromMat4(parentTransform);
+        this._rotation.transformVector(this._rayLocal.origin, this._ray.origin);
+        this._ray.origin.add(this._position);
+        this._rotation.transformVector(this._rayLocal.direction, this._ray.direction);
+      }
+    } else {
+      if (dirty) {
+        this._ray.origin.copy(this._rayLocal.origin);
+        this._ray.direction.copy(this._rayLocal.direction);
+      }
+    }
+    return dirty;
+  };
+  XrInputSource.prototype.getPosition = function() {
+    if (!this._position) {
+      return null;
+    }
+    this._updateTransforms();
+    this._worldTransform.getTranslation(this._position);
+    return this._position;
+  };
+  XrInputSource.prototype.getLocalPosition = function() {
+    return this._localPosition;
+  };
+  XrInputSource.prototype.getRotation = function() {
+    if (!this._rotation) {
+      return null;
+    }
+    this._updateTransforms();
+    this._rotation.setFromMat4(this._worldTransform);
+    return this._rotation;
+  };
+  XrInputSource.prototype.getLocalRotation = function() {
+    return this._localRotation;
+  };
+  XrInputSource.prototype.getOrigin = function() {
+    this._updateRayTransforms();
+    return this._ray.origin;
+  };
+  XrInputSource.prototype.getDirection = function() {
+    this._updateRayTransforms();
+    return this._ray.direction;
   };
   XrInputSource.prototype.hitTestStart = function(options) {
     var self = this;
@@ -22925,17 +23028,8 @@ Object.assign(pc, function() {
   Object.defineProperty(XrInputSource.prototype, "profiles", {get:function() {
     return this._xrInputSource.profiles;
   }});
-  Object.defineProperty(XrInputSource.prototype, "ray", {get:function() {
-    return this._ray;
-  }});
   Object.defineProperty(XrInputSource.prototype, "grip", {get:function() {
     return this._grip;
-  }});
-  Object.defineProperty(XrInputSource.prototype, "position", {get:function() {
-    return this._position;
-  }});
-  Object.defineProperty(XrInputSource.prototype, "rotation", {get:function() {
-    return this._rotation;
   }});
   Object.defineProperty(XrInputSource.prototype, "gamepad", {get:function() {
     return this._xrInputSource.gamepad || null;
@@ -23720,27 +23814,28 @@ Object.assign(pc, function() {
   };
   ScriptRegistry.prototype.add = function(script) {
     var self = this;
-    if (this._scripts.hasOwnProperty(script.__name)) {
+    var scriptName = script.__name;
+    if (this._scripts.hasOwnProperty(scriptName)) {
       setTimeout(function() {
         if (script.prototype.swap) {
-          var old = self._scripts[script.__name];
+          var old = self._scripts[scriptName];
           var ind = self._list.indexOf(old);
           self._list[ind] = script;
-          self._scripts[script.__name] = script;
-          self.fire("swap", script.__name, script);
-          self.fire("swap:" + script.__name, script);
+          self._scripts[scriptName] = script;
+          self.fire("swap", scriptName, script);
+          self.fire("swap:" + scriptName, script);
         } else {
-          console.warn("script registry already has '" + script.__name + "' script, define 'swap' method for new script type to enable code hot swapping");
+          console.warn("script registry already has '" + scriptName + "' script, define 'swap' method for new script type to enable code hot swapping");
         }
       });
       return false;
     }
-    this._scripts[script.__name] = script;
+    this._scripts[scriptName] = script;
     this._list.push(script);
-    this.fire("add", script.__name, script);
-    this.fire("add:" + script.__name, script);
+    this.fire("add", scriptName, script);
+    this.fire("add:" + scriptName, script);
     setTimeout(function() {
-      if (!self._scripts.hasOwnProperty(script.__name)) {
+      if (!self._scripts.hasOwnProperty(scriptName)) {
         return;
       }
       if (!self.app || !self.app.systems || !self.app.systems.script) {
@@ -23752,11 +23847,11 @@ Object.assign(pc, function() {
       var scriptInstancesInitialized = [];
       for (components.loopIndex = 0;components.loopIndex < components.length;components.loopIndex++) {
         var component = components.items[components.loopIndex];
-        if (component._scriptsIndex[script.__name] && component._scriptsIndex[script.__name].awaiting) {
-          if (component._scriptsData && component._scriptsData[script.__name]) {
-            attributes = component._scriptsData[script.__name].attributes;
+        if (component._scriptsIndex[scriptName] && component._scriptsIndex[scriptName].awaiting) {
+          if (component._scriptsData && component._scriptsData[scriptName]) {
+            attributes = component._scriptsData[scriptName].attributes;
           }
-          scriptInstance = component.create(script.__name, {preloading:true, ind:component._scriptsIndex[script.__name].ind, attributes:attributes});
+          scriptInstance = component.create(scriptName, {preloading:true, ind:component._scriptsIndex[scriptName].ind, attributes:attributes});
           if (scriptInstance) {
             scriptInstances.push(scriptInstance);
           }
@@ -23786,26 +23881,36 @@ Object.assign(pc, function() {
     });
     return true;
   };
-  ScriptRegistry.prototype.remove = function(name) {
-    if (typeof name === "function") {
-      name = name.__name;
+  ScriptRegistry.prototype.remove = function(nameOrType) {
+    var scriptType = nameOrType;
+    var scriptName = nameOrType;
+    if (typeof scriptName !== "string") {
+      scriptName = scriptType.__name;
+    } else {
+      scriptType = this.get(scriptName);
     }
-    if (!this._scripts.hasOwnProperty(name)) {
+    if (this.get(scriptName) !== scriptType) {
       return false;
     }
-    var item = this._scripts[name];
-    delete this._scripts[name];
-    var ind = this._list.indexOf(item);
+    delete this._scripts[scriptName];
+    var ind = this._list.indexOf(scriptType);
     this._list.splice(ind, 1);
-    this.fire("remove", name, item);
-    this.fire("remove:" + name, item);
+    this.fire("remove", scriptName, scriptType);
+    this.fire("remove:" + scriptName, scriptType);
     return true;
   };
   ScriptRegistry.prototype.get = function(name) {
     return this._scripts[name] || null;
   };
-  ScriptRegistry.prototype.has = function(name) {
-    return this._scripts.hasOwnProperty(name);
+  ScriptRegistry.prototype.has = function(nameOrType) {
+    if (typeof nameOrType === "string") {
+      return this._scripts.hasOwnProperty(nameOrType);
+    }
+    if (!nameOrType) {
+      return false;
+    }
+    var scriptName = nameOrType.__name;
+    return this._scripts[scriptName] === nameOrType;
   };
   ScriptRegistry.prototype.list = function() {
     return this._list;
@@ -28907,16 +29012,36 @@ Object.assign(pc, function() {
     for (var i = startIndex;i < scriptsLength;i++) {
       this._scripts[i].__executionOrder = i;
     }
-  }, has:function(name) {
-    return !!this._scriptsIndex[name];
-  }, get:function(name) {
-    var index = this._scriptsIndex[name];
-    return index && index.instance || null;
-  }, create:function(name, args) {
+  }, has:function(nameOrType) {
+    if (typeof nameOrType === "string") {
+      return !!this._scriptsIndex[nameOrType];
+    }
+    if (!nameOrType) {
+      return false;
+    }
+    var scriptType = nameOrType;
+    var scriptName = scriptType.__name;
+    var scriptData = this._scriptsIndex[scriptName];
+    var scriptInstance = scriptData && scriptData.instance;
+    return scriptInstance instanceof scriptType;
+  }, get:function(nameOrType) {
+    if (typeof nameOrType === "string") {
+      var data = this._scriptsIndex[nameOrType];
+      return data ? data.instance : null;
+    }
+    if (!nameOrType) {
+      return null;
+    }
+    var scriptType = nameOrType;
+    var scriptName = scriptType.__name;
+    var scriptData = this._scriptsIndex[scriptName];
+    var scriptInstance = scriptData && scriptData.instance;
+    return scriptInstance instanceof scriptType ? scriptInstance : null;
+  }, create:function(nameOrType, args) {
     var self = this;
     args = args || {};
-    var scriptType = name;
-    var scriptName = name;
+    var scriptType = nameOrType;
+    var scriptName = nameOrType;
     if (typeof scriptType === "string") {
       scriptType = this.system.app.scripts.get(scriptType);
     } else {
@@ -28925,7 +29050,7 @@ Object.assign(pc, function() {
       }
     }
     if (scriptType) {
-      if (!this._scriptsIndex[scriptType.__name] || !this._scriptsIndex[scriptType.__name].instance) {
+      if (!this._scriptsIndex[scriptName] || !this._scriptsIndex[scriptName].instance) {
         var scriptInstance = new scriptType({app:this.system.app, entity:this.entity, enabled:args.hasOwnProperty("enabled") ? args.enabled : true, attributes:args.attributes});
         var len = this._scripts.length;
         var ind = -1;
@@ -28933,16 +29058,16 @@ Object.assign(pc, function() {
           ind = args.ind;
         }
         this._insertScriptInstance(scriptInstance, ind, len);
-        this._scriptsIndex[scriptType.__name] = {instance:scriptInstance, onSwap:function() {
-          self.swap(scriptType.__name);
+        this._scriptsIndex[scriptName] = {instance:scriptInstance, onSwap:function() {
+          self.swap(scriptName);
         }};
-        this[scriptType.__name] = scriptInstance;
+        this[scriptName] = scriptInstance;
         if (!args.preloading) {
           scriptInstance.__initializeAttributes();
         }
-        this.fire("create", scriptType.__name, scriptInstance);
-        this.fire("create:" + scriptType.__name, scriptInstance);
-        this.system.app.scripts.on("swap:" + scriptType.__name, this._scriptsIndex[scriptType.__name].onSwap);
+        this.fire("create", scriptName, scriptInstance);
+        this.fire("create:" + scriptName, scriptInstance);
+        this.system.app.scripts.on("swap:" + scriptName, this._scriptsIndex[scriptName].onSwap);
         if (!args.preloading) {
           if (scriptInstance.enabled && !scriptInstance._initialized) {
             scriptInstance._initialized = true;
@@ -28965,11 +29090,12 @@ Object.assign(pc, function() {
       console.warn("script '" + scriptName + "' is not found, awaiting it to be added to registry");
     }
     return null;
-  }, destroy:function(name) {
-    var scriptName = name;
-    var scriptType = name;
+  }, destroy:function(nameOrType) {
+    var scriptName = nameOrType;
+    var scriptType = nameOrType;
     if (typeof scriptType === "string") {
       scriptType = this.system.app.scripts.get(scriptType);
+    } else {
       if (scriptType) {
         scriptName = scriptType.__name;
       }
@@ -28979,32 +29105,38 @@ Object.assign(pc, function() {
     if (!scriptData) {
       return false;
     }
-    if (scriptData.instance && !scriptData.instance._destroyed) {
-      scriptData.instance.enabled = false;
-      scriptData.instance._destroyed = true;
+    var scriptInstance = scriptData.instance;
+    if (scriptInstance && !scriptInstance._destroyed) {
+      scriptInstance.enabled = false;
+      scriptInstance._destroyed = true;
       if (!this._isLoopingThroughScripts) {
-        var ind = this._removeScriptInstance(scriptData.instance);
+        var ind = this._removeScriptInstance(scriptInstance);
         if (ind >= 0) {
           this._resetExecutionOrder(ind, this._scripts.length);
         }
       } else {
-        this._destroyedScripts.push(scriptData.instance);
+        this._destroyedScripts.push(scriptInstance);
       }
     }
     this.system.app.scripts.off("swap:" + scriptName, scriptData.onSwap);
     delete this[scriptName];
-    this.fire("destroy", scriptName, scriptData.instance || null);
-    this.fire("destroy:" + scriptName, scriptData.instance || null);
-    if (scriptData.instance) {
-      scriptData.instance.fire("destroy");
+    this.fire("destroy", scriptName, scriptInstance || null);
+    this.fire("destroy:" + scriptName, scriptInstance || null);
+    if (scriptInstance) {
+      scriptInstance.fire("destroy");
     }
     return true;
-  }, swap:function(script) {
-    var scriptType = script;
+  }, swap:function(nameOrType) {
+    var scriptName = nameOrType;
+    var scriptType = nameOrType;
     if (typeof scriptType === "string") {
       scriptType = this.system.app.scripts.get(scriptType);
+    } else {
+      if (scriptType) {
+        scriptName = scriptType.__name;
+      }
     }
-    var old = this._scriptsIndex[scriptType.__name];
+    var old = this._scriptsIndex[scriptName];
     if (!old || !old.instance) {
       return false;
     }
@@ -29016,8 +29148,8 @@ Object.assign(pc, function() {
     }
     scriptInstance.__initializeAttributes();
     this._scripts[ind] = scriptInstance;
-    this._scriptsIndex[scriptType.__name].instance = scriptInstance;
-    this[scriptType.__name] = scriptInstance;
+    this._scriptsIndex[scriptName].instance = scriptInstance;
+    this[scriptName] = scriptInstance;
     scriptInstance.__executionOrder = ind;
     if (scriptInstanceOld.update) {
       this._updateList.remove(scriptInstanceOld);
@@ -29032,8 +29164,8 @@ Object.assign(pc, function() {
       this._postUpdateList.insert(scriptInstance);
     }
     this._scriptMethod(scriptInstance, ScriptComponent.scriptMethods.swap, scriptInstanceOld);
-    this.fire("swap", scriptType.__name, scriptInstance);
-    this.fire("swap:" + scriptType.__name, scriptInstance);
+    this.fire("swap", scriptName, scriptInstance);
+    this.fire("swap:" + scriptName, scriptInstance);
     return true;
   }, resolveDuplicatedEntityReferenceProperties:function(oldScriptComponent, duplicatedIdsMap) {
     var newScriptComponent = this.entity.script;
@@ -29097,20 +29229,27 @@ Object.assign(pc, function() {
         }
       }
     }
-  }, move:function(name, ind) {
+  }, move:function(nameOrType, ind) {
     var len = this._scripts.length;
     if (ind >= len || ind < 0) {
       return false;
     }
-    var scriptName = name;
+    var scriptType = nameOrType;
+    var scriptName = nameOrType;
     if (typeof scriptName !== "string") {
-      scriptName = name.__name;
+      scriptName = nameOrType.__name;
+    } else {
+      scriptType = null;
     }
     var scriptData = this._scriptsIndex[scriptName];
     if (!scriptData || !scriptData.instance) {
       return false;
     }
-    var indOld = this._scripts.indexOf(scriptData.instance);
+    var scriptInstance = scriptData.instance;
+    if (scriptType && !(scriptInstance instanceof scriptType)) {
+      return false;
+    }
+    var indOld = this._scripts.indexOf(scriptInstance);
     if (indOld === -1 || indOld === ind) {
       return false;
     }
@@ -29118,8 +29257,8 @@ Object.assign(pc, function() {
     this._resetExecutionOrder(0, len);
     this._updateList.sort();
     this._postUpdateList.sort();
-    this.fire("move", scriptName, scriptData.instance, ind, indOld);
-    this.fire("move:" + scriptName, scriptData.instance, ind, indOld);
+    this.fire("move", scriptName, scriptInstance, ind, indOld);
+    this.fire("move:" + scriptName, scriptInstance, ind, indOld);
     return true;
   }});
   Object.defineProperty(ScriptComponent.prototype, "enabled", {get:function() {
@@ -31429,6 +31568,31 @@ Object.assign(pc, function() {
     }
     Ammo.destroy(rayCallback);
     return result;
+  }, raycastAll:function(start, end) {
+    var results = [];
+    ammoRayStart.setValue(start.x, start.y, start.z);
+    ammoRayEnd.setValue(end.x, end.y, end.z);
+    var rayCallback = new Ammo.AllHitsRayResultCallback(ammoRayStart, ammoRayEnd);
+    this.dynamicsWorld.rayTest(ammoRayStart, ammoRayEnd, rayCallback);
+    if (rayCallback.hasHit()) {
+      var collisionObjs = rayCallback.get_m_collisionObjects();
+      var points = rayCallback.get_m_hitPointWorld();
+      var normals = rayCallback.get_m_hitNormalWorld();
+      var numHits = collisionObjs.size();
+      for (var i = 0;i < numHits;i++) {
+        var body = Ammo.castObject(collisionObjs.at(i), Ammo.btRigidBody);
+        if (body) {
+          var point = points.at(i);
+          var normal = normals.at(i);
+          var result = new RaycastResult(body.entity, new pc.Vec3(point.x(), point.y(), point.z()), new pc.Vec3(normal.x(), normal.y(), normal.z()));
+          results.push(result);
+        }
+      }
+      Ammo.destroy(points);
+      Ammo.destroy(normals);
+    }
+    Ammo.destroy(rayCallback);
+    return results;
   }, _storeCollision:function(entity, other) {
     var isNewCollision = false;
     var guid = entity.getGuid();
@@ -43948,7 +44112,7 @@ Object.assign(pc, function() {
           vertexDesc.push({semantic:semantic, components:getNumComponents(accessor.type), type:getComponentType(accessor.componentType)});
           var size = getNumComponents(accessor.type) * getComponentSizeInBytes(accessor.componentType);
           var buffer = buffers[bufferView.buffer];
-          sourceDesc[semantic] = {array:new Uint32Array(buffer.buffer), buffer:bufferView.buffer, size:size, offset:(accessor.hasOwnProperty("byteOffset") ? accessor.byteOffset : 0) + (bufferView.hasOwnProperty("byteOffset") ? bufferView.byteOffset : 0) + buffer.byteOffset, stride:bufferView.hasOwnProperty("byteStride") ? bufferView.byteStride : size, count:accessor.count};
+          sourceDesc[semantic] = {buffer:buffer.buffer, size:size, offset:(accessor.hasOwnProperty("byteOffset") ? accessor.byteOffset : 0) + (bufferView.hasOwnProperty("byteOffset") ? bufferView.byteOffset : 0) + buffer.byteOffset, stride:bufferView.hasOwnProperty("byteStride") ? bufferView.byteStride : size, count:accessor.count};
         }
       }
     }
@@ -43961,7 +44125,7 @@ Object.assign(pc, function() {
       }
       var normals = Float32Array.from(pc.calculateNormals(positions, indices));
       vertexDesc.push({semantic:pc.SEMANTIC_NORMAL, components:3, type:pc.TYPE_FLOAT32});
-      sourceDesc[pc.SEMANTIC_NORMAL] = {array:new Uint32Array(normals.buffer), buffer:null, size:12, offset:0, stride:12, count:numVertices};
+      sourceDesc[pc.SEMANTIC_NORMAL] = {buffer:normals.buffer, size:12, offset:0, stride:12, count:numVertices};
     }
     vertexDesc.sort(function(lhs, rhs) {
       var lhsOrder = elementOrder.indexOf(lhs.semantic);
@@ -43983,18 +44147,19 @@ Object.assign(pc, function() {
     }
     var vertexData = vertexBuffer.lock();
     var targetArray = new Uint32Array(vertexData);
-    var sourceArray, targetStride, sourceStride;
+    var sourceArray;
     if (isCorrectlyInterleaved) {
-      sourceArray = new Uint32Array(positionDesc.array.buffer, positionDesc.offset, numVertices * vertexBuffer.format.size / 4);
+      sourceArray = new Uint32Array(positionDesc.buffer, positionDesc.offset, numVertices * vertexBuffer.format.size / 4);
       targetArray.set(sourceArray);
     } else {
+      var targetStride, sourceStride;
       for (i = 0;i < vertexBuffer.format.elements.length;++i) {
         target = vertexBuffer.format.elements[i];
         targetStride = target.stride / 4;
         source = sourceDesc[target.name];
-        sourceArray = source.array;
+        sourceArray = new Uint32Array(source.buffer, source.offset, source.count * source.stride / 4);
         sourceStride = source.stride / 4;
-        var src = source.offset / 4;
+        var src = 0;
         var dst = target.offset / 4;
         for (j = 0;j < numVertices;++j) {
           for (k = 0;k < source.size / 4;++k) {
@@ -44118,9 +44283,6 @@ Object.assign(pc, function() {
     material.specularVertexColor = true;
     if (materialData.hasOwnProperty("name")) {
       material.name = materialData.name;
-    }
-    if (materialData.hasOwnProperty("extensions") && materialData.extensions.hasOwnProperty("KHR_materials_unlit")) {
-      material.useLighting = false;
     }
     var color, texture;
     if (materialData.hasOwnProperty("extensions") && materialData.extensions.hasOwnProperty("KHR_materials_pbrSpecularGlossiness")) {
@@ -44349,6 +44511,22 @@ Object.assign(pc, function() {
     } else {
       material.twoSidedLighting = false;
       material.cull = pc.CULLFACE_BACK;
+    }
+    if (materialData.hasOwnProperty("extensions") && materialData.extensions.hasOwnProperty("KHR_materials_unlit")) {
+      material.useLighting = false;
+      material.emissive.copy(material.diffuse);
+      material.emissiveTint = material.diffuseTint;
+      material.emissiveMap = material.diffuseMap;
+      material.emissiveMapUv = material.diffuseMapUv;
+      material.emissiveMapTiling.copy(material.diffuseMapTiling);
+      material.emissiveMapOffset.copy(material.diffuseMapOffset);
+      material.emissiveMapChannel = material.diffuseMapChannel;
+      material.emissiveVertexColor = material.diffuseVertexColor;
+      material.emissiveVertexColorChannel = material.diffuseVertexColorChannel;
+      material.diffuse.set(0, 0, 0);
+      material.diffuseTint = false;
+      material.diffuseMap = null;
+      material.diffuseVertexColor = false;
     }
     material.update();
     return material;
@@ -46699,6 +46877,15 @@ Object.defineProperty(pc.ElementInput.prototype, "wheel", {get:function() {
 }});
 Object.defineProperty(pc.MouseEvent.prototype, "wheel", {get:function() {
   return this.wheelDelta * -2;
+}});
+Object.defineProperty(pc.XrInputSource.prototype, "ray", {get:function() {
+  return this._rayLocal;
+}});
+Object.defineProperty(pc.XrInputSource.prototype, "position", {get:function() {
+  return this._localPosition;
+}});
+Object.defineProperty(pc.XrInputSource.prototype, "rotation", {get:function() {
+  return this._localRotation;
 }});
 Object.assign(pc.Application.prototype, function() {
   var tempGraphNode = new pc.GraphNode;
