@@ -409,15 +409,17 @@ Object.assign(Viewer.prototype, {
         if (entity) {
             var camera = this.camera;
 
-            var orbitCamera = camera.script.orbitCamera;
-            orbitCamera.focus(entity);
+            if (camera.script && camera.script.orbitCamera) {
+                var orbitCamera = camera.script.orbitCamera;
+                orbitCamera.focus(entity);
 
-            var distance = orbitCamera.distance;
-            camera.camera.nearClip = distance / 10;
-            camera.camera.farClip = distance * 10;
+                var distance = orbitCamera.distance;
+                camera.camera.nearClip = distance / 10;
+                camera.camera.farClip = distance * 10;
 
-            var light = this.light;
-            light.light.shadowDistance = distance * 2;
+                var light = this.light;
+                light.light.shadowDistance = distance * 2;
+            }
         }
     },
 
@@ -525,22 +527,15 @@ Object.assign(Viewer.prototype, {
 });
 
 var viewer;
+function startViewer() {
+    viewer = new Viewer(document.getElementById("application"));
+}
 
 function main(){
-    if (true) {//typeof WebAssembly !== 'object') {
-        loadScript('../../libs/playcanvas/v1.27.0-dev/draco_decoder.js').then(function () {
-            decoderModule = DracoDecoderModule();
-            onLoad();
-        });
+    if (wasmSupported()) {
+        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.27.0-dev/draco.wasm.js', '../../libs/playcanvas/v1.27.0-dev/draco.wasm.wasm', startViewer);
     } else {
-        loadScript('../../libs/playcanvas/v1.27.0-dev/draco_wasm_wrapper.js').then(function () {
-            fetch('../../libs/playcanvas/v1.27.0-dev/draco_decoder.wasm').then(function (response) {
-                response.arrayBuffer().then(function (arrayBuffer) {
-                    decoderModule = DracoDecoderModule({ wasmBinary: arrayBuffer });
-                    onLoad();
-                });
-            });
-        });
+        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.27.0-dev/draco.js', '', startViewer);
     }
 }
 
@@ -553,10 +548,6 @@ function loadScript(src) {
         script.onload = resolve;
         head.appendChild(script);
     });
-}
-
-function onLoad() {
-    viewer = new Viewer(document.getElementById("application"));
 }
 
 main();
