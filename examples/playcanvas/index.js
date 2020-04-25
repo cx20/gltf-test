@@ -303,15 +303,4 @@ function main(){
     }
 }
 
-function loadScript(src) {
-    let head = document.getElementsByTagName('head')[0];
-    let script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = src;
-    return new Promise(function (resolve) {
-        script.onload = resolve;
-        head.appendChild(script);
-    });
-}
-
 main();
