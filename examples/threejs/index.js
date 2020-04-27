@@ -95,7 +95,6 @@ function init() {
         } else if ( gltf.scenes.length > 0 ) {
             object = gltf.scenes[0]; // other scene
         }
-        object.name = modelInfo.name;
         object.scale.set(scale, scale, scale);
         if (modelInfo.name == "GearboxAssy" ) {
             object.position.set(-159.20*scale, -17.02*scale, -3.21*scale);
