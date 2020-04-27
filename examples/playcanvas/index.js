@@ -218,6 +218,17 @@ Object.assign(Viewer.prototype, {
             }
         }
     },
+    // set the morphing value
+    setMorphWeight: function (name, weight) {
+        if (this.morphMap.hasOwnProperty(name)) {
+            var morphs = this.morphMap[name];
+            morphs.forEach(function (morph) {
+                morph.instance.setWeight(morph.targetIndex, weight);
+            });
+            this.dirtyNormals = true;
+            this.renderNextFrame();
+        }
+    },
     update: function () {
         // if the camera has moved since the last render
         var cameraWorldTransform = this.camera.getWorldTransform();
@@ -229,8 +240,14 @@ Object.assign(Viewer.prototype, {
         if (this.entity && this.entity.animation && this.entity.animation.playing) {
             this.app.renderNextFrame = true;
         }
+        // TODO:
+        if (this.morphMap) {
+            this.setMorphWeight("undefined", ((+new Date)/1000) % 1.0);
+        }
     },
-
+    renderNextFrame: function () {
+        this.app.renderNextFrame = true;
+    },
     _onLoaded: function(err, asset) {
         if (!err) {
 
@@ -263,6 +280,25 @@ Object.assign(Viewer.prototype, {
 
                 this.animationMap = animationMap;
                 //onAnimationsLoaded(Object.keys(this.animationMap));
+            }
+
+            // setup morph targets
+            if (entity.model && entity.model.model && entity.model.model.morphInstances.length > 0) {
+                var morphInstances = entity.model.model.morphInstances;
+                // make a list of all the morph instance target names
+                var morphMap = { };
+                morphInstances.forEach(function (morphInstance) {
+                    morphInstance.morph._targets.forEach(function (target, targetIndex) {
+                        if (!morphMap.hasOwnProperty(target.name)) {
+                            morphMap[target.name] = [{ instance: morphInstance, targetIndex: targetIndex }];
+                        } else {
+                            morphMap[target.name].push({ instance: morphInstance, targetIndex: targetIndex });
+                        }
+                    });
+                });
+
+                this.morphMap = morphMap;
+               // onMorphTargetsLoaded(Object.keys(morphMap));
             }
 
             this.app.root.addChild(entity);
