@@ -1,5 +1,5 @@
 /*
- * PlayCanvas Engine v1.27.0-dev revision db95ded
+ * PlayCanvas Engine v1.27.0-dev revision f591bbe
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 ;(function (root, factory) {
@@ -166,7 +166,7 @@ if (!String.prototype.startsWith) {
   }
   return result;
 }();
-var pc = {version:"1.27.0-dev", revision:"db95ded", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"1.27.0-dev", revision:"f591bbe", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.");
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -1233,6 +1233,11 @@ pc.math = {DEG_TO_RAD:Math.PI / 180, RAD_TO_DEG:180 / Math.PI, clamp:function(va
   }
   x = (x - min) / (max - min);
   return x * x * x * (x * (x * 6 - 15) + 10);
+}, roundUp:function(numToRound, multiple) {
+  if (multiple === 0) {
+    return numToRound;
+  }
+  return Math.ceil(numToRound / multiple) * multiple;
 }};
 Object.assign(pc, function() {
   var Vec2 = function(x, y) {
@@ -2933,34 +2938,36 @@ Object.assign(pc, function() {
     var mz2a = Math.abs(mz2);
     bc.set(m[12] + mx0 * ac.x + mx1 * ac.y + mx2 * ac.z, m[13] + my0 * ac.x + my1 * ac.y + my2 * ac.z, m[14] + mz0 * ac.x + mz1 * ac.y + mz2 * ac.z);
     br.set(mx0a * ar.x + mx1a * ar.y + mx2a * ar.z, my0a * ar.x + my1a * ar.y + my2a * ar.z, mz0a * ar.x + mz1a * ar.y + mz2a * ar.z);
-  }, compute:function(vertices) {
-    var min = tmpVecA.set(vertices[0], vertices[1], vertices[2]);
-    var max = tmpVecB.set(vertices[0], vertices[1], vertices[2]);
-    var numVerts = vertices.length / 3;
-    for (var i = 1;i < numVerts;i++) {
-      var x = vertices[i * 3 + 0];
-      var y = vertices[i * 3 + 1];
-      var z = vertices[i * 3 + 2];
-      if (x < min.x) {
-        min.x = x;
+  }, compute:function(vertices, numVerts) {
+    numVerts = numVerts === undefined ? vertices.length / 3 : numVerts;
+    if (numVerts > 0) {
+      var min = tmpVecA.set(vertices[0], vertices[1], vertices[2]);
+      var max = tmpVecB.set(vertices[0], vertices[1], vertices[2]);
+      for (var i = 1;i < numVerts;i++) {
+        var x = vertices[i * 3 + 0];
+        var y = vertices[i * 3 + 1];
+        var z = vertices[i * 3 + 2];
+        if (x < min.x) {
+          min.x = x;
+        }
+        if (y < min.y) {
+          min.y = y;
+        }
+        if (z < min.z) {
+          min.z = z;
+        }
+        if (x > max.x) {
+          max.x = x;
+        }
+        if (y > max.y) {
+          max.y = y;
+        }
+        if (z > max.z) {
+          max.z = z;
+        }
       }
-      if (y < min.y) {
-        min.y = y;
-      }
-      if (z < min.z) {
-        min.z = z;
-      }
-      if (x > max.x) {
-        max.x = x;
-      }
-      if (y > max.y) {
-        max.y = y;
-      }
-      if (z > max.z) {
-        max.z = z;
-      }
+      this.setMinMax(min, max);
     }
-    this.setMinMax(min, max);
   }, intersectsBoundingSphere:function(sphere) {
     var sq = this._distanceToBoundingSphereSq(sphere);
     if (sq <= sphere.radius * sphere.radius) {
@@ -3241,10 +3248,10 @@ Object.assign(pc, function() {
   BUFFER_DYNAMIC:1, BUFFER_STREAM:2, BUFFER_GPUDYNAMIC:3, CLEARFLAG_COLOR:1, CLEARFLAG_DEPTH:2, CLEARFLAG_STENCIL:4, CUBEFACE_POSX:0, CUBEFACE_NEGX:1, CUBEFACE_POSY:2, CUBEFACE_NEGY:3, CUBEFACE_POSZ:4, CUBEFACE_NEGZ:5, CULLFACE_NONE:0, CULLFACE_BACK:1, CULLFACE_FRONT:2, CULLFACE_FRONTANDBACK:3, TYPE_INT8:0, TYPE_UINT8:1, TYPE_INT16:2, TYPE_UINT16:3, TYPE_INT32:4, TYPE_UINT32:5, TYPE_FLOAT32:6, FILTER_NEAREST:0, FILTER_LINEAR:1, FILTER_NEAREST_MIPMAP_NEAREST:2, FILTER_NEAREST_MIPMAP_LINEAR:3, FILTER_LINEAR_MIPMAP_NEAREST:4, 
   FILTER_LINEAR_MIPMAP_LINEAR:5, FUNC_NEVER:0, FUNC_LESS:1, FUNC_EQUAL:2, FUNC_LESSEQUAL:3, FUNC_GREATER:4, FUNC_NOTEQUAL:5, FUNC_GREATEREQUAL:6, FUNC_ALWAYS:7, INDEXFORMAT_UINT8:0, INDEXFORMAT_UINT16:1, INDEXFORMAT_UINT32:2, PIXELFORMAT_A8:0, PIXELFORMAT_L8:1, PIXELFORMAT_L8_A8:2, PIXELFORMAT_R5_G6_B5:3, PIXELFORMAT_R5_G5_B5_A1:4, PIXELFORMAT_R4_G4_B4_A4:5, PIXELFORMAT_R8_G8_B8:6, PIXELFORMAT_R8_G8_B8_A8:7, PIXELFORMAT_DXT1:8, PIXELFORMAT_DXT3:9, PIXELFORMAT_DXT5:10, PIXELFORMAT_RGB16F:11, PIXELFORMAT_RGBA16F:12, 
   PIXELFORMAT_RGB32F:13, PIXELFORMAT_RGBA32F:14, PIXELFORMAT_R32F:15, PIXELFORMAT_DEPTH:16, PIXELFORMAT_DEPTHSTENCIL:17, PIXELFORMAT_111110F:18, PIXELFORMAT_SRGB:19, PIXELFORMAT_SRGBA:20, PIXELFORMAT_ETC1:21, PIXELFORMAT_ETC2_RGB:22, PIXELFORMAT_ETC2_RGBA:23, PIXELFORMAT_PVRTC_2BPP_RGB_1:24, PIXELFORMAT_PVRTC_2BPP_RGBA_1:25, PIXELFORMAT_PVRTC_4BPP_RGB_1:26, PIXELFORMAT_PVRTC_4BPP_RGBA_1:27, PIXELFORMAT_ASTC_4x4:28, PIXELFORMAT_ATC_RGB:29, PIXELFORMAT_ATC_RGBA:30, PRIMITIVE_POINTS:0, PRIMITIVE_LINES:1, 
-  PRIMITIVE_LINELOOP:2, PRIMITIVE_LINESTRIP:3, PRIMITIVE_TRIANGLES:4, PRIMITIVE_TRISTRIP:5, PRIMITIVE_TRIFAN:6, SEMANTIC_POSITION:"POSITION", SEMANTIC_NORMAL:"NORMAL", SEMANTIC_TANGENT:"TANGENT", SEMANTIC_BLENDWEIGHT:"BLENDWEIGHT", SEMANTIC_BLENDINDICES:"BLENDINDICES", SEMANTIC_COLOR:"COLOR", SEMANTIC_TEXCOORD0:"TEXCOORD0", SEMANTIC_TEXCOORD1:"TEXCOORD1", SEMANTIC_TEXCOORD2:"TEXCOORD2", SEMANTIC_TEXCOORD3:"TEXCOORD3", SEMANTIC_TEXCOORD4:"TEXCOORD4", SEMANTIC_TEXCOORD5:"TEXCOORD5", SEMANTIC_TEXCOORD6:"TEXCOORD6", 
-  SEMANTIC_TEXCOORD7:"TEXCOORD7", SEMANTIC_ATTR0:"ATTR0", SEMANTIC_ATTR1:"ATTR1", SEMANTIC_ATTR2:"ATTR2", SEMANTIC_ATTR3:"ATTR3", SEMANTIC_ATTR4:"ATTR4", SEMANTIC_ATTR5:"ATTR5", SEMANTIC_ATTR6:"ATTR6", SEMANTIC_ATTR7:"ATTR7", SEMANTIC_ATTR8:"ATTR8", SEMANTIC_ATTR9:"ATTR9", SEMANTIC_ATTR10:"ATTR10", SEMANTIC_ATTR11:"ATTR11", SEMANTIC_ATTR12:"ATTR12", SEMANTIC_ATTR13:"ATTR13", SEMANTIC_ATTR14:"ATTR14", SEMANTIC_ATTR15:"ATTR15", SHADERTAG_MATERIAL:1, STENCILOP_KEEP:0, STENCILOP_ZERO:1, STENCILOP_REPLACE:2, 
-  STENCILOP_INCREMENT:3, STENCILOP_INCREMENTWRAP:4, STENCILOP_DECREMENT:5, STENCILOP_DECREMENTWRAP:6, STENCILOP_INVERT:7, TEXTURELOCK_READ:1, TEXTURELOCK_WRITE:2, TEXHINT_NONE:0, TEXHINT_SHADOWMAP:1, TEXHINT_ASSET:2, TEXHINT_LIGHTMAP:3, UNIFORMTYPE_BOOL:0, UNIFORMTYPE_INT:1, UNIFORMTYPE_FLOAT:2, UNIFORMTYPE_VEC2:3, UNIFORMTYPE_VEC3:4, UNIFORMTYPE_VEC4:5, UNIFORMTYPE_IVEC2:6, UNIFORMTYPE_IVEC3:7, UNIFORMTYPE_IVEC4:8, UNIFORMTYPE_BVEC2:9, UNIFORMTYPE_BVEC3:10, UNIFORMTYPE_BVEC4:11, UNIFORMTYPE_MAT2:12, 
-  UNIFORMTYPE_MAT3:13, UNIFORMTYPE_MAT4:14, UNIFORMTYPE_TEXTURE2D:15, UNIFORMTYPE_TEXTURECUBE:16, UNIFORMTYPE_FLOATARRAY:17, UNIFORMTYPE_TEXTURE2D_SHADOW:18, UNIFORMTYPE_TEXTURECUBE_SHADOW:19, UNIFORMTYPE_TEXTURE3D:20};
+  PRIMITIVE_LINELOOP:2, PRIMITIVE_LINESTRIP:3, PRIMITIVE_TRIANGLES:4, PRIMITIVE_TRISTRIP:5, PRIMITIVE_TRIFAN:6, SEMANTIC_POSITION:"POSITION", SEMANTIC_NORMAL:"NORMAL", SEMANTIC_TANGENT:"TANGENT", SEMANTIC_BLENDWEIGHT:"BLENDWEIGHT", SEMANTIC_BLENDINDICES:"BLENDINDICES", SEMANTIC_COLOR:"COLOR", SEMANTIC_TEXCOORD:"TEXCOORD", SEMANTIC_TEXCOORD0:"TEXCOORD0", SEMANTIC_TEXCOORD1:"TEXCOORD1", SEMANTIC_TEXCOORD2:"TEXCOORD2", SEMANTIC_TEXCOORD3:"TEXCOORD3", SEMANTIC_TEXCOORD4:"TEXCOORD4", SEMANTIC_TEXCOORD5:"TEXCOORD5", 
+  SEMANTIC_TEXCOORD6:"TEXCOORD6", SEMANTIC_TEXCOORD7:"TEXCOORD7", SEMANTIC_ATTR0:"ATTR0", SEMANTIC_ATTR1:"ATTR1", SEMANTIC_ATTR2:"ATTR2", SEMANTIC_ATTR3:"ATTR3", SEMANTIC_ATTR4:"ATTR4", SEMANTIC_ATTR5:"ATTR5", SEMANTIC_ATTR6:"ATTR6", SEMANTIC_ATTR7:"ATTR7", SEMANTIC_ATTR8:"ATTR8", SEMANTIC_ATTR9:"ATTR9", SEMANTIC_ATTR10:"ATTR10", SEMANTIC_ATTR11:"ATTR11", SEMANTIC_ATTR12:"ATTR12", SEMANTIC_ATTR13:"ATTR13", SEMANTIC_ATTR14:"ATTR14", SEMANTIC_ATTR15:"ATTR15", SHADERTAG_MATERIAL:1, STENCILOP_KEEP:0, 
+  STENCILOP_ZERO:1, STENCILOP_REPLACE:2, STENCILOP_INCREMENT:3, STENCILOP_INCREMENTWRAP:4, STENCILOP_DECREMENT:5, STENCILOP_DECREMENTWRAP:6, STENCILOP_INVERT:7, TEXTURELOCK_READ:1, TEXTURELOCK_WRITE:2, TEXHINT_NONE:0, TEXHINT_SHADOWMAP:1, TEXHINT_ASSET:2, TEXHINT_LIGHTMAP:3, UNIFORMTYPE_BOOL:0, UNIFORMTYPE_INT:1, UNIFORMTYPE_FLOAT:2, UNIFORMTYPE_VEC2:3, UNIFORMTYPE_VEC3:4, UNIFORMTYPE_VEC4:5, UNIFORMTYPE_IVEC2:6, UNIFORMTYPE_IVEC3:7, UNIFORMTYPE_IVEC4:8, UNIFORMTYPE_BVEC2:9, UNIFORMTYPE_BVEC3:10, 
+  UNIFORMTYPE_BVEC4:11, UNIFORMTYPE_MAT2:12, UNIFORMTYPE_MAT3:13, UNIFORMTYPE_MAT4:14, UNIFORMTYPE_TEXTURE2D:15, UNIFORMTYPE_TEXTURECUBE:16, UNIFORMTYPE_FLOATARRAY:17, UNIFORMTYPE_TEXTURE2D_SHADOW:18, UNIFORMTYPE_TEXTURECUBE_SHADOW:19, UNIFORMTYPE_TEXTURE3D:20};
   Object.assign(pc, enums);
   pc.gfx = {};
   Object.assign(pc.gfx, enums);
@@ -3313,48 +3320,43 @@ Object.assign(pc, function() {
   return {VersionedObject:VersionedObject};
 }());
 Object.assign(pc, function() {
-  function VertexIteratorAccessor(buffer, vertexElement) {
+  var typesMap = [Int8Array, Uint8Array, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array];
+  function VertexIteratorAccessor(buffer, vertexElement, vertexFormat) {
     this.index = 0;
-    switch(vertexElement.dataType) {
-      case pc.TYPE_INT8:
-        this.array = new Int8Array(buffer, vertexElement.offset);
-        break;
-      case pc.TYPE_UINT8:
-        this.array = new Uint8Array(buffer, vertexElement.offset);
-        break;
-      case pc.TYPE_INT16:
-        this.array = new Int16Array(buffer, vertexElement.offset);
-        break;
-      case pc.TYPE_UINT16:
-        this.array = new Uint16Array(buffer, vertexElement.offset);
-        break;
-      case pc.TYPE_INT32:
-        this.array = new Int32Array(buffer, vertexElement.offset);
-        break;
-      case pc.TYPE_UINT32:
-        this.array = new Uint32Array(buffer, vertexElement.offset);
-        break;
-      case pc.TYPE_FLOAT32:
-        this.array = new Float32Array(buffer, vertexElement.offset);
-        break;
+    this.numComponents = vertexElement.numComponents;
+    if (vertexFormat.interleaved) {
+      this.array = new typesMap[vertexElement.dataType](buffer, vertexElement.offset);
+    } else {
+      this.array = new typesMap[vertexElement.dataType](buffer, vertexElement.offset, vertexFormat.vertexCount * vertexElement.numComponents);
     }
+    this.stride = vertexElement.stride / this.array.constructor.BYTES_PER_ELEMENT;
     switch(vertexElement.numComponents) {
       case 1:
         this.set = VertexIteratorAccessor_set1;
+        this.getToArray = VertexIteratorAccessor_arrayGet1;
+        this.setFromArray = VertexIteratorAccessor_arraySet1;
         break;
       case 2:
         this.set = VertexIteratorAccessor_set2;
+        this.getToArray = VertexIteratorAccessor_arrayGet2;
+        this.setFromArray = VertexIteratorAccessor_arraySet2;
         break;
       case 3:
         this.set = VertexIteratorAccessor_set3;
+        this.getToArray = VertexIteratorAccessor_arrayGet3;
+        this.setFromArray = VertexIteratorAccessor_arraySet3;
         break;
       case 4:
         this.set = VertexIteratorAccessor_set4;
+        this.getToArray = VertexIteratorAccessor_arrayGet4;
+        this.setFromArray = VertexIteratorAccessor_arraySet4;
         break;
     }
   }
   VertexIteratorAccessor.prototype.get = function(offset) {
     return this.array[this.index + offset];
+  };
+  VertexIteratorAccessor.prototype.set = function(a, b, c, d) {
   };
   function VertexIteratorAccessor_set1(a) {
     this.array[this.index] = a;
@@ -3374,15 +3376,56 @@ Object.assign(pc, function() {
     this.array[this.index + 2] = c;
     this.array[this.index + 3] = d;
   }
+  VertexIteratorAccessor.prototype.setFromArray = function(index, inputArray, inputIndex) {
+  };
+  function VertexIteratorAccessor_arraySet1(index, inputArray, inputIndex) {
+    this.array[index] = inputArray[inputIndex];
+  }
+  function VertexIteratorAccessor_arraySet2(index, inputArray, inputIndex) {
+    this.array[index] = inputArray[inputIndex];
+    this.array[index + 1] = inputArray[inputIndex + 1];
+  }
+  function VertexIteratorAccessor_arraySet3(index, inputArray, inputIndex) {
+    this.array[index] = inputArray[inputIndex];
+    this.array[index + 1] = inputArray[inputIndex + 1];
+    this.array[index + 2] = inputArray[inputIndex + 2];
+  }
+  function VertexIteratorAccessor_arraySet4(index, inputArray, inputIndex) {
+    this.array[index] = inputArray[inputIndex];
+    this.array[index + 1] = inputArray[inputIndex + 1];
+    this.array[index + 2] = inputArray[inputIndex + 2];
+    this.array[index + 3] = inputArray[inputIndex + 3];
+  }
+  VertexIteratorAccessor.prototype.getToArray = function(offset, outputArray, outputIndex) {
+  };
+  function VertexIteratorAccessor_arrayGet1(offset, outputArray, outputIndex) {
+    outputArray[outputIndex] = this.array[offset];
+  }
+  function VertexIteratorAccessor_arrayGet2(offset, outputArray, outputIndex) {
+    outputArray[outputIndex] = this.array[offset];
+    outputArray[outputIndex + 1] = this.array[offset + 1];
+  }
+  function VertexIteratorAccessor_arrayGet3(offset, outputArray, outputIndex) {
+    outputArray[outputIndex] = this.array[offset];
+    outputArray[outputIndex + 1] = this.array[offset + 1];
+    outputArray[outputIndex + 2] = this.array[offset + 2];
+  }
+  function VertexIteratorAccessor_arrayGet4(offset, outputArray, outputIndex) {
+    outputArray[outputIndex] = this.array[offset];
+    outputArray[outputIndex + 1] = this.array[offset + 1];
+    outputArray[outputIndex + 2] = this.array[offset + 2];
+    outputArray[outputIndex + 3] = this.array[offset + 3];
+  }
   function VertexIterator(vertexBuffer) {
     this.vertexBuffer = vertexBuffer;
+    this.vertexFormatSize = vertexBuffer.getFormat().size;
     this.buffer = this.vertexBuffer.lock();
     this.accessors = [];
     this.element = {};
     var vertexFormat = this.vertexBuffer.getFormat();
     for (var i = 0;i < vertexFormat.elements.length;i++) {
       var vertexElement = vertexFormat.elements[i];
-      this.accessors[i] = new VertexIteratorAccessor(this.buffer, vertexElement);
+      this.accessors[i] = new VertexIteratorAccessor(this.buffer, vertexElement, vertexFormat);
       this.element[vertexElement.name] = this.accessors[i];
     }
   }
@@ -3393,15 +3436,71 @@ Object.assign(pc, function() {
     var i = 0;
     var accessors = this.accessors;
     var numAccessors = this.accessors.length;
-    var vertexFormat = this.vertexBuffer.getFormat();
     while (i < numAccessors) {
       var accessor = accessors[i++];
-      accessor.index += count * vertexFormat.size / accessor.array.constructor.BYTES_PER_ELEMENT;
+      accessor.index += count * accessor.stride;
     }
   }, end:function() {
     this.vertexBuffer.unlock();
+    this.vertexBuffer = null;
+  }, writeData:function(semantic, data, numVertices) {
+    var element = this.element[semantic];
+    if (element) {
+      if (numVertices > this.vertexBuffer.numVertices) {
+        numVertices = this.vertexBuffer.numVertices;
+      }
+      var i, numComponents = element.numComponents;
+      if (this.vertexBuffer.getFormat().interleaved) {
+        var index = 0;
+        for (i = 0;i < numVertices;i++) {
+          element.setFromArray(index, data, i * numComponents);
+          index += element.stride;
+        }
+      } else {
+        if (data.length > numVertices * numComponents) {
+          var copyCount = numVertices * numComponents;
+          if (ArrayBuffer.isView(data)) {
+            data = data.subarray(0, copyCount);
+            element.array.set(data);
+          } else {
+            for (i = 0;i < copyCount;i++) {
+              element.array[i] = data[i];
+            }
+          }
+        } else {
+          element.array.set(data);
+        }
+      }
+    }
+  }, readData:function(semantic, data) {
+    var element = this.element[semantic];
+    var count = 0;
+    if (element) {
+      count = this.vertexBuffer.numVertices;
+      var i;
+      if (this.vertexBuffer.getFormat().interleaved) {
+        var numComponents = element.numComponents;
+        data.length = 0;
+        element.index = 0;
+        var offset = 0;
+        for (i = 0;i < count;i++) {
+          element.getToArray(offset, data, i * numComponents);
+          offset += element.stride;
+        }
+      } else {
+        if (ArrayBuffer.isView(data)) {
+          data.set(element.array);
+        } else {
+          data.length = 0;
+          for (i = 0;i < count;i++) {
+            data[i] = element.array[i];
+          }
+        }
+      }
+    }
+    return count;
   }});
-  return {VertexIterator:VertexIterator};
+  return {VertexIteratorAccessor:VertexIteratorAccessor, VertexIterator:VertexIterator};
 }());
 Object.assign(pc, function() {
   var _typeSize = [];
@@ -3412,7 +3511,7 @@ Object.assign(pc, function() {
   _typeSize[pc.TYPE_INT32] = 4;
   _typeSize[pc.TYPE_UINT32] = 4;
   _typeSize[pc.TYPE_FLOAT32] = 4;
-  var VertexFormat = function(graphicsDevice, description) {
+  var VertexFormat = function(graphicsDevice, description, vertexCount) {
     var i, len, element;
     this.elements = [];
     this.hasUv0 = false;
@@ -3420,15 +3519,26 @@ Object.assign(pc, function() {
     this.hasColor = false;
     this.hasTangents = false;
     this._defaultInstancingFormat = null;
+    this.verticesByteSize = 0;
+    this.vertexCount = vertexCount;
+    this.interleaved = !vertexCount;
     this.size = description.reduce(function(total, desc) {
       return total + Math.ceil(desc.components * _typeSize[desc.type] / 4) * 4;
     }, 0);
-    var offset = 0;
+    var offset = 0, elementSize;
     for (i = 0, len = description.length;i < len;i++) {
       var elementDesc = description[i];
-      element = {name:elementDesc.semantic, offset:elementDesc.hasOwnProperty("offset") ? elementDesc.offset : offset, stride:elementDesc.hasOwnProperty("stride") ? elementDesc.stride : this.size, stream:-1, scopeId:graphicsDevice.scope.resolve(elementDesc.semantic), dataType:elementDesc.type, numComponents:elementDesc.components, normalize:elementDesc.normalize === undefined ? false : elementDesc.normalize, size:elementDesc.components * _typeSize[elementDesc.type]};
+      elementSize = elementDesc.components * _typeSize[elementDesc.type];
+      if (vertexCount) {
+        offset = pc.math.roundUp(offset, elementSize);
+      }
+      element = {name:elementDesc.semantic, offset:vertexCount ? offset : elementDesc.hasOwnProperty("offset") ? elementDesc.offset : offset, stride:vertexCount ? elementSize : elementDesc.hasOwnProperty("stride") ? elementDesc.stride : this.size, stream:-1, scopeId:graphicsDevice.scope.resolve(elementDesc.semantic), dataType:elementDesc.type, numComponents:elementDesc.components, normalize:elementDesc.normalize === undefined ? false : elementDesc.normalize, size:elementSize};
       this.elements.push(element);
-      offset += Math.ceil(element.size / 4) * 4;
+      if (vertexCount) {
+        offset += elementSize * vertexCount;
+      } else {
+        offset += Math.ceil(elementSize / 4) * 4;
+      }
       if (elementDesc.semantic === pc.SEMANTIC_TEXCOORD0) {
         this.hasUv0 = true;
       } else {
@@ -3444,6 +3554,9 @@ Object.assign(pc, function() {
           }
         }
       }
+    }
+    if (vertexCount) {
+      this.verticesByteSize = offset;
     }
   };
   VertexFormat.init = function(graphicsDevice) {
@@ -3462,7 +3575,7 @@ Object.assign(pc, function() {
     this.usage = usage || pc.BUFFER_STATIC;
     this.format = format;
     this.numVertices = numVertices;
-    this.numBytes = format.size * numVertices;
+    this.numBytes = format.verticesByteSize ? format.verticesByteSize : format.size * numVertices;
     graphicsDevice._vram.vb += this.numBytes;
     this.device = graphicsDevice;
     if (initialData) {
@@ -3624,6 +3737,39 @@ Object.assign(pc, function() {
     this.storage = data;
     this.unlock();
     return true;
+  }, _lockTypedArray:function() {
+    var lock = this.lock();
+    var indices = this.format === pc.INDEXFORMAT_UINT32 ? new Uint32Array(lock) : this.format === pc.INDEXFORMAT_UINT16 ? new Uint16Array(lock) : new Uint8Array(lock);
+    return indices;
+  }, writeData:function(data, count) {
+    var indices = this._lockTypedArray();
+    if (data.length > count) {
+      if (ArrayBuffer.isView(data)) {
+        data = data.subarray(0, count);
+        indices.set(data);
+      } else {
+        var i;
+        for (i = 0;i < count;i++) {
+          indices[i] = data[i];
+        }
+      }
+    } else {
+      indices.set(data);
+    }
+    this.unlock();
+  }, readData:function(data) {
+    var indices = this._lockTypedArray();
+    var count = this.numIndices;
+    if (ArrayBuffer.isView(data)) {
+      data.set(indices);
+    } else {
+      data.length = 0;
+      var i;
+      for (i = 0;i < count;i++) {
+        data[i] = indices[i];
+      }
+    }
+    return count;
   }});
   return {IndexBuffer:IndexBuffer};
 }());
@@ -10837,7 +10983,7 @@ Object.assign(pc, function() {
             maxVec.set(maxx, maxy, maxz);
             var chunkAabb = new pc.BoundingBox;
             chunkAabb.setMinMax(minVec, maxVec);
-            var mesh2 = new pc.Mesh;
+            var mesh2 = new pc.Mesh(device);
             mesh2.vertexBuffer = vertexBuffer;
             mesh2.indexBuffer[0] = ib;
             mesh2.primitive[0].type = pc.PRIMITIVE_TRIANGLES;
@@ -14153,15 +14299,46 @@ Object.assign(pc, function() {
 }());
 Object.assign(pc, function() {
   var id = 0;
-  var _tmpAabb = new pc.BoundingBox;
-  var Mesh = function() {
+  var GeometryData = function() {
+    this.initDefaults();
+  };
+  Object.assign(GeometryData.prototype, {initDefaults:function() {
+    this.recreate = false;
+    this.verticesUsage = pc.BUFFER_STATIC;
+    this.indicesUsage = pc.BUFFER_STATIC;
+    this.maxVertices = 0;
+    this.maxIndices = 0;
+    this.vertexCount = 0;
+    this.indexCount = 0;
+    this.vertexStreamsUpdated = false;
+    this.indexStreamUpdated = false;
+    this.vertexStreamDictionary = {};
+    this.indices = null;
+  }, _changeVertexCount:function(count, semantic) {
+    if (!this.vertexCount) {
+      this.vertexCount = count;
+    } else {
+      if (this.vertexCount !== count) {
+      }
+    }
+  }});
+  Object.defineProperties(GeometryData, {DEFAULT_COMPONENTS_POSITION:{value:3}, DEFAULT_COMPONENTS_NORMAL:{value:3}, DEFAULT_COMPONENTS_UV:{value:2}, DEFAULT_COMPONENTS_COLORS:{value:4}});
+  var GeometryVertexStream = function(data, componentCount, dataType, dataTypeNormalize) {
+    this.data = data;
+    this.componentCount = componentCount;
+    this.dataType = dataType;
+    this.dataTypeNormalize = dataTypeNormalize;
+  };
+  var Mesh = function(graphicsDevice) {
     this._refCount = 0;
     this.id = id++;
+    this.device = graphicsDevice || pc.Application.getApplication().graphicsDevice;
     this.vertexBuffer = null;
     this.indexBuffer = [null];
     this.primitive = [{type:0, base:0, count:0}];
     this.skin = null;
     this.morph = null;
+    this._geometryData = null;
     this._aabb = new pc.BoundingBox;
     this.boneAabb = null;
   };
@@ -14175,6 +14352,249 @@ Object.assign(pc, function() {
       this._aabb = aabb;
     }
   }});
+  Object.assign(Mesh.prototype, {destroy:function() {
+    if (this.vertexBuffer) {
+      this.vertexBuffer.destroy();
+      this.vertexBuffer = null;
+    }
+    var j, ib;
+    for (j = 0;j < this.indexBuffer.length;j++) {
+      ib = this.indexBuffer[j];
+      if (ib) {
+        ib.destroy();
+      }
+    }
+    this.indexBuffer.length = 0;
+    this._geometryData = null;
+  }, _initGeometryData:function() {
+    if (!this._geometryData) {
+      this._geometryData = new pc.GeometryData;
+      if (this.vertexBuffer) {
+        this._geometryData.vertexCount = this.vertexBuffer.numVertices;
+        this._geometryData.maxVertices = this.vertexBuffer.numVertices;
+      }
+      if (this.indexBuffer.length > 0 && this.indexBuffer[0]) {
+        this._geometryData.indexCount = this.indexBuffer[0].numIndices;
+        this._geometryData.maxIndices = this.indexBuffer[0].numIndices;
+      }
+    }
+  }, clear:function(verticesDynamic, indicesDynamic, maxVertices, maxIndices) {
+    this._initGeometryData();
+    this._geometryData.initDefaults();
+    this._geometryData.recreate = true;
+    this._geometryData.maxVertices = maxVertices || 0;
+    this._geometryData.maxIndices = maxIndices || 0;
+    this._geometryData.verticesUsage = verticesDynamic ? pc.BUFFER_STATIC : pc.BUFFER_DYNAMIC;
+    this._geometryData.indicesUsage = indicesDynamic ? pc.BUFFER_STATIC : pc.BUFFER_DYNAMIC;
+  }, setVertexStream:function(semantic, data, componentCount, numVertices, dataType, dataTypeNormalize) {
+    this._initGeometryData();
+    var vertexCount = numVertices || data.length / componentCount;
+    this._geometryData._changeVertexCount(vertexCount, semantic);
+    this._geometryData.vertexStreamsUpdated = true;
+    this._geometryData.vertexStreamDictionary[semantic] = new pc.GeometryVertexStream(data, componentCount, dataType || pc.TYPE_FLOAT32, dataTypeNormalize || false);
+  }, getVertexStream:function(semantic, data) {
+    var count = 0;
+    var done = false;
+    if (this._geometryData) {
+      var stream = this._geometryData.vertexStreamDictionary[semantic];
+      if (stream) {
+        done = true;
+        count = this._geometryData.vertexCount;
+        if (ArrayBuffer.isView(data)) {
+          data.set(stream.data);
+        } else {
+          data.length = 0;
+          data.push(stream.data);
+        }
+      }
+    }
+    if (!done) {
+      if (this.vertexBuffer) {
+        var iterator = new pc.VertexIterator(this.vertexBuffer);
+        count = iterator.readData(semantic, data);
+      }
+    }
+    return count;
+  }, setPositions:function(positions, componentCount, numVertices) {
+    this.setVertexStream(pc.SEMANTIC_POSITION, positions, componentCount || GeometryData.DEFAULT_COMPONENTS_POSITION, numVertices, pc.TYPE_FLOAT32, false);
+  }, setNormals:function(normals, componentCount, numVertices) {
+    this.setVertexStream(pc.SEMANTIC_NORMAL, normals, componentCount || GeometryData.DEFAULT_COMPONENTS_NORMAL, numVertices, pc.TYPE_FLOAT32, false);
+  }, setUvs:function(channel, uvs, componentCount, numVertices) {
+    this.setVertexStream(pc.SEMANTIC_TEXCOORD + channel, uvs, componentCount || GeometryData.DEFAULT_COMPONENTS_UV, numVertices, pc.TYPE_FLOAT32, false);
+  }, setColors:function(colors, componentCount, numVertices) {
+    this.setVertexStream(pc.SEMANTIC_COLOR, colors, componentCount || GeometryData.DEFAULT_COMPONENTS_COLORS, numVertices, pc.TYPE_FLOAT32, false);
+  }, setColors32:function(colors, numVertices) {
+    this.setVertexStream(pc.SEMANTIC_COLOR, colors, GeometryData.DEFAULT_COMPONENTS_COLORS, numVertices, pc.TYPE_UINT8, true);
+  }, setIndices:function(indices, numIndices) {
+    this._initGeometryData();
+    this._geometryData.indexStreamUpdated = true;
+    this._geometryData.indices = indices;
+    this._geometryData.indexCount = numIndices || indices.length;
+  }, getPositions:function(positions) {
+    return this.getVertexStream(pc.SEMANTIC_POSITION, positions);
+  }, getNormals:function(normals) {
+    return this.getVertexStream(pc.SEMANTIC_NORMAL, normals);
+  }, getUvs:function(channel, uvs) {
+    return this.getVertexStream(pc.SEMANTIC_TEXCOORD + channel, uvs);
+  }, getColors:function(colors) {
+    return this.getVertexStream(pc.SEMANTIC_COLOR, colors);
+  }, getIndices:function(indices) {
+    var count = 0;
+    if (this._geometryData && this._geometryData.indices) {
+      var streamIndices = this._geometryData.indices;
+      count = this._geometryData.indexCount;
+      if (ArrayBuffer.isView(indices)) {
+        indices.set(streamIndices);
+      } else {
+        indices.length = 0;
+        indices.push(streamIndices);
+      }
+    } else {
+      if (this.indexBuffer.length > 0 && this.indexBuffer[0]) {
+        var indexBuffer = this.indexBuffer[0];
+        count = indexBuffer.readData(indices);
+      }
+    }
+    return count;
+  }, update:function(primitiveType, updateBoundingBox) {
+    if (this._geometryData) {
+      if (updateBoundingBox || updateBoundingBox === undefined) {
+        var stream = this._geometryData.vertexStreamDictionary[pc.SEMANTIC_POSITION];
+        if (stream) {
+          if (stream.componentCount == 3) {
+            this._aabb.compute(stream.data, this._geometryData.vertexCount);
+          }
+        }
+      }
+      var destroyVB = this._geometryData.recreate;
+      if (this._geometryData.vertexCount > this._geometryData.maxVertices) {
+        destroyVB = true;
+        this._geometryData.maxVertices = this._geometryData.vertexCount;
+      }
+      if (destroyVB) {
+        if (this.vertexBuffer) {
+          this.vertexBuffer.destroy();
+          this.vertexBuffer = null;
+        }
+      }
+      var destroyIB = this._geometryData.recreate;
+      if (this._geometryData.indexCount > this._geometryData.maxIndices) {
+        destroyIB = true;
+        this._geometryData.maxIndices = this._geometryData.indexCount;
+      }
+      if (destroyIB) {
+        if (this.indexBuffer.length > 0 && this.indexBuffer[0]) {
+          this.indexBuffer[0].destroy();
+          this.indexBuffer[0] = null;
+        }
+      }
+      if (this._geometryData.vertexStreamsUpdated) {
+        this._updateVertexBuffer();
+      }
+      if (this._geometryData.indexStreamUpdated) {
+        this._updateIndexBuffer();
+      }
+      this.primitive[0].type = primitiveType === undefined ? pc.PRIMITIVE_TRIANGLES : primitiveType;
+      if (this.indexBuffer.length > 0 && this.indexBuffer[0]) {
+        if (this._geometryData.indexStreamUpdated) {
+          this.primitive[0].count = this._geometryData.indexCount;
+          this.primitive[0].indexed = true;
+        }
+      } else {
+        if (this._geometryData.vertexStreamsUpdated) {
+          this.primitive[0].count = this._geometryData.vertexCount;
+          this.primitive[0].indexed = false;
+        }
+      }
+      this._geometryData.vertexCount = 0;
+      this._geometryData.indexCount = 0;
+      this._geometryData.vertexStreamsUpdated = false;
+      this._geometryData.indexStreamUpdated = false;
+      this._geometryData.recreate = false;
+    }
+  }, _buildVertexFormat:function(vertexCount) {
+    var vertexDesc = [];
+    for (var semantic in this._geometryData.vertexStreamDictionary) {
+      var stream = this._geometryData.vertexStreamDictionary[semantic];
+      vertexDesc.push({semantic:semantic, components:stream.componentCount, type:stream.dataType, normalize:stream.dataTypeNormalize});
+    }
+    return new pc.VertexFormat(this.device, vertexDesc, vertexCount);
+  }, _updateVertexBuffer:function() {
+    if (!this.vertexBuffer) {
+      var allocateVertexCount = this._geometryData.maxVertices;
+      var format = this._buildVertexFormat(allocateVertexCount);
+      this.vertexBuffer = new pc.VertexBuffer(this.device, format, allocateVertexCount, this._geometryData.verticesUsage);
+    }
+    var iterator = new pc.VertexIterator(this.vertexBuffer);
+    var numVertices = this._geometryData.vertexCount;
+    for (var semantic in this._geometryData.vertexStreamDictionary) {
+      var stream = this._geometryData.vertexStreamDictionary[semantic];
+      iterator.writeData(semantic, stream.data, numVertices);
+      delete this._geometryData.vertexStreamDictionary[semantic];
+    }
+    iterator.end();
+  }, _updateIndexBuffer:function() {
+    if (this.indexBuffer.length <= 0 || !this.indexBuffer[0]) {
+      var createFormat = this._geometryData.maxVertices > 65535 ? pc.INDEXFORMAT_UINT32 : pc.INDEXFORMAT_UINT16;
+      this.indexBuffer[0] = new pc.IndexBuffer(this.device, createFormat, this._geometryData.maxIndices, this._geometryData.indicesUsage);
+    }
+    var srcIndices = this._geometryData.indices;
+    if (srcIndices) {
+      var indexBuffer = this.indexBuffer[0];
+      indexBuffer.writeData(srcIndices, this._geometryData.indexCount);
+      this._geometryData.indices = null;
+    }
+  }, generateWireframe:function() {
+    var typedArray = function(indexBuffer) {
+      switch(indexBuffer.format) {
+        case pc.INDEXFORMAT_UINT8:
+          return new Uint8Array(indexBuffer.storage);
+        case pc.INDEXFORMAT_UINT16:
+          return new Uint16Array(indexBuffer.storage);
+        case pc.INDEXFORMAT_UINT32:
+          return new Uint32Array(indexBuffer.storage);
+        default:
+          return null;
+      }
+    };
+    var lines = [];
+    var format;
+    if (this.indexBuffer.length > 0 && this.indexBuffer[0]) {
+      var offsets = [[0, 1], [1, 2], [2, 0]];
+      var base = this.primitive[pc.RENDERSTYLE_SOLID].base;
+      var count = this.primitive[pc.RENDERSTYLE_SOLID].count;
+      var indexBuffer = this.indexBuffer[pc.RENDERSTYLE_SOLID];
+      var srcIndices = typedArray(indexBuffer);
+      var uniqueLineIndices = {};
+      for (var j = base;j < base + count;j += 3) {
+        for (var k = 0;k < 3;k++) {
+          var i1 = srcIndices[j + offsets[k][0]];
+          var i2 = srcIndices[j + offsets[k][1]];
+          var line = i1 > i2 ? i2 << 16 | i1 : i1 << 16 | i2;
+          if (uniqueLineIndices[line] === undefined) {
+            uniqueLineIndices[line] = 0;
+            lines.push(i1, i2);
+          }
+        }
+      }
+      format = indexBuffer.format;
+    } else {
+      for (var i = 0;i < this.vertexBuffer.numVertices;i += 3) {
+        lines.push(i, i + 1, i + 1, i + 2, i + 2, i);
+      }
+      format = lines.length > 65535 ? pc.INDEXFORMAT_UINT32 : pc.INDEXFORMAT_UINT16;
+    }
+    var wireBuffer = new pc.IndexBuffer(this.vertexBuffer.device, format, lines.length);
+    var dstIndices = typedArray(wireBuffer);
+    dstIndices.set(lines);
+    wireBuffer.unlock();
+    this.primitive[pc.RENDERSTYLE_WIREFRAME] = {type:pc.PRIMITIVE_LINES, base:0, count:lines.length, indexed:true};
+    this.indexBuffer[pc.RENDERSTYLE_WIREFRAME] = wireBuffer;
+  }});
+  return {GeometryData:GeometryData, GeometryVertexStream:GeometryVertexStream, Mesh:Mesh};
+}());
+Object.assign(pc, function() {
+  var _tmpAabb = new pc.BoundingBox;
   var MeshInstance = function MeshInstance(node, mesh, material) {
     this._key = [0, 0];
     this._shader = [null, null, null];
@@ -14558,7 +14978,7 @@ Object.assign(pc, function() {
   function getKey(layer, blendType, isCommand, materialId) {
     return (layer & 15) << 27 | (blendType === pc.BLEND_NONE ? 1 : 0) << 26 | (isCommand ? 1 : 0) << 25 | (materialId & 33554431) << 0;
   }
-  return {Command:Command, Mesh:Mesh, MeshInstance:MeshInstance, InstancingData:InstancingData, _getDrawcallSortKey:getKey};
+  return {Command:Command, MeshInstance:MeshInstance, InstancingData:InstancingData, _getDrawcallSortKey:getKey};
 }());
 Object.assign(pc, function() {
   var _invMatrix = new pc.Mat4;
@@ -15215,30 +15635,17 @@ Object.assign(pc, function() {
     return clone;
   }, destroy:function() {
     var meshInstances = this.meshInstances;
-    var meshInstance, mesh, skin, morph, ib, boneTex, j;
-    var device;
+    var meshInstance, mesh, skin, morph, boneTex;
     for (var i = 0;i < meshInstances.length;i++) {
       meshInstance = meshInstances[i];
       mesh = meshInstance.mesh;
       if (mesh) {
         mesh._refCount--;
         if (mesh._refCount < 1) {
-          if (mesh.vertexBuffer) {
-            device = device || mesh.vertexBuffer.device;
-            mesh.vertexBuffer.destroy();
-            mesh.vertexBuffer = null;
-          }
-          for (j = 0;j < mesh.indexBuffer.length;j++) {
-            device = device || mesh.indexBuffer.device;
-            ib = mesh.indexBuffer[j];
-            if (!ib) {
-              continue;
-            }
-            ib.destroy();
-          }
-          mesh.indexBuffer.length = 0;
+          mesh.destroy();
         }
       }
+      meshInstance.mesh = null;
       skin = meshInstance.skinInstance;
       if (skin) {
         boneTex = skin.boneTexture;
@@ -15255,10 +15662,8 @@ Object.assign(pc, function() {
       meshInstance.material = null;
     }
   }, generateWireframe:function() {
-    var i, j, k;
-    var i1, i2;
-    var mesh, base, count, indexBuffer, wireBuffer;
-    var srcIndices, dstIndices;
+    var i;
+    var mesh;
     var meshes = [];
     for (i = 0;i < this.meshInstances.length;i++) {
       mesh = this.meshInstances[i].mesh;
@@ -15266,33 +15671,11 @@ Object.assign(pc, function() {
         meshes.push(mesh);
       }
     }
-    var offsets = [[0, 1], [1, 2], [2, 0]];
-    for (i = 0;i < meshes.length;i++) {
+    for (i = 0;i < meshes.length;++i) {
       mesh = meshes[i];
-      base = mesh.primitive[pc.RENDERSTYLE_SOLID].base;
-      count = mesh.primitive[pc.RENDERSTYLE_SOLID].count;
-      indexBuffer = mesh.indexBuffer[pc.RENDERSTYLE_SOLID];
-      srcIndices = new Uint16Array(indexBuffer.lock());
-      var uniqueLineIndices = {};
-      var lines = [];
-      for (j = base;j < base + count;j += 3) {
-        for (k = 0;k < 3;k++) {
-          i1 = srcIndices[j + offsets[k][0]];
-          i2 = srcIndices[j + offsets[k][1]];
-          var line = i1 > i2 ? i2 << 16 | i1 : i1 << 16 | i2;
-          if (uniqueLineIndices[line] === undefined) {
-            uniqueLineIndices[line] = 0;
-            lines.push(i1, i2);
-          }
-        }
+      if (!mesh.primitive[pc.RENDERSTYLE_WIREFRAME]) {
+        mesh.generateWireframe();
       }
-      indexBuffer.unlock();
-      wireBuffer = new pc.IndexBuffer(indexBuffer.device, pc.INDEXFORMAT_UINT16, lines.length);
-      dstIndices = new Uint16Array(wireBuffer.lock());
-      dstIndices.set(lines);
-      wireBuffer.unlock();
-      mesh.primitive[pc.RENDERSTYLE_WIREFRAME] = {type:pc.PRIMITIVE_LINES, base:0, count:lines.length, indexed:true};
-      mesh.indexBuffer[pc.RENDERSTYLE_WIREFRAME] = wireBuffer;
     }
   }});
   return {Model:Model};
@@ -15793,7 +16176,7 @@ Object.assign(pc, function() {
     this.numParticleVerts = this.useMesh ? this.mesh.vertexBuffer.numVertices : 4;
     this.numParticleIndices = this.useMesh ? this.mesh.indexBuffer[0].numIndices : 6;
     this._allocate(this.numParticles);
-    var mesh = new pc.Mesh;
+    var mesh = new pc.Mesh(gd);
     mesh.vertexBuffer = this.vertexBuffer;
     mesh.indexBuffer[0] = this.indexBuffer;
     mesh.primitive[0].type = pc.PRIMITIVE_TRIANGLES;
@@ -17192,7 +17575,7 @@ pc.createMesh = function(device, positions, opts) {
   }
   var aabb = new pc.BoundingBox;
   aabb.compute(positions);
-  var mesh = new pc.Mesh;
+  var mesh = new pc.Mesh(device);
   mesh.vertexBuffer = vertexBuffer;
   mesh.indexBuffer[0] = indexBuffer;
   mesh.primitive[0].type = pc.PRIMITIVE_TRIANGLES;
@@ -36672,7 +37055,7 @@ Object.assign(pc, function() {
     var device = this._system.app.graphicsDevice;
     var vertexFormat = new pc.VertexFormat(device, vertexDesc);
     var vertexBuffer = new pc.VertexBuffer(device, vertexFormat, 4, pc.BUFFER_STATIC, vertexData);
-    var mesh = new pc.Mesh;
+    var mesh = new pc.Mesh(device);
     mesh.vertexBuffer = vertexBuffer;
     mesh.primitive[0].type = pc.PRIMITIVE_TRIFAN;
     mesh.primitive[0].base = 0;
@@ -44191,7 +44574,7 @@ Object.assign(pc, function() {
       var max = meshAabb.max;
       var aabb = new pc.BoundingBox(new pc.Vec3((max[0] + min[0]) * .5, (max[1] + min[1]) * .5, (max[2] + min[2]) * .5), new pc.Vec3((max[0] - min[0]) * .5, (max[1] - min[1]) * .5, (max[2] - min[2]) * .5));
       var indexed = meshData.indices !== undefined;
-      var mesh = new pc.Mesh;
+      var mesh = new pc.Mesh(this._device);
       mesh.vertexBuffer = vertexBuffers[meshData.vertices];
       mesh.indexBuffer[0] = indexed ? indexBuffer : null;
       mesh.primitive[0].type = JSON_PRIMITIVE_TYPE[meshData.type];
@@ -44277,6 +44660,8 @@ Object.assign(pc, function() {
         return pc.TYPE_INT16;
       case 5123:
         return pc.TYPE_UINT16;
+      case 5124:
+        return pc.TYPE_INT32;
       case 5125:
         return pc.TYPE_UINT32;
       case 5126:
@@ -44295,6 +44680,8 @@ Object.assign(pc, function() {
         return 2;
       case 5123:
         return 2;
+      case 5124:
+        return 4;
       case 5125:
         return 4;
       case 5126:
@@ -44304,12 +44691,21 @@ Object.assign(pc, function() {
     }
   };
   var getAccessorData = function(accessor, bufferViews, buffers) {
-    var bufferView = bufferViews[accessor.bufferView];
+    var bufferViewIdx;
+    var count;
+    if (accessor.hasOwnProperty("sparse")) {
+      bufferViewIdx = accessor.sparse.values.bufferView;
+      count = accessor.sparse.count;
+    } else {
+      bufferViewIdx = accessor.bufferView;
+      count = accessor.count;
+    }
+    var bufferView = bufferViews[bufferViewIdx];
     var typedArray = buffers[bufferView.buffer];
     var accessorByteOffset = accessor.hasOwnProperty("byteOffset") ? accessor.byteOffset : 0;
     var bufferViewByteOffset = bufferView.hasOwnProperty("byteOffset") ? bufferView.byteOffset : 0;
     var byteOffset = typedArray.byteOffset + accessorByteOffset + bufferViewByteOffset;
-    var length = accessor.count * getNumComponents(accessor.type);
+    var length = count * getNumComponents(accessor.type);
     switch(accessor.componentType) {
       case 5120:
         return new Int8Array(typedArray.buffer, byteOffset, length);
@@ -44319,6 +44715,33 @@ Object.assign(pc, function() {
         return new Int16Array(typedArray.buffer, byteOffset, length);
       case 5123:
         return new Uint16Array(typedArray.buffer, byteOffset, length);
+      case 5124:
+        return new Int32Array(typedArray.buffer, byteOffset, length);
+      case 5125:
+        return new Uint32Array(typedArray.buffer, byteOffset, length);
+      case 5126:
+        return new Float32Array(typedArray.buffer, byteOffset, length);
+      default:
+        return null;
+    }
+  };
+  var getSparseAccessorIndices = function(accessor, bufferViews, buffers) {
+    var bufferView = bufferViews[accessor.sparse.indices.bufferView];
+    var typedArray = buffers[bufferView.buffer];
+    var bufferViewByteOffset = bufferView.hasOwnProperty("byteOffset") ? bufferView.byteOffset : 0;
+    var byteOffset = typedArray.byteOffset + bufferViewByteOffset;
+    var length = accessor.sparse.count;
+    switch(accessor.sparse.indices.componentType) {
+      case 5120:
+        return new Int8Array(typedArray.buffer, byteOffset, length);
+      case 5121:
+        return new Uint8Array(typedArray.buffer, byteOffset, length);
+      case 5122:
+        return new Int16Array(typedArray.buffer, byteOffset, length);
+      case 5123:
+        return new Uint16Array(typedArray.buffer, byteOffset, length);
+      case 5124:
+        return new Int32Array(typedArray.buffer, byteOffset, length);
       case 5125:
         return new Uint32Array(typedArray.buffer, byteOffset, length);
       case 5126:
@@ -44538,7 +44961,7 @@ Object.assign(pc, function() {
     meshData.primitives.forEach(function(primitive) {
       var primitiveType, vertexBuffer, numIndices;
       var indices = null;
-      var mesh = new pc.Mesh;
+      var mesh = new pc.Mesh(device);
       if (primitive.hasOwnProperty("extensions")) {
         var extensions = primitive.extensions;
         if (extensions.hasOwnProperty("KHR_draco_mesh_compression")) {
@@ -44632,19 +45055,26 @@ Object.assign(pc, function() {
       mesh.aabb = aabb;
       if (primitive.hasOwnProperty("targets")) {
         var targets = [];
-        primitive.targets.forEach(function(target) {
+        primitive.targets.forEach(function(target, index) {
           var options = {};
           if (target.hasOwnProperty("POSITION")) {
             accessor = accessors[target.POSITION];
             options.deltaPositions = getAccessorData(accessor, bufferViews, buffers);
+            if (accessor.hasOwnProperty("min") && accessor.hasOwnProperty("max")) {
+              var min = accessor.min;
+              var max = accessor.max;
+              options.aabb = new pc.BoundingBox(new pc.Vec3((max[0] + min[0]) * .5, (max[1] + min[1]) * .5, (max[2] + min[2]) * .5), new pc.Vec3((max[0] - min[0]) * .5, (max[1] - min[1]) * .5, (max[2] - min[2]) * .5));
+            }
+            if (accessor.sparse) {
+              options.indices = getSparseAccessorIndices(accessor, bufferViews, buffers);
+            }
           }
           if (target.hasOwnProperty("NORMAL")) {
             accessor = accessors[target.NORMAL];
             options.deltaNormals = getAccessorData(accessor, bufferViews, buffers);
           }
-          if (target.hasOwnProperty("TANGENT")) {
-            accessor = accessors[target.TANGENT];
-            options.deltaTangents = getAccessorData(accessor, bufferViews, buffers);
+          if (meshData.hasOwnProperty("extras") && meshData.extras.hasOwnProperty("targetNames")) {
+            options.name = meshData.extras.targetNames[index];
           }
           targets.push(new pc.MorphTarget(options));
         });
@@ -47310,7 +47740,7 @@ Object.assign(pc.Application.prototype, function() {
   };
   Object.assign(LineBatch.prototype, {init:function(device, vertexFormat, layer, linesToAdd) {
     if (!this.mesh) {
-      this.mesh = new pc.Mesh;
+      this.mesh = new pc.Mesh(device);
       this.mesh.primitive[0].type = pc.PRIMITIVE_LINES;
       this.mesh.primitive[0].base = 0;
       this.mesh.primitive[0].indexed = false;
@@ -47548,7 +47978,7 @@ Object.assign(pc.Application.prototype, function() {
       iterator.next();
       iterator.element[pc.SEMANTIC_POSITION].set(.5, .5, 0);
       iterator.end();
-      this._immediateData.quadMesh = new pc.Mesh;
+      this._immediateData.quadMesh = new pc.Mesh(this.graphicsDevice);
       this._immediateData.quadMesh.vertexBuffer = quadVb;
       this._immediateData.quadMesh.primitive[0].type = pc.PRIMITIVE_TRISTRIP;
       this._immediateData.quadMesh.primitive[0].base = 0;
@@ -48896,7 +49326,7 @@ Object.assign(pc, function() {
     }
     var vertexBuffer = new pc.VertexBuffer(this.device, vertexFormat, batchNumVerts, pc.BUFFER_STATIC, batchData.buffer);
     indexBuffer.unlock();
-    mesh = new pc.Mesh;
+    mesh = new pc.Mesh(this.device);
     mesh.vertexBuffer = vertexBuffer;
     mesh.indexBuffer[0] = indexBuffer;
     mesh.primitive[0].type = pc.PRIMITIVE_TRIANGLES;
