@@ -242,7 +242,10 @@ Object.assign(Viewer.prototype, {
         }
         // TODO:
         if (this.morphMap) {
-            this.setMorphWeight("undefined", ((+new Date)/1000) % 1.0);
+            var self = this;
+            Object.keys(this.morphMap).forEach(function(key) {
+                self.setMorphWeight(key, ((+new Date)/1000) % 1.0);
+            })
         }
     },
     renderNextFrame: function () {

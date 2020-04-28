@@ -1,5 +1,5 @@
 /*
- * PlayCanvas Engine v1.27.0-dev revision f591bbe
+ * PlayCanvas Engine v1.27.0-dev revision 416b9ca
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 ;(function (root, factory) {
@@ -166,7 +166,7 @@ if (!String.prototype.startsWith) {
   }
   return result;
 }();
-var pc = {version:"1.27.0-dev", revision:"f591bbe", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"1.27.0-dev", revision:"416b9ca", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.");
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -14352,7 +14352,14 @@ Object.assign(pc, function() {
       this._aabb = aabb;
     }
   }});
-  Object.assign(Mesh.prototype, {destroy:function() {
+  Object.defineProperty(Mesh.prototype, "refCount", {get:function() {
+    return this._refCount;
+  }});
+  Object.assign(Mesh.prototype, {incReference:function() {
+    this._refCount++;
+  }, decReference:function() {
+    this._refCount--;
+  }, destroy:function() {
     if (this.vertexBuffer) {
       this.vertexBuffer.destroy();
       this.vertexBuffer = null;
@@ -14603,7 +14610,7 @@ Object.assign(pc, function() {
     this._staticSource = null;
     this.node = node;
     this._mesh = mesh;
-    mesh._refCount++;
+    mesh.incReference();
     this.material = material;
     this._shaderDefs = pc.MASK_DYNAMIC << 16;
     this._shaderDefs |= mesh.vertexBuffer.format.hasUv0 ? pc.SHADERDEF_UV0 : 0;
@@ -14642,11 +14649,11 @@ Object.assign(pc, function() {
     return this._mesh;
   }, set:function(mesh) {
     if (this._mesh) {
-      this._mesh._refCount--;
+      this._mesh.decReference();
     }
     this._mesh = mesh;
     if (mesh) {
-      mesh._refCount++;
+      mesh.incReference();
     }
   }});
   Object.defineProperty(MeshInstance.prototype, "aabb", {get:function() {
@@ -15400,11 +15407,8 @@ Object.assign(pc, function() {
     }
     this.aabb.copy(this._baseAabb);
     var numIndices;
-    var i, j, target, index, id;
+    var i, j, target;
     var x, y, z;
-    var vertSizeF = this._vertSizeF;
-    var offsetPF = this._offsetPF;
-    var baseData = this._baseData;
     for (i = 0;i < this._targets.length;i++) {
       target = this._targets[i];
       if (!target.aabb && target.indices.length > 0) {
@@ -15413,11 +15417,9 @@ Object.assign(pc, function() {
         _morphMax.set(-Number.MAX_VALUE, -Number.MAX_VALUE, -Number.MAX_VALUE);
         numIndices = target.indices.length;
         for (j = 0;j < numIndices;j++) {
-          index = target.indices[j];
-          id = index * vertSizeF + offsetPF;
-          x = baseData[id] + target.deltaPositions[j * 3];
-          y = baseData[id + 1] + target.deltaPositions[j * 3 + 1];
-          z = baseData[id + 2] + target.deltaPositions[j * 3 + 2];
+          x = target.deltaPositions[j * 3];
+          y = target.deltaPositions[j * 3 + 1];
+          z = target.deltaPositions[j * 3 + 2];
           if (_morphMin.x > x) {
             _morphMin.x = x;
           }
@@ -15440,7 +15442,11 @@ Object.assign(pc, function() {
         target.aabb.setMinMax(_morphMin, _morphMax);
       }
       if (target.aabb) {
-        this.aabb.add(target.aabb);
+        var newMin = new pc.Vec3;
+        var newMax = new pc.Vec3;
+        newMin.add2(this.aabb.getMin(), target.aabb.getMin());
+        newMax.add2(this.aabb.getMax(), target.aabb.getMax());
+        this.aabb.setMinMax(newMin, newMax);
       }
     }
     this._aabbDirty = false;
@@ -15640,12 +15646,11 @@ Object.assign(pc, function() {
       meshInstance = meshInstances[i];
       mesh = meshInstance.mesh;
       if (mesh) {
-        mesh._refCount--;
-        if (mesh._refCount < 1) {
+        meshInstance.mesh = null;
+        if (mesh.refCount < 1) {
           mesh.destroy();
         }
       }
-      meshInstance.mesh = null;
       skin = meshInstance.skinInstance;
       if (skin) {
         boneTex = skin.boneTexture;
@@ -45061,9 +45066,8 @@ Object.assign(pc, function() {
             accessor = accessors[target.POSITION];
             options.deltaPositions = getAccessorData(accessor, bufferViews, buffers);
             if (accessor.hasOwnProperty("min") && accessor.hasOwnProperty("max")) {
-              var min = accessor.min;
-              var max = accessor.max;
-              options.aabb = new pc.BoundingBox(new pc.Vec3((max[0] + min[0]) * .5, (max[1] + min[1]) * .5, (max[2] + min[2]) * .5), new pc.Vec3((max[0] - min[0]) * .5, (max[1] - min[1]) * .5, (max[2] - min[2]) * .5));
+              options.aabb = new pc.BoundingBox;
+              options.aabb.setMinMax(new pc.Vec3(accessor.min), new pc.Vec3(accessor.max));
             }
             if (accessor.sparse) {
               options.indices = getSparseAccessorIndices(accessor, bufferViews, buffers);
@@ -45075,6 +45079,8 @@ Object.assign(pc, function() {
           }
           if (meshData.hasOwnProperty("extras") && meshData.extras.hasOwnProperty("targetNames")) {
             options.name = meshData.extras.targetNames[index];
+          } else {
+            options.name = targets.length.toString(10);
           }
           targets.push(new pc.MorphTarget(options));
         });
