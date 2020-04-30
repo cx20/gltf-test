@@ -92,7 +92,7 @@ var Viewer = function (canvas) {
 
     // load orbit script
     app.assets.loadFromUrl(
-        "../../libs/playcanvas/v1.27.0/orbit-camera.js",
+        "../../libs/playcanvas/v1.28.0-dev/orbit-camera.js",
         "script",
         function (err, asset) {
             // setup orbit script component
@@ -195,6 +195,7 @@ Object.assign(Viewer.prototype, {
     // play the animation
     play: function(animationName) {
         if (this.entity && this.entity.animation) {
+            this.entity.animation.enabled = true;
             if (animationName) {
                 this.entity.animation.play(this.animationMap[animationName], 1);
             } else {
@@ -206,6 +207,7 @@ Object.assign(Viewer.prototype, {
     // stop playing animations
     stop: function() {
         if (this.entity && this.entity.animation) {
+            this.entity.animation.enabled = false;
             this.entity.animation.playing = false;
         }
     },
@@ -239,13 +241,6 @@ Object.assign(Viewer.prototype, {
         // or an animation is loaded and we're animating
         if (this.entity && this.entity.animation && this.entity.animation.playing) {
             this.app.renderNextFrame = true;
-        }
-        // TODO:
-        if (this.morphMap) {
-            var self = this;
-            Object.keys(this.morphMap).forEach(function(key) {
-                self.setMorphWeight(key, ((+new Date)/1000) % 1.0);
-            })
         }
     },
     renderNextFrame: function () {
@@ -336,9 +331,9 @@ function startViewer() {
 
 function main(){
     if (wasmSupported()) {
-        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.27.0/draco.wasm.js', '../../libs/playcanvas/v1.27.0/draco.wasm.wasm', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.28.0-dev/draco.wasm.js', '../../libs/playcanvas/v1.28.0-dev/draco.wasm.wasm', startViewer);
     } else {
-        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.27.0/draco.js', '', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.28.0-dev/draco.js', '', startViewer);
     }
 }
 
