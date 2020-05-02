@@ -1,5 +1,5 @@
 /*
- * PlayCanvas Engine v1.28.0-dev revision 548f090
+ * PlayCanvas Engine v1.28.0-dev revision 5cf3b02
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 ;(function (root, factory) {
@@ -166,7 +166,7 @@ if (!String.prototype.startsWith) {
   }
   return result;
 }();
-var pc = {version:"1.28.0-dev", revision:"548f090", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
+var pc = {version:"1.28.0-dev", revision:"5cf3b02", config:{}, common:{}, apps:{}, data:{}, unpack:function() {
   console.warn("pc.unpack has been deprecated and will be removed shortly. Please update your code.");
 }, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
@@ -15364,6 +15364,7 @@ Object.assign(pc, function() {
     this.deltaTangents = options.deltaTangents;
     this.name = options.name;
     this.aabb = options.aabb;
+    this.defaultWeight = options.defaultWeight || 0;
   };
   var Morph = function(targets) {
     this.aabb = new pc.BoundingBox;
@@ -15477,11 +15478,9 @@ Object.assign(pc, function() {
     this.destroy();
     this._vertexBuffer = new pc.VertexBuffer(this.morph._baseBuffer.device, this.morph._baseBuffer.format, this.morph._baseBuffer.numVertices, pc.BUFFER_DYNAMIC, this.morph._baseBuffer.storage.slice(0));
     this._vertexData = new Float32Array(this._vertexBuffer.storage);
-    this._weights = [];
-    this._weights.length = this.morph._targets.length;
-    for (var i = 0;i < this.morph._targets.length;i++) {
-      this._weights[i] = 0;
-    }
+    this._weights = this.morph._targets.map(function(t) {
+      return t.defaultWeight;
+    });
     this._dirty = true;
   }, destroy:function() {
     if (this._vertexBuffer) {
@@ -23159,7 +23158,6 @@ Object.assign(pc, function() {
     this.input = new pc.XrInput(this);
     this.hitTest = new pc.XrHitTest(this);
     this._camera = null;
-    this._pose = null;
     this.views = [];
     this.viewsPool = [];
     this._localPosition = new pc.Vec3;
@@ -23255,7 +23253,6 @@ Object.assign(pc, function() {
     var onEnd = function() {
       self._session = null;
       self._referenceSpace = null;
-      self._pose = null;
       self.views = [];
       self._width = 0;
       self._height = 0;
@@ -23269,10 +23266,10 @@ Object.assign(pc, function() {
       }
       session.removeEventListener("end", onEnd);
       session.removeEventListener("visibilitychange", onVisibilityChange);
-      self.app.tick();
       if (!failed) {
         self.fire("end");
       }
+      self.app.tick();
     };
     session.addEventListener("end", onEnd);
     session.addEventListener("visibilitychange", onVisibilityChange);
@@ -23320,8 +23317,8 @@ Object.assign(pc, function() {
       this._height = height;
       this.app.graphicsDevice.setResolution(width, height);
     }
-    this._pose = frame.getViewerPose(this._referenceSpace);
-    lengthNew = this._pose ? this._pose.views.length : 0;
+    var pose = frame.getViewerPose(this._referenceSpace);
+    lengthNew = pose ? pose.views.length : 0;
     if (lengthNew > this.views.length) {
       for (i = 0;i <= lengthNew - this.views.length;i++) {
         view = this.viewsPool.pop();
@@ -23337,14 +23334,14 @@ Object.assign(pc, function() {
         }
       }
     }
-    if (this._pose) {
-      var posePosition = this._pose.transform.position;
-      var poseOrientation = this._pose.transform.orientation;
+    if (pose) {
+      var posePosition = pose.transform.position;
+      var poseOrientation = pose.transform.orientation;
       this._localPosition.set(posePosition.x, posePosition.y, posePosition.z);
       this._localRotation.set(poseOrientation.x, poseOrientation.y, poseOrientation.z, poseOrientation.w);
       layer = frame.session.renderState.baseLayer;
-      for (i = 0;i < this._pose.views.length;i++) {
-        viewRaw = this._pose.views[i];
+      for (i = 0;i < pose.views.length;i++) {
+        viewRaw = pose.views[i];
         view = this.views[i];
         viewport = layer.getViewport(viewRaw);
         view.viewport.x = viewport.x;
@@ -23569,7 +23566,6 @@ Object.assign(pc, function() {
     } else {
       this._worldTransform.copy(this._localTransform);
     }
-    return dirty;
   };
   XrInputSource.prototype._updateRayTransforms = function() {
     var dirty = this._dirtyRay;
@@ -23591,7 +23587,6 @@ Object.assign(pc, function() {
         this._ray.direction.copy(this._rayLocal.direction);
       }
     }
-    return dirty;
   };
   XrInputSource.prototype.getPosition = function() {
     if (!this._position) {
@@ -32219,8 +32214,6 @@ Object.assign(pc, function() {
         var point = rayCallback.get_m_hitPointWorld();
         var normal = rayCallback.get_m_hitNormalWorld();
         result = new RaycastResult(body.entity, new pc.Vec3(point.x(), point.y(), point.z()), new pc.Vec3(normal.x(), normal.y(), normal.z()));
-        Ammo.destroy(point);
-        Ammo.destroy(normal);
         if (arguments.length > 2) {
           var callback = arguments[2];
           callback(result);
@@ -32253,8 +32246,6 @@ Object.assign(pc, function() {
           results.push(result);
         }
       }
-      Ammo.destroy(points);
-      Ammo.destroy(normals);
     }
     Ammo.destroy(rayCallback);
     return results;
@@ -45131,6 +45122,11 @@ Object.assign(pc, function() {
           targets.push(new pc.MorphTarget(options));
         });
         mesh.morph = new pc.Morph(targets);
+        if (meshData.hasOwnProperty("weights")) {
+          for (var i = 0;i < meshData.weights.length;++i) {
+            targets[i].defaultWeight = meshData.weights[i];
+          }
+        }
       }
       meshes.push(mesh);
     });
