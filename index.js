@@ -5,6 +5,12 @@ let engines = [{
     name: 'Babylon.js',
     path: 'examples/babylonjs/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
+    name: 'Filament',
+    path: 'examples/filament/index.html?category={category}&model={model}&scale={scale}&type={type}'
+},{
+    name: 'PlayCanvas',
+    path: 'examples/playcanvas/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
     name: 'Cesium',
     path: 'examples/cesium/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
@@ -28,9 +34,6 @@ let engines = [{
 },{
     name: 'Hilo3d',
     path: 'examples/Hilo3d/index.html?category={category}&model={model}&scale={scale}&type={type}'
-},{
-    name: 'PlayCanvas',
-    path: 'examples/playcanvas/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
     name: 'X3DOM',
     path: 'examples/x3dom/index.html?category={category}&model={model}&scale={scale}&type={type}'
@@ -55,9 +58,6 @@ let engines = [{
 }, {
     name: 'pex',
     path: 'examples/pex/index.html?category={category}&model={model}&scale={scale}&type={type}'
-}, {
-    name: 'Filament',
-    path: 'examples/filament/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }];
 
 function queryEngines(){
