@@ -26,8 +26,8 @@ let engines = [{
     name: 'minimal-gltf-loader',
     path: 'examples/minimal-gltf-loader/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
-    name: 'Khronos glTF Loader',
-    path: 'examples/khronos-gltf-loader/index.html?category={category}&model={model}&scale={scale}&type={type}'
+    name: 'Khronos glTF Viewer',
+    path: 'examples/khronos-gltf-rv/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
     name: 'ClayGL',
     path: 'examples/claygl/index.html?category={category}&model={model}&scale={scale}&type={type}'
