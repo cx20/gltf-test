@@ -124,17 +124,15 @@ function makeSampleModelLinks() {
             td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Embedded', scale));
             td.appendChild(document.createElement('br'));
             td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Binary', scale));
-            //td.appendChild(document.createElement('br'));
-            //td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-MaterialsCommon', scale));
-            //td.appendChild(document.createElement('br'));
-            //td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
-            //td.appendChild(document.createElement('br'));
-            //td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-techniqueWebGL', scale));
-            if (modelName != 'Fox') {
+            if (modelName != 'BoxInterleaved' 
+             && modelName != 'BoxTextured' 
+             && modelName != 'BoxTexturedNonPowerOfTwo' 
+             && modelName != 'BoxVertexColors' 
+             && modelName != 'Fox') {
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Draco', scale));
             }
-            if (modelName == 'Duck' || modelName == 'Monster') {
+            if (modelName == 'Duck') {
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Quantized', scale));
             }
@@ -177,9 +175,6 @@ function makeTutorialModelLinks() {
             let td = document.createElement('td');
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             td.appendChild(document.createElement('br'));
-            //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Embedded', scale));
-            //td.appendChild(document.createElement('br'));
-            //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Embedded-buffer', scale));
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, TutorialModelIndex.getEmbeddedFolderName(modelName), scale));
             if (modelName == 'AnimatedMorphCube') {
                 td.appendChild(document.createElement('br'));
