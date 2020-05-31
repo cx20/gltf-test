@@ -19,6 +19,14 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+import * as THREE from '../../libs/three.js/r117/build/three.module.js';
+import { GUI } from '../../libs/three.js/r117/examples/jsm/libs/dat.gui.module.js';
+import { OrbitControls } from '../../libs/three.js/r117/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from '../../libs/three.js/r117/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from '../../libs/three.js/r117/examples/jsm/loaders/DRACOLoader.js';
+import { RGBELoader } from '../../libs/three.js/r117/examples/jsm/loaders/RGBELoader.js';
+import { HDRCubeTextureLoader } from '../../libs/three.js/r117/examples/jsm/loaders/HDRCubeTextureLoader.js';
+
 let gltf = null;
 let mixer = null;
 let clock = new THREE.Clock();
@@ -26,11 +34,13 @@ let axis;
 let hemispheric;
 let gui;
 
-var ROTATE = true;
-var AXIS = true;
-var CUBEMAP = true;
-var IBL = true;
-var LIGHTS = false; // The default is to use IBL instead of lights
+let state = {
+    ROTATE: true,
+    AXIS: true,
+    CUBEMAP: true,
+    IBL: true,
+    LIGHTS: false // The default is to use IBL instead of lights
+}
 
 let scene;
 let camera;
@@ -59,7 +69,7 @@ function init() {
     scene = new THREE.Scene();
 
     hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 3.0 );
-    hemispheric.visible = LIGHTS; // The default is to use IBL instead of lights
+    hemispheric.visible = state.LIGHTS; // The default is to use IBL instead of lights
     scene.add(hemispheric);
 
     camera = new THREE.PerspectiveCamera( 75, 1, 1, 10000 );
@@ -75,11 +85,11 @@ function init() {
     // https://github.com/mrdoob/three.js/pull/11498#issuecomment-308136310
     THREE.PropertyBinding.sanitizeNodeName = (n) => n;
 
-    let loader = new THREE.GLTFLoader();
+    let loader = new GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
-    let dracoLoader = new THREE.DRACOLoader();
-    dracoLoader.setDecoderPath( '../../libs/three.js/r117/draco/gltf/' );
+    let dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath( '../../libs/three.js/r117/examples/js/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
     let scale = modelInfo.scale;
@@ -120,7 +130,7 @@ function init() {
             'specular_front_0.hdr',
             'specular_back_0.hdr'
         ];
-        hdrCubeMap = new THREE.HDRCubeTextureLoader()
+        hdrCubeMap = new HDRCubeTextureLoader()
             .setPath( 'https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/specular/' )
             .setDataType( THREE.UnsignedByteType )
             .load( hdrUrls, function () {
@@ -155,7 +165,7 @@ function init() {
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
 
-    controls = new THREE.OrbitControls( camera, renderer.domElement );
+    controls = new OrbitControls( camera, renderer.domElement );
     controls.userPan = false;
     controls.userPanSpeed = 0.0;
     controls.maxDistance = 5000.0;
@@ -164,12 +174,12 @@ function init() {
     controls.autoRotateSpeed = -3.0;
 
     // GUI
-    gui = new dat.GUI();
-    let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
-    let guiAxis = gui.add(window, 'AXIS').name('Axis');
-    let guiCubeMap = gui.add(window, 'CUBEMAP').name('CubeMap');
-    let guiIbl = gui.add(window, 'IBL').name('IBL');
-    let guiLights = gui.add(window, 'LIGHTS').name('Lights');
+    gui = new GUI();
+    let guiRotate = gui.add(state, 'ROTATE').name('Rotate');
+    let guiAxis = gui.add(state, 'AXIS').name('Axis');
+    let guiCubeMap = gui.add(state, 'CUBEMAP').name('CubeMap');
+    let guiIbl = gui.add(state, 'IBL').name('IBL');
+    let guiLights = gui.add(state, 'LIGHTS').name('Lights');
 
     guiRotate.onChange(function (value) {
         controls.autoRotate = value;
@@ -259,5 +269,4 @@ function animate() {
 
 function render() {
     renderer.render( scene, camera );
-	
 }
