@@ -92,7 +92,7 @@ var Viewer = function (canvas) {
 
     // load orbit script
     app.assets.loadFromUrl(
-        "../../libs/playcanvas/v1.28.1/orbit-camera.js",
+        "../../libs/playcanvas/v1.29.0-dev/orbit-camera.js",
         "script",
         function (err, asset) {
             // setup orbit script component
@@ -331,9 +331,9 @@ function startViewer() {
 
 function main(){
     if (wasmSupported()) {
-        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.28.1/draco.wasm.js', '../../libs/playcanvas/v1.28.1/draco.wasm.wasm', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.29.0-dev/draco.wasm.js', '../../libs/playcanvas/v1.29.0-dev/draco.wasm.wasm', startViewer);
     } else {
-        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.28.1/draco.js', '', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.29.0-dev/draco.js', '', startViewer);
     }
 }
 
