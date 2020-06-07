@@ -19,13 +19,13 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-import * as THREE from '../../libs/three.js/r117/build/three.module.js';
-import { GUI } from '../../libs/three.js/r117/examples/jsm/libs/dat.gui.module.js';
-import { OrbitControls } from '../../libs/three.js/r117/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from '../../libs/three.js/r117/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from '../../libs/three.js/r117/examples/jsm/loaders/DRACOLoader.js';
-import { RGBELoader } from '../../libs/three.js/r117/examples/jsm/loaders/RGBELoader.js';
-import { HDRCubeTextureLoader } from '../../libs/three.js/r117/examples/jsm/loaders/HDRCubeTextureLoader.js';
+import * as THREE from '../../libs/three.js/r118dev/build/three.module.js';
+import { GUI } from '../../libs/three.js/r118dev/examples/jsm/libs/dat.gui.module.js';
+import { OrbitControls } from '../../libs/three.js/r118dev/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from '../../libs/three.js/r118dev/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from '../../libs/three.js/r118dev/examples/jsm/loaders/DRACOLoader.js';
+import { RGBELoader } from '../../libs/three.js/r118dev/examples/jsm/loaders/RGBELoader.js';
+import { HDRCubeTextureLoader } from '../../libs/three.js/r118dev/examples/jsm/loaders/HDRCubeTextureLoader.js';
 
 let gltf = null;
 let mixer = null;
@@ -89,7 +89,7 @@ function init() {
     loader.setCrossOrigin( 'anonymous' );
 
     let dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath( '../../libs/three.js/r117/examples/js/libs/draco/gltf/' );
+    dracoLoader.setDecoderPath( '../../libs/three.js/r118dev/examples/js/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
     let scale = modelInfo.scale;
