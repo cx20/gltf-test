@@ -1,5 +1,5 @@
 /*
- * Playcanvas Engine v1.29.0-dev revision bd62c81
+ * Playcanvas Engine v1.29.0-dev revision 18d2d4b
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 ;(function (root, factory) {
@@ -166,7 +166,7 @@ if (!String.prototype.startsWith) {
   }
   return result;
 }();
-var pc = {version:"1.29.0-dev", revision:"bd62c81", config:{}, common:{}, apps:{}, data:{}, makeArray:function(arr) {
+var pc = {version:"1.29.0-dev", revision:"18d2d4b", config:{}, common:{}, apps:{}, data:{}, makeArray:function(arr) {
   var i, ret = [], length = arr.length;
   for (i = 0; i < length; ++i) {
     ret.push(arr[i]);
@@ -33129,6 +33129,7 @@ Object.assign(pc, function() {
     this._kinematic = [];
     this._triggers = [];
     this._compounds = [];
+    this.on("beforeremove", this.onBeforeRemove, this);
     this.on("remove", this.onRemove, this);
   };
   RigidBodyComponentSystem.prototype = Object.create(pc.ComponentSystem.prototype);
@@ -33173,6 +33174,10 @@ Object.assign(pc, function() {
     var data = {enabled:entity.rigidbody.enabled, mass:entity.rigidbody.mass, linearDamping:entity.rigidbody.linearDamping, angularDamping:entity.rigidbody.angularDamping, linearFactor:[entity.rigidbody.linearFactor.x, entity.rigidbody.linearFactor.y, entity.rigidbody.linearFactor.z], angularFactor:[entity.rigidbody.angularFactor.x, entity.rigidbody.angularFactor.y, entity.rigidbody.angularFactor.z], friction:entity.rigidbody.friction, restitution:entity.rigidbody.restitution, type:entity.rigidbody.type, 
     group:entity.rigidbody.group, mask:entity.rigidbody.mask};
     this.addComponent(clone, data);
+  }, onBeforeRemove:function(entity, component) {
+    if (component.enabled) {
+      component.enabled = false;
+    }
   }, onRemove:function(entity, data) {
     var body = data.body;
     if (body) {
@@ -34776,7 +34781,7 @@ Object.assign(pc, function() {
     if (this.emitter) {
       this.emitter.camera = null;
     }
-  }, onRemove:function() {
+  }, onBeforeRemove:function() {
     if (this.enabled) {
       this.enabled = false;
     }
@@ -34849,7 +34854,7 @@ Object.assign(pc, function() {
     this.DataType = pc.ParticleSystemComponentData;
     this.schema = _schema;
     this.propertyTypes = {emitterExtents:"vec3", emitterExtentsInner:"vec3", particleNormal:"vec3", wrapBounds:"vec3", localVelocityGraph:"curveset", localVelocityGraph2:"curveset", velocityGraph:"curveset", velocityGraph2:"curveset", colorGraph:"curveset", colorGraph2:"curveset", alphaGraph:"curve", alphaGraph2:"curve", rotationSpeedGraph:"curve", rotationSpeedGraph2:"curve", radialSpeedGraph:"curve", radialSpeedGraph2:"curve", scaleGraph:"curve", scaleGraph2:"curve"};
-    this.on("beforeremove", this.onRemove, this);
+    this.on("beforeremove", this.onBeforeRemove, this);
     pc.ComponentSystem.bind("update", this.onUpdate, this);
   };
   ParticleSystemComponentSystem.prototype = Object.create(pc.ComponentSystem.prototype);
@@ -34979,8 +34984,8 @@ Object.assign(pc, function() {
         }
       }
     }
-  }, onRemove:function(entity, component) {
-    component.onRemove();
+  }, onBeforeRemove:function(entity, component) {
+    component.onBeforeRemove();
   }});
   return {ParticleSystemComponentSystem:ParticleSystemComponentSystem};
 }());
