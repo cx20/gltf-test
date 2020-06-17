@@ -90,8 +90,16 @@ class App {
         const onDone = () => {
             // Destroy the asset loader.
             loader.delete();
+            
+            // Enable shadows on every renderable.
             const entities = asset.getEntities();
-            scene.addEntities(entities);
+            const rm = engine.getRenderableManager();
+            for (const entity of entities) {
+                const instance = rm.getInstance(entity);
+                rm.setCastShadows(instance, true);
+                instance.delete();
+            }
+
             messages.remove();
             this.animator = asset.getAnimator();
             this.animationStartTime = Date.now();
@@ -126,6 +134,16 @@ class App {
         //mat4.multiply(m, m, this.trackball.getMatrix());
         tcm.setTransform(inst, m);
         inst.delete();
+
+        // Add renderable entities to the scene as they become ready.
+        let entity;
+        const popRenderable = () => {
+            entity = this.asset.popRenderable();
+            return entity.getId() != 0;
+        }
+        while (popRenderable()) {
+            this.scene.addEntity(entity);
+        }
 
         if (this.animator) {
             const ms = Date.now() - this.animationStartTime;
