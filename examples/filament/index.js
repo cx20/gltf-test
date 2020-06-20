@@ -100,6 +100,14 @@ class App {
                 instance.delete();
             }
 
+            const cameras = asset.getCameraEntities();
+            if (cameras.length > 0) {
+                const index = Math.floor(Math.random() * cameras.length);
+                const c = engine.getCameraComponent(cameras[index]);
+                c.setScaling([1, window.innerWidth / window.innerHeight, 1, 1]);
+                this.view.setCamera(c);
+            }
+
             messages.remove();
             this.animator = asset.getAnimator();
             this.animationStartTime = Date.now();
