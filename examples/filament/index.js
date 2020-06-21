@@ -104,7 +104,11 @@ class App {
             if (cameras.length > 0) {
                 const index = Math.floor(Math.random() * cameras.length);
                 const c = engine.getCameraComponent(cameras[index]);
-                c.setScaling([1, window.innerWidth / window.innerHeight, 1, 1]);
+                const aspect = window.innerWidth / window.innerHeight;
+                const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
+                c.setScaling([1, aspect, 1, 1]);
+                // Adjust by overwriting fov/near/far values
+                c.setProjectionFov(60, 1, 0.0001, 10000.0, fov);
                 this.view.setCamera(c);
             }
 
@@ -183,6 +187,6 @@ class App {
         this.camera.lookAt(eye, center, up);
         const aspect = width / height;
         const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
-        this.camera.setProjectionFov(30, aspect, 0.01, 10000.0, fov);
+        this.camera.setProjectionFov(60, aspect, 0.01, 10000.0, fov);
     }
 }
