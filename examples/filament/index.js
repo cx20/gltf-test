@@ -108,7 +108,7 @@ class App {
                 const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
                 c.setScaling([1, aspect, 1, 1]);
                 // Adjust by overwriting fov/near/far values
-                c.setProjectionFov(60, 1, 0.0001, 10000.0, fov);
+                c.setProjectionFov(75, 1, 0.0001, 10000.0, fov);
                 this.view.setCamera(c);
             }
 
@@ -139,10 +139,12 @@ class App {
         let t = vec3.create();
         vec3.set(s, scale, scale, scale);
         mat4.scale(m, m, s);
+/*
         if (modelInfo.name == "GearboxAssy" ) {
             vec3.set(t, -159.20, -17.02, -3.21);
             mat4.translate(m, m, t);
         }
+*/
         //mat4.multiply(m, m, this.trackball.getMatrix());
         tcm.setTransform(inst, m);
         inst.delete();
@@ -165,7 +167,7 @@ class App {
                 this.animator.updateBoneMatrices();
             }
         }
-        const eye = [0, 0, 10];
+        const eye = [0, 2, 3];
         const center = [0, 0, 0];
         const up = [0, 1, 0];
         const radians = Date.now() / 10000;
@@ -181,12 +183,12 @@ class App {
         const width = this.canvas.width = window.innerWidth * dpr;
         const height = this.canvas.height = window.innerHeight * dpr;
         this.view.setViewport([0, 0, width, height]);
-        const eye = [0, 0, 10];
+        const eye = [0, 2, 3];
         const center = [0, 0, 0];
         const up = [0, 1, 0];
         this.camera.lookAt(eye, center, up);
         const aspect = width / height;
         const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
-        this.camera.setProjectionFov(60, aspect, 0.01, 10000.0, fov);
+        this.camera.setProjectionFov(75, aspect, 0.01, 10000.0, fov);
     }
 }
