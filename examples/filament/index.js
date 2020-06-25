@@ -107,8 +107,6 @@ class App {
                 const aspect = window.innerWidth / window.innerHeight;
                 const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
                 c.setScaling([1, aspect, 1, 1]);
-                // Adjust by overwriting fov/near/far values
-                c.setProjectionFov(75, 1, 0.0001, 10000.0, fov);
                 this.view.setCamera(c);
             }
 
