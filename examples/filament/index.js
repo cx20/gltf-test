@@ -19,7 +19,6 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-//const env = 'syferfontein_18d_clear_2k';
 const env = 'papermill';
 const ibl_url = `../../textures/ktx/${env}/${env}_ibl.ktx`;
 const sky_url = `../../textures/ktx/${env}/${env}_skybox.ktx`;
@@ -106,7 +105,7 @@ class App {
                 const c = engine.getCameraComponent(cameras[index]);
                 const aspect = window.innerWidth / window.innerHeight;
                 const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
-                c.setScaling([1, aspect, 1, 1]);
+                c.setScaling([1 / aspect, 1, 1, 1]);
                 this.view.setCamera(c);
             }
 
@@ -137,13 +136,6 @@ class App {
         let t = vec3.create();
         vec3.set(s, scale, scale, scale);
         mat4.scale(m, m, s);
-/*
-        if (modelInfo.name == "GearboxAssy" ) {
-            vec3.set(t, -159.20, -17.02, -3.21);
-            mat4.translate(m, m, t);
-        }
-*/
-        //mat4.multiply(m, m, this.trackball.getMatrix());
         tcm.setTransform(inst, m);
         inst.delete();
 
@@ -160,7 +152,6 @@ class App {
         if (this.animator) {
             const ms = Date.now() - this.animationStartTime;
             for (let i = 0; i < this.asset.getAnimator().getAnimationCount(); i++ ) {
-                //this.animator.applyAnimation(i, (ms / 1000) % 1.0); // TODO: not animated correctly
                 this.animator.applyAnimation(i, ms / 1000);
                 this.animator.updateBoneMatrices();
             }
