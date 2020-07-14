@@ -104,7 +104,6 @@ class App {
                 const index = Math.floor(Math.random() * cameras.length);
                 const c = engine.getCameraComponent(cameras[index]);
                 const aspect = window.innerWidth / window.innerHeight;
-                const fov = aspect < 1 ? Fov.HORIZONTAL : Fov.VERTICAL;
                 c.setScaling([1 / aspect, 1, 1, 1]);
                 this.view.setCamera(c);
             }
