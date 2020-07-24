@@ -19,8 +19,12 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-let { Asset, EntityMgr, Camera, vec3, quat, Screen, OrbitControl, MeshRenderer, Filter, Shader, Material, QuadMesh } = Ashes;
+let { Asset, EntityMgr, Camera, vec3, quat, Screen, OrbitControl, Filter, Shader, Material, QuadMesh, MeshRenderer, Texture, aabb, octree, glsl, BoxMesh } = Ashes;
+let {Vignetting} = Ashes;
+let {Bloom} = Ashes;
+
 let assetRoot = 'https://but0n.github.io/Ashes/'
+Material.SHADER_PATH = assetRoot + Material.SHADER_PATH;
 
 let scale = modelInfo.scale;
 let path = "../../" + modelInfo.category + "/" + modelInfo.path;
@@ -29,73 +33,80 @@ if(modelInfo.url) {
 }
 let base = path.substr(0, path.lastIndexOf("/") + 1);
 let file = path.substr(path.lastIndexOf("/") + 1);
+let gltf = path;
 
-async function run() {
-    let gltf = path;
-    let yoffset = -0.1;
+async function main() {
 
     let screen = new Screen('#screen');
-    screen.bgColor = [0.2,0.2,0.2,1];
+    screen.bgColor = [0.23,0.23,0.23, 1];
 
-    //let skybox  = await Asset.loadCubemap(assetRoot + 'res/envmap/GoldenGateBridge2/');
-    //let specEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad/', 'hdr');
-    //let diffEnv = await Asset.loadCubemap(assetRoot + 'res/envmap/helipad_diff/', 'hdr');
+    Asset.cubemapOrder = (() => {
+        let r = [];
+        for(let i = 1; i < 7; i++)
+            r.push('prefilter_fixup' + i + '.');
+        return r;
+    })();
+    console.log(Asset.cubemapOrder);
 
-    Asset.cubemapOrder = [
-        'diffuse_right_0.',
-        'diffuse_left_0.',
-        'diffuse_top_0.',
-        'diffuse_bottom_0.',
-        'diffuse_front_0.',
-        'diffuse_back_0.',
-    ];
-    let diffEnv = await Asset.loadCubemap('https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/diffuse/', 'hdr');
+    let skybox = await Asset.loadCubemap(assetRoot + 'res/envmap/HDR_textures/kiara_1_dawn/', 'hdr');
+    let {diffuseSPH} = await (await fetch(assetRoot + 'res/envmap/HDR_textures/kiara_1_dawn/config.json')).json();
+    diffuseSPH = new Float32Array(diffuseSPH.slice(0, 9 * 3));
     
-    Asset.cubemapOrder = [
-        'specular_right_0.',
-        'specular_left_0.',
-        'specular_top_0.',
-        'specular_bottom_0.',
-        'specular_front_0.',
-        'specular_back_0.',
-    ];
-    let specEnv = await Asset.loadCubemap('https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/specular/', 'hdr');
+    let scene = EntityMgr.create('root - (Click each bar which has yellow border to toggle visible)');
 
-    let scene = EntityMgr.create('root');
-
-    // Create a camera entity
-    let mainCamera = EntityMgr.create('camera');
+    // Camera and controls
+    let mainCamera = scene.appendChild(EntityMgr.create('camera'));
     let cameraTrans = mainCamera.components.Transform;
-    let cam = EntityMgr.addComponent(mainCamera, new Camera(screen.width / screen.height));
-
+    let cam = mainCamera.addComponent(new Camera(screen.width / screen.height));
+ 
     // TODO: It should be fixed for interim correspondence
     if (file == "project_polly.glb") {
         vec3.set(cameraTrans.translate, 0, 0, 0.1); // set a little bit z offset to allow you orbit around
     } else {
         vec3.set(cameraTrans.translate, 0, 0, 2); // set a little bit z offset to allow you orbit around
     }
-
-    scene.appendChild(mainCamera);
-    EntityMgr.addComponent(mainCamera, new OrbitControl(screen, mainCamera));
-
-    // Load gltf scene
-    let gltfroot = await Asset.loadGLTF(gltf, screen, specEnv, diffEnv);
-    scene.appendChild(gltfroot);
     
-    let root = gltfroot.components.Transform;
-    root.translate[1] = yoffset || 0;
-    vec3.scale(root.scale, root.scale, scale);
-    
+    mainCamera.addComponent(new OrbitControl(screen, mainCamera));
+ 
     document.querySelector('body').appendChild(scene);
 
-    let cameras =  Ashes.EntityMgr.getComponents('Camera');
-    if ( cameras.length > 0 ) {
-        setInterval(function(){
-            let cameraIndex = Math.floor(cameras.length * Math.random());
-            screen.mainCamera = cameras[cameraIndex];
-        }, 5000);
+    let gltfroot = scene.appendChild(await Asset.loadGLTF(gltf, screen, skybox));
+    let root = gltfroot.components.Transform;
+    vec3.scale(root.scale, root.scale, scale || 200);
+
+    let bg = new Background(screen, skybox);
+    scene.appendChild(bg.entity);
+
+    let mats = EntityMgr.getComponents('Material', scene);
+    console.log(mats)
+    for(let mat of mats) {
+        Material.setUniform(mat, 'u_irrSH[0]', diffuseSPH);
     }
 }
 
-run();
+class Background {
+    entity;
+    mat;
+    constructor(screen, tex) {
+        this.entity = EntityMgr.create('background');
+        vec3.scale(this.entity.components.Transform.scale, this.entity.components.Transform.scale, 1000);
 
+        this.mat = new Material(new Shader(glsl.stylize2.vs, glsl.background.fs), 'environment', true);
+        let sph = new Float32Array([
+            2.88155, 2.49064, 2.27529, -0.028137, -0.107787, -0.167439, -0.309737, -0.402905, -0.592546, -1.01617, -1.05222, -1.18249, -0.0971646, -0.0669507, -0.0340848, 0.0206835, 0.0277634, 0.0390906, -0.0765265, -0.0434109, -0.00250546, 0.205739, 0.262281, 0.371874, 0.190714, 0.234196, 0.292022
+        ]);
+        Material.setUniform(this.mat, 'u_irrSH[0]', sph);
+        if(tex) {
+            Material.setTexture(this.mat, 'env', tex);
+            this.mat.shader.macros['HAS_ENV_MAP'] = '';
+        }
+
+        let mesh = new BoxMesh();
+        mesh.mode = WebGL2RenderingContext.TRIANGLES;
+        let mr = new MeshRenderer(screen, mesh, this.mat);
+        this.entity.addComponent(mr);
+        this.entity.addComponent(this.mat);
+    }
+}
+
+main();
