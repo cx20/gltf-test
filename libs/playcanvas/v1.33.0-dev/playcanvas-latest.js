@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.33.0-dev revision 031806b
+ * PlayCanvas Engine v1.33.0-dev revision 36643c1
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -447,7 +447,7 @@
 		return result;
 	}();
 	var version = "1.33.0-dev";
-	var revision = "031806b";
+	var revision = "36643c1";
 	var config = { };
 	var common = { };
 	var apps = { };
@@ -3913,81 +3913,85 @@
 		}
 	});
 
-	var viewProj = new Mat4();
-	function Frustum(projectionMatrix, viewMatrix) {
-		projectionMatrix = projectionMatrix || new Mat4().setPerspective(90, 16 / 9, 0.1, 1000);
-		viewMatrix = viewMatrix || new Mat4();
+	function Frustum() {
 		this.planes = [];
 		for (var i = 0; i < 6; i++)
 			this.planes[i] = [];
-		this.update(projectionMatrix, viewMatrix);
 	}
 	Object.assign(Frustum.prototype, {
-		update: function (projectionMatrix, viewMatrix) {
-			viewProj.mul2(projectionMatrix, viewMatrix);
-			var vpm = viewProj.data;
-			this.planes[0][0] = vpm[3] - vpm[0];
-			this.planes[0][1] = vpm[7] - vpm[4];
-			this.planes[0][2] = vpm[11] - vpm[8];
-			this.planes[0][3] = vpm[15] - vpm[12];
-			var t = Math.sqrt(this.planes[0][0] * this.planes[0][0] + this.planes[0][1] * this.planes[0][1] + this.planes[0][2] * this.planes[0][2]);
-			this.planes[0][0] /= t;
-			this.planes[0][1] /= t;
-			this.planes[0][2] /= t;
-			this.planes[0][3] /= t;
-			this.planes[1][0] = vpm[3] + vpm[0];
-			this.planes[1][1] = vpm[7] + vpm[4];
-			this.planes[1][2] = vpm[11] + vpm[8];
-			this.planes[1][3] = vpm[15] + vpm[12];
-			t = Math.sqrt(this.planes[1][0] * this.planes[1][0] + this.planes[1][1] * this.planes[1][1] + this.planes[1][2] * this.planes[1][2]);
-			this.planes[1][0] /= t;
-			this.planes[1][1] /= t;
-			this.planes[1][2] /= t;
-			this.planes[1][3] /= t;
-			this.planes[2][0] = vpm[3] + vpm[1];
-			this.planes[2][1] = vpm[7] + vpm[5];
-			this.planes[2][2] = vpm[11] + vpm[9];
-			this.planes[2][3] = vpm[15] + vpm[13];
-			t = Math.sqrt(this.planes[2][0] * this.planes[2][0] + this.planes[2][1] * this.planes[2][1] + this.planes[2][2] * this.planes[2][2] );
-			this.planes[2][0] /= t;
-			this.planes[2][1] /= t;
-			this.planes[2][2] /= t;
-			this.planes[2][3] /= t;
-			this.planes[3][0] = vpm[3] - vpm[1];
-			this.planes[3][1] = vpm[7] - vpm[5];
-			this.planes[3][2] = vpm[11] - vpm[9];
-			this.planes[3][3] = vpm[15] - vpm[13];
-			t = Math.sqrt(this.planes[3][0] * this.planes[3][0] + this.planes[3][1] * this.planes[3][1] + this.planes[3][2] * this.planes[3][2]);
-			this.planes[3][0] /= t;
-			this.planes[3][1] /= t;
-			this.planes[3][2] /= t;
-			this.planes[3][3] /= t;
-			this.planes[4][0] = vpm[3] - vpm[2];
-			this.planes[4][1] = vpm[7] - vpm[6];
-			this.planes[4][2] = vpm[11] - vpm[10];
-			this.planes[4][3] = vpm[15] - vpm[14];
-			t = Math.sqrt(this.planes[4][0] * this.planes[4][0] + this.planes[4][1] * this.planes[4][1] + this.planes[4][2] * this.planes[4][2]);
-			this.planes[4][0] /= t;
-			this.planes[4][1] /= t;
-			this.planes[4][2] /= t;
-			this.planes[4][3] /= t;
-			this.planes[5][0] = vpm[3] + vpm[2];
-			this.planes[5][1] = vpm[7] + vpm[6];
-			this.planes[5][2] = vpm[11] + vpm[10];
-			this.planes[5][3] = vpm[15] + vpm[14];
-			t = Math.sqrt(this.planes[5][0] * this.planes[5][0] + this.planes[5][1] * this.planes[5][1] + this.planes[5][2] * this.planes[5][2]);
-			this.planes[5][0] /= t;
-			this.planes[5][1] /= t;
-			this.planes[5][2] /= t;
-			this.planes[5][3] /= t;
+		setFromMat4: function (matrix) {
+			var vpm = matrix.data;
+			var plane;
+			var planes = this.planes;
+			plane = planes[0];
+			plane[0] = vpm[3] - vpm[0];
+			plane[1] = vpm[7] - vpm[4];
+			plane[2] = vpm[11] - vpm[8];
+			plane[3] = vpm[15] - vpm[12];
+			var t = Math.sqrt(plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]);
+			plane[0] /= t;
+			plane[1] /= t;
+			plane[2] /= t;
+			plane[3] /= t;
+			plane = planes[1];
+			plane[0] = vpm[3] + vpm[0];
+			plane[1] = vpm[7] + vpm[4];
+			plane[2] = vpm[11] + vpm[8];
+			plane[3] = vpm[15] + vpm[12];
+			t = Math.sqrt(plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]);
+			plane[0] /= t;
+			plane[1] /= t;
+			plane[2] /= t;
+			plane[3] /= t;
+			plane = planes[2];
+			plane[0] = vpm[3] + vpm[1];
+			plane[1] = vpm[7] + vpm[5];
+			plane[2] = vpm[11] + vpm[9];
+			plane[3] = vpm[15] + vpm[13];
+			t = Math.sqrt(plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]);
+			plane[0] /= t;
+			plane[1] /= t;
+			plane[2] /= t;
+			plane[3] /= t;
+			plane = planes[3];
+			plane[0] = vpm[3] - vpm[1];
+			plane[1] = vpm[7] - vpm[5];
+			plane[2] = vpm[11] - vpm[9];
+			plane[3] = vpm[15] - vpm[13];
+			t = Math.sqrt(plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]);
+			plane[0] /= t;
+			plane[1] /= t;
+			plane[2] /= t;
+			plane[3] /= t;
+			plane = planes[4];
+			plane[0] = vpm[3] - vpm[2];
+			plane[1] = vpm[7] - vpm[6];
+			plane[2] = vpm[11] - vpm[10];
+			plane[3] = vpm[15] - vpm[14];
+			t = Math.sqrt(plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]);
+			plane[0] /= t;
+			plane[1] /= t;
+			plane[2] /= t;
+			plane[3] /= t;
+			plane = planes[5];
+			plane[0] = vpm[3] + vpm[2];
+			plane[1] = vpm[7] + vpm[6];
+			plane[2] = vpm[11] + vpm[10];
+			plane[3] = vpm[15] + vpm[14];
+			t = Math.sqrt(plane[0] * plane[0] + plane[1] * plane[1] + plane[2] * plane[2]);
+			plane[0] /= t;
+			plane[1] /= t;
+			plane[2] /= t;
+			plane[3] /= t;
 		},
 		containsPoint: function (point) {
-			for (var p = 0; p < 6; p++)
-				if (this.planes[p][0] * point.x +
-					this.planes[p][1] * point.y +
-					this.planes[p][2] * point.z +
-					this.planes[p][3] <= 0)
+			var p, plane;
+			for (p = 0; p < 6; p++) {
+				plane = this.planes[p];
+				if (plane[0] * point.x + plane[1] * point.y + plane[2] * point.z + plane[3] <= 0) {
 					return false;
+				}
+			}
 			return true;
 		},
 		containsSphere: function (sphere) {
@@ -10036,7 +10040,7 @@
 			width: 1,
 			height: 1
 		};
-		this.frustum = new Frustum(this._projMat, this._viewMat);
+		this.frustum = new Frustum();
 		this.renderTarget = null;
 		this._depthTarget = null;
 		this._clearOptions = {
@@ -11863,10 +11867,12 @@
 				}
 				viewInvMat.copy(viewMat).invert();
 				this.viewInvId.setValue(viewInvMat.data);
-				camera.frustum.update(projMat, viewMat);
+				viewProjMat.mul2(projMat, viewMat);
+				camera.frustum.setFromMat4(viewProjMat);
 			} else if (camera.xr && camera.xr.views.length) {
 				var view = camera.xr.views[0];
-				camera.frustum.update(view.projMat, view.viewOffMat);
+				viewProjMat.mul2(view.projMat, view.viewOffMat);
+				camera.frustum.setFromMat4(viewProjMat);
 				return;
 			}
 			projMat = camera.getProjectionMatrix();
@@ -11880,7 +11886,8 @@
 				this.viewInvId.setValue(viewInvMat.data);
 			}
 			viewMat.copy(viewInvMat).invert();
-			camera.frustum.update(projMat, viewMat);
+			viewProjMat.mul2(projMat, viewMat);
+			camera.frustum.setFromMat4(viewProjMat);
 		},
 		setCamera: function (camera, target, clear, cullBorder) {
 			var vrDisplay = camera.vrDisplay;
@@ -11928,7 +11935,8 @@
 				viewPosR.x = viewInvR.data[12];
 				viewPosR.y = viewInvR.data[13];
 				viewPosR.z = viewInvR.data[14];
-				camera.frustum.update(projMat, viewMat);
+				viewProjMat.mul2(projMat, viewMat);
+				camera.frustum.setFromMat4(viewProjMat);
 			} else if (camera.xr && camera.xr.session) {
 				parent = camera._node.parent;
 				if (parent) transform = parent.getWorldTransform();
@@ -11947,7 +11955,7 @@
 					view.position[0] = view.viewInvOffMat.data[12];
 					view.position[1] = view.viewInvOffMat.data[13];
 					view.position[2] = view.viewInvOffMat.data[14];
-					camera.frustum.update(view.projMat, view.viewOffMat);
+					camera.frustum.setFromMat4(view.projViewOffMat);
 				}
 			} else {
 				projMat = camera.getProjectionMatrix();
@@ -11973,7 +11981,7 @@
 				this.viewPos[1] = cameraPos.y;
 				this.viewPos[2] = cameraPos.z;
 				this.viewPosId.setValue(this.viewPos);
-				camera.frustum.update(projMat, viewMat);
+				camera.frustum.setFromMat4(viewProjMat);
 			}
 			this.nearClipId.setValue(camera._nearClip);
 			this.farClipId.setValue(camera._farClip);
@@ -19759,41 +19767,51 @@
 			default: return null;
 		}
 	};
-	var getAccessorData = function (accessor, bufferViews, buffers) {
-		var bufferViewIdx;
-		var count;
-		if (accessor.hasOwnProperty("sparse")) {
-			bufferViewIdx = accessor.sparse.values.bufferView;
-			count = accessor.sparse.count;
+	var getAccessorData = function (gltfAccessor, bufferViews) {
+		var numComponents = getNumComponents(gltfAccessor.type);
+		var dataType = getComponentDataType(gltfAccessor.componentType);
+		if (!dataType) {
+			return null;
+		}
+		var result;
+		if (gltfAccessor.sparse) {
+			var sparse = gltfAccessor.sparse;
+			var indicesAccessor = {
+				count: sparse.count,
+				type: "SCALAR"
+			};
+			var indices = getAccessorData(Object.assign(indicesAccessor, sparse.indices), bufferViews);
+			var valuesAccessor = {
+				count: sparse.count,
+				type: gltfAccessor.scalar,
+				componentType: gltfAccessor.componentType
+			};
+			var values = getAccessorData(Object.assign(valuesAccessor, sparse.values), bufferViews);
+			if (gltfAccessor.hasOwnProperty('bufferView')) {
+				var baseAccessor = {
+					bufferView: gltfAccessor.bufferView,
+					byteOffset: gltfAccessor.byteOffset,
+					componentType: gltfAccessor.componentType,
+					count: gltfAccessor.count,
+					type: gltfAccessor.type
+				};
+				result = getAccessorData(baseAccessor, bufferViews).slice();
+			} else {
+				result = new dataType(gltfAccessor.count * numComponents);
+			}
+			for (var i = 0; i < sparse.count; ++i) {
+				var targetIndex = indices[i];
+				for (var j = 0; j < numComponents; ++j) {
+					result[targetIndex * numComponents + j] = values[i * numComponents + j];
+				}
+			}
 		} else {
-			bufferViewIdx = accessor.bufferView;
-			count = accessor.count;
+			var bufferView = bufferViews[gltfAccessor.bufferView];
+			result = new dataType(bufferView.buffer,
+								  bufferView.byteOffset + (gltfAccessor.hasOwnProperty('byteOffset') ? gltfAccessor.byteOffset : 0),
+								  gltfAccessor.count * numComponents);
 		}
-		var bufferView = bufferViews[bufferViewIdx];
-		var typedArray = buffers[bufferView.buffer];
-		var accessorByteOffset = accessor.hasOwnProperty('byteOffset') ? accessor.byteOffset : 0;
-		var bufferViewByteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
-		var byteOffset = typedArray.byteOffset + accessorByteOffset + bufferViewByteOffset;
-		var length = count * getNumComponents(accessor.type);
-		var dataType = getComponentDataType(accessor.componentType);
-		return dataType ? new dataType(typedArray.buffer, byteOffset, length) : null;
-	};
-	var getSparseAccessorIndices = function (accessor, bufferViews, buffers) {
-		var bufferView = bufferViews[accessor.sparse.indices.bufferView];
-		var typedArray = buffers[bufferView.buffer];
-		var bufferViewByteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
-		var byteOffset = typedArray.byteOffset + bufferViewByteOffset;
-		var length = accessor.sparse.count;
-		switch (accessor.sparse.indices.componentType) {
-			case 5120: return new Int8Array(typedArray.buffer, byteOffset, length);
-			case 5121: return new Uint8Array(typedArray.buffer, byteOffset, length);
-			case 5122: return new Int16Array(typedArray.buffer, byteOffset, length);
-			case 5123: return new Uint16Array(typedArray.buffer, byteOffset, length);
-			case 5124: return new Int32Array(typedArray.buffer, byteOffset, length);
-			case 5125: return new Uint32Array(typedArray.buffer, byteOffset, length);
-			case 5126: return new Float32Array(typedArray.buffer, byteOffset, length);
-			default: return null;
-		}
+		return result;
 	};
 	var getPrimitiveType = function (primitive) {
 		if (!primitive.hasOwnProperty('mode')) {
@@ -19840,7 +19858,50 @@
 			type: TYPE_FLOAT32
 		};
 	};
-	var createVertexBufferInternal = function (device, sourceDesc) {
+	var flipTexCoordVs = function (vertexBuffer) {
+		var i, j;
+		var floatOffsets = [];
+		var shortOffsets = [];
+		var byteOffsets = [];
+		for (i = 0; i < vertexBuffer.format.elements.length; ++i) {
+			var element = vertexBuffer.format.elements[i];
+			if (element.name === SEMANTIC_TEXCOORD0 ||
+				element.name === SEMANTIC_TEXCOORD1) {
+				switch (element.dataType) {
+					case TYPE_FLOAT32:
+						floatOffsets.push({ offset: element.offset / 4 + 1, stride: element.stride / 4 });
+						break;
+					case TYPE_UINT16:
+						shortOffsets.push({ offset: element.offset / 2 + 1, stride: element.stride / 2 });
+						break;
+					case TYPE_UINT8:
+						byteOffsets.push({ offset: element.offset + 1, stride: element.stride });
+						break;
+				}
+			}
+		}
+		var flip = function (offsets, type, one) {
+			var typedArray = new type(vertexBuffer.storage);
+			for (i = 0; i < offsets.length; ++i) {
+				var index = offsets[i].offset;
+				var stride = offsets[i].stride;
+				for (j = 0; j < vertexBuffer.numVertices; ++j) {
+					typedArray[index] = one - typedArray[index];
+					index += stride;
+				}
+			}
+		};
+		if (floatOffsets.length > 0) {
+			flip(floatOffsets, Float32Array, 1.0);
+		}
+		if (shortOffsets.length > 0) {
+			flip(shortOffsets, Uint16Array, 65535);
+		}
+		if (byteOffsets.length > 0) {
+			flip(byteOffsets, Uint8Array, 255);
+		}
+	};
+	var createVertexBufferInternal = function (device, sourceDesc, disableFlipV) {
 		var positionDesc = sourceDesc[SEMANTIC_POSITION];
 		var numVertices = positionDesc.count;
 		var vertexDesc = [];
@@ -19916,40 +19977,40 @@
 				}
 			}
 		}
+		if (!disableFlipV) {
+			flipTexCoordVs(vertexBuffer);
+		}
 		vertexBuffer.unlock();
 		return vertexBuffer;
 	};
-	var createVertexBuffer = function (device, attributes, indices, accessors, bufferViews, buffers, semanticMap) {
+	var createVertexBuffer = function (device, attributes, indices, accessors, bufferViews, semanticMap, disableFlipV) {
 		var sourceDesc = {};
 		for (var attrib in attributes) {
-			if (attributes.hasOwnProperty(attrib)) {
+			if (attributes.hasOwnProperty(attrib) && semanticMap.hasOwnProperty(attrib)) {
 				var accessor = accessors[attributes[attrib]];
+				var accessorData = getAccessorData(accessor, bufferViews);
 				var bufferView = bufferViews[accessor.bufferView];
-				if (semanticMap.hasOwnProperty(attrib)) {
-					var semantic = semanticMap[attrib].semantic;
-					var size = getNumComponents(accessor.type) * getComponentSizeInBytes(accessor.componentType);
-					var buffer = buffers[bufferView.buffer];
-					sourceDesc[semantic] = {
-						buffer: buffer.buffer,
-						size: size,
-						offset: (accessor.hasOwnProperty('byteOffset') ? accessor.byteOffset : 0) +
-								(bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0) +
-								(buffer.byteOffset),
-						stride: bufferView.hasOwnProperty('byteStride') ? bufferView.byteStride : size,
-						count: accessor.count,
-						components: getNumComponents(accessor.type),
-						type: getComponentType(accessor.componentType),
-						normalize: accessor.normalized
-					};
-				}
+				var semantic = semanticMap[attrib].semantic;
+				var size = getNumComponents(accessor.type) * getComponentSizeInBytes(accessor.componentType);
+				var stride = bufferView.hasOwnProperty('byteStride') ? bufferView.byteStride : size;
+				sourceDesc[semantic] = {
+					buffer: accessorData.buffer,
+					size: size,
+					offset: accessorData.byteOffset,
+					stride: stride,
+					count: accessor.count,
+					components: getNumComponents(accessor.type),
+					type: getComponentType(accessor.componentType),
+					normalize: accessor.normalized
+				};
 			}
 		}
 		if (!sourceDesc.hasOwnProperty(SEMANTIC_NORMAL)) {
 			generateNormals(sourceDesc, indices);
 		}
-		return createVertexBufferInternal(device, sourceDesc);
+		return createVertexBufferInternal(device, sourceDesc, disableFlipV);
 	};
-	var createVertexBufferDraco = function (device, outputGeometry, extDraco, decoder, decoderModule, semanticMap, indices) {
+	var createVertexBufferDraco = function (device, outputGeometry, extDraco, decoder, decoderModule, semanticMap, indices, disableFlipV) {
 		var numPoints = outputGeometry.num_points();
 		var extractDracoAttributeInfo = function (uniqueId) {
 			var attribute = decoder.GetAttributeByUniqueId(outputGeometry, uniqueId);
@@ -20013,16 +20074,16 @@
 		if (!sourceDesc.hasOwnProperty(SEMANTIC_NORMAL)) {
 			generateNormals(sourceDesc, indices);
 		}
-		return createVertexBufferInternal(device, sourceDesc);
+		return createVertexBufferInternal(device, sourceDesc, disableFlipV);
 	};
-	var createSkin = function (device, gltfSkin, accessors, bufferViews, nodes, buffers) {
+	var createSkin = function (device, gltfSkin, accessors, bufferViews, nodes) {
 		var i, j, bindMatrix;
 		var joints = gltfSkin.joints;
 		var numJoints = joints.length;
 		var ibp = [];
 		if (gltfSkin.hasOwnProperty('inverseBindMatrices')) {
 			var inverseBindMatrices = gltfSkin.inverseBindMatrices;
-			var ibmData = getAccessorData(accessors[inverseBindMatrices], bufferViews, buffers);
+			var ibmData = getAccessorData(accessors[inverseBindMatrices], bufferViews);
 			var ibmValues = [];
 			for (i = 0; i < numJoints; i++) {
 				for (j = 0; j < 16; j++) {
@@ -20053,7 +20114,7 @@
 	};
 	var tempMat = new Mat4();
 	var tempVec$1 = new Vec3();
-	var createMesh$1 = function (device, gltfMesh, accessors, bufferViews, buffers, callback) {
+	var createMesh$1 = function (device, gltfMesh, accessors, bufferViews, callback, disableFlipV) {
 		var meshes = [];
 		var semanticMap = {
 			'POSITION': { semantic: SEMANTIC_POSITION },
@@ -20077,9 +20138,7 @@
 					if (decoderModule) {
 						var extDraco = extensions.KHR_draco_mesh_compression;
 						if (extDraco.hasOwnProperty('attributes')) {
-							var bufferView = bufferViews[extDraco.bufferView];
-							var arrayBuffer = buffers[bufferView.buffer];
-							var uint8Buffer = new Uint8Array(arrayBuffer.buffer, arrayBuffer.byteOffset + bufferView.byteOffset, bufferView.byteLength);
+							var uint8Buffer = bufferViews[extDraco.bufferView];
 							var buffer = new decoderModule.DecoderBuffer();
 							buffer.Init(uint8Buffer, uint8Buffer.length);
 							var decoder = new decoderModule.Decoder();
@@ -20118,7 +20177,7 @@
 								}
 								decoderModule._free( ptr );
 							}
-							vertexBuffer = createVertexBufferDraco(device, outputGeometry, extDraco, decoder, decoderModule, semanticMap, indices);
+							vertexBuffer = createVertexBufferDraco(device, outputGeometry, extDraco, decoder, decoderModule, semanticMap, indices, disableFlipV);
 							decoderModule.destroy(outputGeometry);
 							decoderModule.destroy(decoder);
 							decoderModule.destroy(buffer);
@@ -20128,8 +20187,8 @@
 				}
 			}
 			if (!vertexBuffer) {
-				indices = primitive.hasOwnProperty('indices') ? getAccessorData(accessors[primitive.indices], bufferViews, buffers) : null;
-				vertexBuffer = createVertexBuffer(device, primitive.attributes, indices, accessors, bufferViews, buffers, semanticMap);
+				indices = primitive.hasOwnProperty('indices') ? getAccessorData(accessors[primitive.indices], bufferViews) : null;
+				vertexBuffer = createVertexBuffer(device, primitive.attributes, indices, accessors, bufferViews, semanticMap, disableFlipV);
 				primitiveType = getPrimitiveType(primitive);
 			}
 			mesh.vertexBuffer = vertexBuffer;
@@ -20160,30 +20219,14 @@
 				new Vec3((max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2)
 			);
 			mesh.aabb = aabb;
-			var sparseToFull = function (data, indices, dataType, totalCount) {
-				var full = new dataType(totalCount * 3);
-				for (var s = 0; s < indices.length; s++) {
-					var dstIndex = indices[s] * 3;
-					full[dstIndex] = data[s * 3];
-					full[dstIndex + 1] = data[s * 3 + 1];
-					full[dstIndex + 2] = data[s * 3 + 2];
-				}
-				return full;
-			};
 			if (canUseMorph && primitive.hasOwnProperty('targets')) {
 				var targets = [];
-				var dataType;
 				primitive.targets.forEach(function (target, index) {
 					var options = {};
 					if (target.hasOwnProperty('POSITION')) {
 						accessor = accessors[target.POSITION];
-						dataType = getComponentDataType(accessor.componentType);
-						options.deltaPositions = getAccessorData(accessor, bufferViews, buffers);
-						options.deltaPositionsType = typedArrayToType[dataType.name];
-						if (accessor.sparse) {
-							options.deltaPositions = sparseToFull(options.deltaPositions, getSparseAccessorIndices(accessor, bufferViews, buffers),
-																  dataType, mesh.vertexBuffer.numVertices);
-						}
+						options.deltaPositions = getAccessorData(accessor, bufferViews);
+						options.deltaPositionsType = getComponentType(accessor.componentType);
 						if (accessor.hasOwnProperty('min') && accessor.hasOwnProperty('max')) {
 							options.aabb = new BoundingBox();
 							options.aabb.setMinMax(new Vec3(accessor.min), new Vec3(accessor.max));
@@ -20191,13 +20234,8 @@
 					}
 					if (target.hasOwnProperty('NORMAL')) {
 						accessor = accessors[target.NORMAL];
-						dataType = getComponentDataType(accessor.componentType);
-						options.deltaNormals = getAccessorData(accessor, bufferViews, buffers);
-						options.deltaNormalsType = typedArrayToType[dataType.name];
-						if (accessor.sparse) {
-							options.deltaNormals = sparseToFull(options.deltaNormals, getSparseAccessorIndices(accessor, bufferViews, buffers),
-																dataType, mesh.vertexBuffer.numVertices);
-						}
+						options.deltaNormals = getAccessorData(accessor, bufferViews);
+						options.deltaNormalsType = getComponentType(accessor.componentType);
 					}
 					if (gltfMesh.hasOwnProperty('extras') &&
 						gltfMesh.extras.hasOwnProperty('targetNames')) {
@@ -20300,10 +20338,7 @@
 			}
 			for (map = 0; map < maps.length; ++map) {
 				material[maps[map] + 'MapTiling'] = new Vec2(scale[0], scale[1]);
-				material[maps[map] + 'MapOffset'] = new Vec2(offset[0], offset[1]);
-			}
-			if (!disableFlipV) {
-				material._flipV = true;
+				material[maps[map] + 'MapOffset'] = new Vec2(offset[0], disableFlipV ? offset[1] : 1.0 - scale[1] - offset[1]);
 			}
 		};
 		var material = new StandardMaterial();
@@ -20470,10 +20505,10 @@
 		material.update();
 		return material;
 	};
-	var createAnimation = function (gltfAnimation, animationIndex, accessors, bufferViews, nodes, buffers) {
-		var createAnimData = function (accessor) {
-			var data = getAccessorData(accessor, bufferViews, buffers);
-			return new AnimData(getNumComponents(accessor.type), new data.constructor(data));
+	var createAnimation = function (gltfAnimation, animationIndex, gltfAccessors, bufferViews, nodes) {
+		var createAnimData = function (gltfAccessor) {
+			var data = getAccessorData(gltfAccessor, bufferViews);
+			return new AnimData(getNumComponents(gltfAccessor.type), new data.constructor(data));
 		};
 		var interpMap = {
 			"STEP": INTERPOLATION_STEP,
@@ -20490,11 +20525,11 @@
 			var sampler = gltfAnimation.samplers[i];
 			if (!inputMap.hasOwnProperty(sampler.input)) {
 				inputMap[sampler.input] = inputs.length;
-				inputs.push(createAnimData(accessors[sampler.input]));
+				inputs.push(createAnimData(gltfAccessors[sampler.input]));
 			}
 			if (!outputMap.hasOwnProperty(sampler.output)) {
 				outputMap[sampler.output] = outputs.length;
-				outputs.push(createAnimData(accessors[sampler.output]));
+				outputs.push(createAnimData(gltfAccessors[sampler.output]));
 			}
 			var interpolation =
 				sampler.hasOwnProperty('interpolation') &&
@@ -20593,29 +20628,28 @@
 		}
 		return entity;
 	};
-	var createSkins = function (device, gltf, nodes, buffers) {
+	var createSkins = function (device, gltf, nodes, bufferViews) {
 		if (!gltf.hasOwnProperty('skins') || gltf.skins.length === 0) {
 			return [];
 		}
 		return gltf.skins.map(function (gltfSkin) {
-			return createSkin(device, gltfSkin, gltf.accessors, gltf.bufferViews, nodes, buffers);
+			return createSkin(device, gltfSkin, gltf.accessors, bufferViews, nodes);
 		});
 	};
-	var createMeshes = function (device, gltf, buffers, callback) {
+	var createMeshes = function (device, gltf, bufferViews, callback, disableFlipV) {
 		if (!gltf.hasOwnProperty('meshes') || gltf.meshes.length === 0 ||
 			!gltf.hasOwnProperty('accessors') || gltf.accessors.length === 0 ||
 			!gltf.hasOwnProperty('bufferViews') || gltf.bufferViews.length === 0) {
 			return [];
 		}
 		return gltf.meshes.map(function (gltfMesh) {
-			return createMesh$1(device, gltfMesh, gltf.accessors, gltf.bufferViews, buffers, callback);
+			return createMesh$1(device, gltfMesh, gltf.accessors, bufferViews, callback, disableFlipV);
 		});
 	};
-	var createMaterials = function (gltf, textures, options) {
+	var createMaterials = function (gltf, textures, options, disableFlipV) {
 		if (!gltf.hasOwnProperty('materials') || gltf.materials.length === 0) {
 			return [];
 		}
-		var disableFlipV = gltf.asset && gltf.asset.generator === 'PlayCanvas';
 		var preprocess = options && options.material && options.material.preprocess;
 		var process = options && options.material && options.material.process || createMaterial;
 		var postprocess = options && options.material && options.material.postprocess;
@@ -20630,7 +20664,7 @@
 			return material;
 		});
 	};
-	var createAnimations = function (gltf, nodes, buffers, options) {
+	var createAnimations = function (gltf, nodes, bufferViews, options) {
 		if (!gltf.hasOwnProperty('animations') || gltf.animations.length === 0) {
 			return [];
 		}
@@ -20640,7 +20674,7 @@
 			if (preprocess) {
 				preprocess(gltfAnimation);
 			}
-			var animation = createAnimation(gltfAnimation, index, gltf.accessors, gltf.bufferViews, nodes, buffers);
+			var animation = createAnimation(gltfAnimation, index, gltf.accessors, bufferViews, nodes);
 			if (postprocess) {
 				postprocess(gltfAnimation, animation);
 			}
@@ -20697,20 +20731,21 @@
 		}
 		return scenes;
 	};
-	var createResources = function (device, gltf, buffers, textures, options, callback) {
+	var createResources = function (device, gltf, bufferViews, textures, options, callback) {
 		var preprocess = options && options.global && options.global.preprocess;
 		var postprocess = options && options.global && options.global.postprocess;
 		if (preprocess) {
 			preprocess(gltf);
 		}
+		var disableFlipV = gltf.asset && gltf.asset.generator === 'PlayCanvas';
 		var nodes = createNodes(gltf, options);
 		var scenes = createScenes(gltf, nodes);
-		var animations = createAnimations(gltf, nodes, buffers, options);
+		var animations = createAnimations(gltf, nodes, bufferViews, options);
 		var materials = createMaterials(gltf, gltf.textures ? gltf.textures.map(function (t) {
 			return textures[t.source].resource;
-		}) : [], options);
-		var meshes = createMeshes(device, gltf, buffers, callback);
-		var skins = createSkins(device, gltf, nodes, buffers);
+		}) : [], options, disableFlipV);
+		var meshes = createMeshes(device, gltf, bufferViews, callback, disableFlipV);
+		var skins = createSkins(device, gltf, nodes, bufferViews);
 		var result = {
 			'gltf': gltf,
 			'nodes': nodes,
@@ -20760,7 +20795,7 @@
 			texture.addressV = getWrap(gltfSampler.wrapT);
 		}
 	};
-	var loadTexturesAsync = function (gltf, buffers, urlBase, registry, options, callback) {
+	var loadTexturesAsync = function (gltf, bufferViews, urlBase, registry, options, callback) {
 		var result = [];
 		if (!gltf.hasOwnProperty('images') || gltf.images.length === 0 ||
 			!gltf.hasOwnProperty('textures') || gltf.textures.length === 0) {
@@ -20768,7 +20803,9 @@
 			return;
 		}
 		var preprocess = options && options.texture && options.texture.preprocess;
-		var processAsync = options && options.texture && options.texture.processAsync;
+		var processAsync = (options && options.texture && options.texture.processAsync) || function (gltfImage, callback) {
+			callback(null, null);
+		};
 		var postprocess = options && options.texture && options.texture.postprocess;
 		var remaining = gltf.images.length;
 		var onLoad = function (index, textureAsset) {
@@ -20817,34 +20854,26 @@
 			if (preprocess) {
 				preprocess(gltfImage);
 			}
-			if (gltfImage.hasOwnProperty('uri')) {
-				if (isDataURI(gltfImage.uri)) {
-					loadTexture(i, gltfImage.uri, getDataURIMimeType(gltfImage.uri));
+			processAsync(gltfImage, function (i, gltfImage, err, textureAsset) {
+				if (err) {
+					callback(err);
+				} else if (textureAsset) {
+					onLoad(i, textureAsset);
 				} else {
-					if (processAsync) {
-						processAsync(gltfImage, function (index, err, textureAsset) {
-							if (err) {
-								callback(err);
-							} else {
-								onLoad(index, textureAsset);
-							}
-						}.bind(null, i));
+					if (gltfImage.hasOwnProperty('uri')) {
+						if (isDataURI(gltfImage.uri)) {
+							loadTexture(i, gltfImage.uri, getDataURIMimeType(gltfImage.uri));
+						} else {
+							loadTexture(i, path.join(urlBase, gltfImage.uri), null, "anonymous");
+						}
+					} else if (gltfImage.hasOwnProperty('bufferView') && gltfImage.hasOwnProperty('mimeType')) {
+						var blob = new Blob([bufferViews[gltfImage.bufferView]], { type: gltfImage.mimeType });
+						loadTexture(i, URL.createObjectURL(blob), gltfImage.mimeType, null, true);
 					} else {
-						loadTexture(i, path.join(urlBase, gltfImage.uri), null, "anonymous");
+						callback("Invalid image found in gltf (neither uri or bufferView found). index=" + i);
 					}
 				}
-			} else if (gltfImage.hasOwnProperty('bufferView') && gltfImage.hasOwnProperty('mimeType')) {
-				var bufferView = gltf.bufferViews[gltfImage.bufferView];
-				var byteOffset = bufferView.hasOwnProperty('byteOffset') ? bufferView.byteOffset : 0;
-				var byteLength = bufferView.byteLength;
-				var buffer = buffers[bufferView.buffer];
-				var imageBuffer = new Uint8Array(buffer.buffer, buffer.byteOffset + byteOffset, byteLength);
-				var blob = new Blob([imageBuffer], { type: gltfImage.mimeType });
-				loadTexture(i, URL.createObjectURL(blob), gltfImage.mimeType, null, true);
-			} else {
-				callback("Invalid image found in gltf (neither uri or bufferView found). index=" + i);
-				return;
-			}
+			}.bind(null, i, gltfImage));
 		}
 	};
 	var loadBuffersAsync = function (gltf, binaryChunk, urlBase, options, callback) {
@@ -20854,7 +20883,9 @@
 			return;
 		}
 		var preprocess = options && options.buffer && options.buffer.preprocess;
-		var processAsync = options && options.buffer && options.buffer.processAsync;
+		var processAsync = (options && options.buffer && options.buffer.processAsync) || function (gltfBuffer, callback) {
+			callback(null, null);
+		};
 		var postprocess = options && options.buffer && options.buffer.postprocess;
 		var remaining = gltf.buffers.length;
 		var onLoad = function (index, buffer) {
@@ -20871,41 +20902,38 @@
 			if (preprocess) {
 				preprocess(gltfBuffer);
 			}
-			if (gltfBuffer.hasOwnProperty('uri')) {
-				if (isDataURI(gltfBuffer.uri)) {
-					var byteString = atob(gltfBuffer.uri.split(',')[1]);
-					var arrayBuffer = new ArrayBuffer(byteString.length);
-					var binaryArray = new Uint8Array(arrayBuffer);
-					for (var j = 0; j < byteString.length; j++) {
-						binaryArray[j] = byteString.charCodeAt(j);
-					}
-					onLoad(i, binaryArray);
+			processAsync(gltfBuffer, function (i, gltfBuffer, err, arrayBuffer) {
+				if (err) {
+					callback(err);
+				} else if (arrayBuffer) {
+					onLoad(i, new Uint8Array(arrayBuffer));
 				} else {
-					if (processAsync) {
-						processAsync(gltfBuffer, function (index, err, arrayBuffer) {
-							if (err) {
-								callback(err);
-							} else {
-								onLoad(index, new Uint8Array(arrayBuffer));
+					if (gltfBuffer.hasOwnProperty('uri')) {
+						if (isDataURI(gltfBuffer.uri)) {
+							var byteString = atob(gltfBuffer.uri.split(',')[1]);
+							var binaryArray = new Uint8Array(byteString.length);
+							for (var j = 0; j < byteString.length; j++) {
+								binaryArray[j] = byteString.charCodeAt(j);
 							}
-						}.bind(null, i));
+							onLoad(i, binaryArray);
+						} else {
+							http.get(
+								path.join(urlBase, gltfBuffer.uri),
+								{ cache: true, responseType: 'arraybuffer', retry: false },
+								function (i, err, result) {
+									if (err) {
+										callback(err);
+									} else {
+										onLoad(i, new Uint8Array(result));
+									}
+								}.bind(null, i)
+							);
+						}
 					} else {
-						http.get(
-							path.join(urlBase, gltfBuffer.uri),
-							{ cache: true, responseType: 'arraybuffer', retry: false },
-							function (index, err, result) {
-								if (err) {
-									callback(err);
-								} else {
-									onLoad(index, new Uint8Array(result));
-								}
-							}.bind(null, i)
-						);
+						onLoad(i, binaryChunk);
 					}
 				}
-			} else {
-				onLoad(i, binaryChunk);
-			}
+			}.bind(null, i, gltfBuffer));
 		}
 	};
 	var parseGltf = function (gltfChunk, callback) {
@@ -20982,6 +21010,47 @@
 			});
 		}
 	};
+	var parseBufferViewsAsync = function (gltf, buffers, options, callback) {
+		var result = [];
+		var preprocess = options && options.bufferView && options.bufferView.preprocess;
+		var processAsync = (options && options.bufferView && options.bufferView.processAsync) || function (gltfBufferView, buffers, callback) {
+			callback(null, null);
+		};
+		var postprocess = options && options.bufferView && options.bufferView.postprocess;
+		var remaining = gltf.bufferViews.length;
+		var onLoad = function (index, bufferView) {
+			var gltfBufferView = gltf.bufferViews[index];
+			if (gltfBufferView.hasOwnProperty('byteStride')) {
+				bufferView.byteStride = gltfBufferView.byteStride;
+			}
+			result[index] = bufferView;
+			if (postprocess) {
+				postprocess(gltfBufferView, bufferView);
+			}
+			if (--remaining === 0) {
+				callback(null, result);
+			}
+		};
+		for (var i = 0; i < gltf.bufferViews.length; ++i) {
+			var gltfBufferView = gltf.bufferViews[i];
+			if (preprocess) {
+				preprocess(gltfBufferView);
+			}
+			processAsync(gltfBufferView, buffers, function (i, gltfBufferView, err, result) {
+				if (err) {
+					callback(err);
+				} else if (result) {
+					onLoad(i, result);
+				} else {
+					var buffer = buffers[gltfBufferView.buffer];
+					var typedArray = new Uint8Array(buffer.buffer,
+													buffer.byteOffset + (gltfBufferView.hasOwnProperty('byteOffset') ? gltfBufferView.byteOffset : 0),
+													gltfBufferView.byteLength);
+					onLoad(i, typedArray);
+				}
+			}.bind(null, i, gltfBufferView));
+		}
+	};
 	function GlbParser() {}
 	GlbParser.parseAsync = function (filename, urlBase, data, device, registry, options, callback) {
 		parseChunk(filename, data, function (err, chunks) {
@@ -20999,12 +21068,18 @@
 						callback(err);
 						return;
 					}
-					loadTexturesAsync(gltf, buffers, urlBase, registry, options, function (err, textures) {
+					parseBufferViewsAsync(gltf, buffers, options, function (err, bufferViews) {
 						if (err) {
 							callback(err);
 							return;
 						}
-						createResources(device, gltf, buffers, textures, options, callback);
+						loadTexturesAsync(gltf, bufferViews, urlBase, registry, options, function (err, textures) {
+							if (err) {
+								callback(err);
+								return;
+							}
+							createResources(device, gltf, bufferViews, textures, options, callback);
+						});
 					});
 				});
 			});
@@ -21012,6 +21087,7 @@
 	};
 	GlbParser.parse = function (filename, data, device, options) {
 		var result = null;
+		options = options || { };
 		parseChunk(filename, data, function (err, chunks) {
 			if (err) {
 				console.error(err);
@@ -21020,13 +21096,17 @@
 					if (err) {
 						console.error(err);
 					} else {
-						var buffers = [chunks.binaryChunk];
-						var textures = [];
-						createResources(device, gltf, buffers, textures, options || { }, function (err, result_) {
+						parseBufferViewsAsync(gltf, [chunks.binaryChunk], options, function (err, bufferViews) {
 							if (err) {
 								console.error(err);
 							} else {
-								result = result_;
+								createResources(device, gltf, bufferViews, [], options, function (err, result_) {
+									if (err) {
+										console.error(err);
+									} else {
+										result = result_;
+									}
+								});
 							}
 						});
 					}
@@ -28625,7 +28705,17 @@
 	Object.defineProperties(AnimationComponent.prototype, {
 		currentTime: {
 			get: function () {
-				return this.data.skeleton._time;
+				var data = this.data;
+				if (data.skeleton) {
+					return this.data.skeleton._time;
+				}
+				if (data.animEvaluator) {
+					var clips = data.animEvaluator.clips;
+					if (clips.length > 0) {
+						return clips[clips.length - 1].time;
+					}
+				}
+				return 0;
 			},
 			set: function (currentTime) {
 				var data = this.data;
@@ -28834,7 +28924,7 @@
 					propertyComponent = entity;
 					break;
 				case 'graph':
-					if (!this.nodes[entityHierarchy[0]]) {
+					if (!this.nodes || !this.nodes[entityHierarchy[0]]) {
 						return null;
 					}
 					propertyComponent = this.nodes[entityHierarchy[0]].node;
@@ -28849,7 +28939,7 @@
 		update: function (deltaTime) {
 			var activeNodes = this.activeNodes;
 			if (activeNodes) {
-				for (var i = 0; i < activeNodes.length; ++i) {
+				for (var i = 0; i < activeNodes.length; i++) {
 					activeNodes[i]._dirtifyLocal();
 				}
 			}
@@ -49332,12 +49422,11 @@
 			return clone;
 		},
 		_updateMapTransform: function (transform, tiling, offset) {
-			if (!this._flipV && (tiling.x === 1 && tiling.y === 1 && offset.x === 0 && offset.y === 0)) {
+			if (tiling.x === 1 && tiling.y === 1 && offset.x === 0 && offset.y === 0) {
 				return null;
 			}
 			transform = transform || new Vec4();
-			transform.set(tiling.x, tiling.y * (this._flipV ? -1 : 1),
-						  offset.x, (this._flipV ? 1.0 - offset.y : offset.y));
+			transform.set(tiling.x, tiling.y, offset.x, offset.y);
 			return transform;
 		},
 		_setParameter: function (name, value) {
@@ -55529,6 +55618,11 @@
 		Plane: Plane
 	};
 	BoundingSphere.prototype.intersectRay = BoundingSphere.prototype.intersectsRay;
+	Frustum.prototype.update = function (projectionMatrix, viewMatrix) {
+		var viewProj = new Mat4();
+		viewProj.mul2(projectionMatrix, viewMatrix);
+		this.setFromMat4(viewProj);
+	};
 	var ELEMENTTYPE_INT8 = TYPE_INT8;
 	var ELEMENTTYPE_UINT8 = TYPE_UINT8;
 	var ELEMENTTYPE_INT16 = TYPE_INT16;
