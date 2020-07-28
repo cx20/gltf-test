@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.33.0-dev revision 36643c1
+ * PlayCanvas Engine v1.33.0-dev revision a95f76f
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -447,7 +447,7 @@
 		return result;
 	}();
 	var version = "1.33.0-dev";
-	var revision = "36643c1";
+	var revision = "a95f76f";
 	var config = { };
 	var common = { };
 	var apps = { };
@@ -20731,7 +20731,7 @@
 		}
 		return scenes;
 	};
-	var createResources = function (device, gltf, bufferViews, textures, options, callback) {
+	var createResources = function (device, gltf, bufferViews, textureAssets, options, callback) {
 		var preprocess = options && options.global && options.global.preprocess;
 		var postprocess = options && options.global && options.global.postprocess;
 		if (preprocess) {
@@ -20741,9 +20741,9 @@
 		var nodes = createNodes(gltf, options);
 		var scenes = createScenes(gltf, nodes);
 		var animations = createAnimations(gltf, nodes, bufferViews, options);
-		var materials = createMaterials(gltf, gltf.textures ? gltf.textures.map(function (t) {
-			return textures[t.source].resource;
-		}) : [], options, disableFlipV);
+		var materials = createMaterials(gltf, textureAssets.map(function (textureAsset) {
+			return textureAsset.resource;
+		}), options, disableFlipV);
 		var meshes = createMeshes(device, gltf, bufferViews, callback, disableFlipV);
 		var skins = createSkins(device, gltf, nodes, bufferViews);
 		var result = {
@@ -20751,7 +20751,7 @@
 			'nodes': nodes,
 			'scenes': scenes,
 			'animations': animations,
-			'textures': textures,
+			'textures': textureAssets,
 			'materials': materials,
 			'meshes': meshes,
 			'skins': skins
@@ -20795,33 +20795,19 @@
 			texture.addressV = getWrap(gltfSampler.wrapT);
 		}
 	};
-	var loadTexturesAsync = function (gltf, bufferViews, urlBase, registry, options, callback) {
-		var result = [];
-		if (!gltf.hasOwnProperty('images') || gltf.images.length === 0 ||
-			!gltf.hasOwnProperty('textures') || gltf.textures.length === 0) {
-			callback(null, result);
-			return;
-		}
-		var preprocess = options && options.texture && options.texture.preprocess;
-		var processAsync = (options && options.texture && options.texture.processAsync) || function (gltfImage, callback) {
+	var loadImageAsync = function (gltfImage, index, bufferViews, urlBase, registry, options, callback) {
+		var preprocess = options && options.image && options.image.preprocess;
+		var processAsync = (options && options.image && options.image.processAsync) || function (gltfImage, callback) {
 			callback(null, null);
 		};
-		var postprocess = options && options.texture && options.texture.postprocess;
-		var remaining = gltf.images.length;
-		var onLoad = function (index, textureAsset) {
-			result[index] = textureAsset;
+		var postprocess = options && options.image && options.image.postprocess;
+		var onLoad = function (textureAsset) {
 			if (postprocess) {
-				postprocess(gltf.images[index], textureAsset);
+				postprocess(gltfImage, textureAsset);
 			}
-			if (--remaining === 0) {
-				for (var t = 0; t < gltf.textures.length; ++t) {
-					var texture = gltf.textures[t];
-					applySampler(result[texture.source].resource, (gltf.samplers || [])[texture.sampler]);
-				}
-				callback(null, result);
-			}
+			callback(null, textureAsset);
 		};
-		var loadTexture = function (index, url, mimeType, crossOrigin, isBlobUrl) {
+		var loadTexture = function (url, mimeType, crossOrigin, isBlobUrl) {
 			var mimeTypeFileExtensions = {
 				'image/png': 'png',
 				'image/jpeg': 'jpg',
@@ -20841,7 +20827,7 @@
 				if (isBlobUrl) {
 					URL.revokeObjectURL(url);
 				}
-				onLoad(index, asset);
+				onLoad(asset);
 			});
 			asset.on('error', function (err, asset) {
 				callback(err);
@@ -20849,31 +20835,74 @@
 			registry.add(asset);
 			registry.load(asset);
 		};
-		for (var i = 0; i < gltf.images.length; ++i) {
-			var gltfImage = gltf.images[i];
-			if (preprocess) {
-				preprocess(gltfImage);
+		if (preprocess) {
+			preprocess(gltfImage);
+		}
+		processAsync(gltfImage, function (err, textureAsset) {
+			if (err) {
+				callback(err);
+			} else if (textureAsset) {
+				onLoad(textureAsset);
+			} else {
+				if (gltfImage.hasOwnProperty('uri')) {
+					if (isDataURI(gltfImage.uri)) {
+						loadTexture(gltfImage.uri, getDataURIMimeType(gltfImage.uri));
+					} else {
+						loadTexture(path.join(urlBase, gltfImage.uri), null, "anonymous");
+					}
+				} else if (gltfImage.hasOwnProperty('bufferView') && gltfImage.hasOwnProperty('mimeType')) {
+					var blob = new Blob([bufferViews[gltfImage.bufferView]], { type: gltfImage.mimeType });
+					loadTexture(URL.createObjectURL(blob), gltfImage.mimeType, null, true);
+				} else {
+					callback("Invalid image found in gltf (neither uri or bufferView found). index=" + index);
+				}
 			}
-			processAsync(gltfImage, function (i, gltfImage, err, textureAsset) {
+		});
+	};
+	var loadTexturesAsync = function (gltf, bufferViews, urlBase, registry, options, callback) {
+		var result = [];
+		if (!gltf.hasOwnProperty('images') || gltf.images.length === 0 ||
+			!gltf.hasOwnProperty('textures') || gltf.textures.length === 0) {
+			callback(null, result);
+			return;
+		}
+		var preprocess = options && options.texture && options.texture.preprocess;
+		var processAsync = (options && options.texture && options.texture.processAsync) || function (gltfTexture, gltfImages, callback) {
+			callback(null, null);
+		};
+		var postprocess = options && options.texture && options.texture.postprocess;
+		var remaining = gltf.textures.length;
+		var onLoad = function (index, textureAsset) {
+			applySampler(textureAsset.resource, (gltf.samplers || [])[gltf.textures[index].sampler]);
+			result[index] = textureAsset;
+			if (postprocess) {
+				postprocess(gltf.textures[index], textureAsset);
+			}
+			if (--remaining === 0) {
+				callback(null, result);
+			}
+		};
+		for (var i = 0; i < gltf.textures.length; ++i) {
+			var gltfTexture = gltf.textures[i];
+			if (preprocess) {
+				preprocess(gltfTexture);
+			}
+			processAsync(gltfTexture, gltf.images, function (i, gltfTexture, err, gltfImage) {
 				if (err) {
 					callback(err);
-				} else if (textureAsset) {
-					onLoad(i, textureAsset);
 				} else {
-					if (gltfImage.hasOwnProperty('uri')) {
-						if (isDataURI(gltfImage.uri)) {
-							loadTexture(i, gltfImage.uri, getDataURIMimeType(gltfImage.uri));
-						} else {
-							loadTexture(i, path.join(urlBase, gltfImage.uri), null, "anonymous");
-						}
-					} else if (gltfImage.hasOwnProperty('bufferView') && gltfImage.hasOwnProperty('mimeType')) {
-						var blob = new Blob([bufferViews[gltfImage.bufferView]], { type: gltfImage.mimeType });
-						loadTexture(i, URL.createObjectURL(blob), gltfImage.mimeType, null, true);
-					} else {
-						callback("Invalid image found in gltf (neither uri or bufferView found). index=" + i);
+					if (!gltfImage) {
+						gltfImage = gltf.images[gltfTexture.source];
 					}
+					loadImageAsync(gltfImage, i, bufferViews, urlBase, registry, options, function (err, textureAsset) {
+						if (err) {
+							callback(err);
+						} else {
+							onLoad(i, textureAsset);
+						}
+					});
 				}
-			}.bind(null, i, gltfImage));
+			}.bind(null, i, gltfTexture));
 		}
 	};
 	var loadBuffersAsync = function (gltf, binaryChunk, urlBase, options, callback) {
@@ -21073,12 +21102,12 @@
 							callback(err);
 							return;
 						}
-						loadTexturesAsync(gltf, bufferViews, urlBase, registry, options, function (err, textures) {
+						loadTexturesAsync(gltf, bufferViews, urlBase, registry, options, function (err, textureAssets) {
 							if (err) {
 								callback(err);
 								return;
 							}
-							createResources(device, gltf, bufferViews, textures, options, callback);
+							createResources(device, gltf, bufferViews, textureAssets, options, callback);
 						});
 					});
 				});
