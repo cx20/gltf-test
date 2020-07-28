@@ -194,13 +194,19 @@ Object.assign(Viewer.prototype, {
 
     // play the animation
     play: function(animationName) {
-        if (this.entity && this.entity.animation) {
-            this.entity.animation.enabled = true;
-            if (animationName) {
-                this.entity.animation.play(this.animationMap[animationName], 1);
-            } else {
-                this.entity.animation.playing = true;
+        if (!animationName) {
+            for (var key in this.animationMap) {
+                if (this.animationMap.hasOwnProperty(key)) {
+                    if (animationName) {
+                        this.animationMap[key].pause();
+                    } else {
+                        this.animationMap[key].play('default');
+                    }
+                }
             }
+        }
+        if (animationName) {
+            this.animationMap[animationName].play('default');
         }
     },
 
@@ -263,18 +269,54 @@ Object.assign(Viewer.prototype, {
 
             // create animations
             if (resource.animations && resource.animations.length > 0) {
-                entity.addComponent('animation', {
-                    assets: resource.animations.map(function(asset) {
-                        return asset.id;
-                    }),
-                    speed: 1
-                });
+
+                // create the anim component if there isn't one already
+                if (!entity.anim) {
+                    entity.addComponent('anim', {
+                        activate: true
+                    });
+                }
+
+                var stateGraph = {
+                    layers: [],
+                    parameters: { }
+                };
+
+                // create a layer per animation so we can play them all simultaniously if needed
+                for (i = 0; i < resource.animations.length; ++i) {
+                    // construct a state graph to include the loaded animations
+                    stateGraph.layers.push( {
+                        name: asset.name + '_layer_' + i,
+                        states: [
+                            { name: 'START' },
+                            { name: 'default', speed: 1 },
+                            { name: 'END' }
+                        ],
+                        transitions: [
+                            {
+                                "from": "START",
+                                "to": "default",
+                                "time": 0,
+                                "priority": 0
+                            }
+                        ]
+                    } );
+                }
+
+                // construct an anim layer for this set of animations
+                entity.anim.loadStateGraph(new pc.AnimStateGraph(stateGraph));
 
                 var animationMap = {};
-                for (var i = 0; i < resource.animations.length; ++i) {
-                    var animAsset = resource.animations[i];
-                    animationMap[animAsset.resource.name] = animAsset.name;
+
+                // set animations on each layer
+                for (i = 0; i < resource.animations.length; ++i) {
+                    var animTrack = resource.animations[i].resource;
+                    var layer = entity.anim.findAnimationLayer(asset.name + '_layer_' + i);
+                    layer.assignAnimation('default', animTrack);
+                    layer.pause();
+                    animationMap[animTrack.name] = layer;
                 }
+            
 
                 this.animationMap = animationMap;
                 //onAnimationsLoaded(Object.keys(this.animationMap));
@@ -304,7 +346,6 @@ Object.assign(Viewer.prototype, {
             this.asset = asset;
 
             this.focusCamera();
-
             if (resource.model.name == "Fox.gltf/model/0" || resource.model.name == "Fox.glb/model/0") {
                 this.play("Run");
             } else if (resource.model.name == "InterpolationTest.gltf/model/0") {
@@ -319,6 +360,17 @@ Object.assign(Viewer.prototype, {
                 // "Step Translation"
                 // "CubicSpline Translation"
                 // "Linear Translation"
+                this.play("Step Scale");
+                this.play("Linear Scale");
+                this.play("CubicSpline Scale");
+                this.play("Step Rotation");
+                this.play("CubicSpline Rotation");
+                this.play("Linear Rotation");
+                this.play("Step Translation");
+                this.play("CubicSpline Translation");
+                this.play("Linear Translation");
+            } else {
+                this.play();
             }
         }
     }
