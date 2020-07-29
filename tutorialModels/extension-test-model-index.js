@@ -6,6 +6,7 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'Lights', scale:1.0},
     {category:'tutorialModels', name:'SpecGlossVsMetalRough', scale:10.0},
     {category:'tutorialModels', name:'TextureTransformTest', scale:1.0},
+    {category:'tutorialModels', name:'TextureTransformMultiTest', scale:1.0},
     {category:'tutorialModels', name:'TransmissionTest', scale:3.0},
     {category:'tutorialModels', name:'UnlitTest', scale:1.0}
 ];
@@ -14,6 +15,7 @@ TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that
     'ClearCoatTest',
     'SpecGlossVsMetalRough',
     'TextureTransformTest',
+    'TextureTransformMultiTest'
 ];
 
 TutorialExtensionTestModelIndex.getScreenshot = function(name) {
