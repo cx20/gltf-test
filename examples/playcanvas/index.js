@@ -78,7 +78,6 @@ var Viewer = function (canvas) {
         app.scene.toneMapping = pc.TONEMAP_ACES;
         app.scene.skyboxMip = 1;                        // Set the skybox to the 128x128 cubemap mipmap level
         app.scene.setSkybox(cubemapAsset.resources);
-        app.renderNextFrame = true;                     // ensure we render again when the cubemap arrives
     });
     app.assets.add(cubemapAsset);
     app.assets.load(cubemapAsset);
@@ -121,11 +120,6 @@ var Viewer = function (canvas) {
     });
     light.setLocalEulerAngles(45, 30, 0);
     app.root.addChild(light);
-
-    // disable autorender
-    app.autoRender = false;
-    self.prevCameraMat = new pc.Mat4();
-    app.on('update', self.update.bind(self));
 
     // store things
     this.app = app;
@@ -234,23 +228,7 @@ Object.assign(Viewer.prototype, {
                 morph.instance.setWeight(morph.targetIndex, weight);
             });
             this.dirtyNormals = true;
-            this.renderNextFrame();
         }
-    },
-    update: function () {
-        // if the camera has moved since the last render
-        var cameraWorldTransform = this.camera.getWorldTransform();
-        if (!this.prevCameraMat.equals(cameraWorldTransform)) {
-            this.prevCameraMat.copy(cameraWorldTransform);
-            this.app.renderNextFrame = true;
-        }
-        // or an animation is loaded and we're animating
-        if (this.entity && this.entity.animation && this.entity.animation.playing) {
-            this.app.renderNextFrame = true;
-        }
-    },
-    renderNextFrame: function () {
-        this.app.renderNextFrame = true;
     },
     _onLoaded: function(err, asset) {
         if (!err) {
