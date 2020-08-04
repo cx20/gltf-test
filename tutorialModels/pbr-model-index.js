@@ -10,6 +10,7 @@ TutorialPbrModelIndex.List = [
     {category:'tutorialModels', name:'Lantern', scale:0.06},
     {category:'tutorialModels', name:'WaterBottle', scale:10.0},
     {category:'tutorialModels', name:'Sponza', scale:1.0},
+    {category:'tutorialModels', name:'ToyCar', scale:10.0},
 ];
 
 TutorialPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
