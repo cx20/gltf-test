@@ -217,7 +217,7 @@ function makeTutorialPbrModelLinks() {
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
-            if (modelName == 'FlightHelmet' || modelName == 'Sponza') {
+            if (modelName == 'FlightHelmet' || modelName == 'Sponza' || modelName == 'ToyCar') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             } else if (modelName == 'DamagedHelmet') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
