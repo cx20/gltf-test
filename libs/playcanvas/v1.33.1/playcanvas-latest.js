@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.33.0-dev revision 706f88e
+ * PlayCanvas Engine v1.33.1 revision b6a8512
  * Copyright 2011-2020 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -446,8 +446,8 @@
 			result["[object " + names[i] + "]"] = names[i].toLowerCase();
 		return result;
 	}();
-	var version = "1.33.0-dev";
-	var revision = "706f88e";
+	var version = "1.33.1";
+	var revision = "b6a8512";
 	var config = { };
 	var common = { };
 	var apps = { };
@@ -4885,13 +4885,13 @@
 
 	var fixCubemapSeamsStretchPS = "vec3 fixSeams(vec3 vec, float mipmapIndex) {\n\tfloat scale = 1.0 - exp2(mipmapIndex) / 128.0;\n\tfloat M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n\tif (abs(vec.x) != M) vec.x *= scale;\n\tif (abs(vec.y) != M) vec.y *= scale;\n\tif (abs(vec.z) != M) vec.z *= scale;\n\treturn vec;\n}\nvec3 fixSeams(vec3 vec) {\n\tfloat scale = 1.0 - 1.0 / 128.0;\n\tfloat M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n\tif (abs(vec.x) != M) vec.x *= scale;\n\tif (abs(vec.y) != M) vec.y *= scale;\n\tif (abs(vec.z) != M) vec.z *= scale;\n\treturn vec;\n}\nvec3 fixSeamsStatic(vec3 vec, float invRecMipSize) {\n\tfloat scale = invRecMipSize;\n\tfloat M = max(max(abs(vec.x), abs(vec.y)), abs(vec.z));\n\tif (abs(vec.x) != M) vec.x *= scale;\n\tif (abs(vec.y) != M) vec.y *= scale;\n\tif (abs(vec.z) != M) vec.z *= scale;\n\treturn vec;\n}\n";
 
-	var fogExpPS = "uniform vec3 fog_color;\nuniform float fog_density;\nvec3 addFog(vec3 color) {\n\tfloat depth = gl_FragCoord.z / gl_FragCoord.w;\n\tfloat fogFactor = exp(-depth * fog_density);\n\tfogFactor = clamp(fogFactor, 0.0, 1.0);\n\treturn mix(fog_color, color, fogFactor);\n}\n";
+	var fogExpPS = "uniform vec3 fog_color;\nuniform float fog_density;\nfloat dBlendModeFogFactor = 1.0;\nvec3 addFog(vec3 color) {\n\tfloat depth = gl_FragCoord.z / gl_FragCoord.w;\n\tfloat fogFactor = exp(-depth * fog_density);\n\tfogFactor = clamp(fogFactor, 0.0, 1.0);\n\treturn mix(fog_color * dBlendModeFogFactor, color, fogFactor);\n}\n";
 
-	var fogExp2PS = "uniform vec3 fog_color;\nuniform float fog_density;\nvec3 addFog(vec3 color) {\n\tfloat depth = gl_FragCoord.z / gl_FragCoord.w;\n\tfloat fogFactor = exp(-depth * depth * fog_density * fog_density);\n\tfogFactor = clamp(fogFactor, 0.0, 1.0);\n\treturn mix(fog_color, color, fogFactor);\n}\n";
+	var fogExp2PS = "uniform vec3 fog_color;\nuniform float fog_density;\nfloat dBlendModeFogFactor = 1.0;\nvec3 addFog(vec3 color) {\n\tfloat depth = gl_FragCoord.z / gl_FragCoord.w;\n\tfloat fogFactor = exp(-depth * depth * fog_density * fog_density);\n\tfogFactor = clamp(fogFactor, 0.0, 1.0);\n\treturn mix(fog_color * dBlendModeFogFactor, color, fogFactor);\n}\n";
 
-	var fogLinearPS = "uniform vec3 fog_color;\nuniform float fog_start;\nuniform float fog_end;\nvec3 addFog(vec3 color) {\n\tfloat depth = gl_FragCoord.z / gl_FragCoord.w;\n\tfloat fogFactor = (fog_end - depth) / (fog_end - fog_start);\n\tfogFactor = clamp(fogFactor, 0.0, 1.0);\n\tfogFactor = gammaCorrectInput(fogFactor);\n\treturn mix(fog_color, color, fogFactor);\n}\n";
+	var fogLinearPS = "uniform vec3 fog_color;\nuniform float fog_start;\nuniform float fog_end;\nfloat dBlendModeFogFactor = 1.0;\nvec3 addFog(vec3 color) {\n\tfloat depth = gl_FragCoord.z / gl_FragCoord.w;\n\tfloat fogFactor = (fog_end - depth) / (fog_end - fog_start);\n\tfogFactor = clamp(fogFactor, 0.0, 1.0);\n\tfogFactor = gammaCorrectInput(fogFactor);\n\treturn mix(fog_color * dBlendModeFogFactor, color, fogFactor);\n}\n";
 
-	var fogNonePS = "vec3 addFog(vec3 color) {\n\treturn color;\n}\n";
+	var fogNonePS = "float dBlendModeFogFactor = 1.0;\nvec3 addFog(vec3 color) {\n\treturn color;\n}\n";
 
 	var fresnelSchlickPS = "\nuniform float material_fresnelFactor;\nvoid getFresnel() {\n\tfloat fresnel = 1.0 - max(dot(dNormalW, dViewDirW), 0.0);\n\tfloat fresnel2 = fresnel * fresnel;\n\tfresnel *= fresnel2 * fresnel2;\n\tfresnel *= dGlossiness * dGlossiness;\n\tdSpecularity = dSpecularity + (1.0 - dSpecularity) * fresnel;\n\t#ifdef CLEARCOAT\n\tfresnel = 1.0 - max(dot(ccNormalW, dViewDirW), 0.0);\n\tfresnel2 = fresnel * fresnel;\n\tfresnel *= fresnel2 * fresnel2;\n\tfresnel *= ccGlossiness * ccGlossiness;\n\tccSpecularity = ccSpecularity + (1.0 - ccSpecularity) * fresnel;\n\t#endif\n}\n";
 
@@ -5005,7 +5005,7 @@
 
 	var particle_billboardVS = "\tquadXY = rotate(quadXY, inAngle, rotMatrix);\n\tvec3 localPos = billboard(particlePos, quadXY);\n";
 
-	var particle_blendAddPS = "\trgb *= saturate(gammaCorrectInput(a));\n\tif ((rgb.r + rgb.g + rgb.b) < 0.000001) discard;\n";
+	var particle_blendAddPS = "\tdBlendModeFogFactor = 0.0;\n\trgb *= saturate(gammaCorrectInput(max(a, 0.0)));\n\tif ((rgb.r + rgb.g + rgb.b) < 0.000001) discard;\n";
 
 	var particle_blendMultiplyPS = "\trgb = mix(vec3(1.0), rgb, vec3(a));\n\tif (rgb.r + rgb.g + rgb.b > 2.99) discard;\n";
 
@@ -7906,7 +7906,6 @@
 		},
 		setData: function (data) {
 			if (data.byteLength !== this.numBytes) {
-				console.error("IndexBuffer: wrong initial data size: expected " + this.numBytes + ", got " + data.byteLength);
 				return false;
 			}
 			this.storage = data;
@@ -10008,79 +10007,331 @@
 	var _farW = new Vec3();
 	var _invViewProjMat = new Mat4();
 	function Camera() {
-		this._projection = PROJECTION_PERSPECTIVE;
-		this._nearClip = 0.1;
-		this._farClip = 10000;
-		this._shaderParams = new Float32Array(4);
-		this._fov = 45;
-		this._orthoHeight = 10;
-		this._aspect = 16 / 9;
+		this._aspectRatio = 16 / 9;
 		this._aspectRatioMode = ASPECT_AUTO;
-		this._horizontalFov = false;
-		this.frustumCulling = false;
-		this.cullingMask = 0xFFFFFFFF;
-		this._renderDepthRequests = 0;
-		this._projMatDirty = true;
-		this._projMat = new Mat4();
-		this._projMatSkybox = new Mat4();
-		this._viewMatDirty = true;
-		this._viewMat = new Mat4();
-		this._viewProjMatDirty = true;
-		this._viewProjMat = new Mat4();
-		this.vrDisplay = null;
-		this._rect = {
-			x: 0,
-			y: 0,
-			width: 1,
-			height: 1
-		};
-		this._scissorRect = {
-			x: 0,
-			y: 0,
-			width: 1,
-			height: 1
-		};
-		this.frustum = new Frustum();
-		this.renderTarget = null;
-		this._depthTarget = null;
-		this._clearOptions = {
-			color: [0.5, 0.5, 0.5, 1.0],
-			depth: 1.0,
-			stencil: 0,
-			flags: CLEARFLAG_COLOR | CLEARFLAG_DEPTH | CLEARFLAG_STENCIL
-		};
-		this._node = null;
-		this.calculateTransform = null;
-		this.overrideCalculateTransform = false;
-		this.calculateProjection = null;
-		this.overrideCalculateProjection = false;
+		this._calculateProjection = null;
+		this._calculateTransform = null;
+		this._clearColor = new Color(0.75, 0.75, 0.75, 1);
+		this._clearColorBuffer = true;
+		this._clearDepth = 1;
+		this._clearDepthBuffer = true;
+		this._clearStencil = 0;
+		this._clearStencilBuffer = true;
+		this._cullingMask = 0xFFFFFFFF;
 		this._cullFaces = true;
+		this._farClip = 1000;
 		this._flipFaces = false;
-		this._component = null;
+		this._fov = 45;
+		this._frustumCulling = false;
+		this._horizontalFov = false;
+		this._layers = [LAYERID_WORLD, LAYERID_DEPTH, LAYERID_SKYBOX, LAYERID_UI, LAYERID_IMMEDIATE];
+		this._nearClip = 0.1;
+		this._node = null;
+		this._orthoHeight = 10;
+		this._projection = PROJECTION_PERSPECTIVE;
+		this._rect = new Vec4(0, 0, 1, 1);
+		this._renderTarget = null;
+		this._scissorRect = new Vec4(0, 0, 1, 1);
+		this._vrDisplay = null;
+		this._projMat = new Mat4();
+		this._projMatDirty = true;
+		this._projMatSkybox = new Mat4();
+		this._viewMat = new Mat4();
+		this._viewMatDirty = true;
+		this._viewProjMat = new Mat4();
+		this._viewProjMatDirty = true;
+		this.frustum = new Frustum();
 	}
+	Object.defineProperty(Camera.prototype, 'aspectRatio', {
+		get: function () {
+			return this._aspectRatio;
+		},
+		set: function (newValue) {
+			if (this._aspectRatio !== newValue) {
+				this._aspectRatio = newValue;
+				this._projMatDirty = true;
+			}
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'aspectRatioMode', {
+		get: function () {
+			return this._aspectRatioMode;
+		},
+		set: function (newValue) {
+			if (this._aspectRatioMode !== newValue) {
+				this._aspectRatioMode = newValue;
+				this._projMatDirty = true;
+			}
+		}
+	});
+	Object.defineProperty(Camera.prototype, "calculateProjection", {
+		get: function () {
+			return this._calculateProjection;
+		},
+		set: function (newValue) {
+			this._calculateProjection = newValue;
+			this._projMatDirty = true;
+		}
+	});
+	Object.defineProperty(Camera.prototype, "calculateTransform", {
+		get: function () {
+			return this._calculateTransform;
+		},
+		set: function (newValue) {
+			this._calculateTransform = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'clearColor', {
+		get: function () {
+			return this._clearColor;
+		},
+		set: function (newValue) {
+			this._clearColor.copy(newValue);
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'clearColorBuffer', {
+		get: function () {
+			return this._clearColorBuffer;
+		},
+		set: function (newValue) {
+			this._clearColorBuffer = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'clearDepth', {
+		get: function () {
+			return this._clearDepth;
+		},
+		set: function (newValue) {
+			this._clearDepth = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'clearDepthBuffer', {
+		get: function () {
+			return this._clearDepthBuffer;
+		},
+		set: function (newValue) {
+			this._clearDepthBuffer = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'clearStencil', {
+		get: function () {
+			return this._clearStencil;
+		},
+		set: function (newValue) {
+			this._clearStencil = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'clearStencilBuffer', {
+		get: function () {
+			return this._clearStencilBuffer;
+		},
+		set: function (newValue) {
+			this._clearStencilBuffer = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'cullingMask', {
+		get: function () {
+			return this._cullingMask;
+		},
+		set: function (newValue) {
+			this._cullingMask = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'cullFaces', {
+		get: function () {
+			return this._cullFaces;
+		},
+		set: function (newValue) {
+			this._cullFaces = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'farClip', {
+		get: function () {
+			return this._farClip;
+		},
+		set: function (newValue) {
+			if (this._farClip !== newValue) {
+				this._farClip = newValue;
+				this._projMatDirty = true;
+			}
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'flipFaces', {
+		get: function () {
+			return this._flipFaces;
+		},
+		set: function (newValue) {
+			this._flipFaces = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'fov', {
+		get: function () {
+			return this._fov;
+		},
+		set: function (newValue) {
+			if (this._fov !== newValue) {
+				this._fov = newValue;
+				this._projMatDirty = true;
+			}
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'frustumCulling', {
+		get: function () {
+			return this._frustumCulling;
+		},
+		set: function (newValue) {
+			this._frustumCulling = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'horizontalFov', {
+		get: function () {
+			return this._horizontalFov;
+		},
+		set: function (newValue) {
+			if (this._horizontalFov !== newValue) {
+				this._horizontalFov = newValue;
+				this._projMatDirty = true;
+			}
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'layers', {
+		get: function () {
+			return this._layers;
+		},
+		set: function (newValue) {
+			this._layers = newValue.slice(0);
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'nearClip', {
+		get: function () {
+			return this._nearClip;
+		},
+		set: function (newValue) {
+			if (this._nearClip !== newValue) {
+				this._nearClip = newValue;
+				this._projMatDirty = true;
+			}
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'node', {
+		get: function () {
+			return this._node;
+		},
+		set: function (newValue) {
+			this._node = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'orthoHeight', {
+		get: function () {
+			return this._orthoHeight;
+		},
+		set: function (newValue) {
+			if (this._orthoHeight !== newValue) {
+				this._orthoHeight = newValue;
+				this._projMatDirty = true;
+			}
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'projection', {
+		get: function () {
+			return this._projection;
+		},
+		set: function (newValue) {
+			if (this._projection !== newValue) {
+				this._projection = newValue;
+				this._projMatDirty = true;
+			}
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'projectionMatrix', {
+		get: function () {
+			this._evaluateProjectionMatrix();
+			return this._projMat;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'rect', {
+		get: function () {
+			return this._rect;
+		},
+		set: function (newValue) {
+			this._rect.copy(newValue);
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'renderTarget', {
+		get: function () {
+			return this._renderTarget;
+		},
+		set: function (newValue) {
+			this._renderTarget = newValue;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'scissorRect', {
+		get: function () {
+			return this._scissorRect;
+		},
+		set: function (newValue) {
+			this._scissorRect.copy(newValue);
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'viewMatrix', {
+		get: function () {
+			if (this._viewMatDirty) {
+				var wtm = this._node.getWorldTransform();
+				this._viewMat.copy(wtm).invert();
+				this._viewMatDirty = false;
+			}
+			return this._viewMat;
+		}
+	});
+	Object.defineProperty(Camera.prototype, 'vrDisplay', {
+		get: function () {
+			return this._vrDisplay;
+		},
+		set: function (newValue) {
+			this._vrDisplay = newValue;
+			if (newValue) {
+				newValue._camera = this;
+			}
+		}
+	});
 	Object.assign(Camera.prototype, {
 		clone: function () {
-			var clone = new Camera();
-			clone.projection = this._projection;
-			clone.nearClip = this._nearClip;
-			clone.farClip = this._farClip;
-			clone._shaderParams = this._shaderParams.slice();
-			clone.fov = this._fov;
-			clone.aspectRatio = this._aspect;
-			clone._aspectRatioMode = this._aspectRatioMode;
-			clone.renderTarget = this.renderTarget;
-			clone.setClearOptions(this.getClearOptions());
-			clone.frustumCulling = this.frustumCulling;
-			clone.cullingMask = this.cullingMask;
-			return clone;
+			return new this.constructor().copy(this);
+		},
+		copy: function (other) {
+			this.aspectRatio = other.aspectRatio;
+			this.aspectRatioMode = other.aspectRatioMode;
+			this.calculateProjection = other.calculateProjection;
+			this.calculateTransform = other.calculateTransform;
+			this.clearColor = other.clearColor;
+			this.clearColorBuffer = other.clearColorBuffer;
+			this.clearDepth = other.clearDepth;
+			this.clearDepthBuffer = other.clearDepthBuffer;
+			this.clearStencil = other.clearStencil;
+			this.clearStencilBuffer = other.clearStencilBuffer;
+			this.cullFaces = other.cullFaces;
+			this.cullingMask = other.cullingMask;
+			this.farClip = other.farClip;
+			this.flipFaces = other.flipFaces;
+			this.fov = other.fov;
+			this.frustumCulling = other.frustumCulling;
+			this.horizontalFov = other.horizontalFov;
+			this.layers = other.layers;
+			this.nearClip = other.nearClip;
+			this.orthoHeight = other.orthoHeight;
+			this.projection = other.projection;
+			this.rect = other.rect;
+			this.renderTarget = other.renderTarget;
+			this.scissorRect = other.scissorRect;
+			this.vrDisplay = other.vrDisplay;
 		},
 		worldToScreen: function (worldCoord, cw, ch, screenCoord) {
 			if (screenCoord === undefined) {
 				screenCoord = new Vec3();
 			}
 			if (this._projMatDirty || this._viewMatDirty || this._viewProjMatDirty) {
-				var projMat = this.getProjectionMatrix();
-				var viewMat = this.getViewMatrix();
+				var projMat = this.projectionMatrix;
+				var viewMat = this.viewMatrix;
 				this._viewProjMat.mul2(projMat, viewMat);
 				this._viewProjMatDirty = false;
 			}
@@ -10099,8 +10350,8 @@
 				worldCoord = new Vec3();
 			}
 			if (this._projMatDirty || this._viewMatDirty || this._viewProjMatDirty) {
-				var projMat = this.getProjectionMatrix();
-				var viewMat = this.getViewMatrix();
+				var projMat = this.projectionMatrix;
+				var viewMat = this.viewMatrix;
 				this._viewProjMat.mul2(projMat, viewMat);
 				this._viewProjMatDirty = false;
 			}
@@ -10124,186 +10375,23 @@
 			}
 			return worldCoord;
 		},
-		getClearOptions: function () {
-			return this._clearOptions;
-		},
 		_evaluateProjectionMatrix: function () {
 			if (this._projMatDirty) {
 				if (this._projection === PROJECTION_PERSPECTIVE) {
-					this._projMat.setPerspective(this._fov, this._aspect, this._nearClip, this._farClip, this._horizontalFov);
+					this._projMat.setPerspective(this._fov, this._aspectRatio, this._nearClip, this._farClip, this._horizontalFov);
 					this._projMatSkybox.copy(this._projMat);
 				} else {
 					var y = this._orthoHeight;
-					var x = y * this._aspect;
+					var x = y * this._aspectRatio;
 					this._projMat.setOrtho(-x, x, -y, y, this._nearClip, this._farClip);
-					this._projMatSkybox.setPerspective(this._fov, this._aspect, this._nearClip, this._farClip);
+					this._projMatSkybox.setPerspective(this._fov, this._aspectRatio, this._nearClip, this._farClip);
 				}
-				var n = this._nearClip;
-				var f = this._farClip;
-				this._shaderParams[0] = 1 / f;
-				this._shaderParams[1] = f;
-				this._shaderParams[2] = (1 - f / n) / 2;
-				this._shaderParams[3] = (1 + f / n) / 2;
 				this._projMatDirty = false;
 			}
-		},
-		getProjectionMatrix: function () {
-			this._evaluateProjectionMatrix();
-			return this._projMat;
 		},
 		getProjectionMatrixSkybox: function () {
 			this._evaluateProjectionMatrix();
 			return this._projMatSkybox;
-		},
-		getViewMatrix: function () {
-			if (this._viewMatDirty) {
-				var wtm = this._node.getWorldTransform();
-				this._viewMat.copy(wtm).invert();
-				this._viewMatDirty = false;
-			}
-			return this._viewMat;
-		},
-		getRect: function () {
-			return this._rect;
-		},
-		setClearOptions: function (options) {
-			this._clearOptions.color[0] = options.color[0];
-			this._clearOptions.color[1] = options.color[1];
-			this._clearOptions.color[2] = options.color[2];
-			this._clearOptions.color[3] = options.color[3];
-			this._clearOptions.depth = options.depth;
-			this._clearOptions.stencil = options.stencil;
-			this._clearOptions.flags = options.flags;
-		},
-		setRect: function (x, y, width, height) {
-			this._rect.x = x;
-			this._rect.y = y;
-			this._rect.width = width;
-			this._rect.height = height;
-		},
-		setScissorRect: function (x, y, width, height) {
-			this._scissorRect.x = x;
-			this._scissorRect.y = y;
-			this._scissorRect.width = width;
-			this._scissorRect.height = height;
-		},
-		requestDepthMap: function () {
-			this._renderDepthRequests++;
-		},
-		releaseDepthMap: function () {
-			this._renderDepthRequests--;
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'aspectRatio', {
-		get: function () {
-			return this._aspect;
-		},
-		set: function (v) {
-			if (this._aspect !== v) {
-				this._aspect = v;
-				this._projMatDirty = true;
-			}
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'projection', {
-		get: function () {
-			return this._projection;
-		},
-		set: function (v) {
-			if (this._projection !== v) {
-				this._projection = v;
-				this._projMatDirty = true;
-			}
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'nearClip', {
-		get: function () {
-			return this._nearClip;
-		},
-		set: function (v) {
-			if (this._nearClip !== v) {
-				this._nearClip = v;
-				this._projMatDirty = true;
-			}
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'farClip', {
-		get: function () {
-			return this._farClip;
-		},
-		set: function (v) {
-			if (this._farClip !== v) {
-				this._farClip = v;
-				this._projMatDirty = true;
-			}
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'fov', {
-		get: function () {
-			return this._fov;
-		},
-		set: function (v) {
-			if (this._fov !== v) {
-				this._fov = v;
-				this._projMatDirty = true;
-			}
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'horizontalFov', {
-		get: function () {
-			return this._horizontalFov;
-		},
-		set: function (v) {
-			if (this._horizontalFov !== v) {
-				this._horizontalFov = v;
-				this._projMatDirty = true;
-			}
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'orthoHeight', {
-		get: function () {
-			return this._orthoHeight;
-		},
-		set: function (v) {
-			if (this._orthoHeight !== v) {
-				this._orthoHeight = v;
-				this._projMatDirty = true;
-			}
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'clearColor', {
-		get: function () {
-			return this._clearOptions.color;
-		},
-		set: function (v) {
-			this._clearOptions.color[0] = v[0];
-			this._clearOptions.color[1] = v[1];
-			this._clearOptions.color[2] = v[2];
-			this._clearOptions.color[3] = v[3];
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'clearDepth', {
-		get: function () {
-			return this._clearOptions.depth;
-		},
-		set: function (v) {
-			this._clearOptions.depth = v;
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'clearStencil', {
-		get: function () {
-			return this._clearOptions.stencil;
-		},
-		set: function (v) {
-			this._clearOptions.stencil = v;
-		}
-	});
-	Object.defineProperty(Camera.prototype, 'clearFlags', {
-		get: function () {
-			return this._clearOptions.flags;
-		},
-		set: function (v) {
-			this._clearOptions.flags = v;
 		}
 	});
 
@@ -11467,7 +11555,7 @@
 	function _getFrustumPoints(camera, farClip, points) {
 		var nearClip = camera._nearClip;
 		var fov = camera._fov * Math.PI / 180.0;
-		var aspect = camera._aspect;
+		var aspect = camera._aspectRatio;
 		var projection = camera._projection;
 		var x, y;
 		if (projection === PROJECTION_PERSPECTIVE) {
@@ -11621,26 +11709,20 @@
 		return values;
 	}
 	function createShadowCamera(device, shadowType, type) {
-		var flags = CLEARFLAG_DEPTH;
 		var hwPcf = shadowType === SHADOW_PCF5 || (shadowType === SHADOW_PCF3 && device.webgl2);
-		if (type === LIGHTTYPE_POINT) hwPcf = false;
-		if (!hwPcf) flags |= CLEARFLAG_COLOR;
+		if (type === LIGHTTYPE_POINT) {
+			hwPcf = false;
+		}
 		var shadowCam = new Camera();
 		if (shadowType >= SHADOW_VSM8 && shadowType <= SHADOW_VSM32) {
-			shadowCam.clearColor[0] = 0;
-			shadowCam.clearColor[1] = 0;
-			shadowCam.clearColor[2] = 0;
-			shadowCam.clearColor[3] = 0;
+			shadowCam.clearColor = new Color(0, 0, 0, 0);
 		} else {
-			shadowCam.clearColor[0] = 1;
-			shadowCam.clearColor[1] = 1;
-			shadowCam.clearColor[2] = 1;
-			shadowCam.clearColor[3] = 1;
+			shadowCam.clearColor = new Color(1, 1, 1, 1);
 		}
-		shadowCam.clearDepth = 1;
-		shadowCam.clearFlags = flags;
-		shadowCam.clearStencil = null;
-		shadowCam._node = new GraphNode();
+		shadowCam.clearColorBuffer = !hwPcf;
+		shadowCam.clearDepthBuffer = true;
+		shadowCam.clearStencilBuffer = false;
+		shadowCam.node = new GraphNode();
 		return shadowCam;
 	}
 	function getShadowMapFromCache(device, res, mode, layer) {
@@ -11777,6 +11859,7 @@
 		this.polygonOffset = new Float32Array(2);
 		this.fogColor = new Float32Array(3);
 		this.ambientColor = new Float32Array(3);
+		this.cameraParams = new Float32Array(4);
 	}
 	function mat3FromMat4(m3, m4) {
 		m3.data[0] = m4.data[0];
@@ -11875,9 +11958,11 @@
 				camera.frustum.setFromMat4(viewProjMat);
 				return;
 			}
-			projMat = camera.getProjectionMatrix();
-			if (camera.overrideCalculateProjection) camera.calculateProjection(projMat, VIEW_CENTER);
-			if (camera.overrideCalculateTransform) {
+			projMat = camera.projectionMatrix;
+			if (camera.calculateProjection) {
+				camera.calculateProjection(projMat, VIEW_CENTER);
+			}
+			if (camera.calculateTransform) {
 				camera.calculateTransform(viewInvMat, VIEW_CENTER);
 			} else {
 				var pos = camera._node.getPosition();
@@ -11896,12 +11981,12 @@
 				projL = vrDisplay.leftProj;
 				projR = vrDisplay.rightProj;
 				projMat = vrDisplay.combinedProj;
-				if (camera.overrideCalculateProjection) {
+				if (camera.calculateProjection) {
 					camera.calculateProjection(projL, VIEW_LEFT);
 					camera.calculateProjection(projR, VIEW_RIGHT);
 					camera.calculateProjection(projMat, VIEW_CENTER);
 				}
-				if (camera.overrideCalculateTransform) {
+				if (camera.calculateTransform) {
 					camera.calculateTransform(viewInvL, VIEW_LEFT);
 					camera.calculateTransform(viewInvR, VIEW_RIGHT);
 					camera.calculateTransform(viewInvMat, VIEW_CENTER);
@@ -11958,11 +12043,13 @@
 					camera.frustum.setFromMat4(view.projViewOffMat);
 				}
 			} else {
-				projMat = camera.getProjectionMatrix();
-				if (camera.overrideCalculateProjection) camera.calculateProjection(projMat, VIEW_CENTER);
+				projMat = camera.projectionMatrix;
+				if (camera.calculateProjection) {
+					camera.calculateProjection(projMat, VIEW_CENTER);
+				}
 				this.projId.setValue(projMat.data);
 				this.projSkyboxId.setValue(camera.getProjectionMatrixSkybox().data);
-				if (camera.overrideCalculateTransform) {
+				if (camera.calculateTransform) {
 					camera.calculateTransform(viewInvMat, VIEW_CENTER);
 				} else {
 					var pos = camera._node.getPosition();
@@ -11985,27 +12072,52 @@
 			}
 			this.nearClipId.setValue(camera._nearClip);
 			this.farClipId.setValue(camera._farClip);
-			this.cameraParamsId.setValue(camera._shaderParams);
+			var n = camera._nearClip;
+			var f = camera._farClip;
+			this.cameraParams[0] = 1 / f;
+			this.cameraParams[1] = f;
+			this.cameraParams[2] = (1 - f / n) * 0.5;
+			this.cameraParams[3] = (1 + f / n) * 0.5;
+			this.cameraParamsId.setValue(this.cameraParams);
+			this.clearView(camera, target, clear, false);
+			var device = this.device;
+			var pixelWidth = target ? target.width : device.width;
+			var pixelHeight = target ? target.height : device.height;
+			var scissorRect = camera.scissorRect;
+			var x = Math.floor(scissorRect.x * pixelWidth);
+			var y = Math.floor(scissorRect.y * pixelHeight);
+			var w = Math.floor(scissorRect.z * pixelWidth);
+			var h = Math.floor(scissorRect.w * pixelHeight);
+			device.setScissor(x, y, w, h);
+			if (cullBorder) device.setScissor(1, 1, pixelWidth - 2, pixelHeight - 2);
+		},
+		clearView: function (camera, target, clear, forceWrite, options) {
 			var device = this.device;
 			device.setRenderTarget(target);
 			device.updateBegin();
-			var rect = camera.getRect();
+			if (forceWrite) {
+				device.setColorWrite(true, true, true, true);
+				device.setDepthWrite(true);
+			}
+			var rect = camera.rect;
 			var pixelWidth = target ? target.width : device.width;
 			var pixelHeight = target ? target.height : device.height;
 			var x = Math.floor(rect.x * pixelWidth);
 			var y = Math.floor(rect.y * pixelHeight);
-			var w = Math.floor(rect.width * pixelWidth);
-			var h = Math.floor(rect.height * pixelHeight);
+			var w = Math.floor(rect.z * pixelWidth);
+			var h = Math.floor(rect.w * pixelHeight);
 			device.setViewport(x, y, w, h);
 			device.setScissor(x, y, w, h);
-			if (clear) device.clear(camera._clearOptions);
-			rect = camera._scissorRect;
-			x = Math.floor(rect.x * pixelWidth);
-			y = Math.floor(rect.y * pixelHeight);
-			w = Math.floor(rect.width * pixelWidth);
-			h = Math.floor(rect.height * pixelHeight);
-			device.setScissor(x, y, w, h);
-			if (cullBorder) device.setScissor(1, 1, pixelWidth - 2, pixelHeight - 2);
+			if (clear) {
+				device.clear(options ? options : {
+					color: [camera._clearColor.r, camera._clearColor.g, camera._clearColor.b, camera._clearColor.a],
+					depth: camera._clearDepth,
+					flags: (camera._clearColorBuffer ? CLEARFLAG_COLOR : 0) |
+						   (camera._clearDepthBuffer ? CLEARFLAG_DEPTH : 0) |
+						   (camera._clearStencilBuffer ? CLEARFLAG_STENCIL : 0),
+					stencil: camera._clearStencil
+				});
+			}
 		},
 		dispatchGlobalLights: function (scene) {
 			var i;
@@ -12188,7 +12300,7 @@
 					shadowCam.aspectRatio = 1;
 					shadowCam.fov = spot._outerConeAngle * 2;
 					shadowCamView.setTRS(shadowCamNode.getPosition(), shadowCamNode.getRotation(), Vec3.ONE).invert();
-					shadowCamViewProj.mul2(shadowCam.getProjectionMatrix(), shadowCamView);
+					shadowCamViewProj.mul2(shadowCam.projectionMatrix, shadowCamView);
 					spot._shadowMatrix.mul2(scaleShift, shadowCamViewProj);
 				}
 				this.lightShadowMatrixId[cnt].setValue(spot._shadowMatrix.data);
@@ -12455,7 +12567,7 @@
 					}
 					if (type !== LIGHTTYPE_POINT) {
 						shadowCamView.setTRS(shadowCamNode.getPosition(), shadowCamNode.getRotation(), Vec3.ONE).invert();
-						shadowCamViewProj.mul2(shadowCam.getProjectionMatrix(), shadowCamView);
+						shadowCamViewProj.mul2(shadowCam.projectionMatrix, shadowCamView);
 						light._shadowMatrix.mul2(scaleShift, shadowCamViewProj);
 					}
 					if (device.webgl2) {
@@ -13368,24 +13480,6 @@
 			this.updateGpuSkinMatrices(drawCalls);
 			this.updateMorphing(drawCalls);
 		},
-		clearView: function (camera, target, options) {
-			camera = camera.camera;
-			var device = this.device;
-			device.setRenderTarget(target);
-			device.updateBegin();
-			device.setColorWrite(true, true, true, true);
-			device.setDepthWrite(true);
-			var rect = camera.getRect();
-			var pixelWidth = target ? target.width : device.width;
-			var pixelHeight = target ? target.height : device.height;
-			var x = Math.floor(rect.x * pixelWidth);
-			var y = Math.floor(rect.y * pixelHeight);
-			var w = Math.floor(rect.width * pixelWidth);
-			var h = Math.floor(rect.height * pixelHeight);
-			device.setViewport(x, y, w, h);
-			device.setScissor(x, y, w, h);
-			device.clear(options ? options : camera._clearOptions);
-		},
 		setSceneConstants: function () {
 			var i;
 			var device = this.device;
@@ -13526,7 +13620,7 @@
 					if (layer.onPreRender) layer.onPreRender(cameraPass);
 					layer._preRenderCalledForCameras |= 1 << cameraPass;
 					if (layer.overrideClear) {
-						this.clearView(camera, layer.renderTarget, layer._clearOptions);
+						this.clearView(camera.camera, layer.renderTarget, true, true, layer._clearOptions);
 					}
 				}
 				if (camera) {
@@ -13539,13 +13633,13 @@
 						}
 					}
 					if (!processedThisCameraAndRt) {
-						if (!layer.overrideClear) this.clearView(camera, layer.renderTarget);
+						if (!layer.overrideClear) this.clearView(camera.camera, layer.renderTarget, true, true);
 						renderedRt[renderedLength] = rt;
 						renderedByCam[renderedLength] = camera;
 						renderedLength++;
 					}
 					this.renderShadows(layer._sortedLights[LIGHTTYPE_DIRECTIONAL], cameraPass);
-					layer._sortVisible(transparent, camera.node, cameraPass);
+					layer._sortVisible(transparent, camera.camera.node, cameraPass);
 					visible = transparent ? objects.visibleTransparent[cameraPass] : objects.visibleOpaque[cameraPass];
 					this.scene._activeCamera = camera.camera;
 					this.setCamera(camera.camera, layer.renderTarget);
@@ -14465,15 +14559,12 @@
 			scene.ambientLight.set(0, 0, 0);
 			if (!lmCamera) {
 				lmCamera = new Camera();
-				lmCamera._node = new GraphNode();
-				lmCamera.clearColor[0] = 0;
-				lmCamera.clearColor[1] = 0;
-				lmCamera.clearColor[2] = 0;
-				lmCamera.clearColor[3] = 0;
-				lmCamera.clearDepth = 1;
-				lmCamera.clearFlags = CLEARFLAG_COLOR;
-				lmCamera.clearStencil = null;
+				lmCamera.clearColor = new Color(0, 0, 0, 0);
+				lmCamera.clearColorBuffer = true;
+				lmCamera.clearDepthBuffer = false;
+				lmCamera.clearStencilBuffer = false;
 				lmCamera.frustumCulling = false;
+				lmCamera.node = new GraphNode();
 			}
 			var node;
 			var lm, rcv, m;
@@ -14611,8 +14702,8 @@
 					if (lights[i]._type === LIGHTTYPE_DIRECTIONAL) {
 						tempVec.copy(bounds.center);
 						tempVec.y += bounds.halfExtents.y;
-						lmCamera._node.setPosition(tempVec);
-						lmCamera._node.setEulerAngles(-90, 0, 0);
+						lmCamera.node.setPosition(tempVec);
+						lmCamera.node.setEulerAngles(-90, 0, 0);
 						var frustumSize = Math.max(bounds.halfExtents.x, bounds.halfExtents.z);
 						lmCamera.projection = PROJECTION_ORTHOGRAPHIC;
 						lmCamera.nearClip = 0;
@@ -22166,9 +22257,13 @@
 			var tex, mip, i;
 			var resources = [null, null, null, null, null, null, null];
 			var getType = function () {
-				return assetData.hasOwnProperty('type') ?
-					assetData.type :
-					(assetData.hasOwnProperty('rgbm') && assetData.rgbm ? TEXTURETYPE_RGBM : TEXTURETYPE_DEFAULT);
+				if (assetData.hasOwnProperty('type')) {
+					return assetData.type;
+				}
+				if (assetData.hasOwnProperty('rgbm')) {
+					return assetData.rgbm ? TEXTURETYPE_RGBM : TEXTURETYPE_DEFAULT;
+				}
+				return null;
 			};
 			if (!cubemapAsset.loaded || assets[0] !== oldAssets[0]) {
 				if (assets[0]) {
@@ -22183,7 +22278,7 @@
 						var prelit = new Texture(this._device, {
 							name: cubemapAsset.name + '_prelitCubemap' + (tex.width >> i),
 							cubemap: true,
-							type: getType(),
+							type: getType() || tex.type,
 							width: tex.width >> i,
 							height: tex.height >> i,
 							format: tex.format,
@@ -22218,13 +22313,13 @@
 					var faces = new Texture(this._device, {
 						name: cubemapAsset.name + '_faces',
 						cubemap: true,
-						type: getType(),
-						width: faceAssets[0].resource.width,
-						height: faceAssets[0].resource.height,
-						format: faceAssets[0].resource.format,
+						type: getType() || faceTextures[0].type,
+						width: faceTextures[0].width,
+						height: faceTextures[0].height,
+						format: faceTextures[0].format,
 						levels: faceLevels,
-						minFilter: assetData.hasOwnProperty('minFilter') ? assetData.minFilter : FILTER_LINEAR_MIPMAP_LINEAR,
-						magFilter: assetData.hasOwnProperty('magFilter') ? assetData.magFilter : FILTER_LINEAR,
+						minFilter: assetData.hasOwnProperty('minFilter') ? assetData.minFilter : faceTextures[0].minFilter,
+						magFilter: assetData.hasOwnProperty('magFilter') ? assetData.magFilter : faceTextures[0].magFilter,
 						anisotropy: assetData.hasOwnProperty('anisotropy') ? assetData.anisotropy : 1,
 						addressU: ADDRESS_CLAMP_TO_EDGE,
 						addressV: ADDRESS_CLAMP_TO_EDGE,
@@ -27286,6 +27381,263 @@
 		}
 	});
 
+	function XrFinger(index, hand) {
+		this._index = index;
+		this._hand = hand;
+		this._hand._fingers.push(this);
+		this._joints = [];
+		this._tip = null;
+	}
+	Object.defineProperty(XrFinger.prototype, 'index', {
+		get: function () {
+			return this._index;
+		}
+	});
+	Object.defineProperty(XrFinger.prototype, 'hand', {
+		get: function () {
+			return this._hand;
+		}
+	});
+	Object.defineProperty(XrFinger.prototype, 'joints', {
+		get: function () {
+			return this._joints;
+		}
+	});
+	Object.defineProperty(XrFinger.prototype, 'tip', {
+		get: function () {
+			return this._tip;
+		}
+	});
+
+	var tipJointIds = window.XRHand ? [
+		XRHand.THUMB_PHALANX_TIP,
+		XRHand.INDEX_PHALANX_TIP,
+		XRHand.MIDDLE_PHALANX_TIP,
+		XRHand.RING_PHALANX_TIP,
+		XRHand.LITTLE_PHALANX_TIP
+	] : [];
+	var tipJointIdsIndex = {};
+	for (var i = 0; i < tipJointIds.length; i++) {
+		tipJointIdsIndex[tipJointIds[i]] = true;
+	}
+	function XrJoint(index, id, hand, finger) {
+		this._index = index;
+		this._id = id;
+		this._hand = hand;
+		this._hand._joints.push(this);
+		this._hand._jointsById[id] = this;
+		this._finger = finger || null;
+		if (this._finger) this._finger._joints.push(this);
+		this._wrist = id === XRHand.WRIST;
+		if (this._wrist) this._hand._wrist = this;
+		this._tip = this._finger && !! tipJointIdsIndex[id];
+		if (this._tip) {
+			this._hand._tips.push(this);
+			if (this._finger) this._finger._tip = this;
+		}
+		this._radius = null;
+		this._localTransform = new Mat4();
+		this._worldTransform = new Mat4();
+		this._localPosition = new Vec3();
+		this._localRotation = new Quat();
+		this._position = new Vec3();
+		this._rotation = new Quat();
+		this._dirtyLocal = true;
+	}
+	XrJoint.prototype.update = function (pose) {
+		this._dirtyLocal = true;
+		this._radius = pose.radius;
+		this._localPosition.copy(pose.transform.position);
+		this._localRotation.copy(pose.transform.orientation);
+	};
+	XrJoint.prototype._updateTransforms = function () {
+		var dirty;
+		if (this._dirtyLocal) {
+			dirty = true;
+			this._dirtyLocal = false;
+			this._localTransform.setTRS(this._localPosition, this._localRotation, Vec3.ONE);
+		}
+		var manager = this._hand._manager;
+		var parent = manager.camera.parent;
+		if (parent) {
+			dirty = dirty || parent._dirtyLocal || parent._dirtyWorld;
+			if (dirty) this._worldTransform.mul2(parent.getWorldTransform(), this._localTransform);
+		} else {
+			this._worldTransform.copy(this._localTransform);
+		}
+	};
+	XrJoint.prototype.getPosition = function () {
+		this._updateTransforms();
+		this._worldTransform.getTranslation(this._position);
+		return this._position;
+	};
+	XrJoint.prototype.getRotation = function () {
+		this._updateTransforms();
+		this._rotation.setFromMat4(this._worldTransform);
+		return this._rotation;
+	};
+	Object.defineProperty(XrJoint.prototype, 'index', {
+		get: function () {
+			return this._index;
+		}
+	});
+	Object.defineProperty(XrJoint.prototype, 'hand', {
+		get: function () {
+			return this._hand;
+		}
+	});
+	Object.defineProperty(XrJoint.prototype, 'finger', {
+		get: function () {
+			return this._finger;
+		}
+	});
+	Object.defineProperty(XrJoint.prototype, 'wrist', {
+		get: function () {
+			return this._wrist;
+		}
+	});
+	Object.defineProperty(XrJoint.prototype, 'tip', {
+		get: function () {
+			return this._tip;
+		}
+	});
+	Object.defineProperty(XrJoint.prototype, 'radius', {
+		get: function () {
+			return this._radius || 0.005;
+		}
+	});
+
+	var fingerJointIds = [];
+	var vecA = new Vec3();
+	var vecB = new Vec3();
+	var vecC = new Vec3();
+	if (window.XRHand) {
+		fingerJointIds = [
+			[XRHand.THUMB_METACARPAL, XRHand.THUMB_PHALANX_PROXIMAL, XRHand.THUMB_PHALANX_DISTAL, XRHand.THUMB_PHALANX_TIP],
+			[XRHand.INDEX_METACARPAL, XRHand.INDEX_PHALANX_PROXIMAL, XRHand.INDEX_PHALANX_INTERMEDIATE, XRHand.INDEX_PHALANX_DISTAL, XRHand.INDEX_PHALANX_TIP],
+			[XRHand.MIDDLE_METACARPAL, XRHand.MIDDLE_PHALANX_PROXIMAL, XRHand.MIDDLE_PHALANX_INTERMEDIATE, XRHand.MIDDLE_PHALANX_DISTAL, XRHand.MIDDLE_PHALANX_TIP],
+			[XRHand.RING_METACARPAL, XRHand.RING_PHALANX_PROXIMAL, XRHand.RING_PHALANX_INTERMEDIATE, XRHand.RING_PHALANX_DISTAL, XRHand.RING_PHALANX_TIP],
+			[XRHand.LITTLE_METACARPAL, XRHand.LITTLE_PHALANX_PROXIMAL, XRHand.LITTLE_PHALANX_INTERMEDIATE, XRHand.LITTLE_PHALANX_DISTAL, XRHand.LITTLE_PHALANX_TIP]
+		];
+	}
+	function XrHand(inputSource) {
+		EventHandler.call(this);
+		var xrHand = inputSource._xrInputSource.hand;
+		this._manager = inputSource._manager;
+		this._inputSource = inputSource;
+		this._tracking = false;
+		this._fingers = [];
+		this._joints = [];
+		this._jointsById = {};
+		this._tips = [];
+		this._wrist = null;
+		if (xrHand[XRHand.WRIST])
+			this._wrist = new XrJoint(0, XRHand.WRIST, this, null);
+		for (var f = 0; f < fingerJointIds.length; f++) {
+			var finger = new XrFinger(f, this);
+			for (var j = 0; j < fingerJointIds[f].length; j++) {
+				var jointId = fingerJointIds[f][j];
+				if (! xrHand[jointId]) continue;
+				new XrJoint(j, jointId, this, finger);
+			}
+		}
+	}
+	XrHand.prototype = Object.create(EventHandler.prototype);
+	XrHand.prototype.constructor = XrHand;
+	XrHand.prototype.update = function (frame) {
+		var xrInputSource = this._inputSource._xrInputSource;
+		for (var j = 0; j < this._joints.length; j++) {
+			var joint = this._joints[j];
+			var jointSpace = xrInputSource.hand[joint._id];
+			if (jointSpace) {
+				var pose = frame.getJointPose(jointSpace, this._manager._referenceSpace);
+				if (pose) {
+					joint.update(pose);
+					if (joint.wrist && ! this._tracking) {
+						this._tracking = true;
+						this.fire('tracking');
+					}
+				} else if (joint.wrist) {
+					if (this._tracking) {
+						this._tracking = false;
+						this.fire('trackinglost');
+					}
+					break;
+				}
+			}
+		}
+		var j1 = this._jointsById[XRHand.THUMB_METACARPAL];
+		var j4 = this._jointsById[XRHand.THUMB_PHALANX_TIP];
+		var j6 = this._jointsById[XRHand.INDEX_PHALANX_PROXIMAL];
+		var j9 = this._jointsById[XRHand.INDEX_PHALANX_TIP];
+		var j16 = this._jointsById[XRHand.RING_PHALANX_PROXIMAL];
+		var j21 = this._jointsById[XRHand.LITTLE_PHALANX_PROXIMAL];
+		if (j1 && j4 && j6 && j9 && j16 && j21) {
+			this._inputSource._dirtyRay = true;
+			this._inputSource._rayLocal.origin.lerp(j4._localPosition, j9._localPosition, 0.5);
+			var jointL = j1;
+			var jointR = j21;
+			if (this._inputSource.handedness === XRHAND_LEFT) {
+				var t = jointL;
+				jointL = jointR;
+				jointR = t;
+			}
+			vecA.sub2(jointL._localPosition, this._wrist._localPosition);
+			vecB.sub2(jointR._localPosition, this._wrist._localPosition);
+			vecC.cross(vecA, vecB).normalize();
+			vecA.lerp(j6._localPosition, j16._localPosition, 0.5);
+			vecA.sub(this._wrist._localPosition).normalize();
+			this._inputSource._rayLocal.direction.lerp(vecC, vecA, 0.5).normalize();
+		}
+		if (j4 && j9) {
+			vecA.copy(j4._localPosition);
+			var d = vecA.distance(j9._localPosition);
+			if (d < 0.015) {
+				if (! this._inputSource._selecting) {
+					this._inputSource._selecting = true;
+					this._inputSource.fire('selectstart');
+					this._manager.input.fire('selectstart', this._inputSource);
+				}
+			} else {
+				if (this._inputSource._selecting) {
+					this._inputSource._selecting = false;
+					this._inputSource.fire('select');
+					this._manager.input.fire('select', this._inputSource);
+					this._inputSource.fire('selectend');
+					this._manager.input.fire('selectend', this._inputSource);
+				}
+			}
+		}
+	};
+	XrHand.prototype.getJointById = function (id) {
+		return this._jointsById[id] || null;
+	};
+	Object.defineProperty(XrHand.prototype, 'fingers', {
+		get: function () {
+			return this._fingers;
+		}
+	});
+	Object.defineProperty(XrHand.prototype, 'joints', {
+		get: function () {
+			return this._joints;
+		}
+	});
+	Object.defineProperty(XrHand.prototype, 'tips', {
+		get: function () {
+			return this._tips;
+		}
+	});
+	Object.defineProperty(XrHand.prototype, 'wrist', {
+		get: function () {
+			return this._wrist;
+		}
+	});
+	Object.defineProperty(XrHand.prototype, 'tracking', {
+		get: function () {
+			return this._tracking;
+		}
+	});
+
 	var quat = new Quat();
 	var ids = 0;
 	function XrInputSource(manager, xrInputSource) {
@@ -27296,6 +27648,9 @@
 		this._ray = new Ray();
 		this._rayLocal = new Ray();
 		this._grip = false;
+		this._hand = null;
+		if (xrInputSource.hand)
+			this._hand = new XrHand(this);
 		this._localTransform = null;
 		this._worldTransform = null;
 		this._position = new Vec3();
@@ -27311,28 +27666,33 @@
 	XrInputSource.prototype = Object.create(EventHandler.prototype);
 	XrInputSource.prototype.constructor = XrInputSource;
 	XrInputSource.prototype.update = function (frame) {
-		var targetRayPose = frame.getPose(this._xrInputSource.targetRaySpace, this._manager._referenceSpace);
-		if (! targetRayPose) return;
-		if (this._xrInputSource.gripSpace) {
-			var gripPose = frame.getPose(this._xrInputSource.gripSpace, this._manager._referenceSpace);
-			if (gripPose) {
-				if (! this._grip) {
-					this._grip = true;
-					this._localTransform = new Mat4();
-					this._worldTransform = new Mat4();
-					this._localPosition = new Vec3();
-					this._localRotation = new Quat();
+		if (this._hand) {
+			this._hand.update(frame);
+		} else {
+			if (this._xrInputSource.gripSpace) {
+				var gripPose = frame.getPose(this._xrInputSource.gripSpace, this._manager._referenceSpace);
+				if (gripPose) {
+					if (! this._grip) {
+						this._grip = true;
+						this._localTransform = new Mat4();
+						this._worldTransform = new Mat4();
+						this._localPosition = new Vec3();
+						this._localRotation = new Quat();
+					}
+					this._dirtyLocal = true;
+					this._localPosition.copy(gripPose.transform.position);
+					this._localRotation.copy(gripPose.transform.orientation);
 				}
-				this._dirtyLocal = true;
-				this._localPosition.copy(gripPose.transform.position);
-				this._localRotation.copy(gripPose.transform.orientation);
+			}
+			var targetRayPose = frame.getPose(this._xrInputSource.targetRaySpace, this._manager._referenceSpace);
+			if (targetRayPose) {
+				this._dirtyRay = true;
+				this._rayLocal.origin.copy(targetRayPose.transform.position);
+				this._rayLocal.direction.set(0, 0, -1);
+				quat.copy(targetRayPose.transform.orientation);
+				quat.transformVector(this._rayLocal.direction, this._rayLocal.direction);
 			}
 		}
-		this._dirtyRay = true;
-		this._rayLocal.origin.copy(targetRayPose.transform.position);
-		this._rayLocal.direction.set(0, 0, -1);
-		quat.copy(targetRayPose.transform.orientation);
-		quat.transformVector(this._rayLocal.direction, this._rayLocal.direction);
 	};
 	XrInputSource.prototype._updateTransforms = function () {
 		var dirty;
@@ -27344,10 +27704,7 @@
 		var parent = this._manager.camera.parent;
 		if (parent) {
 			dirty = dirty || parent._dirtyLocal || parent._dirtyWorld;
-			if (dirty) {
-				var parentTransform = this._manager.camera.parent.getWorldTransform();
-				this._worldTransform.mul2(parentTransform, this._localTransform);
-			}
+			if (dirty) this._worldTransform.mul2(parent.getWorldTransform(), this._localTransform);
 		} else {
 			this._worldTransform.copy(this._localTransform);
 		}
@@ -27453,6 +27810,11 @@
 	Object.defineProperty(XrInputSource.prototype, 'grip', {
 		get: function () {
 			return this._grip;
+		}
+	});
+	Object.defineProperty(XrInputSource.prototype, 'hand', {
+		get: function () {
+			return this._hand;
 		}
 	});
 	Object.defineProperty(XrInputSource.prototype, 'gamepad', {
@@ -27764,6 +28126,8 @@
 		var optionalFeatures = [];
 		if (type === XRTYPE_AR)
 			optionalFeatures.push('light-estimation');
+		if (type === XRTYPE_VR)
+			optionalFeatures.push('hand-tracking');
 		navigator.xr.requestSession(type, {
 			requiredFeatures: [spaceType],
 			optionalFeatures: optionalFeatures
@@ -31257,335 +31621,6 @@
 		}
 	});
 
-	var CameraComponent = function CameraComponent(system, entity) {
-		Component.call(this, system, entity);
-		this.on("set_aspectRatioMode", this.onSetAspectRatioMode, this);
-		this.on("set_aspectRatio", this.onSetAspectRatio, this);
-		this.on("set_camera", this.onSetCamera, this);
-		this.on("set_clearColor", this.onSetClearColor, this);
-		this.on("set_fov", this.onSetFov, this);
-		this.on("set_orthoHeight", this.onSetOrthoHeight, this);
-		this.on("set_nearClip", this.onSetNearClip, this);
-		this.on("set_farClip", this.onSetFarClip, this);
-		this.on("set_projection", this.onSetProjection, this);
-		this.on("set_priority", this.onSetPriority, this);
-		this.on("set_clearColorBuffer", this.updateClearFlags, this);
-		this.on("set_clearDepthBuffer", this.updateClearFlags, this);
-		this.on("set_clearStencilBuffer", this.updateClearFlags, this);
-		this.on("set_renderTarget", this.onSetRenderTarget, this);
-		this.on("set_rect", this.onSetRect, this);
-		this.on("set_scissorRect", this.onSetScissorRect, this);
-		this.on("set_horizontalFov", this.onSetHorizontalFov, this);
-		this.on("set_frustumCulling", this.onSetFrustumCulling, this);
-		this.on("set_calculateTransform", this.onSetCalculateTransform, this);
-		this.on("set_calculateProjection", this.onSetCalculateProjection, this);
-		this.on("set_cullFaces", this.onSetCullFaces, this);
-		this.on("set_flipFaces", this.onSetFlipFaces, this);
-		this.on("set_layers", this.onSetLayers, this);
-	};
-	CameraComponent.prototype = Object.create(Component.prototype);
-	CameraComponent.prototype.constructor = CameraComponent;
-	Object.defineProperty(CameraComponent.prototype, "projectionMatrix", {
-		get: function () {
-			return this.data.camera.getProjectionMatrix();
-		}
-	});
-	Object.defineProperty(CameraComponent.prototype, "viewMatrix", {
-		get: function () {
-			return this.data.camera.getViewMatrix();
-		}
-	});
-	Object.defineProperty(CameraComponent.prototype, "frustum", {
-		get: function () {
-			return this.data.camera.frustum;
-		}
-	});
-	Object.defineProperty(CameraComponent.prototype, "vrDisplay", {
-		get: function () {
-			return this.data.camera.vrDisplay;
-		},
-		set: function (value) {
-			this.data.camera.vrDisplay = value;
-			if (value) {
-				value._camera = this.data.camera;
-			}
-		}
-	});
-	Object.defineProperty(CameraComponent.prototype, "node", {
-		get: function () {
-			return this.data.camera._node;
-		}
-	});
-	Object.assign(CameraComponent.prototype, {
-		screenToWorld: function (screenx, screeny, cameraz, worldCoord) {
-			var device = this.system.app.graphicsDevice;
-			return this.data.camera.screenToWorld(screenx, screeny, cameraz, device.clientRect.width, device.clientRect.height, worldCoord);
-		},
-		onPrerender: function () {
-			this.data.camera._viewMatDirty = true;
-			this.data.camera._viewProjMatDirty = true;
-		},
-		worldToScreen: function (worldCoord, screenCoord) {
-			var device = this.system.app.graphicsDevice;
-			return this.data.camera.worldToScreen(worldCoord, device.clientRect.width, device.clientRect.height, screenCoord);
-		},
-		onSetAspectRatioMode: function (name, oldValue, newValue) {
-			this.data.camera.aspectRatioMode = newValue;
-		},
-		onSetAspectRatio: function (name, oldValue, newValue) {
-			this.data.camera.aspectRatio = newValue;
-		},
-		onSetCamera: function (name, oldValue, newValue) {
-			if (oldValue) {
-				oldValue._node = null;
-			}
-			newValue._node = this.entity;
-		},
-		onSetClearColor: function (name, oldValue, newValue) {
-			var clearColor = this.data.camera.clearColor;
-			clearColor[0] = newValue.r;
-			clearColor[1] = newValue.g;
-			clearColor[2] = newValue.b;
-			clearColor[3] = newValue.a;
-		},
-		onSetFov: function (name, oldValue, newValue) {
-			this.data.camera.fov = newValue;
-		},
-		onSetOrthoHeight: function (name, oldValue, newValue) {
-			this.data.camera.orthoHeight = newValue;
-		},
-		onSetNearClip: function (name, oldValue, newValue) {
-			this.data.camera.nearClip = newValue;
-		},
-		onSetFarClip: function (name, oldValue, newValue) {
-			this.data.camera.farClip = newValue;
-		},
-		onSetHorizontalFov: function (name, oldValue, newValue) {
-			this.data.camera.horizontalFov = newValue;
-		},
-		onSetFrustumCulling: function (name, oldValue, newValue) {
-			this.data.camera.frustumCulling = newValue;
-		},
-		onSetCalculateTransform: function (name, oldValue, newValue) {
-			this._calculateTransform = newValue;
-			this.camera.overrideCalculateTransform = !!newValue;
-		},
-		onSetCalculateProjection: function (name, oldValue, newValue) {
-			this._calculateProjection = newValue;
-			this.camera._projMatDirty = true;
-			this.camera.overrideCalculateProjection = !!newValue;
-		},
-		onSetCullFaces: function (name, oldValue, newValue) {
-			this.camera._cullFaces = newValue;
-		},
-		onSetFlipFaces: function (name, oldValue, newValue) {
-			this.camera._flipFaces = newValue;
-		},
-		onSetProjection: function (name, oldValue, newValue) {
-			this.data.camera.projection = newValue;
-		},
-		onSetPriority: function (name, oldValue, newValue) {
-			var layer;
-			for (var i = 0; i < this.layers.length; i++) {
-				layer = this.system.app.scene.layers.getLayerById(this.layers[i]);
-				if (!layer) continue;
-				layer._sortCameras();
-			}
-		},
-		onSetLayers: function (name, oldValue, newValue) {
-			var i, layer;
-			for (i = 0; i < oldValue.length; i++) {
-				layer = this.system.app.scene.layers.getLayerById(oldValue[i]);
-				if (!layer) continue;
-				layer.removeCamera(this);
-			}
-			if (!this.enabled || !this.entity.enabled) return;
-			for (i = 0; i < newValue.length; i++) {
-				layer = this.system.app.scene.layers.getLayerById(newValue[i]);
-				if (!layer) continue;
-				layer.addCamera(this);
-			}
-		},
-		addCameraToLayers: function () {
-			var layer;
-			for (var i = 0; i < this.layers.length; i++) {
-				layer = this.system.app.scene.layers.getLayerById(this.layers[i]);
-				if (!layer) continue;
-				layer.addCamera(this);
-			}
-		},
-		removeCameraFromLayers: function () {
-			var layer;
-			for (var i = 0; i < this.layers.length; i++) {
-				layer = this.system.app.scene.layers.getLayerById(this.layers[i]);
-				if (!layer) continue;
-				layer.removeCamera(this);
-			}
-		},
-		onLayersChanged: function (oldComp, newComp) {
-			this.addCameraToLayers();
-			oldComp.off("add", this.onLayerAdded, this);
-			oldComp.off("remove", this.onLayerRemoved, this);
-			newComp.on("add", this.onLayerAdded, this);
-			newComp.on("remove", this.onLayerRemoved, this);
-		},
-		onLayerAdded: function (layer) {
-			var index = this.layers.indexOf(layer.id);
-			if (index < 0) return;
-			layer.addCamera(this);
-		},
-		onLayerRemoved: function (layer) {
-			var index = this.layers.indexOf(layer.id);
-			if (index < 0) return;
-			layer.removeCamera(this);
-		},
-		updateClearFlags: function () {
-			var flags = 0;
-			if (this.clearColorBuffer)
-				flags |= CLEARFLAG_COLOR;
-			if (this.clearDepthBuffer)
-				flags |= CLEARFLAG_DEPTH;
-			if (this.clearStencilBuffer)
-				flags |= CLEARFLAG_STENCIL;
-			this.data.camera.clearFlags = flags;
-		},
-		onSetRenderTarget: function (name, oldValue, newValue) {
-			this.data.camera.renderTarget = newValue;
-		},
-		onSetRect: function (name, oldValue, newValue) {
-			this.data.camera.setRect(newValue.x, newValue.y, newValue.z, newValue.w);
-		},
-		onSetScissorRect: function (name, oldValue, newValue) {
-			this.data.camera.setScissorRect(newValue.x, newValue.y, newValue.z, newValue.w);
-		},
-		onEnable: function () {
-			this.system.addCamera(this);
-			this.system.app.scene.on("set:layers", this.onLayersChanged, this);
-			if (this.system.app.scene.layers) {
-				this.system.app.scene.layers.on("add", this.onLayerAdded, this);
-				this.system.app.scene.layers.on("remove", this.onLayerRemoved, this);
-			}
-			if (this.enabled && this.entity.enabled) {
-				this.addCameraToLayers();
-			}
-			this.postEffects.enable();
-		},
-		onDisable: function () {
-			this.postEffects.disable();
-			this.removeCameraFromLayers();
-			this.system.app.scene.off("set:layers", this.onLayersChanged, this);
-			if (this.system.app.scene.layers) {
-				this.system.app.scene.layers.off("add", this.onLayerAdded, this);
-				this.system.app.scene.layers.off("remove", this.onLayerRemoved, this);
-			}
-			this.system.removeCamera(this);
-		},
-		onRemove: function () {
-			this.onDisable();
-			this.off();
-		},
-		calculateAspectRatio: function (rt) {
-			var src = rt ? rt : this.system.app.graphicsDevice;
-			var rect = this.rect;
-			return (src.width * rect.z) / (src.height * rect.w);
-		},
-		frameBegin: function (rt) {
-			if (this.aspectRatioMode === ASPECT_AUTO) {
-				this.aspectRatio = this.calculateAspectRatio(rt);
-			}
-			this.data.isRendering = true;
-		},
-		frameEnd: function () {
-			this.data.isRendering = false;
-		},
-		enterVr: function (display, callback) {
-			if ((display instanceof Function) && !callback) {
-				callback = display;
-				display = null;
-			}
-			if (!this.system.app.vr) {
-				callback("VrManager not created. Enable VR in project settings.");
-				return;
-			}
-			if (!display) {
-				display = this.system.app.vr.display;
-			}
-			if (display) {
-				var self = this;
-				if (display.capabilities.canPresent) {
-					display.requestPresent(function (err) {
-						if (!err) {
-							self.vrDisplay = display;
-							self.vrDisplay.once('beforepresentchange', function (display) {
-								if (!display.presenting) {
-									self.vrDisplay = null;
-								}
-							});
-						}
-						callback(err);
-					});
-				} else {
-					self.vrDisplay = display;
-					callback();
-				}
-			} else {
-				callback("No pc.VrDisplay to present");
-			}
-		},
-		exitVr: function (callback) {
-			if (this.vrDisplay) {
-				if (this.vrDisplay.capabilities.canPresent) {
-					var display = this.vrDisplay;
-					this.vrDisplay = null;
-					display.exitPresent(callback);
-				} else {
-					this.vrDisplay = null;
-					callback();
-				}
-			} else {
-				callback("Not presenting VR");
-			}
-		},
-		startXr: function (type, spaceType, callback) {
-			this.system.app.xr.start(this, type, spaceType, callback);
-		},
-		endXr: function (callback) {
-			if (! this.camera.xr) {
-				if (callback) callback(new Error("Camera is not in XR"));
-				return;
-			}
-			this.camera.xr.end(callback);
-		}
-	});
-
-	function CameraComponentData() {
-		this.clearColor = new Color(0.722, 0.722, 0.722, 1);
-		this.clearColorBuffer = true;
-		this.clearDepthBuffer = true;
-		this.clearStencilBuffer = true;
-		this.nearClip = 0.1;
-		this.farClip = 1000;
-		this.fov = 45;
-		this.orthoHeight = 100;
-		this.projection = PROJECTION_PERSPECTIVE;
-		this.priority = 0;
-		this.rect = new Vec4(0, 0, 1, 1);
-		this.scissorRect = new Vec4(0, 0, 1, 1);
-		this.enabled = true;
-		this.frustumCulling = false;
-		this.cullFaces = true;
-		this.flipFaces = false;
-		this.layers = [LAYERID_WORLD, LAYERID_DEPTH, LAYERID_SKYBOX, LAYERID_UI, LAYERID_IMMEDIATE];
-		this.camera = null;
-		this.aspectRatio = 16 / 9;
-		this.aspectRatioMode = ASPECT_AUTO;
-		this.renderTarget = null;
-		this.postEffects = null;
-		this.isRendering = false;
-		this.calculateTransform = null;
-		this.calculateProjection = null;
-	}
-
 	var depthLayer;
 	function PostEffectQueue(app, camera) {
 		var self = this;
@@ -31891,33 +31926,256 @@
 		}
 	});
 
-	var _schema$5 = [
-		'enabled',
-		'clearColorBuffer',
-		'clearColor',
-		'clearDepthBuffer',
-		'clearStencilBuffer',
-		'frustumCulling',
-		'projection',
-		'fov',
-		'orthoHeight',
-		'nearClip',
-		'farClip',
-		'priority',
-		'rect',
-		'scissorRect',
-		'camera',
-		'aspectRatio',
-		'aspectRatioMode',
-		'horizontalFov',
-		'model',
-		'renderTarget',
-		'calculateTransform',
-		'calculateProjection',
-		'cullFaces',
-		'flipFaces',
-		'layers'
-	];
+	var CameraComponent = function CameraComponent(system, entity) {
+		Component.call(this, system, entity);
+		this._camera = new Camera();
+		this._camera.node = entity;
+		this._priority = 0;
+		this._postEffects = new PostEffectQueue(system.app, this);
+	};
+	CameraComponent.prototype = Object.create(Component.prototype);
+	CameraComponent.prototype.constructor = CameraComponent;
+	[
+		{ name: 'aspectRatio', readonly: false },
+		{ name: 'aspectRatioMode', readonly: false },
+		{ name: 'calculateProjection', readonly: false },
+		{ name: 'calculateTransform', readonly: false },
+		{ name: 'clearColor', readonly: false },
+		{ name: 'clearColorBuffer', readonly: false },
+		{ name: 'clearDepthBuffer', readonly: false },
+		{ name: 'clearStencilBuffer', readonly: false },
+		{ name: 'cullFaces', readonly: false },
+		{ name: 'farClip', readonly: false },
+		{ name: 'flipFaces', readonly: false },
+		{ name: 'fov', readonly: false },
+		{ name: 'frustum', readonly: true },
+		{ name: 'frustumCulling', readonly: false },
+		{ name: 'horizontalFov', readonly: false },
+		{ name: 'nearClip', readonly: false },
+		{ name: 'orthoHeight', readonly: false },
+		{ name: 'projection', readonly: false },
+		{ name: 'projectionMatrix', readonly: true },
+		{ name: 'rect', readonly: false },
+		{ name: 'renderTarget', readonly: false },
+		{ name: 'scissorRect', readonly: false },
+		{ name: 'viewMatrix', readonly: true },
+		{ name: 'vrDisplay', readonly: false }
+	].forEach(function (property) {
+		var name = property.name;
+		var options = {};
+		options.get = function () {
+			return this._camera[name];
+		};
+		if (!property.readonly) {
+			options.set = function (newValue) {
+				this._camera[name] = newValue;
+			};
+		}
+		Object.defineProperty(CameraComponent.prototype, name, options);
+	});
+	Object.defineProperty(CameraComponent.prototype, "camera", {
+		get: function () {
+			return this._camera;
+		}
+	});
+	Object.defineProperty(CameraComponent.prototype, "layers", {
+		get: function () {
+			return this._camera.layers;
+		},
+		set: function (newValue) {
+			var i, layer;
+			var layers = this._camera.layers;
+			for (i = 0; i < layers.length; i++) {
+				layer = this.system.app.scene.layers.getLayerById(layers[i]);
+				if (!layer) continue;
+				layer.removeCamera(this);
+			}
+			this._camera.layers = newValue;
+			if (!this.enabled || !this.entity.enabled) return;
+			for (i = 0; i < newValue.length; i++) {
+				layer = this.system.app.scene.layers.getLayerById(newValue[i]);
+				if (!layer) continue;
+				layer.addCamera(this);
+			}
+		}
+	});
+	Object.defineProperty(CameraComponent.prototype, "postEffects", {
+		get: function () {
+			return this._postEffects;
+		}
+	});
+	Object.defineProperty(CameraComponent.prototype, "priority", {
+		get: function () {
+			return this._priority;
+		},
+		set: function (newValue) {
+			this._priority = newValue;
+			var layers = this.layers;
+			for (var i = 0; i < layers.length; i++) {
+				var layer = this.system.app.scene.layers.getLayerById(layers[i]);
+				if (!layer) continue;
+				layer._sortCameras();
+			}
+		}
+	});
+	Object.assign(CameraComponent.prototype, {
+		screenToWorld: function (screenx, screeny, cameraz, worldCoord) {
+			var device = this.system.app.graphicsDevice;
+			var w = device.clientRect.width;
+			var h = device.clientRect.height;
+			return this._camera.screenToWorld(screenx, screeny, cameraz, w, h, worldCoord);
+		},
+		worldToScreen: function (worldCoord, screenCoord) {
+			var device = this.system.app.graphicsDevice;
+			var w = device.clientRect.width;
+			var h = device.clientRect.height;
+			return this._camera.worldToScreen(worldCoord, w, h, screenCoord);
+		},
+		onPrerender: function () {
+			this._camera._viewMatDirty = true;
+			this._camera._viewProjMatDirty = true;
+		},
+		addCameraToLayers: function () {
+			var layers = this.layers;
+			for (var i = 0; i < layers.length; i++) {
+				var layer = this.system.app.scene.layers.getLayerById(layers[i]);
+				if (!layer) continue;
+				layer.addCamera(this);
+			}
+		},
+		removeCameraFromLayers: function () {
+			var layers = this.layers;
+			for (var i = 0; i < layers.length; i++) {
+				var layer = this.system.app.scene.layers.getLayerById(layers[i]);
+				if (!layer) continue;
+				layer.removeCamera(this);
+			}
+		},
+		onLayersChanged: function (oldComp, newComp) {
+			this.addCameraToLayers();
+			oldComp.off("add", this.onLayerAdded, this);
+			oldComp.off("remove", this.onLayerRemoved, this);
+			newComp.on("add", this.onLayerAdded, this);
+			newComp.on("remove", this.onLayerRemoved, this);
+		},
+		onLayerAdded: function (layer) {
+			var index = this.layers.indexOf(layer.id);
+			if (index < 0) return;
+			layer.addCamera(this);
+		},
+		onLayerRemoved: function (layer) {
+			var index = this.layers.indexOf(layer.id);
+			if (index < 0) return;
+			layer.removeCamera(this);
+		},
+		onEnable: function () {
+			var system = this.system;
+			var scene = system.app.scene;
+			var layers = scene.layers;
+			system.addCamera(this);
+			scene.on("set:layers", this.onLayersChanged, this);
+			if (layers) {
+				layers.on("add", this.onLayerAdded, this);
+				layers.on("remove", this.onLayerRemoved, this);
+			}
+			if (this.enabled && this.entity.enabled) {
+				this.addCameraToLayers();
+			}
+			this.postEffects.enable();
+		},
+		onDisable: function () {
+			var system = this.system;
+			var scene = system.app.scene;
+			var layers = scene.layers;
+			this.postEffects.disable();
+			this.removeCameraFromLayers();
+			scene.off("set:layers", this.onLayersChanged, this);
+			if (layers) {
+				layers.off("add", this.onLayerAdded, this);
+				layers.off("remove", this.onLayerRemoved, this);
+			}
+			system.removeCamera(this);
+		},
+		onRemove: function () {
+			this.onDisable();
+			this.off();
+		},
+		calculateAspectRatio: function (rt) {
+			var src = rt ? rt : this.system.app.graphicsDevice;
+			var rect = this.rect;
+			return (src.width * rect.z) / (src.height * rect.w);
+		},
+		frameBegin: function (rt) {
+			if (this.aspectRatioMode === ASPECT_AUTO) {
+				this.aspectRatio = this.calculateAspectRatio(rt);
+			}
+		},
+		frameEnd: function () {},
+		enterVr: function (display, callback) {
+			if ((display instanceof Function) && !callback) {
+				callback = display;
+				display = null;
+			}
+			if (!this.system.app.vr) {
+				callback("VrManager not created. Enable VR in project settings.");
+				return;
+			}
+			if (!display) {
+				display = this.system.app.vr.display;
+			}
+			if (display) {
+				var self = this;
+				if (display.capabilities.canPresent) {
+					display.requestPresent(function (err) {
+						if (!err) {
+							self.vrDisplay = display;
+							self.vrDisplay.once('beforepresentchange', function (display) {
+								if (!display.presenting) {
+									self.vrDisplay = null;
+								}
+							});
+						}
+						callback(err);
+					});
+				} else {
+					self.vrDisplay = display;
+					callback();
+				}
+			} else {
+				callback("No pc.VrDisplay to present");
+			}
+		},
+		exitVr: function (callback) {
+			if (this.vrDisplay) {
+				if (this.vrDisplay.capabilities.canPresent) {
+					var display = this.vrDisplay;
+					this.vrDisplay = null;
+					display.exitPresent(callback);
+				} else {
+					this.vrDisplay = null;
+					callback();
+				}
+			} else {
+				callback("Not presenting VR");
+			}
+		},
+		startXr: function (type, spaceType, callback) {
+			this.system.app.xr.start(this, type, spaceType, callback);
+		},
+		endXr: function (callback) {
+			if (!this._camera.xr) {
+				if (callback) callback(new Error("Camera is not in XR"));
+				return;
+			}
+			this._camera.xr.end(callback);
+		}
+	});
+
+	function CameraComponentData() {
+		this.enabled = true;
+	}
+
+	var _schema$5 = ['enabled'];
 	var CameraComponentSystem = function (app) {
 		ComponentSystem.call(this, app);
 		this.id = 'camera';
@@ -31926,7 +32184,6 @@
 		this.schema = _schema$5;
 		this.cameras = [];
 		this.on('beforeremove', this.onBeforeRemove, this);
-		this.on('remove', this.onRemove, this);
 		this.app.on("prerender", this.onPrerender, this);
 		ComponentSystem.bind('update', this.onUpdate, this);
 	};
@@ -31934,98 +32191,103 @@
 	CameraComponentSystem.prototype.constructor = CameraComponentSystem;
 	Component._buildAccessors(CameraComponent.prototype, _schema$5);
 	Object.assign(CameraComponentSystem.prototype, {
-		initializeComponentData: function (component, _data, properties) {
+		initializeComponentData: function (component, data, properties) {
 			properties = [
-				'postEffects',
-				'enabled',
-				'model',
-				'camera',
 				'aspectRatio',
 				'aspectRatioMode',
-				'horizontalFov',
-				'renderTarget',
+				'calculateProjection',
+				'calculateTransform',
 				'clearColor',
-				'fov',
-				'orthoHeight',
-				'nearClip',
-				'farClip',
-				'projection',
-				'priority',
 				'clearColorBuffer',
 				'clearDepthBuffer',
 				'clearStencilBuffer',
-				'frustumCulling',
-				'rect',
-				'scissorRect',
-				'calculateTransform',
-				'calculateProjection',
 				'cullFaces',
+				'farClip',
 				'flipFaces',
-				'layers'
+				'fov',
+				'frustumCulling',
+				'horizontalFov',
+				'layers',
+				'renderTarget',
+				'nearClip',
+				'orthoHeight',
+				'projection',
+				'priority',
+				'rect',
+				'scissorRect'
 			];
-			var data = {};
-			for (var i = 0, len = properties.length; i < len; i++) {
+			for (var i = 0; i < properties.length; i++) {
 				var property = properties[i];
-				data[property] = _data[property];
+				if (data.hasOwnProperty(property)) {
+					var value = data[property];
+					switch (property) {
+						case 'rect':
+						case 'scissorRect':
+							if (Array.isArray(value)) {
+								component[property] = new Vec4(value[0], value[1], value[2], value[3]);
+							} else {
+								component[property] = value;
+							}
+							break;
+						case 'clearColor':
+							if (Array.isArray(value)) {
+								component[property] = new Color(value[0], value[1], value[2], value[3]);
+							} else {
+								component[property] = value;
+							}
+							break;
+						default:
+							component[property] = value;
+							break;
+					}
+				}
 			}
-			if (data.layers && Array.isArray(data.layers)) {
-				data.layers = data.layers.slice(0);
-			}
-			if (data.clearColor && Array.isArray(data.clearColor)) {
-				var c = data.clearColor;
-				data.clearColor = new Color(c[0], c[1], c[2], c[3]);
-			}
-			if (data.rect && Array.isArray(data.rect)) {
-				var rect = data.rect;
-				data.rect = new Vec4(rect[0], rect[1], rect[2], rect[3]);
-			}
-			if (data.scissorRect && Array.isArray(data.scissorRect)) {
-				var scissorRect = data.scissorRect;
-				data.scissorRect = new Vec4(scissorRect[0], scissorRect[1], scissorRect[2], scissorRect[3]);
-			}
-			if (data.activate) {
-				console.warn("WARNING: activate: Property is deprecated. Set enabled property instead.");
-				data.enabled = data.activate;
-			}
-			data.camera = new Camera();
-			data._node = component.entity;
-			data.camera._component = component;
-			var self = component;
-			data.camera.calculateTransform = function (mat, mode) {
-				if (!self._calculateTransform)
-					return null;
-				return self._calculateTransform(mat, mode);
-			};
-			data.camera.calculateProjection = function (mat, mode) {
-				if (!self._calculateProjection)
-					return null;
-				return self._calculateProjection(mat, mode);
-			};
-			data.postEffects = new PostEffectQueue(this.app, component);
-			ComponentSystem.prototype.initializeComponentData.call(this, component, data, properties);
+			ComponentSystem.prototype.initializeComponentData.call(this, component, data, ['enabled']);
+		},
+		cloneComponent: function (entity, clone) {
+			var c = entity.camera;
+			this.addComponent(clone, {
+				aspectRatio: c.aspectRatio,
+				aspectRatioMode: c.aspectRatioMode,
+				calculateProjection: c.calculateProjection,
+				calculateTransform: c.calculateTransform,
+				clearColor: c.clearColor,
+				clearColorBuffer: c.clearColorBuffer,
+				clearDepthBuffer: c.clearDepthBuffer,
+				clearStencilBuffer: c.clearStencilBuffer,
+				cullFaces: c.cullFaces,
+				farClip: c.farClip,
+				flipFaces: c.flipFaces,
+				fov: c.fov,
+				frustumCulling: c.frustumCulling,
+				horizontalFov: c.horizontalFov,
+				layers: c.layers,
+				renderTarget: c.renderTarget,
+				nearClip: c.nearClip,
+				orthoHeight: c.orthoHeight,
+				projection: c.projection,
+				priority: c.priority,
+				rect: c.rect,
+				scissorRect: c.scissorRect
+			});
 		},
 		onBeforeRemove: function (entity, component) {
 			this.removeCamera(component);
-			component.onRemove();
-		},
-		onRemove: function (entity, data) {
-			data.camera = null;
 		},
 		onUpdate: function (dt) {
-			var components = this.store;
-			var component, componentData, cam, vrDisplay;
 			if (this.app.vr) {
+				var components = this.store;
 				for (var id in components) {
-					component = components[id];
-					componentData = component.data;
-					cam = componentData.camera;
-					vrDisplay = cam.vrDisplay;
-					if (componentData.enabled && component.entity.enabled && vrDisplay) {
-						vrDisplay.setClipPlanes(cam._nearClip, cam._farClip);
-						if (cam._node) {
-							cam._node.localTransform.copy(vrDisplay.combinedViewInv);
-							cam._node._dirtyLocal = false;
-							cam._node._dirtifyWorld();
+					var component = components[id];
+					if (component.enabled && component.entity.enabled) {
+						var vrDisplay = component.vrDisplay;
+						if (vrDisplay) {
+							vrDisplay.setClipPlanes(component.nearClip, component.farClip);
+							if (component.entity) {
+								component.entity.localTransform.copy(vrDisplay.combinedViewInv);
+								component.entity._dirtyLocal = false;
+								component.entity._dirtifyWorld();
+							}
 						}
 					}
 				}
@@ -35932,8 +36194,8 @@
 		}
 	});
 
-	var vecA = new Vec3();
-	var vecB = new Vec3();
+	var vecA$1 = new Vec3();
+	var vecB$1 = new Vec3();
 	var matA = new Mat4();
 	var matB = new Mat4();
 	var matC = new Mat4();
@@ -36090,9 +36352,9 @@
 							matA.setTRS(Vec3.ZERO, parent.getLocalRotation(), parent.getLocalScale());
 							parentWorldTransform.mul2(parent.element._parentWorldTransform, matA);
 						}
-						var depthOffset = vecA;
+						var depthOffset = vecA$1;
 						depthOffset.set(0, 0, this.localPosition.z);
-						var pivotOffset = vecB;
+						var pivotOffset = vecB$1;
 						pivotOffset.set(element._absLeft + element._pivot.x * element.calculatedWidth, element._absBottom + element._pivot.y * element.calculatedHeight, 0);
 						matA.setTranslate(-pivotOffset.x, -pivotOffset.y, -pivotOffset.z);
 						matB.setTRS(depthOffset, this.getLocalRotation(), this.getLocalScale());
@@ -36488,8 +36750,8 @@
 			} else {
 				var sw = this.system.app.graphicsDevice.width;
 				var sh = this.system.app.graphicsDevice.height;
-				var cameraWidth = camera._rect.width * sw;
-				var cameraHeight = camera._rect.height * sh;
+				var cameraWidth = camera._rect.z * sw;
+				var cameraHeight = camera._rect.w * sh;
 				clipL = camera._rect.x * sw;
 				clipR = clipL + cameraWidth;
 				clipT = (1 - camera._rect.y) * sh;
@@ -36841,14 +37103,14 @@
 				matC.setTranslate(localPos.x, localPos.y, localPos.z);
 				matD.copy(this.entity.parent.getWorldTransform());
 				matD.mul(matC).mul(matB).mul(matA);
-				vecA.set(localPos.x - this.pivot.x * this.calculatedWidth, localPos.y - this.pivot.y * this.calculatedHeight, localPos.z);
-				matD.transformPoint(vecA, this._worldCorners[0]);
-				vecA.set(localPos.x + (1 - this.pivot.x) * this.calculatedWidth, localPos.y - this.pivot.y * this.calculatedHeight, localPos.z);
-				matD.transformPoint(vecA, this._worldCorners[1]);
-				vecA.set(localPos.x + (1 - this.pivot.x) * this.calculatedWidth, localPos.y + (1 - this.pivot.y) * this.calculatedHeight, localPos.z);
-				matD.transformPoint(vecA, this._worldCorners[2]);
-				vecA.set(localPos.x - this.pivot.x * this.calculatedWidth, localPos.y + (1 - this.pivot.y) * this.calculatedHeight, localPos.z);
-				matD.transformPoint(vecA, this._worldCorners[3]);
+				vecA$1.set(localPos.x - this.pivot.x * this.calculatedWidth, localPos.y - this.pivot.y * this.calculatedHeight, localPos.z);
+				matD.transformPoint(vecA$1, this._worldCorners[0]);
+				vecA$1.set(localPos.x + (1 - this.pivot.x) * this.calculatedWidth, localPos.y - this.pivot.y * this.calculatedHeight, localPos.z);
+				matD.transformPoint(vecA$1, this._worldCorners[1]);
+				vecA$1.set(localPos.x + (1 - this.pivot.x) * this.calculatedWidth, localPos.y + (1 - this.pivot.y) * this.calculatedHeight, localPos.z);
+				matD.transformPoint(vecA$1, this._worldCorners[2]);
+				vecA$1.set(localPos.x - this.pivot.x * this.calculatedWidth, localPos.y + (1 - this.pivot.y) * this.calculatedHeight, localPos.z);
+				matD.transformPoint(vecA$1, this._worldCorners[3]);
 			}
 			this._worldCornersDirty = false;
 			return this._worldCorners;
@@ -42366,9 +42628,9 @@
 		'_callbacks', 'has', 'get', 'on', 'off', 'fire', 'once', 'hasEvent'
 	];
 	var reservedScripts = { };
-	var i;
-	for (i = 0; i < createScript.reservedScripts.length; i++)
-		reservedScripts[createScript.reservedScripts[i]] = 1;
+	var i$1;
+	for (i$1 = 0; i$1 < createScript.reservedScripts.length; i$1++)
+		reservedScripts[createScript.reservedScripts[i$1]] = 1;
 	createScript.reservedScripts = reservedScripts;
 	createScript.reservedAttributes = [
 		'app', 'entity', 'enabled', '_enabled', '_enabledOld', '_destroyed',
@@ -42376,8 +42638,8 @@
 		'_callbacks', 'has', 'get', 'on', 'off', 'fire', 'once', 'hasEvent'
 	];
 	var reservedAttributes = { };
-	for (i = 0; i < createScript.reservedAttributes.length; i++)
-		reservedAttributes[createScript.reservedAttributes[i]] = 1;
+	for (i$1 = 0; i$1 < createScript.reservedAttributes.length; i$1++)
+		reservedAttributes[createScript.reservedAttributes[i$1]] = 1;
 	createScript.reservedAttributes = reservedAttributes;
 
 	function SortedLoopArray(args) {
@@ -45924,12 +46186,14 @@
 				if (store.hasOwnProperty(id)) {
 					var item = store[id];
 					var entity = item.entity;
-					var componentData = item.data;
-					if (componentData.enabled && entity.enabled && componentData.positional) {
-						var position = entity.getPosition();
-						var slots = componentData.slots;
-						for (var key in slots) {
-							slots[key].updatePosition(position);
+					if (entity.enabled) {
+						var component = entity.sound;
+						if (component.enabled && component.positional) {
+							var position = entity.getPosition();
+							var slots = component.slots;
+							for (var key in slots) {
+								slots[key].updatePosition(position);
+							}
 						}
 					}
 				}
@@ -53176,7 +53440,7 @@
 		var i, j;
 		var self = this;
 		if (camera instanceof Camera) {
-			camera = camera._component;
+			camera = camera.node.camera;
 		}
 		this.scene = scene;
 		var sourceLayer = null;
@@ -54093,8 +54357,8 @@
 	};
 
 	var targetX, targetY;
-	var vecA$1 = new Vec3();
-	var vecB$1 = new Vec3();
+	var vecA$2 = new Vec3();
+	var vecB$2 = new Vec3();
 	var rayA = new Ray();
 	var rayB = new Ray();
 	var rayC = new Ray();
@@ -54728,11 +54992,11 @@
 				y <= cameraBottom && _y >= cameraTop) {
 				_x = sw * (_x - cameraLeft) / cameraWidth;
 				_y = sh * (_y - (cameraTop)) / cameraHeight;
-				camera.screenToWorld(_x, _y, camera.nearClip, vecA$1);
-				camera.screenToWorld(_x, _y, camera.farClip, vecB$1);
-				ray.origin.copy(vecA$1);
+				camera.screenToWorld(_x, _y, camera.nearClip, vecA$2);
+				camera.screenToWorld(_x, _y, camera.farClip, vecB$2);
+				ray.origin.copy(vecA$2);
 				ray.direction.set(0, 0, -1);
-				ray.end.copy(vecB$1);
+				ray.end.copy(vecB$2);
 				return true;
 			}
 			return false;
@@ -56120,6 +56384,11 @@
 		}
 		document.exitFullscreen();
 	};
+	Object.defineProperty(CameraComponent.prototype, "node", {
+		get: function () {
+			return this.entity;
+		}
+	});
 	Object.defineProperty(LightComponent.prototype, "enable", {
 		get: function () {
 			return this.enabled;
