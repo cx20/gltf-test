@@ -9,6 +9,7 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'TextureTransformMultiTest', scale:1.0},
     {category:'tutorialModels', name:'TransmissionTest', scale:3.0},
     {category:'tutorialModels', name:'UnlitTest', scale:1.0},
+    {category:'tutorialModels', name:'SheenChair', scale:0.07},
     {category:'tutorialModels', name:'SheenCloth', scale:50.0}
 ];
 
@@ -17,6 +18,7 @@ TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that
     'SpecGlossVsMetalRough',
     'TextureTransformTest',
     'TextureTransformMultiTest',
+    'SheenChair',
     'SheenCloth'
 ];
 
