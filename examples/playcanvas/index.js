@@ -90,7 +90,7 @@ var Viewer = function (canvas) {
         app.scene.skyboxMip = 0;
         // 3. Leave resource[0] as `default` and set the rest (resource[1]...resource[6]) to `rgbm`.
         // https://forum.playcanvas.com/t/how-to-dynamically-configure-skybox-with-javascript/12980/10
-        for (let i = 1; i <= cubemapAsset.resources.length; i++ ) {
+        for (let i = 1; i < cubemapAsset.resources.length; i++ ) {
             cubemapAsset.resources[i].type = "rgbm";
         }
         app.scene.setSkybox(cubemapAsset.resources);
