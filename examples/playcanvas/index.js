@@ -55,6 +55,15 @@ var Viewer = function (canvas) {
     });
 
     // set a prefiltered cubemap as the skybox
+    // Please refer to the following when setting a 6-sided texture different from the prefiltered texture
+    // 
+    // How to dynamically configure Skybox with JavaScript?
+    // https://forum.playcanvas.com/t/how-to-dynamically-configure-skybox-with-javascript/12980
+    // 
+    // 1. rgbm specification of cubemap is changed to default
+    // 2. After constructing the cubemap asset, do cubemapAsset.loadFaces = true; then kick off asset load.
+    // 3. Leave resource[0] as `default` and set the rest (resource[1]...resource[6]) to `rgbm`.
+    // 
     let cubemapAsset = new pc.Asset('papermill', 'cubemap', {
         url: "../../textures/dds/papermill.dds"
     }, {
@@ -70,16 +79,25 @@ var Viewer = function (canvas) {
         "minFilter": 5,
         "anisotropy": 1,
         "name": "Papermill",
-        "rgbm": true,
+        // 1. rgbm specification of cubemap is changed to default
+        // https://forum.playcanvas.com/t/how-to-dynamically-configure-skybox-with-javascript/12980/8
+        //"rgbm": true,
         "prefiltered": "papermill.dds"
     });
     cubemapAsset.ready(function () {
         app.scene.gammaCorrection = pc.GAMMA_SRGB;
         app.scene.toneMapping = pc.TONEMAP_ACES;
         app.scene.skyboxMip = 0;
+        // 3. Leave resource[0] as `default` and set the rest (resource[1]...resource[6]) to `rgbm`.
+        // https://forum.playcanvas.com/t/how-to-dynamically-configure-skybox-with-javascript/12980/10
+        for (let i = 1; i <= cubemapAsset.resources.length; i++ ) {
+            cubemapAsset.resources[i].type = "rgbm";
+        }
         app.scene.setSkybox(cubemapAsset.resources);
     });
     app.assets.add(cubemapAsset);
+    // 2. After constructing the cubemap asset, do cubemapAsset.loadFaces = true; then kick off asset load.
+    // https://forum.playcanvas.com/t/how-to-dynamically-configure-skybox-with-javascript/12980/6
     cubemapAsset.loadFaces = true;
     app.assets.load(cubemapAsset);
 
