@@ -80,6 +80,7 @@ var Viewer = function (canvas) {
         app.scene.setSkybox(cubemapAsset.resources);
     });
     app.assets.add(cubemapAsset);
+    cubemapAsset.loadFaces = true;
     app.assets.load(cubemapAsset);
 
     // create the orbit camera
