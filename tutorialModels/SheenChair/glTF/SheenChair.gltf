@@ -1001,7 +1001,7 @@
   ],
   "buffers": [
     {
-      "uri": "gltf_sheen_damask.bin",
+      "uri": "SheenChair.bin",
       "byteLength": 1137976
     }
   ],
@@ -1063,11 +1063,11 @@
       "alphaMode": "OPAQUE",
 			"extensions": {
 				"KHR_materials_sheen": {
-					"intensityFactor": 1.0,
-					"colorFactor": [
+					"sheenRoughnessFactor": 0.5,
+					"sheenColorFactor": [
+						1.0,
 						0.0,
-						0.0,
-						1.0
+						0.75
 					]
 				}
 			},
@@ -1203,60 +1203,60 @@
     {
       "sampler": 0,
       "source": 0,
-      "name": "chair_damask_normal.jpg"
+      "name": "SheenChair_damask_normal.jpg"
     },
     {
       "sampler": 0,
       "source": 1,
-      "name": "chair_occlusion.jpg"
+      "name": "SheenChair_occlusion.jpg"
     },
     {
       "sampler": 0,
       "source": 2,
-      "name": "chair_damask_albedo.jpg"
+      "name": "SheenChair_damask_albedo.jpg"
     },
     {
       "sampler": 0,
       "source": 3,
-      "name": "chair_wood_albedo.jpg"
+      "name": "SheenChair_wood_albedo.jpg"
     },
     {
       "sampler": 0,
       "source": 4,
-      "name": "chair_wood_roughness0.jpg"
+      "name": "SheenChair_wood_roughness0.jpg"
     },
     {
       "sampler": 0,
       "source": 5,
-      "name": "chair_metal_roughness255.jpg"
+      "name": "SheenChair_metal_roughness255.jpg"
     },
     {
       "sampler": 0,
       "source": 6,
-      "name": "chair_label.jpg"
+      "name": "SheenChair_label.jpg"
     }
   ],
   "images": [
     {
-      "uri": "chair_damask_normal.jpg"
+      "uri": "SheenChair_damask_normal.jpg"
     },
     {
-      "uri": "chair_occlusion.jpg"
+      "uri": "SheenChair_occlusion.jpg"
     },
     {
-      "uri": "chair_damask_albedo.jpg"
+      "uri": "SheenChair_damask_albedo.jpg"
     },
     {
-      "uri": "chair_wood_albedo.jpg"
+      "uri": "SheenChair_wood_albedo.jpg"
     },
     {
-      "uri": "chair_wood_roughness0.jpg"
+      "uri": "SheenChair_wood_roughness0.jpg"
     },
     {
-      "uri": "chair_metal_roughness255.jpg"
+      "uri": "SheenChair_metal_roughness255.jpg"
     },
     {
-      "uri": "chair_label.jpg"
+      "uri": "SheenChair_label.jpg"
     }
   ],
   "samplers": [
