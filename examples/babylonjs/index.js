@@ -25,6 +25,7 @@ var CUBEMAP = true;
 var IBL = true;
 var LIGHTS = false; // The default is to use IBL instead of lights
 var DEBUG = false;
+var VARIANT = "";
 
 let createScene = function(engine) {
 
@@ -49,16 +50,35 @@ let createScene = function(engine) {
     let guiIbl = gui.add(window, 'IBL').name('IBL');
     let guiLights = gui.add(window, 'LIGHTS').name('Lights');
     let guiDebug = gui.add(window, 'DEBUG').name('Debug');
+    let guiVariants = null;
 
-    BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (plugin) {
-        plugin.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
+    let variantsExtension = null;
+
+    BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (loader) {
+        loader.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
+
+        loader.onExtensionLoadedObservable.add(function (extension) {
+            if (extension.name === "KHR_materials_variants") {
+                variantsExtension = extension;
+            }
+        });
     });
 
-    let loader = BABYLON.SceneLoader.Load(base, file, engine, function(newScene) {
+    return BABYLON.SceneLoader.LoadAsync(path).then(function (newScene) {
 
         scene = newScene;
         
         let parentMesh = scene.rootNodes[0];
+        
+        if ( variantsExtension != null ) {
+            variants = variantsExtension.getAvailableVariants(parentMesh);
+            VARIANT = variants[0];
+            let variantNames = variants.reduce(function (allNames, name) { 
+                allNames[name] = name;
+                return allNames
+            }, {});
+            guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
+        }
 
         if ( modelInfo.name == "GearboxAssy" ) {
             // TODO: Position adjustment required
@@ -126,6 +146,8 @@ let createScene = function(engine) {
 
         guiCubeMap.onChange(function (value) {
             skybox.visibility = value ? 1 : 0;
+            
+            variantsExtension.selectVariant(scene.rootNodes[0], "street")
         });
 
         guiIbl.onChange(function (value) {
@@ -139,6 +161,10 @@ let createScene = function(engine) {
 
         guiDebug.onChange(function (value) {
             scene.debugLayer.show({popup: value});
+        });
+
+        guiVariants.onChange(function (value) {
+            variantsExtension.selectVariant(parentMesh, value);
         });
 
         engine.runRenderLoop(function() {
