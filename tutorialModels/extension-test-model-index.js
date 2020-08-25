@@ -80,6 +80,9 @@ TutorialExtensionTestModelIndex.getCurrentModel = function() {
         if (options.scale !== undefined) {
             modelInfoCollection[options.model].scale = options.scale;
         }
+        if (options.variant !== undefined) {
+            modelInfoCollection[options.model].variant = options.variant;
+        }
         if (options.type == 'glTF-Binary' || options.type == 'glTF-Draco' && options.model == 'MorphPrimitivesTest') {
             modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.glb';
         } else {
