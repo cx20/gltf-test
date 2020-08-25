@@ -4,6 +4,8 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'ClearCoatTest', scale:0.3},
     {category:'tutorialModels', name:'EnvironmentTest', scale:0.3},
     {category:'tutorialModels', name:'Lights', scale:1.0},
+    {category:'tutorialModels', name:'MaterialsVariantsChair', scale:0.7},
+    {category:'tutorialModels', name:'MaterialsVariantsShoe', scale:10.0},
     {category:'tutorialModels', name:'SpecGlossVsMetalRough', scale:10.0},
     {category:'tutorialModels', name:'TextureTransformTest', scale:1.0},
     {category:'tutorialModels', name:'TextureTransformMultiTest', scale:1.0},
@@ -15,6 +17,7 @@ TutorialExtensionTestModelIndex.List = [
 
 TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'ClearCoatTest',
+    'MaterialsVariantsChair',
     'SpecGlossVsMetalRough',
     'TextureTransformTest',
     'TextureTransformMultiTest',
