@@ -72,12 +72,13 @@ let createScene = function(engine) {
         
         if ( variantsExtension != null ) {
             variants = variantsExtension.getAvailableVariants(parentMesh);
-            VARIANT = variants[0];
+            VARIANT = modelInfo.variant == undefined ? variants[0] : modelInfo.variant;
             let variantNames = variants.reduce(function (allNames, name) { 
                 allNames[name] = name;
                 return allNames
             }, {});
             guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
+            variantsExtension.selectVariant(scene.rootNodes[0], VARIANT)
         }
 
         if ( modelInfo.name == "GearboxAssy" ) {
