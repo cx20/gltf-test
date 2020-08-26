@@ -72,13 +72,19 @@ let createScene = function(engine) {
         
         if ( variantsExtension != null ) {
             variants = variantsExtension.getAvailableVariants(parentMesh);
-            VARIANT = modelInfo.variant == undefined ? variants[0] : modelInfo.variant;
-            let variantNames = variants.reduce(function (allNames, name) { 
-                allNames[name] = name;
-                return allNames
-            }, {});
-            guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
-            variantsExtension.selectVariant(scene.rootNodes[0], VARIANT)
+            if (variants.length > 0 ) {
+                VARIANT = modelInfo.variant == undefined ? variants[0] : modelInfo.variant;
+                let variantNames = variants.reduce(function (allNames, name) { 
+                    allNames[name] = name;
+                    return allNames
+                }, {});
+                guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
+                variantsExtension.selectVariant(parentMesh, VARIANT)
+
+                guiVariants.onChange(function (value) {
+                    variantsExtension.selectVariant(parentMesh, value);
+                });
+            }
         }
 
         if ( modelInfo.name == "GearboxAssy" ) {
@@ -162,10 +168,6 @@ let createScene = function(engine) {
 
         guiDebug.onChange(function (value) {
             scene.debugLayer.show({popup: value});
-        });
-
-        guiVariants.onChange(function (value) {
-            variantsExtension.selectVariant(parentMesh, value);
         });
 
         engine.runRenderLoop(function() {
