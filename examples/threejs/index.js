@@ -191,8 +191,7 @@ function init() {
         scene.background = value ? cubeMap : null;
     });
     guiIbl.onChange(function (value) {
-        let name = modelInfo.name;
-        let object = scene.getObjectByName(name);
+        let object = scene;
         let newEnvMap = (renderTarget && value) ? renderTarget.texture : null;
         applyEnvMap(object, newEnvMap);
     });
