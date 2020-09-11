@@ -68,12 +68,26 @@ var Viewer = function (canvas) {
         url: "../../textures/dds/papermill.dds"
     }, {
         "textures": [
+/*
             "../../textures/papermill/specular/specular_right_0.jpg",
             "../../textures/papermill/specular/specular_left_0.jpg",
             "../../textures/papermill/specular/specular_top_0.jpg",
             "../../textures/papermill/specular/specular_bottom_0.jpg",
             "../../textures/papermill/specular/specular_front_0.jpg",
             "../../textures/papermill/specular/specular_back_0.jpg",
+*/
+            // How do I apply gamma correct to CubeMap textures?
+            // https://forum.playcanvas.com/t/how-do-i-apply-gamma-correct-to-cubemap-textures/14741/5
+            // 
+            // > I suggest re-saving the images with a plain old sRGB color profile instead. 
+            // > (GIMP's built in sRGB profile seems to work fine).
+            // 
+            "../../textures/papermill/environment_GIMP_builtin_sRGB_profile/environment_right_0.jpg",
+            "../../textures/papermill/environment_GIMP_builtin_sRGB_profile/environment_left_0.jpg",
+            "../../textures/papermill/environment_GIMP_builtin_sRGB_profile/environment_top_0.jpg",
+            "../../textures/papermill/environment_GIMP_builtin_sRGB_profile/environment_bottom_0.jpg",
+            "../../textures/papermill/environment_GIMP_builtin_sRGB_profile/environment_front_0.jpg",
+            "../../textures/papermill/environment_GIMP_builtin_sRGB_profile/environment_back_0.jpg",
         ],
         "magFilter": 1,
         "minFilter": 5,
