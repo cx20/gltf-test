@@ -21,6 +21,7 @@ TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that
     'SpecGlossVsMetalRough',
     'TextureTransformTest',
     'TextureTransformMultiTest',
+    'TransmissionTest',
     'SheenChair',
     'SheenCloth'
 ];
