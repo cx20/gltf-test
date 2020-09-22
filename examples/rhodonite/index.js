@@ -26,116 +26,122 @@ if(modelInfo.url) {
 
 let p = null;
 
-const load = function(time){
-  const promises = [];
-  promises.push(Rn.ModuleManager.getInstance().loadModule('webgl'));
-  promises.push(Rn.ModuleManager.getInstance().loadModule('pbr'));
-  Promise.all(promises).then(function(){
-    const importer = Rn.Gltf2Importer.getInstance();
-    const system = Rn.System.getInstance();
-    const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL1, document.getElementById('world'));
-  
-    const entityRepository = Rn.EntityRepository.getInstance();
-  
-    // Camera
-    const cameraEntity = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.CameraComponent, Rn.CameraControllerComponent])
-    const cameraComponent = cameraEntity.getComponent(Rn.CameraComponent);
-    //cameraComponent.type = Rn.CameraTyp]e.Orthographic;
-    cameraComponent.parameters = new Rn.Vector4(0.1, 1000, 60, 1);
-    cameraEntity.getTransform().translate = new Rn.Vector3(0.0, 0, 100);
-  
-/*  
-*/
-    // Lights
-    const lightEntity = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
-    lightEntity.getTransform().translate = new Rn.Vector3(1.0, 1000.0, 1.0);
-    lightEntity.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0.5, 0.5, 0.5);
+const load = async function (time) {
+  await Rn.ModuleManager.getInstance().loadModule('webgl');
+  await Rn.ModuleManager.getInstance().loadModule('pbr');
+  const system = Rn.System.getInstance();
+  system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL1, document.getElementById('world'));
 
-    const lightEntity2 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
-    lightEntity2.getTransform().translate = new Rn.Vector3(0.0, 0.0, 1.0);
-    lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0.5, 0.5, 0.5);
-    //lightEntity2.getTransform().rotate = new Rn.Vector3(Math.PI/2, 0, 0);
-    //lightEntity2.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
-  
-    // const response = await importer.import('../../../assets/gltf/2.0/FlightHelmet/glTF/FlightHelmet.gltf');
-    const promise= importer.import(url);
-    promise.then(function(response){
-      const modelConverter = Rn.ModelConverter.getInstance();
-      const rootGroup = modelConverter.convertToRhodoniteObject(response);
-      //rootGroup.getTransform().translate = new Rn.Vector3(1.0, 0, 0);
-    //  rootGroup.getTransform().rotate = new Rn.Vector3(0, 1.0, 0.0);
-    
-    
-      // CameraComponent
-      const cameraControllerComponent = cameraEntity.getComponent(Rn.CameraControllerComponent);
-      const controller = cameraControllerComponent.controller;
-      controller.setTarget(rootGroup);
-      //cameraControllerComponent.setTarget(rootGroup);
-    
-      // Env Map
-      const specularCubeTexture = new Rn.CubeTexture();
-      specularCubeTexture.baseUriToLoad = '../../textures/papermill/specular/specular';
-      specularCubeTexture.mipmapLevelNumber = 10;
-      const diffuseCubeTexture = new Rn.CubeTexture();
-      diffuseCubeTexture.baseUriToLoad = '../../textures/papermill/diffuse/diffuse';
-      diffuseCubeTexture.mipmapLevelNumber = 1;
-      const componentRepository = Rn.ComponentRepository.getInstance();
-      const meshRendererComponents = componentRepository.getComponentsWithType(Rn.MeshRendererComponent);
-      for (let meshRendererComponent of meshRendererComponents) {
-        meshRendererComponent.specularCubeMap = specularCubeTexture;
-        meshRendererComponent.diffuseCubeMap = diffuseCubeTexture;
-      }
-    
-      // renderPass
-      const renderPass = new Rn.RenderPass();
-      renderPass.clearColor = new Rn.Vector3(0.5, 0.5, 0.5);
-      renderPass.toClearColorBuffer = true;
-      renderPass.addEntities([rootGroup])
+  // expressions
+  const expressions = [];
 
-      // expression
-      const expression = new Rn.Expression();
-      expression.addRenderPasses([renderPass]);
-    
-      Rn.CameraComponent.main = 0;
-      let startTime = Date.now();
-      const rotationVec3 = Rn.MutableVector3.one();
-      let count = 0;
-      const draw = function(time) {
-    
-        if (p == null && count > 0) {
-          if (response != null) {
-    
-            gl.enable(gl.DEPTH_TEST);
-            gl.viewport(0, 0, 800, 800);
-            gl.clearColor(0.8, 0.8, 0.8, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-          }
-    
-          p = document.createElement('p');
-          p.setAttribute("id", "rendered");
-          p.innerText = 'Rendered.';
-          document.body.appendChild(p);
-    
-        }
-    
-        const date = new Date();
-        const globalTime = (date.getTime() - startTime) / 1000;
-        Rn.AnimationComponent.globalTime = globalTime;
-        if (globalTime > Rn.AnimationComponent.endInputValue) {
-          startTime = date.getTime();
-        }
-    
-        system.process([expression]);
-        count++;
-    
-        requestAnimationFrame(draw);
-      }
-    
-      draw();
-    
-    });
+  // env
+  const envExpression = createEnvCubeExpression('../../textures/papermill');
+  expressions.push(envExpression);
+
+  // camera
+  const entityRepository = Rn.EntityRepository.getInstance();
+  const cameraEntity = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.CameraComponent, Rn.CameraControllerComponent]);
+  const cameraComponent = cameraEntity.getComponent(Rn.CameraComponent);
+  cameraComponent.zNear = 0.1;
+  cameraComponent.zFar = 1000.0;
+  cameraComponent.setFovyAndChangeFocalLength(20.0);
+  cameraComponent.aspect = 1.0;
+
+  // gltf
+  const gltfImporter = Rn.GltfImporter.getInstance();
+  //const mainExpression = await gltfImporter.import('../../../assets/gltf/2.0/AntiqueCamera/glTF/AntiqueCamera.gltf', {
+  const mainExpression = await gltfImporter.import(url, {
+    cameraComponent: cameraComponent
   });
-}
+  expressions.push(mainExpression);
+
+  // cameraController
+  const mainRenderPass = mainExpression.renderPasses[0];
+  const mainCameraControllerComponent = cameraEntity.getComponent(Rn.CameraControllerComponent);
+  const controller = mainCameraControllerComponent.controller;
+  controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+
+  // lighting
+  setIBL('../../textures/papermill');
+
+  let count = 0;
+
+  const draw = function () {
+    //if (count > 100) {
+    //  p.id = 'rendered';
+    //  p.innerText = 'Rendered.';
+    //}
+
+    system.process(expressions);
+
+    count++;
+
+    requestAnimationFrame(draw);
+  };
+
+  draw();
+
+  function createEnvCubeExpression(baseuri) {
+    const environmentCubeTexture = new Rn.CubeTexture();
+    environmentCubeTexture.baseUriToLoad = baseuri + '/environment/environment';
+    //environmentCubeTexture.isNamePosNeg = true;
+    environmentCubeTexture.isNamePosNeg = false;
+    environmentCubeTexture.hdriFormat = Rn.HdriFormat.LDR_LINEAR;
+    environmentCubeTexture.mipmapLevelNumber = 1;
+    environmentCubeTexture.loadTextureImagesAsync();
+
+    const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
+    sphereMaterial.setTextureParameter(Rn.ShaderSemantics.ColorEnvTexture, environmentCubeTexture);
+    sphereMaterial.setParameter(Rn.EnvConstantSingleMaterialNode.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
+
+    const spherePrimitive = new Rn.Sphere();
+    spherePrimitive.generate({ radius: 50, widthSegments: 40, heightSegments: 40, material: sphereMaterial });
+
+    const sphereMesh = new Rn.Mesh();
+    sphereMesh.addPrimitive(spherePrimitive);
+
+    const entityRepository = Rn.EntityRepository.getInstance();
+    const sphereEntity = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.MeshComponent, Rn.MeshRendererComponent]);
+    sphereEntity.getTransform().scale = new Rn.Vector3(-1, 1, 1);
+    sphereEntity.getTransform().translate = new Rn.Vector3(0, 20, -20);
+    
+    const sphereMeshComponent = sphereEntity.getComponent(Rn.MeshComponent);
+    sphereMeshComponent.setMesh(sphereMesh);
+
+    const sphereRenderPass = new Rn.RenderPass();
+    sphereRenderPass.addEntities([sphereEntity]);
+
+    const sphereExpression = new Rn.Expression();
+    sphereExpression.addRenderPasses([sphereRenderPass]);
+
+    return sphereExpression;
+  }
+
+  function setIBL(baseUri) {
+    const specularCubeTexture = new Rn.CubeTexture();
+    specularCubeTexture.baseUriToLoad = baseUri + '/specular/specular';
+    //specularCubeTexture.isNamePosNeg = true;
+    specularCubeTexture.isNamePosNeg = false;
+    specularCubeTexture.hdriFormat = Rn.HdriFormat.LDR_SRGB;
+    specularCubeTexture.mipmapLevelNumber = 10;
+
+    const diffuseCubeTexture = new Rn.CubeTexture();
+    diffuseCubeTexture.baseUriToLoad = baseUri + '/diffuse/diffuse';
+    diffuseCubeTexture.hdriFormat = Rn.HdriFormat.LDR_SRGB;
+    diffuseCubeTexture.mipmapLevelNumber = 1;
+    //diffuseCubeTexture.isNamePosNeg = true;
+    diffuseCubeTexture.isNamePosNeg = false;
+
+    const componentRepository = Rn.ComponentRepository.getInstance();
+    const meshRendererComponents = componentRepository.getComponentsWithType(Rn.MeshRendererComponent);
+    for (let i = 0; i < meshRendererComponents.length; i++) {
+      const meshRendererComponent = meshRendererComponents[i];
+      meshRendererComponent.specularCubeMap = specularCubeTexture;
+      meshRendererComponent.diffuseCubeMap = diffuseCubeTexture;
+    }
+  }
+};
 
 document.body.onload = load;
 
