@@ -25,6 +25,7 @@ if(modelInfo.url) {
 }
 
 let p = null;
+let scale = modelInfo.scale;
 
 const load = async function (time) {
   await Rn.ModuleManager.getInstance().loadModule('webgl');
@@ -103,8 +104,8 @@ const load = async function (time) {
 
     const entityRepository = Rn.EntityRepository.getInstance();
     const sphereEntity = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.MeshComponent, Rn.MeshRendererComponent]);
-    sphereEntity.getTransform().scale = new Rn.Vector3(-1, 1, 1);
-    sphereEntity.getTransform().translate = new Rn.Vector3(0, 20, -20);
+    sphereEntity.getTransform().scale = new Rn.Vector3(-1/scale, 1/scale, 1/scale);
+    sphereEntity.getTransform().translate = new Rn.Vector3(0/scale, 20/scale, -20/scale);
     
     const sphereMeshComponent = sphereEntity.getComponent(Rn.MeshComponent);
     sphereMeshComponent.setMesh(sphereMesh);
