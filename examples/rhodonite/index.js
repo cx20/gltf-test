@@ -86,9 +86,18 @@ const load = async function () {
   // lighting
   setIBL('../../textures/papermill');
 
+  let startTime = Date.now();
   let count = 0;
 
   const draw = function () {
+    const date = new Date();
+    const rotation = 0.001 * (date.getTime() - startTime);
+    const time = (date.getTime() - startTime) / 1000;
+    Rn.AnimationComponent.globalTime = time;
+    if (time > Rn.AnimationComponent.endInputValue) {
+      startTime = date.getTime();
+    }
+
     system.process(expressions);
     count++;
     requestAnimationFrame(draw);
