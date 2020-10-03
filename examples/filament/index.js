@@ -157,13 +157,16 @@ class App {
                 this.animator.updateBoneMatrices();
             }
         }
-        const eye = [0, 2, 3];
+        
+        // TODO: Camera and auto-rotation control needs improvement
+        const eye = [0, 0, 3];
         const center = [0, 0, 0];
         const up = [0, 1, 0];
         const radians = Date.now() / 10000;
         vec3.rotateY(eye, eye, center, radians);
         vec3.transformMat4(eye, eye, this.trackball.getMatrix());
         this.camera.lookAt(eye, center, up);
+        
         this.renderer.render(this.swapChain, this.view);
         window.requestAnimationFrame(this.render);
     }
