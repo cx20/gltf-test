@@ -1,4 +1,6 @@
-let ModelIndex = {};
+// TODO: Since the let variable of the external file cannot be referenced from the ES6 module in Safari, I temporarily changed it back to var.
+//let ModelIndex = {};
+var ModelIndex = {};
 
 ModelIndex.List = [
     {category:'sampleModels', name:'Box', scale:1.0},
@@ -35,7 +37,7 @@ ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screensho
 ModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'Fox'
 ];
-	
+
 ModelIndex.getScreenshot = function(name) {
     let extension = ((ModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
     if (ModelIndex.HasJpgScreenshot.indexOf(name) >= 0) extension = 'jpg';
