@@ -1,4 +1,6 @@
-let TutorialFurtherPbrModelIndex = {};
+// TODO: Since the let variable of the external file cannot be referenced from the ES6 module in Safari, I temporarily changed it back to var.
+//let TutorialFurtherPbrModelIndex = {};
+var TutorialFurtherPbrModelIndex = {};
 
 TutorialFurtherPbrModelIndex.List = [
     {category:'tutorialModels', name:'TwoSidedPlane', scale:1.0},
