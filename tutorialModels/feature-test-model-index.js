@@ -12,6 +12,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
     {category:'tutorialModels', name:'OrientationTest', scale:0.2},
+    {category:'tutorialModels', name:'SuzanneMorphSparse', scale:1.0},
     {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
     {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
     {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
@@ -23,8 +24,13 @@ TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that h
     'MorphPrimitivesTest'
 ];
 
+TutorialFeatureTestModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots
+    'SuzanneMorphSparse'
+];
+
 TutorialFeatureTestModelIndex.getScreenshot = function(name) {
     let extension = ((TutorialFeatureTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
+    extension = ((TutorialFeatureTestModelIndex.HasGifScreenshot.indexOf(name) < 0) ? extension : 'gif');
     return name + '/screenshot/screenshot.' + extension;
 };
 
