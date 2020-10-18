@@ -17,6 +17,9 @@ let engines = [{
     name: 'ArcGISJSAPI',
     path: 'examples/arcgisjsapi/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
+    name: 'AMAPJSAPI',
+    path: 'examples/amapjsapi/index.html?category={category}&model={model}&scale={scale}&type={type}'
+}, {
     name: 'Grimore.js',
     path: 'examples/grimoiregl/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
