@@ -27,11 +27,15 @@ if(modelInfo.url) {
 let p = null;
 let scale = modelInfo.scale;
 
+const c = document.getElementById('world');
+c.width = window.innerWidth;
+c.height = window.innerHeight;
+
 const load = async function () {
   await Rn.ModuleManager.getInstance().loadModule('webgl');
   await Rn.ModuleManager.getInstance().loadModule('pbr');
   const system = Rn.System.getInstance();
-  const c = document.getElementById('world');
+  //const c = document.getElementById('world');
   //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL1, c);
   const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.FastestWebGL1, c);
   
@@ -45,7 +49,7 @@ const load = async function () {
   cameraComponent.zNear = 0.1;
   cameraComponent.zFar = 1000.0;
   cameraComponent.setFovyAndChangeFocalLength(75.0);
-  cameraComponent.aspect = 1.0;
+  cameraComponent.aspect = c.width / c.height;
 
   // gltf
   const gltfImporter = Rn.GltfImporter.getInstance();
@@ -63,7 +67,7 @@ const load = async function () {
   expressions.push(expressionPostEffect);
 
   // gamma correction
-  const gammaTargetFramebuffer = Rn.RenderableHelper.createTexturesForRenderTarget(600, 600, 1, {});
+  const gammaTargetFramebuffer = Rn.RenderableHelper.createTexturesForRenderTarget(1024, 1024, 1, {});
   for (let renderPass of mainExpression.renderPasses) {
     renderPass.setFramebuffer(gammaTargetFramebuffer);
     renderPass.toClearColorBuffer = false;
