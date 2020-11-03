@@ -52,13 +52,12 @@ const load = async function () {
   cameraComponent.aspect = c.width / c.height;
 
   // Lights
-/*
   const lightEntity1 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
   lightEntity1.getTransform().translate = new Rn.Vector3(1.0, 1.0, 100000.0);
   lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
   lightEntity1.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity1.getTransform().rotate = new Rn.Vector3(-Math.PI / 2, -Math.PI / 4, Math.PI / 4);
-*/
+
   const lightEntity2 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
   lightEntity2.getTransform().translate = new Rn.Vector3(1.0, 1.0, 100000.0);
   lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
