@@ -80,7 +80,7 @@ const load = async function () {
   expressions.push(expressionPostEffect);
 
   // gamma correction
-  const gammaTargetFramebuffer = Rn.RenderableHelper.createTexturesForRenderTarget(1024, 1024, 1, {});
+  const gammaTargetFramebuffer = Rn.RenderableHelper.createTexturesForRenderTarget(2048, 2048, 1, {});
   for (let renderPass of mainExpression.renderPasses) {
     renderPass.setFramebuffer(gammaTargetFramebuffer);
     renderPass.toClearColorBuffer = false;
