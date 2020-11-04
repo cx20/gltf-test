@@ -35,7 +35,6 @@ const load = async function () {
   await Rn.ModuleManager.getInstance().loadModule('webgl');
   await Rn.ModuleManager.getInstance().loadModule('pbr');
   const system = Rn.System.getInstance();
-  //const c = document.getElementById('world');
   //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL1, c);
   const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.FastestWebGL1, c);
   
@@ -52,6 +51,7 @@ const load = async function () {
   cameraComponent.aspect = c.width / c.height;
 
   // Lights
+/*
   const lightEntity1 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
   lightEntity1.getTransform().translate = new Rn.Vector3(1.0, 1.0, 100000.0);
   lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
@@ -63,6 +63,7 @@ const load = async function () {
   lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
   lightEntity2.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity2.getTransform().rotate = new Rn.Vector3(Math.PI / 2, Math.PI / 4, -Math.PI / 4);
+*/
   
   // gltf
   const gltfImporter = Rn.GltfImporter.getInstance();
@@ -73,6 +74,8 @@ const load = async function () {
 
   // env
   const envExpression = createEnvCubeExpression('../../textures/papermill');
+  //const envExpression = createEnvCubeExpression('../../textures/papermill_hdr');
+  //const envExpression = createEnvCubeExpression('../../textures/wooden_lounge');
   expressions.push(envExpression);
 
   // post effects
@@ -103,7 +106,9 @@ const load = async function () {
   controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
 
   // lighting
-  setIBL('../../textures/papermill');
+  //setIBL('../../textures/papermill');
+  setIBL('../../textures/papermill_hdr');
+  //setIBL('../../textures/wooden_lounge');
 
   let startTime = Date.now();
   let count = 0;
@@ -128,12 +133,14 @@ const load = async function () {
     const environmentCubeTexture = new Rn.CubeTexture();
     environmentCubeTexture.baseUriToLoad = baseuri + '/environment/environment';
     environmentCubeTexture.isNamePosNeg = false;
+    //environmentCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
     environmentCubeTexture.hdriFormat = Rn.HdriFormat.LDR_LINEAR;
     environmentCubeTexture.mipmapLevelNumber = 1;
     environmentCubeTexture.loadTextureImagesAsync();
 
     const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
     sphereMaterial.setTextureParameter(Rn.ShaderSemantics.ColorEnvTexture, environmentCubeTexture);
+    //sphereMaterial.setParameter(Rn.EnvConstantSingleMaterialNode.EnvHdriFormat, Rn.HdriFormat.HDR_LINEAR.index);
     sphereMaterial.setParameter(Rn.EnvConstantSingleMaterialNode.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
 
     const spherePrimitive = new Rn.Sphere();
@@ -162,14 +169,14 @@ const load = async function () {
     const specularCubeTexture = new Rn.CubeTexture();
     specularCubeTexture.baseUriToLoad = baseUri + '/specular/specular';
     specularCubeTexture.isNamePosNeg = false;
-    specularCubeTexture.hdriFormat = Rn.HdriFormat.LDR_SRGB;
+    specularCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
     specularCubeTexture.mipmapLevelNumber = 10;
 
     const diffuseCubeTexture = new Rn.CubeTexture();
     diffuseCubeTexture.baseUriToLoad = baseUri + '/diffuse/diffuse';
-    diffuseCubeTexture.hdriFormat = Rn.HdriFormat.LDR_SRGB;
-    diffuseCubeTexture.mipmapLevelNumber = 1;
     diffuseCubeTexture.isNamePosNeg = false;
+    diffuseCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
+    diffuseCubeTexture.mipmapLevelNumber = 1;
 
     const componentRepository = Rn.ComponentRepository.getInstance();
     const meshRendererComponents = componentRepository.getComponentsWithType(Rn.MeshRendererComponent);
