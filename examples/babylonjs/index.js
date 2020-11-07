@@ -26,6 +26,7 @@ var IBL = true;
 var LIGHTS = false; // The default is to use IBL instead of lights
 var DEBUG = false;
 var VARIANT = "";
+var CAMERA = "";
 
 let createScene = function(engine) {
 
@@ -51,6 +52,7 @@ let createScene = function(engine) {
     let guiLights = gui.add(window, 'LIGHTS').name('Lights');
     let guiDebug = gui.add(window, 'DEBUG').name('Debug');
     let guiVariants = null;
+    let guiCameras = null;
 
     let variantsExtension = null;
 
@@ -85,6 +87,23 @@ let createScene = function(engine) {
                     variantsExtension.selectVariant(parentMesh, value);
                 });
             }
+        }
+        
+        if ( scene.cameras.length > 0 ) {
+            let cameraNames = scene.cameras.reduce(function (allCameras, camera) { 
+                let name = camera.name;
+                allCameras[name] = name;
+                return allCameras
+            }, {});
+            guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
+
+            guiCameras.onChange(function (value) {
+                var camera = scene.cameras.find(function(camera) {
+                    return camera.name === value;
+                });
+                scene.activeCamera = camera;
+                scene.activeCamera.minZ /= 10; // TODO: If near is 1, the model is missing, so adjusted
+            });
         }
 
         if ( modelInfo.name == "GearboxAssy" ) {
