@@ -39,7 +39,8 @@ let state = {
     AXIS: true,
     CUBEMAP: true,
     IBL: true,
-    LIGHTS: false // The default is to use IBL instead of lights
+    LIGHTS: false, // The default is to use IBL instead of lights
+    CAMERA: ""
 }
 
 let scene;
@@ -50,14 +51,16 @@ let hdrCubeMap;
 let hdrCubeRenderTarget;
 let renderTarget;
 let cubeMap;
+let width;
+let height;
 
 init();
 animate();
 
 function resize() {
     let container = document.getElementById('container');
-    let width = container.offsetWidth;
-    let height = container.offsetHeight;
+    width = container.offsetWidth;
+    height = container.offsetHeight;
 
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
@@ -109,6 +112,25 @@ function init() {
         if (modelInfo.name == "GearboxAssy" ) {
             object.position.set(-159.20*scale, -17.02*scale, -3.21*scale);
         }
+
+        if ( gltf.cameras.length > 0 ) {
+            for (let i = 0; i < gltf.cameras.length; i++ ) {
+                let camera_ = gltf.cameras[i];
+                camera_.name = camera_.name == "" ? "camera" + i : camera_.name;
+                camera_.aspect = width / height;
+            }
+            let cameraNames = gltf.cameras.map(camera => camera.name);
+            let guiCameras = gui.add(state, 'CAMERA', cameraNames).name("Camera");
+
+            guiCameras.onChange(function (value) {
+                var camera_ = gltf.cameras.find(function(camera_) {
+                    return camera_.name === value;
+                });
+                camera = camera_;
+                camera.updateProjectionMatrix();
+            });
+        }
+
         let animations = gltf.animations;
         if ( animations && animations.length ) {
             mixer = new THREE.AnimationMixer( object );
