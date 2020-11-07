@@ -90,11 +90,8 @@ let createScene = function(engine) {
         }
         
         if ( scene.cameras.length > 0 ) {
-            let cameraNames = scene.cameras.reduce(function (allCameras, camera) { 
-                let name = camera.name;
-                allCameras[name] = name;
-                return allCameras
-            }, {});
+            scene.cameras.forEach(camera => camera.minZ /= 1000); // TODO: If near is 1, the model is missing, so adjusted
+            let cameraNames = scene.cameras.map(camera => camera.name).reverse();
             guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
 
             guiCameras.onChange(function (value) {
@@ -102,7 +99,6 @@ let createScene = function(engine) {
                     return camera.name === value;
                 });
                 scene.activeCamera = camera;
-                scene.activeCamera.minZ /= 10; // TODO: If near is 1, the model is missing, so adjusted
             });
         }
 
