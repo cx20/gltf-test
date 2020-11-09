@@ -32,6 +32,7 @@ c.width = window.innerWidth;
 c.height = window.innerHeight;
 
 const load = async function () {
+  Rn.Config.maxCameraNumber = 20;
   await Rn.ModuleManager.getInstance().loadModule('webgl');
   await Rn.ModuleManager.getInstance().loadModule('pbr');
   const system = Rn.System.getInstance();
@@ -51,7 +52,6 @@ const load = async function () {
   cameraComponent.aspect = c.width / c.height;
 
   // Lights
-/*
   const lightEntity1 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
   lightEntity1.getTransform().translate = new Rn.Vector3(1.0, 1.0, 100000.0);
   lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
@@ -63,19 +63,17 @@ const load = async function () {
   lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
   lightEntity2.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity2.getTransform().rotate = new Rn.Vector3(Math.PI / 2, Math.PI / 4, -Math.PI / 4);
-*/
   
   // gltf
   const gltfImporter = Rn.GltfImporter.getInstance();
   const mainExpression = await gltfImporter.import(url, {
-    cameraComponent: cameraComponent
+      cameraComponent: cameraComponent
   });
+  const mainRenderPass = mainExpression.renderPasses[0];
   expressions.push(mainExpression);
-
+  
   // env
   const envExpression = createEnvCubeExpression('../../textures/papermill');
-  //const envExpression = createEnvCubeExpression('../../textures/papermill_hdr');
-  //const envExpression = createEnvCubeExpression('../../textures/wooden_lounge');
   expressions.push(envExpression);
 
   // post effects
@@ -99,17 +97,33 @@ const load = async function () {
   expressionPostEffect.addRenderPasses([gammaRenderPass]);
 
   // cameraController
-  const mainRenderPass = mainExpression.renderPasses[0];
+  const componentRepository = Rn.ComponentRepository.getInstance();
+  const cameraComponents = componentRepository.getComponentsWithType(Rn.CameraComponent);
+  const cameraIndex = Math.floor(Math.random() * cameraComponents.length);
+  let selectedCameraComponent = cameraComponents[cameraIndex]; // TODO: The camera should be selected from a combo box, not randomly
+  
   const mainCameraControllerComponent = cameraEntity.getComponent(Rn.CameraControllerComponent);
   const controller = mainCameraControllerComponent.controller;
   controller.dolly = 0.82;
-  controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+
+  // If there is more than one camera, the selected camera will be used
+  // (For some reason, it seems that there are two default cameras, so the condition is more than two.)
+  if ( cameraComponents.length > 2 && cameraIndex > 0) {
+      if (selectedCameraComponent.type === Rn.CameraType.Perspective) {
+          selectedCameraComponent.aspect = c.width / c.height;  // Apply the aspect of the actual window instead of the glTF aspect information
+      }
+      mainRenderPass.cameraComponent = selectedCameraComponent; 
+      //controller.setTarget(mainRenderPass.cameraComponent.entity); // TODO: When the entity of the camera is set to target, the error "length of a vector is 0!" Occurs.
+      controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+  // If cameraIndex is 0, the default camera is used
+  } else {
+      mainRenderPass.cameraComponent = cameraComponent;
+      controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+  }
 
   // lighting
-  //setIBL('../../textures/papermill');
-  setIBL('../../textures/papermill_hdr');
-  //setIBL('../../textures/wooden_lounge');
-
+  //setIBL('../../textures/papermill_hdr'); // TODO: temporarily commented on this because it freezes when using both the camera selection function and IBL
+  
   let startTime = Date.now();
   let count = 0;
 
