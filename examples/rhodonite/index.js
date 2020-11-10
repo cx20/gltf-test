@@ -19,6 +19,15 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+
+// GUI
+let gui = new dat.GUI();
+
+//var ROTATE = true;
+var CAMERA = "";
+//let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let guiCameras = null;
+
 let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     url = modelInfo.url;
@@ -101,30 +110,47 @@ const load = async function () {
   // cameraController
   const componentRepository = Rn.ComponentRepository.getInstance();
   const cameraComponents = componentRepository.getComponentsWithType(Rn.CameraComponent);
-  const cameraIndex = Math.floor(Math.random() * cameraComponents.length);
-  let selectedCameraComponent = cameraComponents[cameraIndex]; // TODO: The camera should be selected from a combo box, not randomly
   
-  const mainCameraControllerComponent = cameraEntity.getComponent(Rn.CameraControllerComponent);
-  const controller = mainCameraControllerComponent.controller;
-  controller.dolly = 0.82;
-
   // If there is more than one camera, the selected camera will be used
   // (For some reason, it seems that there are two default cameras, so the condition is more than two.)
-  if ( cameraComponents.length > 2 && cameraIndex > 0) {
+  if (cameraComponents.length > 2) {
+    let cameraNames = cameraComponents.map(camera => camera.uniqueName);
+    guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
+    guiCameras.onChange(function(value) {
+      var camera = cameraComponents.find(function(camera) {
+        return camera.uniqueName === value;
+      });
+      const cameraIndex = cameraNames.indexOf(value);
+      selectCamera(cameraComponents[cameraIndex]);
+    });
+  }
+  
+  const cameraIndex = Math.floor(Math.random() * cameraComponents.length);
+  let selectedCameraComponent = cameraComponents[cameraIndex];
+  selectCamera(selectedCameraComponent);
+  
+  function selectCamera(selectedCameraComponent) {
+    const mainCameraControllerComponent = cameraEntity.getComponent(Rn.CameraControllerComponent);
+    const controller = mainCameraControllerComponent.controller;
+    controller.dolly = 0.82;
+  
+    // If there is more than one camera, the selected camera will be used
+    // (For some reason, it seems that there are two default cameras, so the condition is more than two.)
+    if (cameraComponents.length > 2 && cameraIndex > 0) {
       if (selectedCameraComponent.type === Rn.CameraType.Perspective) {
-          selectedCameraComponent.aspect = c.width / c.height;  // Apply the aspect of the actual window instead of the glTF aspect information
+        selectedCameraComponent.aspect = c.width / c.height; // Apply the aspect of the actual window instead of the glTF aspect information
       }
-      mainRenderPass.cameraComponent = selectedCameraComponent; 
-      //controller.setTarget(mainRenderPass.cameraComponent.entity); // TODO: When the entity of the camera is set to target, the error "length of a vector is 0!" Occurs.
+      mainRenderPass.cameraComponent = selectedCameraComponent;
       controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
-  // If cameraIndex is 0, the default camera is used
-  } else {
+      // If cameraIndex is 0, the default camera is used
+    } else {
       mainRenderPass.cameraComponent = cameraComponent;
       controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+    }
   }
 
   // lighting
-  setIBL('../../textures/papermill_hdr'); // TODO: temporarily commented on this because it freezes when using both the camera selection function and IBL
+  setIBL('../../textures/papermill_hdr');
   
   let startTime = Date.now();
   let count = 0;
