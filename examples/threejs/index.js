@@ -40,7 +40,8 @@ let state = {
     CUBEMAP: true,
     IBL: true,
     LIGHTS: false, // The default is to use IBL instead of lights
-    CAMERA: ""
+    CAMERA: "",
+    VARIANT: ""
 }
 
 let scene;
@@ -129,6 +130,18 @@ function init() {
                 camera = camera_;
                 camera.updateProjectionMatrix();
             });
+        }
+
+        if (gltf.userData.gltfExtensions !== undefined) {
+            const extension = gltf.userData.gltfExtensions['KHR_materials_variants'];
+            if (extension !== undefined) {
+                let variants = extension.variants.map(variant => variant.name);
+                let guiVariants = gui.add(state, 'VARIANT', variants).name("Variant");
+                guiVariants.onChange(function (value) {
+                    const index = extension.variants.findIndex((v) => v.name.includes(value));
+                    object.material = gltf.parser.getDependency('material', index); // TODO: The material does not switch, so investigation is required
+                });
+            }
         }
 
         let animations = gltf.animations;
