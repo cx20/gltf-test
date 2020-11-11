@@ -25,7 +25,11 @@ let gui = new dat.GUI();
 
 var ROTATE = true;
 var CAMERA = "";
+var LIGHTS = false;
+var IBL = true;
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let guiLights = gui.add(window, 'LIGHTS').name('Lights');
+let guiIBL    = gui.add(window, 'IBL').name('IBL');
 let guiCameras = null;
 
 let url = "../../" + modelInfo.category + "/" + modelInfo.path;
@@ -61,20 +65,30 @@ const load = async function () {
   cameraComponent.aspect = canvas.width / canvas.height;
 
   // Lights
-/*
   const lightEntity1 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
   lightEntity1.getTransform().translate = new Rn.Vector3(1.0, 1.0, 100000.0);
-  lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
+  //lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
+  lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0, 0, 0);
   lightEntity1.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity1.getTransform().rotate = new Rn.Vector3(-Math.PI / 2, -Math.PI / 4, Math.PI / 4);
 
   const lightEntity2 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
   lightEntity2.getTransform().translate = new Rn.Vector3(1.0, 1.0, 100000.0);
-  lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
+  //lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
+  lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0, 0, 0);
   lightEntity2.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity2.getTransform().rotate = new Rn.Vector3(Math.PI / 2, Math.PI / 4, -Math.PI / 4);
-*/
-  
+
+  guiLights.onChange(function(value) {
+    if (value) {
+      lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
+      lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
+    } else {
+      lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0, 0, 0);
+      lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0, 0, 0);
+    }
+  });
+
   // gltf
   const gltfImporter = Rn.GltfImporter.getInstance();
   const mainExpression = await gltfImporter.import(url, {
@@ -155,6 +169,16 @@ const load = async function () {
 
   // lighting
   setIBL('../../textures/papermill_hdr');
+
+  guiIBL.onChange(function(value) {
+    const componentRepository = Rn.ComponentRepository.getInstance();
+    const meshRendererComponents = componentRepository.getComponentsWithType(Rn.MeshRendererComponent);
+    for (let i = 0; i < meshRendererComponents.length; i++) {
+      const meshRendererComponent = meshRendererComponents[i];
+      meshRendererComponent.specularCubeMapContribution = value ? 1.0 : 0.0;
+      meshRendererComponent.diffuseCubeMapContribution = value ? 1.0 : 0.0;
+    }
+  });
   
   let startTime = Date.now();
   let count = 0;
