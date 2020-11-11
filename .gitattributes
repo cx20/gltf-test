@@ -1,0 +1,5 @@
+# Turn off text-based EOL adaptations for various image formats.
+*.jpg binary
+*.png binary
+*.hdr binary
+*.ktx2 binary
