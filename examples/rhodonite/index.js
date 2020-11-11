@@ -120,14 +120,13 @@ const load = async function () {
   setTextureParameterForMeshComponents(gammaRenderPass.meshComponents, Rn.ShaderSemantics.BaseColorTexture, gammaTargetFramebuffer.colorAttachments[0]);
 
   expressionPostEffect.addRenderPasses([gammaRenderPass]);
-
+  
   // cameraController
   const componentRepository = Rn.ComponentRepository.getInstance();
-  const cameraComponents = componentRepository.getComponentsWithType(Rn.CameraComponent);
+  // Exclude a specific camera from the camera list
+  const cameraComponents = componentRepository.getComponentsWithType(Rn.CameraComponent).filter(camera => camera.uniqueName.substring(0,1) !== "-");
   
-  // If there is more than one camera, the selected camera will be used
-  // (For some reason, it seems that there are two default cameras, so the condition is more than two.)
-  if (cameraComponents.length > 2) {
+  if (cameraComponents.length > 1) {
     let cameraNames = cameraComponents.map(camera => camera.uniqueName);
     guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
     guiCameras.onChange(function(value) {
@@ -154,7 +153,7 @@ const load = async function () {
 
     // If there is more than one camera, the selected camera will be used
     // (For some reason, it seems that there are two default cameras, so the condition is more than two.)
-    if (cameraComponents.length > 2 && cameraIndex > 0) {
+    if (cameraComponents.length > 1 && cameraIndex > 0) {
       if (selectedCameraComponent.type === Rn.CameraType.Perspective) {
         selectedCameraComponent.aspect = canvas.width / canvas.height; // Apply the aspect of the actual window instead of the glTF aspect information
       }
@@ -287,6 +286,8 @@ const load = async function () {
     const cameraEntity = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.CameraComponent]);
     const cameraComponent = cameraEntity.getComponent(Rn.CameraComponent);
     cameraComponent.zFarInner = 1.0;
+    // Rename to exclude certain cameras from the list of cameras.
+    cameraComponent.tryToSetUniqueName("-" + cameraComponent.uniqueName);
 
     const renderPass = new Rn.RenderPass();
     renderPass.toClearColorBuffer = false;
