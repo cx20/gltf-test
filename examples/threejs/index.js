@@ -132,18 +132,6 @@ function init() {
             });
         }
 
-        if (gltf.userData.gltfExtensions !== undefined) {
-            const extension = gltf.userData.gltfExtensions['KHR_materials_variants'];
-            if (extension !== undefined) {
-                let variants = extension.variants.map(variant => variant.name);
-                let guiVariants = gui.add(state, 'VARIANT', variants).name("Variant");
-                guiVariants.onChange(function (value) {
-                    const index = extension.variants.findIndex((v) => v.name.includes(value));
-                    object.material = gltf.parser.getDependency('material', index); // TODO: The material does not switch, so investigation is required
-                });
-            }
-        }
-
         let animations = gltf.animations;
         if ( animations && animations.length ) {
             mixer = new THREE.AnimationMixer( object );
@@ -189,6 +177,22 @@ function init() {
 
         scene.add(object);
         //window.scene = scene; // for Three.js Inspector
+        
+        scene.traverse((object) => {
+            if (!object.isMesh) return;
+            if (gltf.userData.gltfExtensions !== undefined) {
+                const extension = gltf.userData.gltfExtensions['KHR_materials_variants'];
+                if (extension !== undefined) {
+                    let variants = extension.variants.map(variant => variant.name);
+                    let guiVariants = gui.add(state, 'VARIANT', variants).name("Variant");
+                    guiVariants.onChange(async function (value) {
+                        const index = extension.variants.findIndex((v) => v.name.includes(value));
+                        object.material = await gltf.parser.getDependency('material', index); // TODO: The material does not switch, so investigation is required
+                    });
+                }
+            }
+        });
+
     });
 
     axis = new THREE.AxesHelper(1000);
