@@ -187,8 +187,10 @@ function init() {
                     let guiVariants = gui.add(state, 'VARIANT', variants).name("Variant");
                     guiVariants.onChange(async function (value) {
                         const index = extension.variants.findIndex((v) => v.name.includes(value));
-                        object.material = await gltf.parser.getDependency('material', index); // TODO: The material does not switch, so investigation is required
-                    });
+                        object.material = await gltf.parser.getDependency('material', index);
+                        let newEnvMap = renderTarget ? renderTarget.texture : null;
+                        applyEnvMap(object, newEnvMap);
+                   });
                 }
             }
         });
