@@ -179,19 +179,32 @@ function init() {
         //window.scene = scene; // for Three.js Inspector
         
         // KHR_materials_variants support
-        // See: https://github.com/mrdoob/three.js/issues/17808#issuecomment-546135648
+        // See: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_variants
         if (gltf.userData.gltfExtensions !== undefined) {
             const extension = gltf.userData.gltfExtensions['KHR_materials_variants'];
             if (extension !== undefined) {
                 let variants = extension.variants.map(variant => variant.name);
                 let guiVariants = gui.add(state, 'VARIANT', variants).name("Variant");
-                guiVariants.onChange(function (value) {
+                guiVariants.onChange(function(value) {
                     scene.traverse(async (object) => {
+                        const variantIndex = extension.variants.findIndex((v) => v.name.includes(value));
                         if (!object.isMesh) return;
-                        const index = extension.variants.findIndex((v) => v.name.includes(value));
-                        object.material = await gltf.parser.getDependency('material', index); // TODO: Not yet compatible with Materials VariantsChair.gltf
-                        let newEnvMap = renderTarget ? renderTarget.texture : null;
-                        applyEnvMap(object, newEnvMap);
+                        const meshVariantData = object.userData.gltfExtensions['KHR_materials_variants'];
+                        if (meshVariantData !== undefined) {
+                            let materialIndex = -1;
+                            for (let i = 0; i < meshVariantData.mappings.length; i++) {
+                                const mapping = meshVariantData.mappings[i];
+                                if (mapping.variants.indexOf(variantIndex) != -1) {
+                                    materialIndex = mapping.material;
+                                    break;
+                                }
+                            }
+                            if (materialIndex != -1) {
+                                object.material = await gltf.parser.getDependency('material', materialIndex);
+                                let newEnvMap = renderTarget ? renderTarget.texture : null;
+                                applyEnvMap(object, newEnvMap);
+                            }
+                        }
                     });
                 });
             }
