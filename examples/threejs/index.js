@@ -184,28 +184,11 @@ function init() {
             const extension = gltf.userData.gltfExtensions['KHR_materials_variants'];
             if (extension !== undefined) {
                 let variants = extension.variants.map(variant => variant.name);
+                state.VARIANT = modelInfo.variant == undefined ? variants[0] : modelInfo.variant;
                 let guiVariants = gui.add(state, 'VARIANT', variants).name("Variant");
+                changeVariant(scene, extension, state.VARIANT);
                 guiVariants.onChange(function(value) {
-                    scene.traverse(async (object) => {
-                        const variantIndex = extension.variants.findIndex((v) => v.name.includes(value));
-                        if (!object.isMesh) return;
-                        const meshVariantData = object.userData.gltfExtensions['KHR_materials_variants'];
-                        if (meshVariantData !== undefined) {
-                            let materialIndex = -1;
-                            for (let i = 0; i < meshVariantData.mappings.length; i++) {
-                                const mapping = meshVariantData.mappings[i];
-                                if (mapping.variants.indexOf(variantIndex) != -1) {
-                                    materialIndex = mapping.material;
-                                    break;
-                                }
-                            }
-                            if (materialIndex != -1) {
-                                object.material = await gltf.parser.getDependency('material', materialIndex);
-                                let newEnvMap = renderTarget ? renderTarget.texture : null;
-                                applyEnvMap(object, newEnvMap);
-                            }
-                        }
-                    });
+                    changeVariant(scene, extension, value);
                 });
             }
         }
@@ -259,6 +242,29 @@ function init() {
 
     resize();
     window.addEventListener( 'resize', resize, false );
+}
+
+function changeVariant(scene, extension, value) {
+    scene.traverse(async (object) => {
+        const variantIndex = extension.variants.findIndex((v) => v.name.includes(value));
+        if (!object.isMesh) return;
+        const meshVariantData = object.userData.gltfExtensions['KHR_materials_variants'];
+        if (meshVariantData !== undefined) {
+            let materialIndex = -1;
+            for (let i = 0; i < meshVariantData.mappings.length; i++) {
+                const mapping = meshVariantData.mappings[i];
+                if (mapping.variants.indexOf(variantIndex) != -1) {
+                    materialIndex = mapping.material;
+                    break;
+                }
+            }
+            if (materialIndex != -1) {
+                object.material = await gltf.parser.getDependency('material', materialIndex);
+                let newEnvMap = renderTarget ? renderTarget.texture : null;
+                applyEnvMap(object, newEnvMap);
+            }
+        }
+    });
 }
 
 function applyEnvMap(object, envMap) {
