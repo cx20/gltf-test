@@ -99,7 +99,10 @@ const load = async function () {
   
   // env
   const envExpression = createEnvCubeExpression('../../textures/papermill');
-  expressions.push(envExpression);
+  // TODO: VC.gltf has been removed from Cubemap due to inconsistencies with automatic camera calculations
+  if (modelInfo.name != "VC") {
+    expressions.push(envExpression);
+  }
 
   // post effects
   const expressionPostEffect = new Rn.Expression();
