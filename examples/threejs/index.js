@@ -26,6 +26,7 @@ import { GLTFLoader } from '../../libs/three.js/r123dev/examples/jsm/loaders/GLT
 import { DRACOLoader } from '../../libs/three.js/r123dev/examples/jsm/loaders/DRACOLoader.js';
 import { RGBELoader } from '../../libs/three.js/r123dev/examples/jsm/loaders/RGBELoader.js';
 import { HDRCubeTextureLoader } from '../../libs/three.js/r123dev/examples/jsm/loaders/HDRCubeTextureLoader.js';
+import { KTX2Loader } from './../../libs/three.js/r123dev/examples/jsm/loaders/KTX2Loader.js';
 
 let gltf = null;
 let mixer = null;
@@ -72,6 +73,12 @@ function resize() {
 function init() {
     scene = new THREE.Scene();
 
+    renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.outputEncoding = THREE.sRGBEncoding; // if >r112, specify outputEncoding instead of gammaOutput
+    renderer.setClearColor( 0xaaaaaa );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
+
     hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 3.0 );
     hemispheric.visible = state.LIGHTS; // The default is to use IBL instead of lights
     scene.add(hemispheric);
@@ -89,15 +96,17 @@ function init() {
     // https://github.com/mrdoob/three.js/pull/11498#issuecomment-308136310
     THREE.PropertyBinding.sanitizeNodeName = (n) => n;
 
-    let loader = new GLTFLoader();
+    const loader = new GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
-    let dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath( '../../libs/three.js/r123dev/examples/js/libs/draco/gltf/' );
+    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r123dev/examples/js/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
-    let scale = modelInfo.scale;
-    let url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    const ktx2Loader = new KTX2Loader().detectSupport( renderer );
+    loader.setKTX2Loader( ktx2Loader );
+
+    const scale = modelInfo.scale;
+    const url = "../../" + modelInfo.category + "/" + modelInfo.path;
     if(modelInfo.url) {
         url = modelInfo.url;
     }
@@ -178,30 +187,22 @@ function init() {
         scene.add(object);
         //window.scene = scene; // for Three.js Inspector
         
-        // KHR_materials_variants support
-        // See: https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_variants
+        // Details of the KHR_materials_variants extension used here can be found below
+        // https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_variants
+        const parser = gltf.parser;
         if (gltf.userData.gltfExtensions !== undefined) {
-            const extension = gltf.userData.gltfExtensions['KHR_materials_variants'];
-            if (extension !== undefined) {
-                let variants = extension.variants.map(variant => variant.name);
-                state.VARIANT = modelInfo.variant == undefined ? variants[0] : modelInfo.variant;
-                let guiVariants = gui.add(state, 'VARIANT', variants).name("Variant");
-                changeVariant(scene, extension, state.VARIANT);
-                guiVariants.onChange(function(value) {
-                    changeVariant(scene, extension, value);
-                });
+            const variantsExtension = gltf.userData.gltfExtensions[ 'KHR_materials_variants' ];
+            if (variantsExtension !== undefined) {
+                const variants = variantsExtension.variants.map( ( variant ) => variant.name );
+                const variantsCtrl = gui.add( state, 'VARIANT', variants ).name( 'Variant' );
+                selectVariant( scene, parser, variantsExtension, state.VARIANT );
+                variantsCtrl.onChange( ( value ) => selectVariant( scene, parser, variantsExtension, value ) );
             }
         }
     });
 
     axis = new THREE.AxesHelper(1000);
     scene.add(axis);
-
-    renderer = new THREE.WebGLRenderer({antialias: true});
-    renderer.outputEncoding = THREE.sRGBEncoding; // if >r112, specify outputEncoding instead of gammaOutput
-    renderer.setClearColor( 0xaaaaaa );
-    renderer.setPixelRatio( window.devicePixelRatio );
-    renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
 
     controls = new OrbitControls( camera, renderer.domElement );
     controls.userPan = false;
@@ -244,27 +245,25 @@ function init() {
     window.addEventListener( 'resize', resize, false );
 }
 
-function changeVariant(scene, extension, value) {
-    scene.traverse(async (object) => {
-        const variantIndex = extension.variants.findIndex((v) => v.name.includes(value));
-        if (!object.isMesh) return;
-        const meshVariantData = object.userData.gltfExtensions['KHR_materials_variants'];
-        if (meshVariantData !== undefined) {
-            let materialIndex = -1;
-            for (let i = 0; i < meshVariantData.mappings.length; i++) {
-                const mapping = meshVariantData.mappings[i];
-                if (mapping.variants.indexOf(variantIndex) != -1) {
-                    materialIndex = mapping.material;
-                    break;
-                }
-            }
-            if (materialIndex != -1) {
-                object.material = await gltf.parser.getDependency('material', materialIndex);
-                let newEnvMap = renderTarget ? renderTarget.texture : null;
-                applyEnvMap(object, newEnvMap);
-            }
+function selectVariant( scene, parser, extension, variantName ) {
+    const variantIndex = extension.variants.findIndex( ( v ) => v.name.includes( variantName ) );
+    scene.traverse( async ( object ) => {
+        if ( ! object.isMesh || ! object.userData.gltfExtensions ) return;
+        const meshVariantDef = object.userData.gltfExtensions[ 'KHR_materials_variants' ];
+        if ( ! meshVariantDef ) return;
+        if ( ! object.userData.originalMaterial ) {
+            object.userData.originalMaterial = object.material;
         }
-    });
+        const mapping = meshVariantDef.mappings
+            .find( ( mapping ) => mapping.variants.includes( variantIndex ) );
+        if ( mapping ) {
+            object.material = await parser.getDependency( 'material', mapping.material );
+            let newEnvMap = renderTarget ? renderTarget.texture : null;
+            applyEnvMap(object, newEnvMap);
+        } else {
+            object.material = object.originalMaterial;
+        }
+    } );
 }
 
 function applyEnvMap(object, envMap) {
