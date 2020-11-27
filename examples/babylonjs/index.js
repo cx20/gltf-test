@@ -54,6 +54,7 @@ let createScene = function(engine) {
     let guiVariants = null;
     let guiCameras = null;
 
+    let variants = null;
     let variantsExtension = null;
 
     BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (loader) {
@@ -168,8 +169,6 @@ let createScene = function(engine) {
 
         guiCubeMap.onChange(function (value) {
             skybox.visibility = value ? 1 : 0;
-            
-            variantsExtension.selectVariant(scene.rootNodes[0], "street")
         });
 
         guiIbl.onChange(function (value) {
