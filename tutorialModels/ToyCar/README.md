@@ -6,7 +6,7 @@
 
 ## Description
 
-This model demonstrates the usage of `KHR_materials_specular`, `KHR_materials_ior`, `KHR_materials_transmission` and `KHR_materials_clearcoat`.
+This model demonstrates the usage of `KHR_materials_sheen`, `KHR_materials_transmission` and `KHR_materials_clearcoat`.
 
 ## License Information
 
