@@ -90,19 +90,6 @@ let createScene = function(engine) {
             }
         }
         
-        if ( scene.cameras.length > 0 ) {
-            scene.cameras.forEach(camera => camera.minZ /= 1000); // TODO: If near is 1, the model is missing, so adjusted
-            let cameraNames = scene.cameras.map(camera => camera.name).reverse();
-            guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
-
-            guiCameras.onChange(function (value) {
-                var camera = scene.cameras.find(function(camera) {
-                    return camera.name === value;
-                });
-                scene.activeCamera = camera;
-            });
-        }
-
         if ( modelInfo.name == "GearboxAssy" ) {
             // TODO: Position adjustment required
             parentMesh.position.x += 159.20 * scale;
@@ -112,12 +99,37 @@ let createScene = function(engine) {
             scene.animationGroups[2].play(true); // 0:Survey, 1:Walk, 2:Run
         }
         let modelScaling = parentMesh.scaling;
-        parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
-        let camera = new BABYLON.ArcRotateCamera("camera", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
-        camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
+        let camera = new BABYLON.ArcRotateCamera("[default]", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
+        
+        // TODO: Need to consider whether to adjust the scale in camera or mesh
+        //parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
+        //camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
+        camera.minZ /= 1000; // TODO: If near is 1, the model is missing, so adjusted
+        camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, -5 / scale));
+        
         camera.attachControl(canvas, false, false);
         camera.wheelDeltaPercentage = 0.005;
         scene.activeCamera = camera;
+        scene.cameras.push(camera);
+
+        if ( scene.cameras.length > 1 ) {
+            //if ( modelInfo.name == "VC" ) {
+            //    scene.cameras.forEach(camera => camera.minZ /= 1000); // TODO: If near is 1, the model is missing, so adjusted
+            //}
+            
+            // TODO: Some models feel that the camera is not in ascending order, so you need to investigate
+            //let cameraNames = scene.cameras.map(camera => camera.name).reverse();
+            let cameraNames = scene.cameras.map(camera => camera.name);
+            guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
+
+            guiCameras.onChange(function (value) {
+                var camera = scene.cameras.find(function(camera) {
+                    return camera.name === value;
+                });
+                camera.attachControl(canvas, false, false);
+                scene.activeCamera = camera;
+            });
+        }
 
         let light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
         let light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
