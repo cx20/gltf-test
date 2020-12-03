@@ -102,10 +102,13 @@ let createScene = function(engine) {
         let camera = new BABYLON.ArcRotateCamera("[default]", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         
         // TODO: Need to consider whether to adjust the scale in camera or mesh
-        //parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
-        //camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
-        camera.minZ /= 1000; // TODO: If near is 1, the model is missing, so adjusted
-        camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, -5 / scale));
+        if ( modelInfo.name == "ToyCar" ) {
+            camera.minZ /= 1000; // TODO: If near is 1, the model is missing, so adjusted
+            camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, -5 / scale));
+        } else {
+            parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
+            camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
+        }
         
         camera.attachControl(canvas, false, false);
         camera.wheelDeltaPercentage = 0.005;
