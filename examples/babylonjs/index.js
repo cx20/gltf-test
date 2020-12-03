@@ -26,7 +26,7 @@ var IBL = true;
 var LIGHTS = false; // The default is to use IBL instead of lights
 var DEBUG = false;
 var VARIANT = "";
-var CAMERA = "";
+var CAMERA = "[default]";
 
 let createScene = function(engine) {
 
@@ -92,9 +92,9 @@ let createScene = function(engine) {
         
         if ( modelInfo.name == "GearboxAssy" ) {
             // TODO: Position adjustment required
-            parentMesh.position.x += 159.20 * scale;
-            parentMesh.position.y -= 17.02 * scale;
-            parentMesh.position.z += 3.21 * scale;
+            parentMesh.position.x += 159.20;
+            parentMesh.position.y -= 17.02;
+            parentMesh.position.z += 3.21;
         } else if ( modelInfo.name == "Fox" ) {
             scene.animationGroups[2].play(true); // 0:Survey, 1:Walk, 2:Run
         }
@@ -102,23 +102,24 @@ let createScene = function(engine) {
         let camera = new BABYLON.ArcRotateCamera("[default]", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         
         // TODO: Need to consider whether to adjust the scale in camera or mesh
-        if ( modelInfo.name == "ToyCar" ) {
-            camera.minZ /= 1000; // TODO: If near is 1, the model is missing, so adjusted
-            camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, -5 / scale));
-        } else {
+        if ( modelInfo.name == "VC" ) {
             parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
             camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
+        } else {
+            camera.minZ /= 100; // TODO: If near is 1, the model is missing, so adjusted
+            camera.maxZ *= 100;
+            camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, -5 / scale));
         }
         
         camera.attachControl(canvas, false, false);
         camera.wheelDeltaPercentage = 0.005;
         scene.activeCamera = camera;
-        scene.cameras.push(camera);
 
         if ( scene.cameras.length > 1 ) {
-            //if ( modelInfo.name == "VC" ) {
-            //    scene.cameras.forEach(camera => camera.minZ /= 1000); // TODO: If near is 1, the model is missing, so adjusted
-            //}
+            if ( modelInfo.name == "VC" ) {
+                scene.cameras.forEach(camera => camera.name == "[default]" ? camera.minZ : camera.minZ /= 1000); // TODO: If near is 1, the model is missing, so adjusted
+                scene.cameras.forEach(camera => camera.name == "[default]" ? camera.maxZ : camera.maxZ *= 1000);
+            }
             
             // TODO: Some models feel that the camera is not in ascending order, so you need to investigate
             //let cameraNames = scene.cameras.map(camera => camera.name).reverse();
