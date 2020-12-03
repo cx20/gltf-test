@@ -41,7 +41,7 @@ let state = {
     CUBEMAP: true,
     IBL: true,
     LIGHTS: false, // The default is to use IBL instead of lights
-    CAMERA: "",
+    CAMERA: "[default]",
     VARIANT: ""
 }
 
@@ -85,6 +85,7 @@ function init() {
 
     camera = new THREE.PerspectiveCamera( 75, 1, 1, 10000 );
     camera.position.set(0, 2, 3);
+    camera.name = "[default]";
     scene.add( camera );
 
     let manager = new THREE.LoadingManager();
@@ -124,12 +125,14 @@ function init() {
         }
 
         if ( gltf.cameras.length > 0 ) {
+            gltf.cameras.push( camera );
             for (let i = 0; i < gltf.cameras.length; i++ ) {
                 let camera_ = gltf.cameras[i];
                 camera_.name = camera_.name == "" ? "camera" + i : camera_.name;
                 camera_.aspect = width / height;
             }
             let cameraNames = gltf.cameras.map(camera => camera.name);
+            cameraNames.push("[default]");
             let guiCameras = gui.add(state, 'CAMERA', cameraNames).name("Camera");
 
             guiCameras.onChange(function (value) {
