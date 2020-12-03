@@ -101,7 +101,7 @@ class App {
 
             const cameras = asset.getCameraEntities();
             // TODO: Since TransmissionTest.gltf looks better when rotated, it temporarily ignores the built-in camera.
-            if (cameras.length > 0 && modelInfo.name != "TransmissionTest") {
+            if (cameras.length > 0 && modelInfo.name != "TransmissionTest" && modelInfo.name != "ToyCar") {
                 const index = Math.floor(Math.random() * cameras.length);
                 const c = engine.getCameraComponent(cameras[index]);
                 const aspect = window.innerWidth / window.innerHeight;
