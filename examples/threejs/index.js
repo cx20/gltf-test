@@ -107,7 +107,7 @@ function init() {
     loader.setKTX2Loader( ktx2Loader );
 
     const scale = modelInfo.scale;
-    const url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    let url = "../../" + modelInfo.category + "/" + modelInfo.path;
     if(modelInfo.url) {
         url = modelInfo.url;
     }
