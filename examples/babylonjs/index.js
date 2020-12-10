@@ -102,14 +102,11 @@ let createScene = function(engine) {
         let camera = new BABYLON.ArcRotateCamera("[default]", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         
         // TODO: Need to consider whether to adjust the scale in camera or mesh
-        if ( modelInfo.name == "VC" ) {
-            parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
-            camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
-        } else {
-            camera.minZ /= 100; // TODO: If near is 1, the model is missing, so adjusted
-            camera.maxZ *= 100;
-            camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, -5 / scale));
-        }
+        //parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
+        //camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
+
+        camera.minZ /= 100; // TODO: If near is 1, the model is missing, so adjusted
+        camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, -5 / scale));
         
         camera.attachControl(canvas, false, false);
         camera.wheelDeltaPercentage = 0.005;
@@ -117,8 +114,7 @@ let createScene = function(engine) {
 
         if ( scene.cameras.length > 1 ) {
             if ( modelInfo.name == "VC" ) {
-                scene.cameras.forEach(camera => camera.name == "[default]" ? camera.minZ : camera.minZ /= 1000); // TODO: If near is 1, the model is missing, so adjusted
-                scene.cameras.forEach(camera => camera.name == "[default]" ? camera.maxZ : camera.maxZ *= 1000);
+                scene.cameras.forEach(camera => camera.name == "[default]" ? camera.minZ : camera.minZ /= 100); // TODO: If near is 1, the model is missing, so adjusted
             }
             
             // TODO: Some models feel that the camera is not in ascending order, so you need to investigate
