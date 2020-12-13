@@ -51,8 +51,8 @@ const load = async function () {
   const system = Rn.System.getInstance();
   //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL1, canvas);
   //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.FastestWebGL1, canvas);
-  const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL2, canvas);
-  //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.FastestWebGL2, canvas);
+  //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL2, canvas);
+  const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.FastestWebGL2, canvas);
   
   // expressions
   const expressions = [];
