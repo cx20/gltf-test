@@ -47,6 +47,7 @@ Filament.init([mesh_url, ibl_url, sky_url], () => {
     window.gltfio = Filament.gltfio;
     window.Fov = Filament.Camera$Fov;
     window.LightType = Filament.LightManager$Type;
+    window.ToneMapping = Filament.ColorGrading$ToneMapping;
     window.app = new App(document.getElementsByTagName('canvas')[0]);
 });
 
@@ -68,6 +69,12 @@ class App {
             .build(engine, sunlight);
         this.scene.addEntity(sunlight);
 
+        // Added tone mapping support
+        // See: https://github.com/google/filament/issues/3337#issuecomment-744058326
+        const colorGrading = Filament.ColorGrading.Builder()
+            .toneMapping(ToneMapping.LINEAR)
+            .build(engine);
+ 
         const indirectLight = this.ibl = engine.createIblFromKtx(ibl_url);
         this.scene.setIndirectLight(indirectLight);
         indirectLight.setIntensity(50000);
@@ -121,6 +128,7 @@ class App {
         this.view = engine.createView();
         this.view.setCamera(this.camera);
         this.view.setScene(this.scene);
+        this.view.setColorGrading(colorGrading);
         this.renderer.setClearOptions({clearColor: [1.0, 1.0, 1.0, 1.0], clear: true});
         this.resize();
         this.render = this.render.bind(this);
