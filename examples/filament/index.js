@@ -19,6 +19,21 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+// GUI
+let gui = new dat.GUI();
+
+var ROTATE = true;
+var CAMERA = "";
+var SKYBOX = true;
+var LIGHTS = false;
+var IBL = true;
+let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let guiSkybox = gui.add(window, 'SKYBOX').name('Skybox');
+let guiLights = gui.add(window, 'LIGHTS').name('Lights');
+let guiIBL    = gui.add(window, 'IBL').name('IBL');
+let guiCameras = null;
+
+
 const env = 'papermill';
 const ibl_url = `../../textures/ktx/${env}/${env}_ibl.ktx`;
 const sky_url = `../../textures/ktx/${env}/${env}_skybox.ktx`;
@@ -58,16 +73,19 @@ class App {
         const scene = this.scene = engine.createScene();
         //this.trackball = new Trackball(canvas, {startSpin: 0.006});
         this.trackball = new Trackball(canvas, {startSpin: 0.000});
-        const sunlight = Filament.EntityManager.get().create();
-        Filament.LightManager.Builder(LightType.SUN)
-            .color([0.98, 0.92, 0.89])
-            .intensity(50000.0)
-            .direction([0.6, -1.0, -0.8])
-            .sunAngularRadius(1.9)
-            .sunHaloSize(10.0)
-            .sunHaloFalloff(80.0)
-            .build(engine, sunlight);
-        this.scene.addEntity(sunlight);
+
+        if ( LIGHTS ) {
+            const sunlight = this.sunlight = Filament.EntityManager.get().create();
+            Filament.LightManager.Builder(LightType.SUN)
+                .color([0.98, 0.92, 0.89])
+                .intensity(50000.0)
+                .direction([0.6, -1.0, -0.8])
+                .sunAngularRadius(1.9)
+                .sunHaloSize(10.0)
+                .sunHaloFalloff(80.0)
+                .build(engine, sunlight);
+            this.scene.addEntity(sunlight);
+        }
 
         // Added tone mapping support
         // See: https://github.com/google/filament/issues/3337#issuecomment-744058326
@@ -79,8 +97,46 @@ class App {
         this.scene.setIndirectLight(indirectLight);
         indirectLight.setIntensity(50000);
 
+        guiLights.onChange(function (value) {
+            if ( value ) {
+                const sunlight = Filament.EntityManager.get().create();
+                Filament.LightManager.Builder(LightType.SUN)
+                    .color([0.98, 0.92, 0.89])
+                    .intensity(50000.0)
+                    .direction([0.6, -1.0, -0.8])
+                    .sunAngularRadius(1.9)
+                    .sunHaloSize(10.0)
+                    .sunHaloFalloff(80.0)
+                    .build(engine, sunlight);
+                app.sunlight = sunlight;
+                app.scene.addEntity(sunlight);
+            } else {
+                app.scene.remove(app.sunlight);
+            }
+        });
+
+        guiIBL.onChange(function (value) {
+            if ( value ) {
+                const indirectLight = app.ibl = engine.createIblFromKtx(ibl_url);
+                app.scene.setIndirectLight(indirectLight);
+                indirectLight.setIntensity(50000);
+            } else {
+                const indirectLight = app.ibl = engine.createIblFromKtx(ibl_url);
+                app.scene.setIndirectLight(null);
+            }
+        });
+
         const skybox = engine.createSkyFromKtx(sky_url);
         this.scene.setSkybox(skybox);
+
+        guiSkybox.onChange(function (value) {
+            if ( value ) {
+                const skybox = engine.createSkyFromKtx(sky_url);
+                app.scene.setSkybox(skybox);
+            } else {
+                app.scene.setSkybox(null);
+            }
+        });
 
         const loader = engine.createAssetLoader();
         if (mesh_url.split('.').pop() == 'glb') {
@@ -119,6 +175,7 @@ class App {
             messages.remove();
             this.animator = asset.getAnimator();
             this.animationStartTime = Date.now();
+
         };
         asset.loadResources(onDone, onFetched, basePath);
 
@@ -167,14 +224,21 @@ class App {
         }
         
         // TODO: Camera and auto-rotation control needs improvement
-        const eye = [0, 0, 3];
-        const center = [0, 0, 0];
-        const up = [0, 1, 0];
-        const radians = Date.now() / 10000;
-        vec3.rotateY(eye, eye, center, radians);
-        vec3.transformMat4(eye, eye, this.trackball.getMatrix());
-        this.camera.lookAt(eye, center, up);
-        
+        if ( ROTATE ) {
+            const eye = [0, 0, 3];
+            const center = [0, 0, 0];
+            const up = [0, 1, 0];
+            const radians = Date.now() / 10000;
+            vec3.rotateY(eye, eye, center, radians);
+            vec3.transformMat4(eye, eye, this.trackball.getMatrix());
+            this.camera.lookAt(eye, center, up);
+        } else {
+            const eye = [0, 0, 3];
+            const center = [0, 0, 0];
+            const up = [0, 1, 0];
+            vec3.transformMat4(eye, eye, this.trackball.getMatrix());
+            this.camera.lookAt(eye, center, up);
+        }
         this.renderer.render(this.swapChain, this.view);
         window.requestAnimationFrame(this.render);
     }
