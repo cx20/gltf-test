@@ -186,7 +186,7 @@ class App {
         this.view.setCamera(this.camera);
         this.view.setScene(this.scene);
         this.view.setColorGrading(colorGrading);
-        this.renderer.setClearOptions({clearColor: [1.0, 1.0, 1.0, 1.0], clear: true});
+        this.renderer.setClearOptions({clearColor: [0.6, 0.6, 0.6, 1.0], clear: true});
         this.resize();
         this.render = this.render.bind(this);
         this.resize = this.resize.bind(this);
