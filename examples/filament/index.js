@@ -23,16 +23,23 @@ if (!modelInfo) {
 let gui = new dat.GUI();
 
 var ROTATE = true;
-var CAMERA = "";
+var CAMERA = "[default]";
 var SKYBOX = true;
 var LIGHTS = false;
 var IBL = true;
+var aperture = 16.0;
+var shutterSpeed = 125.0;
+var ISO = 100.0;
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 let guiSkybox = gui.add(window, 'SKYBOX').name('Skybox');
 let guiLights = gui.add(window, 'LIGHTS').name('Lights');
 let guiIBL    = gui.add(window, 'IBL').name('IBL');
+let guiCameraFolder = gui.addFolder('Camera');
+let guiAperture     = guiCameraFolder.add(window, 'aperture',     1,   32, 0.1).name('Aperture');
+let guiShutterSpeed = guiCameraFolder.add(window, 'shutterSpeed', 1, 1000, 0.1).name('Speed (1/s)');
+let guiISO          = guiCameraFolder.add(window, 'ISO',         24, 6400, 0.1).name('ISO');
 let guiCameras = null;
-
+guiCameraFolder.open();
 
 const env = 'papermill';
 const ibl_url = `../../textures/ktx/${env}/${env}_ibl.ktx`;
@@ -64,6 +71,63 @@ Filament.init([mesh_url, ibl_url, sky_url], () => {
     window.LightType = Filament.LightManager$Type;
     window.ToneMapping = Filament.ColorGrading$ToneMapping;
     window.app = new App(document.getElementsByTagName('canvas')[0]);
+
+    app.camera.setExposure(aperture, 1/shutterSpeed, ISO);
+    guiAperture.onChange(function (value) {
+        aperture = value;
+        updateExposure();
+    });
+    guiShutterSpeed.onChange(function (value) {
+        shutterSpeed = value;
+        updateExposure();
+    });
+    guiISO.onChange(function (value) {
+        ISO = value;
+        updateExposure();
+    });
+
+    function updateExposure() {
+        app.camera.setExposure(aperture, 1/shutterSpeed, ISO);
+    }
+
+    guiLights.onChange(function (value) {
+        if ( value ) {
+            const sunlight = Filament.EntityManager.get().create();
+            Filament.LightManager.Builder(LightType.SUN)
+                .color([0.98, 0.92, 0.89])
+                .intensity(50000.0)
+                .direction([0.6, -1.0, -0.8])
+                .sunAngularRadius(1.9)
+                .sunHaloSize(10.0)
+                .sunHaloFalloff(80.0)
+                .build(app.engine, sunlight);
+            app.sunlight = sunlight;
+            app.scene.addEntity(sunlight);
+        } else {
+            app.scene.remove(app.sunlight);
+        }
+    });
+
+    guiIBL.onChange(function (value) {
+        if ( value ) {
+            const indirectLight = app.ibl = app.engine.createIblFromKtx(ibl_url);
+            app.scene.setIndirectLight(indirectLight);
+            indirectLight.setIntensity(50000);
+        } else {
+            const indirectLight = app.ibl = app.engine.createIblFromKtx(ibl_url);
+            app.scene.setIndirectLight(null);
+        }
+    });
+
+    guiSkybox.onChange(function (value) {
+        if ( value ) {
+            const skybox = app.engine.createSkyFromKtx(sky_url);
+            app.scene.setSkybox(skybox);
+        } else {
+            app.scene.setSkybox(null);
+        }
+    });
+
 });
 
 class App {
@@ -97,46 +161,8 @@ class App {
         this.scene.setIndirectLight(indirectLight);
         indirectLight.setIntensity(50000);
 
-        guiLights.onChange(function (value) {
-            if ( value ) {
-                const sunlight = Filament.EntityManager.get().create();
-                Filament.LightManager.Builder(LightType.SUN)
-                    .color([0.98, 0.92, 0.89])
-                    .intensity(50000.0)
-                    .direction([0.6, -1.0, -0.8])
-                    .sunAngularRadius(1.9)
-                    .sunHaloSize(10.0)
-                    .sunHaloFalloff(80.0)
-                    .build(engine, sunlight);
-                app.sunlight = sunlight;
-                app.scene.addEntity(sunlight);
-            } else {
-                app.scene.remove(app.sunlight);
-            }
-        });
-
-        guiIBL.onChange(function (value) {
-            if ( value ) {
-                const indirectLight = app.ibl = engine.createIblFromKtx(ibl_url);
-                app.scene.setIndirectLight(indirectLight);
-                indirectLight.setIntensity(50000);
-            } else {
-                const indirectLight = app.ibl = engine.createIblFromKtx(ibl_url);
-                app.scene.setIndirectLight(null);
-            }
-        });
-
         const skybox = engine.createSkyFromKtx(sky_url);
         this.scene.setSkybox(skybox);
-
-        guiSkybox.onChange(function (value) {
-            if ( value ) {
-                const skybox = engine.createSkyFromKtx(sky_url);
-                app.scene.setSkybox(skybox);
-            } else {
-                app.scene.setSkybox(null);
-            }
-        });
 
         const loader = engine.createAssetLoader();
         if (mesh_url.split('.').pop() == 'glb') {
@@ -163,19 +189,32 @@ class App {
             }
 
             const cameras = asset.getCameraEntities();
-            // TODO: Since TransmissionTest.gltf looks better when rotated, it temporarily ignores the built-in camera.
-            if (cameras.length > 0 && modelInfo.name != "TransmissionTest" && modelInfo.name != "ToyCar") {
-                const index = Math.floor(Math.random() * cameras.length);
-                const c = engine.getCameraComponent(cameras[index]);
-                const aspect = window.innerWidth / window.innerHeight;
-                c.setScaling([1 / aspect, 1, 1, 1]);
-                this.view.setCamera(c);
+            if (cameras.length > 0 ) {
+                let cameraNames = [];
+                for (let i = 0; i < cameras.length; i++ ) {
+                    cameraNames.push( "camera" + i);
+                }
+                cameraNames.push( "[default]" );
+                let index = 0;
+                guiCameras  = guiCameraFolder.add(window, 'CAMERA', cameraNames).name('Cameras');
+                guiCameras.onChange(function (value) {
+                    index = cameraNames.indexOf(value);
+                    if ( index < cameras.length ) {
+                        const c = engine.getCameraComponent(cameras[index]);
+                        const aspect = window.innerWidth / window.innerHeight;
+                        c.setScaling([1 / aspect, 1, 1, 1]);
+                        app.view.setCamera(c);
+                    } else {
+                        app.camera = engine.createCamera(Filament.EntityManager.get().create());
+                        app.view.setCamera(app.camera);
+                        app.resize();
+                    }
+                });
             }
 
             messages.remove();
             this.animator = asset.getAnimator();
             this.animationStartTime = Date.now();
-
         };
         asset.loadResources(onDone, onFetched, basePath);
 
