@@ -189,17 +189,17 @@ class App {
             }
 
             const cameras = asset.getCameraEntities();
-            if (cameras.length > 0 ) {
+            if (cameras.length > 0) {
                 let cameraNames = [];
-                for (let i = 0; i < cameras.length; i++ ) {
-                    cameraNames.push( "camera" + i);
+                for (let i = 0; i < cameras.length; i++) {
+                    cameraNames.push("camera" + i);
                 }
-                cameraNames.push( "[default]" );
+                cameraNames.push("[default]");
                 let index = 0;
-                guiCameras  = guiCameraFolder.add(window, 'CAMERA', cameraNames).name('Cameras');
-                guiCameras.onChange(function (value) {
+                guiCameras = guiCameraFolder.add(window, 'CAMERA', cameraNames).name('Cameras');
+                guiCameras.onChange(function(value) {
                     index = cameraNames.indexOf(value);
-                    if ( index < cameras.length ) {
+                    if (index < cameras.length) {
                         const c = engine.getCameraComponent(cameras[index]);
                         const aspect = window.innerWidth / window.innerHeight;
                         c.setScaling([1 / aspect, 1, 1, 1]);
@@ -210,6 +210,11 @@ class App {
                         app.resize();
                     }
                 });
+            }
+
+            const lights = asset.getLightEntities();
+            for (let i = 0; i < lights.length; i++) {
+                this.scene.addEntity(lights[i]);
             }
 
             messages.remove();
