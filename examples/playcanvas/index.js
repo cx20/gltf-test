@@ -18,7 +18,6 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-
 // GUI
 let gui = new dat.GUI();
 
@@ -26,7 +25,7 @@ var ROTATE = true;
 var CAMERA = "";
 var LIGHTS = false;
 var IBL = true;
-//let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 let guiLights = gui.add(window, 'LIGHTS').name('Lights');
 let guiIBL    = gui.add(window, 'IBL').name('IBL');
 let guiCameras = null;
@@ -159,6 +158,14 @@ var Viewer = function (canvas) {
             camera.script.create("orbitCameraInputMouse");
             camera.script.create("orbitCameraInputTouch");
             app.root.addChild(camera);
+
+            var timer = 0;
+            app.on("update", function (deltaTime) {
+                if ( ROTATE ) {
+                    timer += deltaTime * 20;
+                    viewer.camera.camera.entity.script.orbitCamera.yaw = timer;
+                }
+            });
         });
 
     // create the light
