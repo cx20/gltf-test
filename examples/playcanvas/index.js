@@ -18,6 +18,19 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+
+// GUI
+let gui = new dat.GUI();
+
+var ROTATE = true;
+var CAMERA = "";
+var LIGHTS = false;
+var IBL = true;
+//let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
+let guiLights = gui.add(window, 'LIGHTS').name('Lights');
+let guiIBL    = gui.add(window, 'IBL').name('IBL');
+let guiCameras = null;
+
 let decoderModule;
 
 var getAbsolutePathFromRelativePath = function(href) {
@@ -98,6 +111,7 @@ var Viewer = function (canvas) {
         //"rgbm": true,
         "prefiltered": "papermill.dds"
     });
+
     cubemapAsset.ready(function () {
         app.scene.gammaCorrection = pc.GAMMA_SRGB;
         app.scene.toneMapping = pc.TONEMAP_ACES;
@@ -114,6 +128,14 @@ var Viewer = function (canvas) {
     // https://forum.playcanvas.com/t/how-to-dynamically-configure-skybox-with-javascript/12980/6
     cubemapAsset.loadFaces = true;
     app.assets.load(cubemapAsset);
+
+    guiIBL.onChange(function(value) {
+        if ( value ) {
+            app.scene.skyboxIntensity = 1.0;
+        } else {
+            app.scene.skyboxIntensity = 0.0;
+        }
+    });
 
     // create the orbit camera
     var camera = new pc.Entity("Camera");
@@ -145,7 +167,7 @@ var Viewer = function (canvas) {
         type: "directional",
         color: new pc.Color(1, 1, 1),
         castShadows: true,
-        intensity: 2,
+        intensity: 0.5,
         shadowBias: 0.2,
         shadowDistance: 5,
         normalOffsetBias: 0.05,
@@ -153,6 +175,15 @@ var Viewer = function (canvas) {
     });
     light.setLocalEulerAngles(45, 30, 0);
     app.root.addChild(light);
+
+    light.enabled = LIGHTS;
+    guiLights.onChange(function(value) {
+        if ( value ) {
+            viewer.light.enabled = true;
+        } else {
+            viewer.light.enabled = false;
+        }
+    });
 
     // store things
     this.app = app;
