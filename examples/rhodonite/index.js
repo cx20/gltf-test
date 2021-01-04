@@ -156,6 +156,15 @@ const load = async function () {
     controller.unregisterEventListeners();
     controller.registerEventListeners(canvas);
 
+    // Prepare Entity to fix the camera target
+    const boardPrimitive = new Rn.Plane();
+    boardPrimitive.generate({width: 3 / scale, height: 3 / scale, uSpan: 1, vSpan: 1, isUVRepeat: false});
+    const boardMesh = new Rn.Mesh();
+    boardMesh.addPrimitive(boardPrimitive);
+    const boardEntity = generateEntity();
+    const boardMeshComponent = boardEntity.getComponent(Rn.MeshComponent);
+    boardMeshComponent.setMesh(boardMesh);
+
     // If there is more than one camera, the selected camera will be used
     // (For some reason, it seems that there are two default cameras, so the condition is more than two.)
     if (cameraComponents.length > 1 && cameraIndex > 0) {
@@ -163,11 +172,13 @@ const load = async function () {
         selectedCameraComponent.aspect = canvas.width / canvas.height; // Apply the aspect of the actual window instead of the glTF aspect information
       }
       mainRenderPass.cameraComponent = selectedCameraComponent;
-      controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+      //controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+      controller.setTarget(boardEntity);
       // If cameraIndex is 0, the default camera is used
     } else {
       mainRenderPass.cameraComponent = cameraComponent;
-      controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+      //controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+      controller.setTarget(boardEntity);
     }
   }
 
