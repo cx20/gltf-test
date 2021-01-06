@@ -225,6 +225,8 @@ function makeTutorialPbrModelLinks() {
             let td = document.createElement('td');
             if (modelName == 'FlightHelmet' || modelName == 'Sponza' || modelName == 'ToyCar') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-BasisU', scale));
             } else if (modelName == 'DamagedHelmet') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
@@ -408,7 +410,8 @@ function replaceContentName(type) {
         "glTF-pbrSpecularGlossiness": "[SpecGloss]",
         "glTF-Draco": "[Draco]",
         "glTF-Quantized": "[Quantized]",
-        "glTF-IBL": "[glTF-IBL]"
+        "glTF-IBL": "[glTF-IBL]",
+        "glTF-BasisU": "[BasisU]"
     }
     return hashMap[type] ? hashMap[type] : type;
 }
