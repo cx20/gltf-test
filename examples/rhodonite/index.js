@@ -100,7 +100,7 @@ const load = async function () {
   expressions.push(mainExpression);
   
   // env
-  const envExpression = createEnvCubeExpression('../../textures/papermill');
+  const envExpression = createEnvCubeExpression('../../textures/papermill_hdr');
   // TODO: VC.gltf has been removed from Cubemap due to inconsistencies with automatic camera calculations
   if (modelInfo.name != "VC") {
     expressions.push(envExpression);
@@ -225,15 +225,13 @@ const load = async function () {
   function createEnvCubeExpression(baseuri) {
     const environmentCubeTexture = new Rn.CubeTexture();
     environmentCubeTexture.baseUriToLoad = baseuri + '/environment/environment';
-    environmentCubeTexture.isNamePosNeg = false;
-    //environmentCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
+    environmentCubeTexture.isNamePosNeg = true;
     environmentCubeTexture.hdriFormat = Rn.HdriFormat.LDR_LINEAR;
     environmentCubeTexture.mipmapLevelNumber = 1;
     environmentCubeTexture.loadTextureImagesAsync();
 
     const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
     sphereMaterial.setTextureParameter(Rn.ShaderSemantics.ColorEnvTexture, environmentCubeTexture);
-    //sphereMaterial.setParameter(Rn.EnvConstantSingleMaterialNode.EnvHdriFormat, Rn.HdriFormat.HDR_LINEAR.index);
     sphereMaterial.setParameter(Rn.EnvConstantSingleMaterialNode.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
 
     const spherePrimitive = new Rn.Sphere();
@@ -261,13 +259,13 @@ const load = async function () {
   function setIBL(baseUri) {
     const specularCubeTexture = new Rn.CubeTexture();
     specularCubeTexture.baseUriToLoad = baseUri + '/specular/specular';
-    specularCubeTexture.isNamePosNeg = false;
+    specularCubeTexture.isNamePosNeg = true;
     specularCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
     specularCubeTexture.mipmapLevelNumber = 10;
 
     const diffuseCubeTexture = new Rn.CubeTexture();
     diffuseCubeTexture.baseUriToLoad = baseUri + '/diffuse/diffuse';
-    diffuseCubeTexture.isNamePosNeg = false;
+    diffuseCubeTexture.isNamePosNeg = true;
     diffuseCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
     diffuseCubeTexture.mipmapLevelNumber = 1;
 

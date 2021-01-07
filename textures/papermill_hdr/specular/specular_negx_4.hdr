@@ -1,0 +1,7 @@
+#?RADIANCE
+# Output from cmft.
+FORMAT=32-bit_rle_rgbe
+EXPOSURE=1
+
+-Y 32 +X 32
+«”¤€±™ª€·Ÿ±€½¤¹€ÃªÀ€É¯È€ÎµÏ€Óº×€Ø¿Þ€ÜÃå€ßÇë€âËð€åÎô€èÐ÷€êÒø€íÓø€ïÔ÷€ñÔô€óÓð€ôÑê€ôÏã€óËÛ€ñÇÓ€îÃÉ€ê¾À€æ¹·€á³®€Ü®¦€×©ž€Ò¤—€ÍŸ€È›Š€¨œ€®–£€´›ª€»¡²€Â§º€È­Ã€Î´Ë€Ó¹Ô€Ø¿Ü€ÝÄä€àÉë€äÍñ€æÐö€éÒù€ëÔû€íÕû€ïÕú€ñÕ÷€òÔó€òÒì€ñÏå€ïËÜ€íÆÓ€éÁÈ€å»¾€à¶µ€Û°«€Öª¢€Ð¥š€ËŸ’€Æš‹€Á–…€¤Œ•€ª’œ€±˜¤€¹ž¬€À¥µ€Ç¬¾€Î³È€Ô¹Ñ€ÚÀÛ€ÞÆä€âËì€æÏó€èÓù€êÕý€vkwl€xlñØü€ñÖ÷€ðÓð€ïÏè€ìËÞ€éÅÓ€ä¿È€ß¹½€Ú²²€Õ¬¨€Ï¦ž€É –€Ä›Ž€¿–‡€º‘€€ŸˆŽ€¦Ž•€®”€¶›¦€¾£¯€Æª¹€Í²Ä€ÕºÏ€ÛÁÚ€àÈå€åÎî€èÓ÷€ëÖý€vlwm‚xnƒxn‚xmðÙü€ïÕõ€íÐë€éËà€äÄÔ€ß½Ç€Ú¶»€Ô¯¯€Î¨¤€È¢š€Â›‘€¼–‰€·‚€²Œ{€šƒ‡€¢ŠŽ€ª—€²˜ €» ª€Ä¨µ€Í±Á€ÕºÍ€ÜÂÙ€âÊæ€çÑñ€ëÖû€wmxo„xp†xp†yp†xo„xnî×ú€êÑï€åËâ€àÃÕ€Ú»Ç€Ô³¹€Í«¬€Ç¤¡€À–€º–Œ€´‘„€¯‹}€ª†v€•~€€…‡€¥Œ€®”™€·œ¤€Á¥°€Ë¯¼€Ô¹Ê€ÜÂØ€ãËæ€éÓó€îÚþ€xoƒyq‡yr‰yrŠyr‰xq‡wo„vlçÒó€áÊä€ÛÁÕ€Ô¸Å€Í¯¶€Æ§©€¿Ÿœ€¸˜‘€²‘‡€¬‹€¦…w€¡p€yx€–€€€Ÿ‡ˆ€¨’€²˜€½¢©€Ç¬·€Ñ·Æ€ÛÁÕ€ãÌå€êÕô€wn€xq…yr‰ysŒytysŒxrŠvp‡tmãÒõ€ÝÉå€Õ¿Ô€ÍµÃ€Å«³€¾¢¤€·š—€°’‹€©‹€£…y€žq€™{k€ˆsq€zx€˜€€¢‰Š€¬’•€¶œ¢€Á§°€Ì³À€Ö¾Ñ€àÊâ€çÔò€vn€xq†ysŠytxtŽxtŽvrŒtpˆrl‚ÞÐõ€ÖÆã€Î»Ñ€Å°¾€½¥­€µœž€­“‘€¦Œ…€ …{€šr€”yk€td€€mi€‡sp€zx€™‚€£‹Œ€®•™€¹ ¨€Ä¬¸€Ï¸É€ÙÄÛ€áÏí€çÙü€up„vr‰vsŒvsŽussq‹qn‡njÖÌñ€ÍÀÞ€ÄµË€»©¸€³Ÿ¦€«•—€£Œ‰€œ„}€–~t€xk€‹rd€†n^€ðÎÂþÙÏ†so€{x€™ƒƒ€£€®˜€¹£­€Ä¯¾€Î¼Ð€ÖÇâ€ÝÑó€pl€qn…qoˆqpŠpo‰nm‡lkƒÒÎù€ËÄè€Â¸Õ€¹¬Á€°¡®€§–€Ÿ€˜„€€‘}u€‹vl€†pd€k]€úÏ¯ÞÀ±ëÊ¾ùÖÌ„rn€zx€—ƒƒ€¡€«˜Ÿ€µ£°€¿¯Â€ÇºÓ€ÎÄã€ÒÌñ€ÔÑû€ji€jj‚ii‚gh€ÊÊø€ÄÂë€½¸Ú€´­Ç€«¡´€£–¢€›Œ‘€“ƒƒ€Œ{w€†tl€€nc€øÒ¹ïÉ¬çÁ¢Ì²¡×»¬äÆ¹òÒÈ€pl€‰xw€’ƒ€›‹€¤•Ÿ€­ ¯€µª¿€»³Î€¿»Û€ÂÀå€ÂÂë€ÂÃî€ÀÂî€½¿ê€¹ºâ€³³Ö€¬ªÇ€¤Ÿ¶€œ•¤€”Š“€„€†yw€€rl€õ×ÆìÌ¶ãÃ©Û»Ô´”º£‘Ä«›Îµ¦Ú¿³çËÂõÙÔ‚tt€Š|€€’†€™›€ ˜©€¦ ¶€ª¦Á€¬«Ê€­®Ð€­¯Ò€«®Ò€©¬Ï€¥§È€ ¡½€š™°€“¡€Œ†’€…~ƒ€þìíóÝÖèÑÃßÆ²Ö¼¤Ï´™È­Â§‡©•‚°œŠ¹¤“Ã­žÎ·«ÙÂºåÏËòÝßvz€†}†€‹…‘€Œœ€“‘¦€–•­€—˜²€–™´€•˜´€“–±€“«€ŒŽ£€‡‡˜€‚€‹€ùðþíâæãÔÐÙÉ½Ð¾­ÉµŸÂ­“¼¦‰¶ ±šz˜ˆtžŽz¥”‚­›‹µ£–¿¬¢È·°ÒÂ¿ÜÎÑæÚãïæõ{xƒ€~}‹€€€€‚”€ƒ–€€ƒ–€‚”€}€y{ˆ€vv€€ãàìÚÕÙÑÉÆÉ¾´Âµ¥»¬˜´¥Œ¯žƒª˜z¦“s¢m‰|gŽ€l“…r™‹y ‘‚§˜‹® –µ©¢½²°Ä¼¾ËÅÌÑÍÙÖÔäÙÚíÛÞôÛà÷ÛàöÙÞóÕÚëÑÔáËÌÔÅÄÅ¿»¶¸³¨²«›¬£§„¢—{ž‘sšŒm—ˆg”„b÷â¶~þé¾~ƒxd‡|iŒp‘‡w—€œ“‰¢š“§¡¬¨¨±¯±µ´º·¹Á¹¼Åº¾Ç¹¾Ç¸½Ä¶º¿³¶·¯±®««£§¥˜¢ŸŽž™„š”{–s“Šl†eŒ‚`Š\‡{XÞÎ ~ãÓ§~éÙ®~ðß·~÷çÁ~þïÌ~ƒ|l‡s‹†z‹‚“‘Š––‘™š—›ž› Ÿž¢ ž¢ ¢žœ ššž•˜›Ž•—‡““w‹pŠ‡iˆƒc…€^ƒ|Y€yUýí£~ùç~È¼~ÌÀ’~ÐÄ˜~ÔÉŸ~ÚÏ¦~ßÕ¯~åÜ¸~ëãÂ~ñëÍ~÷óØ~ýûã~vƒ…z…ˆ~†Š€‡ŒˆŒ‡Œ€‡‹}†Šy…ˆu„†p‚„j‚e€`üú¶~ùõ­~õï¥~ñê~íä—~êß‘~æÚ~µ­|~·¯€~º²…~½¶Š~Áº~Å¿–~ÉÄ~ÎÊ¤~ÒÐ¬~×Ö´~ÛÜ»~àãÂ~ãéÉ~çîÍ~êòÑ~ëõÒ~ìöÒ~í÷Ð~í÷Í~ìöÈ~ìõÂ~ìó»~ëñ³~ëï¬~éí¤~èê~ææ—~ãâ‘~àÝ‹~ÝØ†~ÚÓ‚~×Ï~~¤Ÿn~¦¡q~¨£t~ª¥x~¬©|~¯¬~²°†~¶µ‹~¹º‘~½¿—~ÁÄœ~ÅÊ¡~ÈÏ¦~ÌÓ©~Î×¬~ÐÚ­~ÑÜ­~ÒÜ¬~ÓÝ©~ÓÝ¦~ÔÞ¢~ÕÞ~Öß˜~×ß“~ØÞŽ~×Ü‰~ÖÚ„~ÔÖ~ÒÒ{~ÏÎx~ÌÊt~ÉÆq~–“a~—”c~˜–f~™˜i~›šl~o~  s~£¤w~¦¨{~©¬~¬±ƒ~°¶‡~³»Š~·¿~¹Ã~»Å~½Ç~½È~¾É~ÀÊ‹~ÁÌ‰~ÃÎ†~ÆÏ‚~ÈÑ~ÉÒ{~ÊÑx~ÉÐt~ÈÍq~ÆÊn~ÄÆk~ÁÂi~¾¾f~Š‰W~ŠŠX~‹‹Z~ŒŒ\~Ž^~a~‘“d~“–g~–šj~™žm~œ¢p~ §s~£«u~¦¯w~©³x~«µy~¬·y~­¸y~®¹x~°»v~²½u~µÀs~¸Ãq~»Ån~½Çl~¾Çj~¾Çg~¾Åe~¼Âc~º¿a~·»_~µ·]~€M~€€O~€P~€‚Q~„S~ƒ†U~„ˆW~‡‹Y~‰Ž\~Œ’^~–`~’šb~–žd~™¢f~œ¦g~ž¨g~Ÿªg~ «g~¡¬g~£®f~¥±e~©´c~¬·b~¯ºa~²½_~´¾^~µ¾\~´½[~³»Y~±¸W~¯´V~¬°U~îòŒ}îò}îó}ïô‘}ð÷”}òú—}õþš}|O~„P~‚ˆR~…ŒT~ˆU~‹”W~Ž—X~‘šY~“Y~”žY~• Y~–¡Y~˜£X~›¦X~ž©W~¢­V~¥±V~¨´U~ªµT~«¶S~«µR~«´Q~©±P~§®O~¥ªM~ßå~}Þå}Þå}ßç‚}àé„}âì‡}åï‰}éôŒ}íúŽ}y€H~|ƒJ~‡K~‚‹L~…ŽM~‡‘M~‰“N~Š”N~Œ–N~—N~™N~‘œM~• M~˜£M~œ§L~ŸªL~¡­K~£®K~£®J~£¬I~¡ªI~ ¨H~ž¥G~ÒÚs}ÒÙs}ÑÚt}ÒÛv}ÓÝw}Õßy}Øã{}Ûç}}ßì}äò}êùƒ}x€B~zƒC~}†D~ˆD~ŠE~‚ŒE~ƒE~…ŽE~†‘E~‰“E~Œ—E~šE~“žE~–¡E~™¤D~›¥D~›¦D~›¥C~š¤C~™¡B~—ŸB~ÈÐi}ÇÐi}ÇÐj}ÇÑk}ÈÒl}ÊÕm}ÌØo}ÐÜp}Ôár}Øæt}Ýìu}ãòw}èøx}ìýz}x€=~y‚=~{„=~|…>~}‡>~‰>~‹>~„Ž>~ˆ’>~‹•>~Ž™>~‘›>~“>~”ž>~”ž>~“=~’›=~‘™=~¾Ç`}¾Ç`}½Ça}¾Èb}¿Êc}ÁÌd}ÃÏe}ÆÒf}Ê×g}ÎÛi}Óáj}×æk}Üël}àðm}ãón}æ÷o}éúo}ëüo}w8~x8~{„8~}‡8~€Š8~„8~‡9~‰“9~‹•9~Œ–9~–9~–9~Œ•9~‹“9~·ÀY}¶ÀY}¶ÀY}¶ÁZ}·ÂZ}¹Ä[}»Ç\}¾Ê]}ÁÎ^}ÅÒ_}É×a}ÎÛb}Òàb}Õäc}Øçd}Ûêd}Ýíe}àðe}âóf}æöf}êûf}w€3~zƒ3~}†4~€‰4~‚‹4~„5~†5~†5~‡5~†5~…Ž5~°ºR}¯¹R}¯ºS}°ºS}±»T}²½T}´ÀU}·ÃV}ºÆW}¾ÊX}ÁÎX}ÅÒY}ÉÕZ}ÌÙ[}ÏÜ[}Ñß\}Óá\}Öä]}Øç]}Üë^}ßï^}äô_}éù_}w0~y‚0~|„0~~†1~ˆ1~€‰1~‰1~‰1~€ˆ1~ª´M}ª´M}ª´M}ªµM}«¶N}­·N}¯¹O}±¼O}´¿P}·ÂQ}ºÆR}¾ÉR}ÁÍS}ÄÐT}ÆÒT}ÉÕU}ËØU}ÍÚV}ÐÝV}ÓàV}ÖäW}ÚéX}ßíX}ãòY}è÷Z}ìü[}x€-~y.~{‚.~{ƒ.~|ƒ.~{ƒ/~
