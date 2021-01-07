@@ -1,0 +1,7 @@
+#?RADIANCE
+# Output from cmft.
+FORMAT=32-bit_rle_rgbe
+EXPOSURE=1
+
+-Y 32 +X 32
+¬–¨€«–ª€ª—®€«˜²€¬›¸€®žÀ€±£È€µ¨Ò€º¯Ý€À¶é€È¾õ€hc€lh†plŒup‘yt•~x˜‚{›†~Šž„Ÿ“‡ ™‹¢ž£¥”¥­š©µ ¬¾¨±È°·Ò¸¼ÜÁÃæÉÉ²›¯€±›±€°œµ€°º€± À€´¤É€·©Ò€¼°Þ€Á·ê€ÈÀø€hdƒliŠqn‘vs˜{x€|¢„€¦‰ƒ¨†ª‘‰«•Œ«š¬Ÿ’¬¥–­«›¯³ ±»§µÄ®¹Î¶¾Ø¾ÃâÆÉìÏÏ¸ µ€¶ ¸€¶¡¼€¶£Á€·¦É€ºªÒ€½°Ý€Ã·ê€ÉÀù€hd„mjrp•wuž|{¥‚€¬‡…±Œ‰µ¸”¹˜’¹œ”¹¡—¸¥š¸«¸±¡¸¸§ºÁ­½Ê´ÀÓ»ÅÝÃÊçËÏñÓÕ¾¥¼€¼¥¿€»¦Ã€¼¨É€½«Ñ€À°Û€Ä·è€Ê¿÷€hd„mjrp—ww¡}}«ƒ„´‰Š¼Â”“Ç˜—ÉœšÊ œÉ¤žÈ§ŸÆ¬¡Ä±¤Â·¨Â¾­ÃÆ²ÄÏ¹ÇØÀËâÈÐëÏÔô×ÙÃ«Ä€ÂªÆ€Á«Ê€Â­Ð€Ã±Ù€Æ¶ä€Ë¾ò€hcmi‹qo–wv¢}~®„†º‹Ä‘”Î—šÕœŸÚ¡¢Ü¥¥Ü¨¦Û«§Ø®¨Ô²©Ð¶«Í¼®ËÂ²ËÊ·ÌÒ½ÎÛÄÐäËÔíÒØöØÜÉ°Ë€Ç¯Í€Ç°Ñ€Ç³×€É·á€Í¼í€ÒÄü€lg‡qm“vuŸ}}­„…»‹ŽÉ’—Ö™Ÿà ¥é¥ªîª®ñ®°ð°±í³±èµ±â¸±Ý»²ØÀ´ÔÆ·ÒÍ»ÒÕÀÒÝÆÔåÌ×íÓÚõÙÝÎµÒ€Ì´Ô€ÌµØ€Í¸ß€Ï¼è€ÓÂõ€leƒpkurš{z¨‚ƒ¸ŠÈ’—Øš¡ç¢ªô©±ýW[‚‚Y]ƒ‚[^‚‚\^€‚ººù»¹ñ½¸éÀ·âÃ¸ÜÈºØÎ¾ÖÕÂÖÝÇ×äÌØìÒÛò×ÝÓºÙ€Ñ¹Û€ÑºÞ€Ò¼å€ÔÁï€ÙÇý€oh‡tn’yv €°‡‰Á”Ô™Ÿç¢ªøUZƒ‚X^‰‚[aŒ‚^c‚_cŒ‚`c‰‚`a„‚ÀÀþÁ½óÂ¼êÅ»âÉ¼ÝÎ¾ÙÔÂØÛÆ×áËØèÏÙîÔÛ×¾ß€Ö¾á€Ö¾å€×Áë€ÚÅõ€ofrk‹wq—}y¥„ƒ·ŒŽÊ–šßŸ§ôTYƒ‚X_Œ‚\c’‚_f–‚ah–‚bh•‚cg‘‚be‹‚bc„‚ÃÂüÄ¾ðÅ½çÈ¼ßÌ¾ÚÑÀØ×ÃÖÜÇÖâË×çÏØÛÂå€ÚÂç€ÚÂê€ÛÅñ€ÞÉú€qh„umŽztš€|©ˆ‡¼‘“Ñ› ç¥­þW]Š‚\c“‚_gš‚bjž‚dlž‚elœ‚ej—‚dh‚ceˆ‚bb‚Ã¿ôÄ¼èÅ»àÈ»ÚÌ½ÖÑ¿ÔÖÂÓÛÆÓàÉÔÞÆë€ÝÅì€ÞÆï€ßÉõ€qftj†xo}vœ„¬ŒŠ¿•–ÕŸ¤íUYƒ‚Z_Ž‚^e˜‚bjŸ‚em£‚fo¤‚gn¡‚fl›‚di“‚ce‹‚ab‚‚Á¾õÀºèÁ¸ÞÃ·×Æ¸ÒÊºÏÏ¼ÎÓ¿ÎØÂÎáÉï€áÉð€áÉó€ãÌù€shvlˆzq‘€xž‡­‹Á™˜×£¦ðVZ„‚[a‘‚`g›‚cl¢‚fo§‚gp§‚go¤‚fm‚di•‚be‹‚`a‚‚½»ó¼¶å¼³Ú½²ÒÀ²ÍÃ³ÊÇ¶ÈË¸ÈÏ»ÈäÌó€äËó€åÌö€çÏû€vi‚ymˆ}r‘ƒyžŠ‚­’Áœ™×¦§ðXZ…‚\a‘‚ag›‚dl£‚fo§‚gp§‚fn£‚elœ‚bg“‚`c‰‚]_‚¸¶î¶±ßµ­Ô¶¬Ì¸«Ç»­Ä¾®ÂÂ±ÁÇ´ÂçÎõ€èÎõ€éÏ÷€ëÑü€xj‚{nˆs‘…zŒ‚¬•¿ž™Õ¨§íYZƒ‚]a‚`f™‚ck¡‚em¥‚en¤‚dl ‚bi™‚`e‚]`…‚µ·ø±°æ¯ªØ®¦Í®¤Å°¤¿³¥¼¶§»º©º¾¬»êÐö€ëÐö€íÑø€ðÓü€zk‚~o‡‚tˆz›‚©—» ˜Ð©¥èYY€‚]_‹‚`d•‚bhœ‚cj ‚bjŸ‚ah›‚_e“‚\`Š‚Y\€‚®¯í©¨Ü§¢Î¦ŸÄ¦¼¨œ·ª´­Ÿ³±¢²µ¤³íÒö€îÑö€ñÒ÷€ôÕû€|l€o†…tŽ‹z˜’‚¥™Œ¶¢—Êª£à²¯÷\]†‚^a‚`d•‚`f˜‚_e—‚]c“‚[`‹‚X[‚‚ª®ò¥¦à¡ŸÐŸ™Ãž–¹ž”²Ÿ”®¢•«¥—ª¨™ª¬œªðÓõ€òÒô€õÓõ€ùÖø€þÚþ€ƒp„‡t‹z””‚ ›Š°£”Â«ŸÖ±ªë[Y‚]]‡‚]`‚]a‚[`Ž‚Y]‰‚VZ‚‚§«ó¡£âœ›Ñ˜•Ã–·•®•Œ¨—Œ¤™Œ¡œŽ Ÿ‘ £“¡óÓò€õÓñ€øÔñ€ýÖô€m|…pŠt‡z–€›ˆ©¤‘¹«›Ë°¤Þ´¬ïµ²ýZZƒ‚Y[„‚WYƒ‚¨®ý¢§ïœŸà——Ð’ÁŠ´†ªŒ„¢Œ‚œŽƒ™„—“…––ˆ–š‹—õÒí€øÒì€ûÔì€€kwƒmy‡p}Œtƒ‘yŠ˜”ž†¡¤Ž¯ª–¿®žÏ°¤Þ°¨ê®ªñª©ò¤¦îž å˜™Ù’’Ë‹½ˆ„°…¥ƒ|œƒz•ƒy…y‡zŒŠ|‹ŒöÑè€ùÑæ€þÓæ€jt„lvˆoys~’w…˜}žƒ˜¤Š¤¨‘²«—¿«›ÌªžÕ¦žÚ¡œÛ›˜Ö”’ÎŽŒÃˆ…¶‚ª~yŸ|u–zrŽzp‰zp…|p‚~qs„v‡x‚÷Ïá€úÏà€ho‚ip…kr‰nuŽqy“u˜z†€¢…™¥Š¥§°¦’¹£“Àž’Ä˜Ã‘‹¿Š…·ƒ­~y£ys™uosk‡qiâÏù€äÎó€çÏï€ëÒí€ðÖí€öÚî€ýßñ€öÌÚ€úÌØ€þÎ×€‚hl…jm‰lpos’sx–w~›{†Ÿ€Ž¡„—¡‡  ‰§œ‰¬–‡®ƒ­ˆ~©y¢zsštn‘piˆleÕÄõ€ÒÀê€Ò¾ã€Ó¾Ý€Ö¿Ú€ÚÁÙ€ßÅÙ€åÉÛ€ëÎÝ€ôÈÒ€øÉÐ€ýÊÏ€fh„hiˆjkŒmnpr”sw—w}šz„œ}Š›‘˜–”~š|›†x™s•xnqiˆldÐ¿ô€É¸ç€Å³Ý€Ã°Ô€Ã®Î€Ä®É€Ç°Ç€Ë²Æ€ÏµÇ€ÕºÈ€Û¾Ë€òÄÉ€õÅÇ€úÆÆ€dc‚ed†gf‰jhlkop“rt•ty•v”wƒ‘v‡‹u‰…q‰~m‡viƒßÈý€Ó¿ò€É¶æ€Á¯Ú€»©Ð€·¤Ç€µ¢À€µ »€¶ ¸€¹¢¶€¼¤µ€Á§¶€Æ«·€Ì°º€î¿À€òÀ¾€öÁ¾€ûÃ¾€€c_ƒda†fc‰ieŒkiŽmlnpotow‰nyƒlzùÑô€ëÉð€ÝÀé€Ð·á€Å®×€¼§Í€´ Ä€¯›»€«—´€©•¯€©”ª€ª”¨€¬•¦€¯—¦€³š§€¸ž¨€¾¢ª€êº·€î»¶€ò¼µ€ö¾µ€üÁ¶€€a\ƒc^…e`‡fb‰he‰hgˆij…hlfm÷ÇÜ€êÀÚ€Ü¹Ö€Ï°Ð€Ã¨É€¸ Á€°š¹€©”±€¤ª€ Œ¤€žŠŸ€ž‰œ€Ÿ‰š€¡Š˜€¤Œ˜€§™€¬’š€±–€æµ¯€é¶®€í·­€ñ¹­€ö»®€ú½¯€`YaZƒb\ƒc^ƒc`caüÃÆ€ó¿Ç€è¹Æ€Û²Ä€Ï«À€Â£»€·›µ€­”®€¥Ž§€Ÿ‰¡€š…›€—‚–€•€’€”€•€€—Œ€™‚Œ€…€¡ˆŽ€¥‹€á°§€ä±¦€è²¥€ë³¥€ïµ¦€ó·§€÷¹©€ú»«€ü¼®€ü½±€ú¼³€õºµ€î·¶€å²¶€Ú¬µ€Î¦²€ÂŸ®€·—ª€¬¤€£Šž€œ…™€–€“€‘|Ž€ŽzŠ€x‡€Œw„€Œwƒ€Žx‚€z‚€“|‚€—„€›‚…€Ü«Ÿ€ß¬ž€â­ž€æ®ž€é°ž€í±Ÿ€ð³¡€ò´¢€òµ¤€ñ´¦€î³§€é°¨€á¬¨€Ø§¨€Î¢¦€Ã›£€·” €­Ž›€£‡–€›‚‘€”}Œ€Žxˆ€Šuƒ€‡s€€…q}€…p{€…py€†qy€ˆrx€‹ty€Žvz€‘y|€×¦˜€Ù§—€Ý¨—€à©—€ãª—€æ«˜€è¬™€é­š€é­›€ç¬€ãª€Þ§€Ö£€Ížœ€Ã˜š€¸’—€®Œ”€¤…€›€‹€”z‡€v‚€ˆr~€„oz€lw€kt€ýÔåýÔãjq€kp€ƒmq€†or€‰rs€Ò¢’€Ô¢‘€×£€Ú¤€Ý¥‘€ß¦‘€á§’€á§“€à¦”€Þ¥”€Ù£”€ÓŸ”€Ë›“€Ã–’€¹€¯Š€¦„Š€†€”y‚€t~€‡pz€‚lv€ýÓæøÏàôÌÛòÊ×òÉÕóÊÔöÌÓúÏÔik€‚kl€ÍŒ€Ïž‹€ÒžŠ€ÔŸŠ€Ö ‹€Ø¡‹€Ù¡Œ€Ù¡Œ€Ø €Õž€Ð›€Ê˜Œ€Â”‹€¹‰€°‰‡€§„…€ž~‚€–y~€Žtz€ˆov€‚ks€ûÐßôÊÙîÆÓëÃÏéÁËèÀÉéÁÈëÂÇîÅÈóÈÉøÌË
