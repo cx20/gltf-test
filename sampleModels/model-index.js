@@ -8,6 +8,7 @@ ModelIndex.List = [
     {category:'sampleModels', name:'BoxInterleaved', scale:1.0},
     {category:'sampleModels', name:'BoxTextured', scale:1.0},
     {category:'sampleModels', name:'BoxTexturedNonPowerOfTwo', scale:1.0},
+    {category:'sampleModels', name:'Box With Spaces', scale:1.0},
     {category:'sampleModels', name:'BoxVertexColors', scale:1.0},
     {category:'sampleModels', name:'Duck', scale:1.0},
     {category:'sampleModels', name:'2CylinderEngine', scale:0.005},
