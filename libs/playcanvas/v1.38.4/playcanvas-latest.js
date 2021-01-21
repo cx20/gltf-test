@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.38.3 revision a9cf16e
+ * PlayCanvas Engine v1.38.4 revision 6573b0f
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -541,8 +541,8 @@
 		return result;
 	}();
 
-	var version = "1.38.3";
-	var revision = "a9cf16e";
+	var version = "1.38.4";
+	var revision = "6573b0f";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -17137,7 +17137,7 @@
 			var renderedLayer = comp._renderedLayer;
 			var renderAction,
 					renderActions = comp._renderActions;
-			var i, layer, layerIndex, transparent, cameras, j, rt, k, processedThisCamera, processedThisCameraAndLayer, processedThisCameraAndRt;
+			var i, layer, layerIndex, transparent, rt, k, processedThisCamera, processedThisCameraAndLayer, processedThisCameraAndRt;
 
 			if (this.scene.updateSkybox) {
 				this.scene._updateSkybox(device);
@@ -17204,7 +17204,7 @@
 
 				if (!visible.done) {
 					if (layer.onPreCull) {
-						layer.onPreCull(j);
+						layer.onPreCull(cameraPass);
 					}
 
 					drawCalls = transparent ? layer.transparentMeshInstances : layer.opaqueMeshInstances;
@@ -17238,9 +17238,9 @@
 				globalLightCounter++;
 				if (!light.castShadows || !light.enabled || light.shadowUpdateMode === SHADOWUPDATE_NONE) continue;
 				casters = comp._lightShadowCasters[i];
-				cameras = comp._globalLightCameras[globalLightCounter];
+				var cameras = comp._globalLightCameras[globalLightCounter];
 
-				for (j = 0; j < cameras.length; j++) {
+				for (var j = 0; j < cameras.length; j++) {
 					this.cullDirectionalShadowmap(light, casters, cameras[j].camera, comp._globalLightCameraIds[globalLightCounter][j]);
 				}
 			}
@@ -26476,7 +26476,7 @@
 		var _proto = ContainerResource.prototype;
 
 		_proto.instantiateModelEntity = function instantiateModelEntity(options) {
-			var entity = new pc.Entity();
+			var entity = new Entity();
 			entity.addComponent("model", Object.assign({
 				type: "asset",
 				asset: this.model
@@ -36529,7 +36529,7 @@
 
 		_proto.resolve = function resolve(path) {
 			var propertyLocation = AnimBinder.decode(path);
-			var node = this.graph.root.findByPath(this.graph.path + "/" + (propertyLocation.entityPath[0] || ""));
+			var node = this.graph.findByPath(propertyLocation.entityPath[0]);
 
 			if (!node) {
 				var entityPath = AnimBinder.splitPath(propertyLocation.entityPath[0], '/');
@@ -38641,7 +38641,7 @@
 
 				case 'graph':
 					if (entity.model && entity.model.model && entity.model.model.graph) {
-						propertyComponent = pc.app.root.findByPath(entity.model.model.graph.path + "/" + propertyLocation.entityPath[0]);
+						propertyComponent = entity.model.model.graph.findByPath(propertyLocation.entityPath[0]);
 					}
 
 					if (!propertyComponent) {
