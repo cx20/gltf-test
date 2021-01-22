@@ -8,6 +8,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.2},
     {category:'tutorialModels', name:'MetalRoughSpheresNoTextures', scale:200},
     {category:'tutorialModels', name:'MorphPrimitivesTest', scale:2.0},
+    {category:'tutorialModels', name:'MorphStressTest', scale:1.0},
     {category:'tutorialModels', name:'MultiUVTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
@@ -21,7 +22,8 @@ TutorialFeatureTestModelIndex.List = [
 TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'BoomBoxWithAxes',
     'MultiUVTest',
-    'MorphPrimitivesTest'
+    'MorphPrimitivesTest',
+    'MorphStressTest'
 ];
 
 TutorialFeatureTestModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots
