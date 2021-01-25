@@ -22,6 +22,7 @@ TutorialExtensionTestModelIndex.List = [
 TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'ClearCoatTest',
     'MaterialsVariantsChair',
+    'MaterialsVariantsShoe',
     'SpecGlossVsMetalRough',
     'TextureTransformTest',
     'TextureTransformMultiTest',
