@@ -126,14 +126,17 @@ function makeSampleModelLinks() {
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
             td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF', scale));
-            td.appendChild(document.createElement('br'));
-            td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Embedded', scale));
-            td.appendChild(document.createElement('br'));
-            td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Binary', scale));
+            if (modelName != 'Box With Spaces') {
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Embedded', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Binary', scale));
+            }
             if (modelName != 'BoxInterleaved' 
              && modelName != 'BoxTextured' 
              && modelName != 'BoxTexturedNonPowerOfTwo' 
              && modelName != 'BoxVertexColors' 
+             && modelName != 'Box With Spaces' 
              && modelName != 'Fox') {
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Draco', scale));
