@@ -19,14 +19,14 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-import * as THREE from '../../libs/three.js/r124/build/three.module.js';
-import { GUI } from '../../libs/three.js/r124/examples/jsm/libs/dat.gui.module.js';
-import { OrbitControls } from '../../libs/three.js/r124/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from '../../libs/three.js/r124/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from '../../libs/three.js/r124/examples/jsm/loaders/DRACOLoader.js';
-import { RGBELoader } from '../../libs/three.js/r124/examples/jsm/loaders/RGBELoader.js';
-import { HDRCubeTextureLoader } from '../../libs/three.js/r124/examples/jsm/loaders/HDRCubeTextureLoader.js';
-import { KTX2Loader } from './../../libs/three.js/r124/examples/jsm/loaders/KTX2Loader.js';
+import * as THREE from '../../libs/three.js/r125dev/build/three.module.js';
+import { GUI } from '../../libs/three.js/r125dev/examples/jsm/libs/dat.gui.module.js';
+import { OrbitControls } from '../../libs/three.js/r125dev/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from '../../libs/three.js/r125dev/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from '../../libs/three.js/r125dev/examples/jsm/loaders/DRACOLoader.js';
+import { RGBELoader } from '../../libs/three.js/r125dev/examples/jsm/loaders/RGBELoader.js';
+import { HDRCubeTextureLoader } from '../../libs/three.js/r125dev/examples/jsm/loaders/HDRCubeTextureLoader.js';
+import { KTX2Loader } from './../../libs/three.js/r125dev/examples/jsm/loaders/KTX2Loader.js';
 
 let gltf = null;
 let mixer = null;
@@ -100,10 +100,11 @@ function init() {
     const loader = new GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
-    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r124/examples/js/libs/draco/gltf/' );
+    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r125dev/examples/js/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
-    const ktx2Loader = new KTX2Loader().detectSupport( renderer );
+    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r125dev/examples/js/libs/basis/' );
+    ktx2Loader.detectSupport( renderer );
     loader.setKTX2Loader( ktx2Loader );
 
     const scale = modelInfo.scale;
