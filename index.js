@@ -226,7 +226,7 @@ function makeTutorialPbrModelLinks() {
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
-            if (modelName == 'FlightHelmet' || modelName == 'Sponza' || modelName == 'ToyCar') {
+            if (modelName == 'FlightHelmet') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-BasisU', scale));
