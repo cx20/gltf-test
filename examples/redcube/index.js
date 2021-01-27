@@ -19,6 +19,11 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+// GUI
+let gui = new dat.GUI();
+var VARIANT = "";
+let guiVariants = null;
+
 const name = localStorage.getItem('sample') || 'DamagedHelmet';
 const canvas = document.getElementById('canvas');
 canvas.width = window.innerWidth;
@@ -38,4 +43,12 @@ const renderer = new redcube.RedCube(
 );
 
 renderer.init(() => {
+    variants = {};
+    renderer.scene.variants.forEach((it,i) => {
+        variants[it.name] = i;
+    });
+    guiVariants = gui.add(window, 'VARIANT', variants).name("Variant");
+    guiVariants.onChange(function (value) {
+        renderer.setVariant(value);
+    });
 });
