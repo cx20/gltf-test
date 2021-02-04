@@ -83,7 +83,7 @@ function init() {
     hemispheric.visible = state.LIGHTS; // The default is to use IBL instead of lights
     scene.add(hemispheric);
 
-    camera = new THREE.PerspectiveCamera( 75, 1, 1, 10000 );
+    camera = new THREE.PerspectiveCamera( 75, 1, 0.1, 10000 );
     camera.position.set(0, 2, 3);
     camera.name = "[default]";
     scene.add( camera );
