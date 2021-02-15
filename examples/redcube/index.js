@@ -22,7 +22,11 @@ if (!modelInfo) {
 // GUI
 let gui = new dat.GUI();
 var VARIANT = "";
+var IBL = true;
+var LIGHTS = false; // The default is to use IBL instead of lights
 let guiVariants = null;
+let guiIbl      = null;
+let guiLights   = null;
 
 const name = localStorage.getItem('sample') || 'DamagedHelmet';
 const canvas = document.getElementById('canvas');
@@ -48,7 +52,24 @@ renderer.init(() => {
         variants[it.name] = i;
     });
     guiVariants = gui.add(window, 'VARIANT', variants).name("Variant");
+    guiIbl      = gui.add(window, 'IBL').name('IBL');
+    guiLights   = gui.add(window, 'LIGHTS').name('Lights');
+
     guiVariants.onChange(function (value) {
         renderer.setVariant(value);
     });
+
+    guiIbl.onChange(function (value) {
+        renderer.isIBL = value;
+        renderer.draw();
+    });
+
+    guiLights.onChange(function (value) {
+        renderer.isDefaultLight = value;
+        renderer.draw();
+    });
+
+    renderer.isIBL = IBL;
+    renderer.isDefaultLight = LIGHTS;
+    renderer.draw();
 });
