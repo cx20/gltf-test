@@ -42,8 +42,8 @@ const renderer = new redcube.RedCube(
     url,
     canvas,
     [],
-    //'../../../../textures/hdr/pisa'
-    '../../../../textures/hdr/papermill'
+    //'../../../../textures/hdr/pisa.hdr'
+    '../../../../textures/hdr/papermill.hdr'
 );
 
 renderer.init(() => {
