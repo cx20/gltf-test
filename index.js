@@ -336,7 +336,7 @@ function makeTutorialFeatureTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
-            } else if ( modelName == 'MetalRoughSpheresNoTextures' ) {
+            } else if ( modelName == 'MetalRoughSpheresNoTextures' || modelName == 'TextureEncodingTest' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
