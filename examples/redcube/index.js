@@ -21,9 +21,11 @@ if (!modelInfo) {
 
 // GUI
 let gui = new dat.GUI();
+var CAMERA = "";
 var VARIANT = "";
 var IBL = true;
 var LIGHTS = false; // The default is to use IBL instead of lights
+let guiCameras  = null;
 let guiVariants = null;
 let guiIbl      = null;
 let guiLights   = null;
@@ -47,13 +49,26 @@ const renderer = new redcube.RedCube(
 );
 
 renderer.init(() => {
+    cameras = {};
+    renderer.parse.cameras.forEach((it,i) => {
+        cameras[it.name] = i;
+    });
     variants = {};
     renderer.scene.variants.forEach((it,i) => {
         variants[it.name] = i;
     });
+    guiCameras  = gui.add(window, 'CAMERA', cameras).name("Camera");
     guiVariants = gui.add(window, 'VARIANT', variants).name("Variant");
     guiIbl      = gui.add(window, 'IBL').name('IBL');
     guiLights   = gui.add(window, 'LIGHTS').name('Lights');
+
+    guiCameras.onChange(function (value) {
+        renderer.ioc._updateDep('camera', renderer.parse.cameras.find((it) => { 
+            return Number(value) === cameras[it.name]; 
+        }));
+        renderer.renderer.needUpdateView = true;
+        renderer.draw();
+    });
 
     guiVariants.onChange(function (value) {
         renderer.setVariant(value);
