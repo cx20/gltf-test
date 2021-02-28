@@ -22,7 +22,7 @@ if (!modelInfo) {
 // GUI
 let gui = new dat.GUI();
 
-var ROTATE = true;
+var ROTATE = false;
 var CAMERA = "[default]";
 var SKYBOX = true;
 var LIGHTS = false;

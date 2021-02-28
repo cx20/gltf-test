@@ -32,7 +32,7 @@ let brfdTexture;
 let model;
 let skybox;
 
-var ROTATE = true;
+var ROTATE = false;
 var AXIS = true;
 var CUBEMAP = true;
 var IBL = true;

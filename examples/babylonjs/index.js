@@ -19,7 +19,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-var ROTATE = true;
+var ROTATE = false;
 var BOUNDING_BOX = false;
 var CUBEMAP = true;
 var IBL = true;

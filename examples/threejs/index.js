@@ -36,7 +36,7 @@ let hemispheric;
 let gui;
 
 let state = {
-    ROTATE: true,
+    ROTATE: false,
     AXIS: true,
     CUBEMAP: true,
     IBL: true,
@@ -213,7 +213,7 @@ function init() {
     controls.userPanSpeed = 0.0;
     controls.maxDistance = 5000.0;
     controls.maxPolarAngle = Math.PI * 0.495;
-    controls.autoRotate = true;
+    controls.autoRotate = state.ROTATE;
     controls.autoRotateSpeed = -3.0;
 
     // GUI
