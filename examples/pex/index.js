@@ -27,7 +27,7 @@ function getModelUrl() {
 }
 
 const State = {
-  rotate: true,
+  rotate: false,
   axis: true,
   lights: true,
   skybox: true

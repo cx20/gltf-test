@@ -20,7 +20,7 @@ if (!modelInfo) {
 }
 
 
-var ROTATE = true;
+var ROTATE = false;
 var AXIS = true;
 
 // GUI

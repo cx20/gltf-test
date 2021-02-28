@@ -20,7 +20,7 @@ if (!modelInfo) {
 }
 
 let gui = new dat.GUI();
-var ROTATE = true;
+var ROTATE = false;
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 
 gr.registerComponent('Rotate', {

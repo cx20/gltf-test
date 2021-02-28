@@ -24,7 +24,7 @@ let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
     url = modelInfo.url;
 }
-var ROTATE = true;
+var ROTATE = false;
 var CUBEMAP = true;
 var LIGHTS = true;
 let gui = new dat.GUI();

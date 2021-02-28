@@ -24,7 +24,7 @@ if(modelInfo.url) {
     url = modelInfo.url;
 }
 
-var ROTATE = true;
+var ROTATE = false;
 let gui = new dat.GUI();
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 let scale = modelInfo.scale;

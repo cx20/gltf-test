@@ -176,7 +176,7 @@ window.addEventListener('load', function() {
 
     let controlObj = {
         showgrid: false,
-        autoRotate: true,
+        autoRotate: false,
         animate: 'None',
         camera: 'Default'
     }
