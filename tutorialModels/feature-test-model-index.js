@@ -13,6 +13,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
     {category:'tutorialModels', name:'OrientationTest', scale:0.2},
+    {category:'tutorialModels', name:'RecursiveSkeletons', scale:0.01},
     {category:'tutorialModels', name:'SuzanneMorphSparse', scale:1.0},
     {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
     {category:'tutorialModels', name:'TextureEncodingTest', scale:0.2},
@@ -25,7 +26,8 @@ TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that h
     'BoomBoxWithAxes',
     'MultiUVTest',
     'MorphPrimitivesTest',
-    'MorphStressTest'
+    'MorphStressTest',
+    'RecursiveSkeletons'
 ];
 
 TutorialFeatureTestModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots
