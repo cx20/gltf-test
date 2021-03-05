@@ -336,10 +336,16 @@ function makeTutorialFeatureTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
-            } else if ( modelName == 'MetalRoughSpheresNoTextures' || modelName == 'TextureEncodingTest' ) {
+            } else if ( modelName == 'MetalRoughSpheresNoTextures' 
+            	     || modelName == 'MorphStressTest' 
+                     || modelName == 'SuzanneMorphSparse' 
+                     || modelName == 'TextureEncodingTest' 
+                     || modelName == 'TextureLinearInterpolationTest' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+            } else if ( modelName == 'RecursiveSkeletons' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             } else {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
@@ -391,7 +397,9 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-IBL', scale));
-            } else if ( modelName == 'ClearCoatTest' || modelName == 'MaterialsVariantsChair' || modelName == 'MaterialsVariantsShoe' ) {
+            } else if ( modelName == 'ClearCoatTest' 
+                     || modelName == 'MaterialsVariantsChair' 
+                     || modelName == 'MaterialsVariantsShoe' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
