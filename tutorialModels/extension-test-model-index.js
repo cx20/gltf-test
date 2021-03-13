@@ -11,13 +11,14 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'SpecGlossVsMetalRough', scale:10.0},
     {category:'tutorialModels', name:'TextureTransformTest', scale:1.0},
     {category:'tutorialModels', name:'TextureTransformMultiTest', scale:1.0},
+    {category:'tutorialModels', name:'ToyCar', scale:100.0},
+    {category:'tutorialModels', name:'ToyCarSpecular', scale:10.0},
     {category:'tutorialModels', name:'TransmissionRoughnessTest', scale:3.0},
     {category:'tutorialModels', name:'TransmissionTest', scale:3.0},
     {category:'tutorialModels', name:'UnlitTest', scale:1.0},
     {category:'tutorialModels', name:'SheenChair', scale:3.0},
     {category:'tutorialModels', name:'SheenCloth', scale:50.0},
-    {category:'tutorialModels', name:'ToyCar', scale:100.0},
-    {category:'tutorialModels', name:'ToyCarSpecular', scale:10.0}
+    {category:'tutorialModels', name:'StainedGlassLamp', scale:3.0}
 ];
 
 TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
@@ -27,12 +28,13 @@ TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that
     'SpecGlossVsMetalRough',
     'TextureTransformTest',
     'TextureTransformMultiTest',
+    'ToyCar',
+    'ToyCarSpecular',
     'TransmissionRoughnessTest',
     'TransmissionTest',
     'SheenChair',
     'SheenCloth',
-    'ToyCar',
-    'ToyCarSpecular'
+    'StainedGlassLamp'
 ];
 
 TutorialExtensionTestModelIndex.getScreenshot = function(name) {
