@@ -5,6 +5,7 @@ var TutorialExtensionTestModelIndex = {};
 TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'ClearCoatTest', scale:0.3},
     {category:'tutorialModels', name:'EnvironmentTest', scale:0.3},
+    {category:'tutorialModels', name:'GlamVelvetSofa', scale:2.0},
     {category:'tutorialModels', name:'Lights', scale:1.0},
     {category:'tutorialModels', name:'MaterialsVariantsChair', scale:0.7},
     {category:'tutorialModels', name:'MaterialsVariantsShoe', scale:10.0},
@@ -23,6 +24,7 @@ TutorialExtensionTestModelIndex.List = [
 
 TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'ClearCoatTest',
+    'GlamVelvetSofa',
     'MaterialsVariantsChair',
     'MaterialsVariantsShoe',
     'SpecGlossVsMetalRough',
