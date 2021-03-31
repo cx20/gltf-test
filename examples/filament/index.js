@@ -202,7 +202,7 @@ class App {
                     if (index < cameras.length) {
                         const c = engine.getCameraComponent(cameras[index]);
                         const aspect = window.innerWidth / window.innerHeight;
-                        c.setScaling([1 / aspect, 1, 1, 1]);
+                        c.setScaling([1 / aspect, 1]); // Please refer to filament#3615 for API specification changes.
                         app.view.setCamera(c);
                     } else {
                         app.camera = engine.createCamera(Filament.EntityManager.get().create());
