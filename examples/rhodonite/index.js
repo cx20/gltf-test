@@ -94,6 +94,11 @@ const load = async function () {
   // gltf
   const gltfImporter = Rn.GltfImporter.getInstance();
   const mainExpression = await gltfImporter.import(url, {
+      defaultMaterialHelperArgumentArray: [
+        {
+          makeOutputSrgb: false,
+        },
+      ],
       cameraComponent: cameraComponent
   });
   const mainRenderPass = mainExpression.renderPasses[0];
@@ -233,6 +238,7 @@ const load = async function () {
     const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
     sphereMaterial.setTextureParameter(Rn.ShaderSemantics.ColorEnvTexture, environmentCubeTexture);
     sphereMaterial.setParameter(Rn.EnvConstantSingleMaterialNode.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
+    sphereMaterial.setParameter(Rn.ShaderSemantics.MakeOutputSrgb, false);
 
     const spherePrimitive = new Rn.Sphere();
     spherePrimitive.generate({ radius: 50, widthSegments: 40, heightSegments: 40, material: sphereMaterial });
