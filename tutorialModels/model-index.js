@@ -16,6 +16,7 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'Cameras', scale:1.0},
     {category:'tutorialModels', name:'SimpleSkin', scale:1.0},
     {category:'tutorialModels', name:'InterpolationTest', scale:0.2, allAnimations:true},  // Play all model animations at the same time
+    {category:'tutorialModels', name:'Unicode❤♻Test', scale:1.0},
 ];
 
 TutorialModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
@@ -40,6 +41,7 @@ TutorialModelIndex.getEmbeddedFolderName = function(name) {
         'SimpleOpacity': '-Embedded-buffer',
         'SimpleTexture': '-Embedded-buffer',
         //'SimpleSkin': '-Embedded-buffers'
+        'Unicode❤♻Test': '-Binary',
     };
     let suffix = suffixHash[name] === undefined ? '-Embedded' : suffixHash[name];
     return 'glTF' + suffix;
