@@ -34,6 +34,7 @@ let clock = new THREE.Clock();
 let axis;
 let hemispheric;
 let gui;
+const DEFAULT_NAME = "[default]";
 
 let state = {
     ROTATE: false,
@@ -41,8 +42,8 @@ let state = {
     CUBEMAP: true,
     IBL: true,
     LIGHTS: false, // The default is to use IBL instead of lights
-    CAMERA: "[default]",
-    VARIANT: ""
+    CAMERA: DEFAULT_NAME,
+    VARIANT: DEFAULT_NAME
 }
 
 let scene;
@@ -85,7 +86,7 @@ function init() {
 
     camera = new THREE.PerspectiveCamera( 75, 1, 0.1, 10000 );
     camera.position.set(0, 2, 3);
-    camera.name = "[default]";
+    camera.name = DEFAULT_NAME;
     scene.add( camera );
 
     let manager = new THREE.LoadingManager();
@@ -133,7 +134,7 @@ function init() {
                 camera_.aspect = width / height;
             }
             let cameraNames = gltf.cameras.map(camera => camera.name);
-            cameraNames.push("[default]");
+            cameraNames.push(DEFAULT_NAME);
             let guiCameras = gui.add(state, 'CAMERA', cameraNames).name("Camera");
 
             guiCameras.onChange(function (value) {
@@ -198,6 +199,7 @@ function init() {
             const variantsExtension = gltf.userData.gltfExtensions[ 'KHR_materials_variants' ];
             if (variantsExtension !== undefined) {
                 const variants = variantsExtension.variants.map( ( variant ) => variant.name );
+                variants.push(DEFAULT_NAME);
                 const variantsCtrl = gui.add( state, 'VARIANT', variants ).name( 'Variant' );
                 selectVariant( scene, parser, variantsExtension, state.VARIANT );
                 variantsCtrl.onChange( ( value ) => selectVariant( scene, parser, variantsExtension, value ) );
