@@ -19,14 +19,16 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+const DEFAULT_NAME = "[default]";
+
 var ROTATE = false;
 var BOUNDING_BOX = false;
 var CUBEMAP = true;
 var IBL = true;
 var LIGHTS = false; // The default is to use IBL instead of lights
 var DEBUG = false;
-var VARIANT = "";
-var CAMERA = "[default]";
+var VARIANT = DEFAULT_NAME;
+var CAMERA = DEFAULT_NAME;
 
 let createScene = function(engine) {
 
@@ -76,16 +78,21 @@ let createScene = function(engine) {
         if ( variantsExtension != null ) {
             variants = variantsExtension.getAvailableVariants(parentMesh);
             if (variants.length > 0 ) {
-                VARIANT = modelInfo.variant == undefined ? variants[0] : modelInfo.variant;
+                VARIANT = modelInfo.variant == undefined ? DEFAULT_NAME : modelInfo.variant;
                 let variantNames = variants.reduce(function (allNames, name) { 
                     allNames[name] = name;
                     return allNames
                 }, {});
+                variantNames[DEFAULT_NAME] = DEFAULT_NAME;
                 guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
                 variantsExtension.selectVariant(parentMesh, VARIANT)
 
                 guiVariants.onChange(function (value) {
-                    variantsExtension.selectVariant(parentMesh, value);
+                    if (value == DEFAULT_NAME) {
+                         variantsExtension.reset(parentMesh);
+                    } else {
+                         variantsExtension.selectVariant(parentMesh, value);
+                    }
                 });
             }
         }
@@ -99,7 +106,7 @@ let createScene = function(engine) {
             scene.animationGroups[2].play(true); // 0:Survey, 1:Walk, 2:Run
         }
         let modelScaling = parentMesh.scaling;
-        let camera = new BABYLON.ArcRotateCamera("[default]", 0, 1, 5, BABYLON.Vector3.Zero(), scene);
+        let camera = new BABYLON.ArcRotateCamera(DEFAULT_NAME, 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         
         // TODO: Need to consider whether to adjust the scale in camera or mesh
         //parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
@@ -114,7 +121,7 @@ let createScene = function(engine) {
 
         if ( scene.cameras.length > 1 ) {
             if ( modelInfo.name == "VC" ) {
-                scene.cameras.forEach(camera => camera.name == "[default]" ? camera.minZ : camera.minZ /= 100); // TODO: If near is 1, the model is missing, so adjusted
+                scene.cameras.forEach(camera => camera.name == DEFAULT_NAME ? camera.minZ : camera.minZ /= 100); // TODO: If near is 1, the model is missing, so adjusted
             }
             
             // TODO: Some models feel that the camera is not in ascending order, so you need to investigate
