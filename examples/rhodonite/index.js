@@ -138,21 +138,20 @@ const load = async function () {
   
   if (cameraComponents.length > 1) {
     let cameraNames = cameraComponents.map(camera => camera.uniqueName);
+    const defaultIndex = Math.floor(Math.random() * cameraNames.length); // Randomly switch if there are multiple cameras
+    CAMERA = cameraNames[defaultIndex];
     guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
     guiCameras.onChange(function(value) {
-      var camera = cameraComponents.find(function(camera) {
-        return camera.uniqueName === value;
-      });
-      const cameraIndex = cameraNames.indexOf(value);
-      selectCamera(cameraComponents[cameraIndex]);
+      const selectedIndex = cameraNames.indexOf(value);
+      selectCameraByIndex(selectedIndex);
     });
+    selectCameraByIndex(defaultIndex);
+  } else {
+    selectCameraByIndex(0);
   }
   
-  const cameraIndex = Math.floor(Math.random() * cameraComponents.length);
-  let selectedCameraComponent = cameraComponents[cameraIndex];
-  selectCamera(selectedCameraComponent);
-  
-  function selectCamera(selectedCameraComponent) {
+  function selectCameraByIndex(cameraIndex) {
+    let selectedCameraComponent = cameraComponents[cameraIndex];
     const mainCameraControllerComponent = cameraEntity.getComponent(Rn.CameraControllerComponent);
     const controller = mainCameraControllerComponent.controller;
 
