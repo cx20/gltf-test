@@ -24,7 +24,6 @@ import { GUI } from '../../libs/three.js/r128/examples/jsm/libs/dat.gui.module.j
 import { OrbitControls } from '../../libs/three.js/r128/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from '../../libs/three.js/r128/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from '../../libs/three.js/r128/examples/jsm/loaders/DRACOLoader.js';
-import { RGBELoader } from '../../libs/three.js/r128/examples/jsm/loaders/RGBELoader.js';
 import { HDRCubeTextureLoader } from '../../libs/three.js/r128/examples/jsm/loaders/HDRCubeTextureLoader.js';
 import { KTX2Loader } from './../../libs/three.js/r128/examples/jsm/loaders/KTX2Loader.js';
 
