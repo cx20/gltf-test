@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.40.4 revision f7c7aab
+ * PlayCanvas Engine v1.40.5 revision 2c7caf2
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -579,8 +579,8 @@
 		return result;
 	}();
 
-	var version = "1.40.4";
-	var revision = "f7c7aab";
+	var version = "1.40.5";
+	var revision = "2c7caf2";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -12315,6 +12315,7 @@
 			ext = this.extTextureFilterAnisotropic;
 			this.maxAnisotropy = ext ? gl.getParameter(ext.MAX_TEXTURE_MAX_ANISOTROPY_EXT) : 1;
 			this.samples = gl.getParameter(gl.SAMPLES);
+			this.maxSamples = this.webgl2 ? gl.getParameter(gl.MAX_SAMPLES) : 1;
 		};
 
 		_proto.initializeRenderState = function initializeRenderState() {
@@ -13006,7 +13007,7 @@
 				case PIXELFORMAT_111110F:
 					texture._glFormat = gl.RGB;
 					texture._glInternalFormat = gl.R11F_G11F_B10F;
-					texture._glPixelType = gl.FLOAT;
+					texture._glPixelType = gl.UNSIGNED_INT_10F_11F_11F_REV;
 					break;
 
 				case PIXELFORMAT_SRGB:
@@ -15070,8 +15071,8 @@
 		var oldRt = device.getRenderTarget();
 		device.setRenderTarget(target);
 		device.updateBegin();
-		var w = target !== null ? target.width : device.width;
-		var h = target !== null ? target.height : device.height;
+		var w = target ? target.width : device.width;
+		var h = target ? target.height : device.height;
 		var x = 0;
 		var y = 0;
 
@@ -23253,6 +23254,12 @@
 
 		var _proto = RenderAction.prototype;
 
+		_proto.reset = function reset() {
+			this.directionalLightsSet.clear();
+			this.directionalLights.length = 0;
+			this.directionalLightsIndices.length = 0;
+		};
+
 		_proto.collectDirectionalLights = function collectDirectionalLights(cameraLayers, dirLights, allLights) {
 			this.directionalLightsSet.clear();
 			this.directionalLights.length = 0;
@@ -23508,7 +23515,7 @@
 								if (camera.layers.indexOf(layer.id) >= 0) {
 									cameraLayers.push(layer);
 
-									if (layer.id === camera.disablePostEffectsLayer) {
+									if (!postProcessMarked && layer.id === camera.disablePostEffectsLayer) {
 										postProcessMarked = true;
 
 										if (lastRenderAction) {
@@ -23652,6 +23659,7 @@
 				rt = null;
 			}
 
+			renderAction.reset();
 			renderAction.triggerPostprocess = false;
 			renderAction.layerIndex = layerIndex;
 			renderAction.cameraIndex = cameraIndex;
@@ -33162,11 +33170,7 @@
 
 		_proto.initialize = function initialize(material, data) {
 			if (!data.validated) {
-				if (!this._validator) {
-					this._validator = new StandardMaterialValidator();
-				}
-
-				this._validator.validate(data);
+				data = this._validate(data);
 			}
 
 			if (data.chunks) {
@@ -33248,11 +33252,13 @@
 		};
 
 		_proto._validate = function _validate(data) {
-			if (!this._validator) {
-				this._validator = new StandardMaterialValidator();
-			}
+			if (!data.validated) {
+				if (!this._validator) {
+					this._validator = new StandardMaterialValidator();
+				}
 
-			this._validator.validate(data);
+				this._validator.validate(data);
+			}
 
 			return data;
 		};
@@ -33373,18 +33379,21 @@
 		};
 
 		_proto._assignTexture = function _assignTexture(parameterName, materialAsset, texture) {
-			materialAsset.data[parameterName] = texture;
 			materialAsset.resource[parameterName] = texture;
 		};
 
-		_proto._assignPlaceholderTexture = function _assignPlaceholderTexture(parameterName, materialAsset) {
+		_proto._getPlaceholderTexture = function _getPlaceholderTexture(parameterName) {
 			if (!this._placeholderTextures) {
 				this._createPlaceholders();
 			}
 
 			var placeholder = PLACEHOLDER_MAP[parameterName];
 			var texture = this._placeholderTextures[placeholder];
-			materialAsset.resource[parameterName] = texture;
+			return texture;
+		};
+
+		_proto._assignPlaceholderTexture = function _assignPlaceholderTexture(parameterName, materialAsset) {
+			materialAsset.resource[parameterName] = this._getPlaceholderTexture(parameterName, materialAsset);
 		};
 
 		_proto._onTextureLoad = function _onTextureLoad(parameterName, materialAsset, textureAsset) {
@@ -33397,12 +33406,12 @@
 			this._assets.load(textureAsset);
 		};
 
-		_proto._onTextureRemove = function _onTextureRemove(parameterName, materialAsset, textureAsset) {
+		_proto._onTextureRemoveOrUnload = function _onTextureRemoveOrUnload(parameterName, materialAsset, textureAsset) {
 			var material = materialAsset.resource;
 
 			if (material) {
-				if (material[parameterName] === textureAsset.resource) {
-					this._assignTexture(parameterName, materialAsset, null);
+				if (materialAsset.resource[parameterName] === textureAsset.resource) {
+					this._assignPlaceholderTexture(parameterName, materialAsset);
 
 					material.update();
 				}
@@ -33410,15 +33419,15 @@
 		};
 
 		_proto._assignCubemap = function _assignCubemap(parameterName, materialAsset, textures) {
-			materialAsset.data[parameterName] = textures[0];
+			materialAsset.resource[parameterName] = textures[0];
 
 			if (textures.length === 7) {
-				materialAsset.data.prefilteredCubeMap128 = textures[1];
-				materialAsset.data.prefilteredCubeMap64 = textures[2];
-				materialAsset.data.prefilteredCubeMap32 = textures[3];
-				materialAsset.data.prefilteredCubeMap16 = textures[4];
-				materialAsset.data.prefilteredCubeMap8 = textures[5];
-				materialAsset.data.prefilteredCubeMap4 = textures[6];
+				materialAsset.resource.prefilteredCubeMap128 = textures[1];
+				materialAsset.resource.prefilteredCubeMap64 = textures[2];
+				materialAsset.resource.prefilteredCubeMap32 = textures[3];
+				materialAsset.resource.prefilteredCubeMap16 = textures[4];
+				materialAsset.resource.prefilteredCubeMap8 = textures[5];
+				materialAsset.resource.prefilteredCubeMap4 = textures[6];
 			}
 		};
 
@@ -33436,10 +33445,10 @@
 			this._assets.load(cubemapAsset);
 		};
 
-		_proto._onCubemapRemove = function _onCubemapRemove(parameterName, materialAsset, cubemapAsset) {
+		_proto._onCubemapRemoveOrUnload = function _onCubemapRemoveOrUnload(parameterName, materialAsset, cubemapAsset) {
 			var material = materialAsset.resource;
 
-			if (material[parameterName] === cubemapAsset.resource) {
+			if (materialAsset.data.prefilteredCubeMap128 === cubemapAsset.resources[1]) {
 				this._assignCubemap(parameterName, materialAsset, [null, null, null, null, null, null, null]);
 
 				material.update();
@@ -33458,12 +33467,13 @@
 				name = TEXTURES[i];
 				assetReference = material._assetReferences[name];
 
-				if (data[name] && !(data[name] instanceof Texture)) {
+				if (data[name] && (!materialAsset.resource[name] || materialAsset.resource[name] === this._getPlaceholderTexture(name, materialAsset))) {
 					if (!assetReference) {
 						assetReference = new AssetReference(name, materialAsset, assets, {
 							load: this._onTextureLoad,
 							add: this._onTextureAdd,
-							remove: this._onTextureRemove
+							remove: this._onTextureRemoveOrUnload,
+							unload: this._onTextureRemoveOrUnload
 						}, this);
 						material._assetReferences[name] = assetReference;
 					}
@@ -33500,12 +33510,13 @@
 				name = CUBEMAPS[i];
 				assetReference = material._assetReferences[name];
 
-				if (data[name] && !(data[name] instanceof Texture)) {
+				if (data[name] && !materialAsset.data.prefilteredCubeMap128) {
 					if (!assetReference) {
 						assetReference = new AssetReference(name, materialAsset, assets, {
 							load: this._onCubemapLoad,
 							add: this._onCubemapAdd,
-							remove: this._onCubemapRemove
+							remove: this._onCubemapRemoveOrUnload,
+							unload: this._onCubemapRemoveOrUnload
 						}, this);
 						material._assetReferences[name] = assetReference;
 					}
@@ -36261,8 +36272,19 @@
 		0x8C00: PIXELFORMAT_PVRTC_4BPP_RGB_1,
 		0x8C01: PIXELFORMAT_PVRTC_2BPP_RGB_1,
 		0x8C02: PIXELFORMAT_PVRTC_4BPP_RGBA_1,
-		0x8C03: PIXELFORMAT_PVRTC_2BPP_RGBA_1
+		0x8C03: PIXELFORMAT_PVRTC_2BPP_RGBA_1,
+		0x8051: PIXELFORMAT_R8_G8_B8,
+		0x8058: PIXELFORMAT_R8_G8_B8_A8,
+		0x8C41: PIXELFORMAT_SRGB,
+		0x8C43: PIXELFORMAT_SRGBA,
+		0x8C3A: PIXELFORMAT_111110F,
+		0x881B: PIXELFORMAT_RGB16F,
+		0x881A: PIXELFORMAT_RGBA16F
 	};
+
+	function createContainer(pixelFormat, buffer, byteOffset, byteSize) {
+		return pixelFormat === PIXELFORMAT_111110F ? new Uint32Array(buffer, byteOffset, byteSize / 4) : new Uint8Array(buffer, byteOffset, byteSize);
+	}
 
 	var KtxParser = function () {
 		function KtxParser(registry) {
@@ -36303,79 +36325,67 @@
 		};
 
 		_proto.parse = function parse(data) {
-			var headerU32 = new Uint32Array(data, 0, 16);
+			var dataU32 = new Uint32Array(data);
 
-			if (IDENTIFIER[0] !== headerU32[0] || IDENTIFIER[1] !== headerU32[1] || IDENTIFIER[2] !== headerU32[2]) {
+			if (IDENTIFIER[0] !== dataU32[0] || IDENTIFIER[1] !== dataU32[1] || IDENTIFIER[2] !== dataU32[2]) {
 				return null;
 			}
 
 			var header = {
-				endianness: headerU32[3],
-				glType: headerU32[4],
-				glTypeSize: headerU32[5],
-				glFormat: headerU32[6],
-				glInternalFormat: headerU32[7],
-				glBaseInternalFormat: headerU32[8],
-				pixelWidth: headerU32[9],
-				pixelHeight: headerU32[10],
-				pixelDepth: headerU32[11],
-				numberOfArrayElements: headerU32[12],
-				numberOfFaces: headerU32[13],
-				numberOfMipmapLevels: headerU32[14],
-				bytesOfKeyValueData: headerU32[15]
+				endianness: dataU32[3],
+				glType: dataU32[4],
+				glTypeSize: dataU32[5],
+				glFormat: dataU32[6],
+				glInternalFormat: dataU32[7],
+				glBaseInternalFormat: dataU32[8],
+				pixelWidth: dataU32[9],
+				pixelHeight: dataU32[10],
+				pixelDepth: dataU32[11],
+				numberOfArrayElements: dataU32[12],
+				numberOfFaces: dataU32[13],
+				numberOfMipmapLevels: dataU32[14],
+				bytesOfKeyValueData: dataU32[15]
 			};
 
 			if (header.pixelDepth > 1) {
 				return null;
 			}
 
-			if (header.numberOfArrayElements > 1) {
+			if (header.numberOfArrayElements !== 0) {
 				return null;
 			}
 
-			if (header.glFormat !== 0) {
+			var format = KNOWN_FORMATS[header.glInternalFormat];
+
+			if (format === undefined) {
 				return null;
 			}
 
-			if (!KNOWN_FORMATS[header.glInternalFormat]) {
-				return null;
-			}
-
-			var offset = 16 * 4 + header.bytesOfKeyValueData;
+			var offset = 16 + header.bytesOfKeyValueData / 4;
+			var isCubemap = header.numberOfFaces > 1;
 			var levels = [];
-			var isCubeMap = false;
 
 			for (var mipmapLevel = 0; mipmapLevel < (header.numberOfMipmapLevels || 1); mipmapLevel++) {
-				var imageSizeInBytes = new Uint32Array(data.slice(offset, offset + 4))[0];
-				offset += 4;
-				var faceSizeInBytes = imageSizeInBytes / (header.numberOfFaces || 1);
+				var imageSizeInBytes = dataU32[offset++];
 
-				if (header.numberOfFaces > 1) {
-					isCubeMap = true;
+				if (isCubemap) {
 					levels.push([]);
 				}
 
-				for (var face = 0; face < header.numberOfFaces; face++) {
-					var mipData = new Uint8Array(data, offset, faceSizeInBytes);
+				var target = isCubemap ? levels[mipmapLevel] : levels;
 
-					if (header.numberOfFaces > 1) {
-						levels[mipmapLevel].push(mipData);
-					} else {
-						levels.push(mipData);
-					}
-
-					offset += faceSizeInBytes;
+				for (var face = 0; face < (isCubemap ? 6 : 1); ++face) {
+					target.push(createContainer(format, data, offset * 4, imageSizeInBytes));
+					offset += imageSizeInBytes + 3 >> 2;
 				}
-
-				offset += 3 - (offset + 3) % 4;
 			}
 
 			return {
-				format: KNOWN_FORMATS[header.glInternalFormat],
+				format: format,
 				width: header.pixelWidth,
 				height: header.pixelHeight,
 				levels: levels,
-				cubemap: isCubeMap
+				cubemap: isCubemap
 			};
 		};
 
@@ -46033,6 +46043,7 @@
 			var self = this;
 			this.app = app;
 			this.camera = camera;
+			this.destinationRenderTarget = null;
 			this.effects = [];
 			this.enabled = false;
 			this.depthTarget = null;
@@ -46219,6 +46230,7 @@
 				this._requestDepthMaps();
 
 				this.app.graphicsDevice.on('resizecanvas', this._onCanvasResized, this);
+				this.destinationRenderTarget = this.camera.renderTarget;
 				this.camera.renderTarget = this.effects[0].inputTarget;
 
 				this.camera.onPostprocessing = function (camera) {
@@ -46229,12 +46241,17 @@
 						if (len) {
 							for (var i = 0; i < len; i++) {
 								var fx = self.effects[i];
+								var destTarget = fx.outputTarget;
 
 								if (i === len - 1) {
 									rect = self.camera.rect;
+
+									if (self.destinationRenderTarget) {
+										destTarget = self.destinationRenderTarget;
+									}
 								}
 
-								fx.effect.render(fx.inputTarget, fx.outputTarget, rect);
+								fx.effect.render(fx.inputTarget, destTarget, rect);
 							}
 						}
 					}
