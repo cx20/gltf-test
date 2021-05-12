@@ -16,7 +16,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'RecursiveSkeletons', scale:0.01},
     {category:'tutorialModels', name:'SuzanneMorphSparse', scale:1.0},
     {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
-    {category:'tutorialModels', name:'TextureEncodingTest', scale:0.2},
+    {category:'tutorialModels', name:'TextureEncodingTest', scale:0.3},
     {category:'tutorialModels', name:'TextureLinearInterpolationTest', scale:0.5},
     {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
     {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
