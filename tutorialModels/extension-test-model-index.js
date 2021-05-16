@@ -3,6 +3,7 @@
 var TutorialExtensionTestModelIndex = {};
 
 TutorialExtensionTestModelIndex.List = [
+    {category:'tutorialModels', name:'AttenuationTest', scale:0.2},
     {category:'tutorialModels', name:'ClearCoatTest', scale:0.3},
     {category:'tutorialModels', name:'DragonAttenuation', scale:1.0},
     {category:'tutorialModels', name:'EnvironmentTest', scale:0.3},
@@ -25,6 +26,7 @@ TutorialExtensionTestModelIndex.List = [
 ];
 
 TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
+    'AttenuationTest',
     'ClearCoatTest',
     'DragonAttenuation',
     'GlamVelvetSofa',
