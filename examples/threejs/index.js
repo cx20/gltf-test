@@ -151,6 +151,9 @@ function init() {
             if (modelInfo.name == "Fox" ) {
                 let animation = animations[2]; // 0:Survey, 1:Walk, 2:Run
                 mixer.clipAction( animation ).play();
+            } else if (modelInfo.name == "MorphStressTest" ) {
+                let animation = animations[1]; // 0:Individuals, 1:TheWave, 2:Pulse
+                mixer.clipAction( animation ).play();
             } else {
                 for ( let i = 0; i < animations.length; i ++ ) {
                     let animation = animations[ i ];
