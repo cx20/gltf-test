@@ -1638,7 +1638,7 @@ var TransmissionHelper = /** @class */ (function () {
     };
     TransmissionHelper.prototype._addMesh = function (mesh) {
         var _this = this;
-        this._materialObservers[mesh.uniqueId] = mesh.onMaterialChangedObservable.add(this.onMeshMaterialChanged.bind(this));
+        this._materialObservers[mesh.uniqueId] = mesh.onMaterialChangedObservable.add(this._onMeshMaterialChanged.bind(this));
         // we need to defer the processing because _addMesh may be called as part as an instance mesh creation, in which case some
         // internal properties are not setup yet, like _sourceMesh (needed when doing mesh.material below)
         babylonjs_Materials_PBR_pbrMaterial__WEBPACK_IMPORTED_MODULE_1__["Tools"].SetImmediate(function () {
@@ -1671,7 +1671,7 @@ var TransmissionHelper = /** @class */ (function () {
         this._scene.onMeshRemovedObservable.add(this._removeMesh.bind(this));
     };
     // When one of the meshes in the scene has its material changed, make sure that it's in the correct cache list.
-    TransmissionHelper.prototype.onMeshMaterialChanged = function (mesh) {
+    TransmissionHelper.prototype._onMeshMaterialChanged = function (mesh) {
         var transparentIdx = this._transparentMeshesCache.indexOf(mesh);
         var opaqueIdx = this._opaqueMeshesCache.indexOf(mesh);
         // If the material is transparent, make sure that it's added to the transparent list and removed from the opaque list
@@ -2139,9 +2139,16 @@ var KHR_materials_volume = /** @class */ (function () {
         this.order = 173;
         this._loader = loader;
         this.enabled = this._loader.isExtensionUsed(NAME);
+        if (this.enabled) {
+            // We need to disable instance usage because the attenuation factor depends on the node scale of each individual mesh
+            this._loader._disableInstancedMesh++;
+        }
     }
     /** @hidden */
     KHR_materials_volume.prototype.dispose = function () {
+        if (this.enabled) {
+            this._loader._disableInstancedMesh--;
+        }
         this._loader = null;
     };
     /** @hidden */
