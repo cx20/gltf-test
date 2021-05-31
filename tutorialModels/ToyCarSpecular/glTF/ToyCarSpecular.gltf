@@ -112,7 +112,7 @@
                         "index": 8,
                         "texCoord": 0
                     },
-                    "specularColorTexture" : {
+                    "specularTexture" : {
                         "index": 8,
                         "texCoord": 0
                     }
@@ -405,7 +405,7 @@
     "buffers" : [
         {
             "byteLength" : 3681072,
-            "uri" : "ToyCar.bin"
+            "uri" : "ToyCarSpecular.bin"
         }
     ],
     "extensionsUsed": [
