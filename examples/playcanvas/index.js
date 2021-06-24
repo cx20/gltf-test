@@ -145,7 +145,7 @@ var Viewer = function (canvas) {
 
     // load orbit script
     app.assets.loadFromUrl(
-        "../../libs/playcanvas/v1.43.0/orbit-camera.js",
+        "../../libs/playcanvas/v1.44.0dev/orbit-camera.js",
         "script",
         function (err, asset) {
             // setup orbit script component
@@ -308,6 +308,13 @@ Object.assign(Viewer.prototype, {
 
             var resource = asset.resource;
 
+            // TODO: Investigate how to use KHR_lights_punctual
+            const lightsEntity = resource.instantiateRenderEntity();
+            const lights = lightsEntity.findComponents("light");
+            lights.forEach((light) => {
+                light.enabled = true;
+            });
+
             // create entity and add model
             var entity = new pc.Entity();
             entity.addComponent("model", {
@@ -432,9 +439,9 @@ function startViewer() {
 
 function main(){
     if (wasmSupported()) {
-        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.43.0/draco.wasm.js', '../../libs/playcanvas/v1.43.0/draco.wasm.wasm', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.44.0dev/draco.wasm.js', '../../libs/playcanvas/v1.44.0dev/draco.wasm.wasm', startViewer);
     } else {
-        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.43.0/draco.js', '', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.44.0dev/draco.js', '', startViewer);
     }
 }
 
