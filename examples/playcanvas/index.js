@@ -1,3 +1,5 @@
+'use strict';
+
 let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
     modelInfo = TutorialModelIndex.getCurrentModel();
@@ -308,12 +310,9 @@ Object.assign(Viewer.prototype, {
 
             var resource = asset.resource;
 
-            // TODO: Investigate how to use KHR_lights_punctual
+            // add glTF's embedded lights
             const lightsEntity = resource.instantiateRenderEntity();
-            const lights = lightsEntity.findComponents("light");
-            lights.forEach((light) => {
-                light.enabled = true;
-            });
+            this.app.root.addChild(lightsEntity);
 
             // create entity and add model
             var entity = new pc.Entity();
