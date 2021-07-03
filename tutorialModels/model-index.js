@@ -41,6 +41,7 @@ TutorialModelIndex.getEmbeddedFolderName = function(name) {
         'SimpleOpacity': '-Embedded-buffer',
         'SimpleTexture': '-Embedded-buffer',
         //'SimpleSkin': '-Embedded-buffers'
+        'InterpolationTest':  '-Binary',
         'Unicode❤♻Test': '-Binary',
     };
     let suffix = suffixHash[name] === undefined ? '-Embedded' : suffixHash[name];
