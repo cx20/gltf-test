@@ -338,7 +338,7 @@ Object.assign(Viewer.prototype, {
                 };
 
                 // create a layer per animation so we can play them all simultaniously if needed
-                for (i = 0; i < resource.animations.length; ++i) {
+                for (let i = 0; i < resource.animations.length; ++i) {
                     // construct a state graph to include the loaded animations
                     stateGraph.layers.push( {
                         name: asset.name + '_layer_' + i,
@@ -364,7 +364,7 @@ Object.assign(Viewer.prototype, {
                 var animationMap = {};
 
                 // set animations on each layer
-                for (i = 0; i < resource.animations.length; ++i) {
+                for (let i = 0; i < resource.animations.length; ++i) {
                     var animTrack = resource.animations[i].resource;
                     var layer = entity.anim.findAnimationLayer(asset.name + '_layer_' + i);
                     layer.assignAnimation('default', animTrack);
