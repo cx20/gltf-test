@@ -312,7 +312,8 @@ Object.assign(Viewer.prototype, {
 
             // add glTF's embedded lights
             const lightsEntity = resource.instantiateRenderEntity();
-            this.app.root.addChild(lightsEntity);
+            // TODO: If the following comments are removed, the T pose and the animated model will be displayed at the same time, which needs to be investigated.
+            //this.app.root.addChild(lightsEntity);
 
             // create entity and add model
             var entity = new pc.Entity();
