@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.44.0-dev revision e76b5fa
+ * PlayCanvas Engine v1.44.0 revision 398d9a6
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -637,8 +637,8 @@
 		return result;
 	}();
 
-	var version = "1.44.0-dev";
-	var revision = "e76b5fa";
+	var version = "1.44.0";
+	var revision = "398d9a6";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -5579,6 +5579,7 @@
 			this.usage = usage;
 			this.id = id$2++;
 			this._vao = null;
+			this.instancing = false;
 			this.numBytes = format.verticesByteSize ? format.verticesByteSize : format.size * numVertices;
 			graphicsDevice._vram.vb += this.numBytes;
 
@@ -5695,7 +5696,6 @@
 
 	var VertexFormat = function () {
 		function VertexFormat(graphicsDevice, description, vertexCount) {
-			var i, len, element;
 			this.elements = [];
 			this.hasUv0 = false;
 			this.hasUv1 = false;
@@ -5710,7 +5710,7 @@
 			var offset = 0,
 					elementSize;
 
-			for (i = 0, len = description.length; i < len; i++) {
+			for (var i = 0, len = description.length; i < len; i++) {
 				var elementDesc = description[i];
 				elementSize = elementDesc.components * typedArrayTypesByteSize[elementDesc.type];
 
@@ -5718,7 +5718,7 @@
 					offset = math.roundUp(offset, elementSize);
 				}
 
-				element = {
+				var element = {
 					name: elementDesc.semantic,
 					offset: vertexCount ? offset : elementDesc.hasOwnProperty('offset') ? elementDesc.offset : offset,
 					stride: vertexCount ? elementSize : elementDesc.hasOwnProperty('stride') ? elementDesc.stride : this.size,
@@ -5781,16 +5781,14 @@
 		};
 
 		_proto._evaluateHash = function _evaluateHash() {
-			var stringElementBatch,
-					stringElementsBatch = [];
-			var stringElementRender,
-					stringElementsRender = [];
-			var i,
-					len = this.elements.length,
-					element;
+			var stringElementBatch;
+			var stringElementsBatch = [];
+			var stringElementRender;
+			var stringElementsRender = [];
+			var len = this.elements.length;
 
-			for (i = 0; i < len; i++) {
-				element = this.elements[i];
+			for (var i = 0; i < len; i++) {
+				var element = this.elements[i];
 				stringElementBatch = element.name;
 				stringElementBatch += element.dataType;
 				stringElementBatch += element.numComponents;
@@ -5986,13 +5984,12 @@
 					numVertices = this.vertexBuffer.numVertices;
 				}
 
-				var i,
-						numComponents = element.numComponents;
+				var numComponents = element.numComponents;
 
 				if (this.vertexBuffer.getFormat().interleaved) {
 					var index = 0;
 
-					for (i = 0; i < numVertices; i++) {
+					for (var i = 0; i < numVertices; i++) {
 						element.setFromArray(index, data, i * numComponents);
 						index += element.stride;
 					}
@@ -6004,8 +6001,8 @@
 							data = data.subarray(0, copyCount);
 							element.array.set(data);
 						} else {
-							for (i = 0; i < copyCount; i++) {
-								element.array[i] = data[i];
+							for (var _i = 0; _i < copyCount; _i++) {
+								element.array[_i] = data[_i];
 							}
 						}
 					} else {
@@ -6021,8 +6018,8 @@
 
 			if (element) {
 				count = this.vertexBuffer.numVertices;
-				var i,
-						numComponents = element.numComponents;
+				var i;
+				var numComponents = element.numComponents;
 
 				if (this.vertexBuffer.getFormat().interleaved) {
 					if (Array.isArray(data)) data.length = 0;
@@ -6557,7 +6554,7 @@
 
 	var TBNPS = "void getTBN() {\n\tdTBN = mat3(normalize(dTangentW), normalize(dBinormalW), normalize(dVertexNormalW));\n}\n";
 
-	var TBNderivativePS = "\nvoid getTBN() {\n\tvec2 uv = $UV;\n\tvec3 dp1 = dFdx( vPositionW );\n\tvec3 dp2 = dFdy( vPositionW );\n\tvec2 duv1 = dFdx( uv );\n\tvec2 duv2 = dFdy( uv );\n\tvec3 dp2perp = cross( dp2, dVertexNormalW );\n\tvec3 dp1perp = cross( dVertexNormalW, dp1 );\n\tvec3 T = dp2perp * duv1.x + dp1perp * duv2.x;\n\tvec3 B = dp2perp * duv1.y + dp1perp * duv2.y;\n\tfloat invmax = 1.0 / sqrt( max( dot(T,T), dot(B,B) ) );\n\tdTBN = mat3( T * invmax, B * invmax, dVertexNormalW );\n}\n";
+	var TBNderivativePS = "\nvoid getTBN() {\n\tvec2 uv = $UV;\n\tvec3 dp1 = dFdx( vPositionW );\n\tvec3 dp2 = dFdy( vPositionW );\n\tvec2 duv1 = dFdx( uv );\n\tvec2 duv2 = dFdy( uv );\n\tvec3 dp2perp = cross( dp2, dVertexNormalW );\n\tvec3 dp1perp = cross( dVertexNormalW, dp1 );\n\tvec3 T = dp2perp * duv1.x + dp1perp * duv2.x;\n\tvec3 B = dp2perp * duv1.y + dp1perp * duv2.y;\n\tfloat denom = max( dot(T,T), dot(B,B) );\n\tfloat invmax = (denom == 0.0) ? 0.0 : 1.0 / sqrt( denom );\n\tdTBN = mat3( T * invmax, B * invmax, dVertexNormalW );\n}\n";
 
 	var TBNfastPS = "void getTBN() {\n\tdTBN = mat3(dTangentW, dBinormalW, dVertexNormalW);\n}\n";
 
@@ -6957,6 +6954,12 @@
 			if (options.alphaTest) key += '_atst';
 			if (options.vertexColors) key += '_vcol';
 			if (options.diffuseMap) key += '_diff';
+			if (options.skin) key += '_skin';
+			if (options.screenSpace) key += '_ss';
+			if (options.useInstancing) key += '_inst';
+			if (options.useMorphPosition) key += '_morphp';
+			if (options.useMorphNormal) key += '_morphn';
+			if (options.useMorphTextureBased) key += '_morpht';
 			key += '_' + options.pass;
 			return key;
 		},
@@ -7219,8 +7222,7 @@
 		},
 		createShaderDefinition: function createShaderDefinition(device, options) {
 			var mip2size = [128, 64, 32, 16, 8, 4, 2];
-			var fshader;
-			fshader = precisionCode(device);
+			var fshader = precisionCode(device);
 			fshader += options.useCubeMapRotation ? '#define CUBEMAP_ROTATION\n' : '';
 			fshader += options.useRightHandedCubeMap ? '#define RIGHT_HANDED_CUBEMAP\n' : '';
 			fshader += options.mip ? shaderChunks.fixCubemapSeamsStretchPS : shaderChunks.fixCubemapSeamsNonePS;
@@ -8203,7 +8205,7 @@
 			for (var i = 0; i < lights.length; i++) {
 				var light = lights[i];
 
-				if (light.enabled && light.type !== LIGHTTYPE_DIRECTIONAL && light.visibleThisFrame) {
+				if (light.enabled && light.type !== LIGHTTYPE_DIRECTIONAL && light.visibleThisFrame && light.intensity > 0) {
 					if (lightIndex < this.maxLights) {
 						var clusteredLight = void 0;
 
@@ -11405,12 +11407,11 @@
 		_proto.destroy = function destroy() {
 			this.variants = {};
 			this.shader = null;
-			var meshInstance, j;
 
 			for (var i = 0; i < this.meshInstances.length; i++) {
-				meshInstance = this.meshInstances[i];
+				var meshInstance = this.meshInstances[i];
 
-				for (j = 0; j < meshInstance._shader.length; j++) {
+				for (var j = 0; j < meshInstance._shader.length; j++) {
 					meshInstance._shader[j] = null;
 				}
 
@@ -11420,6 +11421,19 @@
 				if (this !== defaultMaterial) {
 					meshInstance.material = defaultMaterial;
 				}
+			}
+		};
+
+		_proto.addMeshInstanceRef = function addMeshInstanceRef(meshInstance) {
+			this.meshInstances.push(meshInstance);
+		};
+
+		_proto.removeMeshInstanceRef = function removeMeshInstanceRef(meshInstance) {
+			var meshInstances = this.meshInstances;
+			var i = meshInstances.indexOf(meshInstance);
+
+			if (i !== -1) {
+				meshInstances.splice(i, 1);
 			}
 		};
 
@@ -13144,8 +13158,8 @@
 		};
 
 		_proto.dumpPrograms = function dumpPrograms() {
-			var text = 'var device = pc.app ? pc.app.graphicsDevice : pc.Application.getApplication().graphicsDevice;\n';
-			text += 'var shaders = [';
+			var text = 'let device = pc.app ? pc.app.graphicsDevice : pc.Application.getApplication().graphicsDevice;\n';
+			text += 'let shaders = [';
 			if (this._programsCollection[0]) text += '\n\t' + this._programsCollection[0];
 
 			for (var i = 1; i < this._programsCollection.length; ++i) {
@@ -13836,11 +13850,14 @@
 		_proto.initializeExtensions = function initializeExtensions() {
 			var gl = this.gl;
 			var ext;
-			var supportedExtensions = gl.getSupportedExtensions();
+			var supportedExtensions = {};
+			gl.getSupportedExtensions().forEach(function (e) {
+				supportedExtensions[e] = true;
+			});
 
 			var getExtension = function getExtension() {
 				for (var i = 0; i < arguments.length; i++) {
-					if (supportedExtensions.indexOf(arguments[i]) !== -1) {
+					if (supportedExtensions.hasOwnProperty(arguments[i])) {
 						return gl.getExtension(arguments[i]);
 					}
 				}
@@ -14021,6 +14038,7 @@
 			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 			this.unpackPremultiplyAlpha = false;
 			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+			gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
 		};
 
 		_proto.initializeContextCaches = function initializeContextCaches() {
@@ -15039,6 +15057,7 @@
 			var sampler, samplerValue, texture, numTextures;
 			var uniform, scopeId, uniformVersion, programVersion;
 			var shader = this.shader;
+			if (!shader) return;
 			var samplers = shader.samplers;
 			var uniforms = shader.uniforms;
 
@@ -15566,6 +15585,7 @@
 		};
 
 		_proto._addLineNumbers = function _addLineNumbers(src) {
+			if (!src) return "";
 			var lines = src.split("\n");
 
 			for (var i = 0, len = lines.length; i < len; i++) {
@@ -16653,9 +16673,7 @@
 					data = data.subarray(0, count);
 					indices.set(data);
 				} else {
-					var i;
-
-					for (i = 0; i < count; i++) {
+					for (var i = 0; i < count; i++) {
 						indices[i] = data[i];
 					}
 				}
@@ -16675,9 +16693,8 @@
 				data.set(indices);
 			} else {
 				data.length = 0;
-				var i;
 
-				for (i = 0; i < count; i++) {
+				for (var i = 0; i < count; i++) {
 					data[i] = indices[i];
 				}
 			}
@@ -18226,6 +18243,7 @@
 					throw new Error("Invalid primitive type: " + type);
 			}
 
+			mesh.incRefCount();
 			primData = {
 				mesh: mesh,
 				area: area
@@ -18282,7 +18300,12 @@
 
 		_proto.updateShader = function updateShader(device, scene, objDefs, staticLightList, pass, sortedLights) {
 			var options = {
-				skin: !!this.meshInstances[0].skinInstance,
+				skin: objDefs && (objDefs & SHADERDEF_SKIN) !== 0,
+				screenSpace: objDefs && (objDefs & SHADERDEF_SCREENSPACE) !== 0,
+				useInstancing: objDefs && (objDefs & SHADERDEF_INSTANCING) !== 0,
+				useMorphPosition: objDefs && (objDefs & SHADERDEF_MORPH_POSITION) !== 0,
+				useMorphNormal: objDefs && (objDefs & SHADERDEF_MORPH_NORMAL) !== 0,
+				useMorphTextureBased: objDefs && (objDefs & SHADERDEF_MORPH_TEXTURE_BASED) !== 0,
 				vertexColors: this.vertexColors,
 				diffuseMap: !!this.colorMap,
 				pass: pass
@@ -18294,14 +18317,58 @@
 		return BasicMaterial;
 	}(Material);
 
-	var Batch = function Batch(meshInstances, dynamic, batchGroupId) {
-		this.origMeshInstances = meshInstances;
-		this._aabb = new BoundingBox();
-		this.meshInstance = null;
-		this.model = null;
-		this.dynamic = dynamic;
-		this.batchGroupId = batchGroupId;
-	};
+	var Batch = function () {
+		function Batch(meshInstances, dynamic, batchGroupId) {
+			this.origMeshInstances = meshInstances;
+			this._aabb = new BoundingBox();
+			this.meshInstance = null;
+			this.dynamic = dynamic;
+			this.batchGroupId = batchGroupId;
+		}
+
+		var _proto = Batch.prototype;
+
+		_proto.destroy = function destroy(scene, layers) {
+			if (this.meshInstance) {
+				this.removeFromLayers(scene, layers);
+				this.meshInstance.destroy();
+			}
+		};
+
+		_proto.addToLayers = function addToLayers(scene, layers) {
+			for (var i = 0; i < layers.length; i++) {
+				var layer = scene.layers.getLayerById(layers[i]);
+
+				if (layer) {
+					layer.addMeshInstances([this.meshInstance]);
+				}
+			}
+		};
+
+		_proto.removeFromLayers = function removeFromLayers(scene, layers) {
+			for (var i = 0; i < layers.length; i++) {
+				var layer = scene.layers.getLayerById(layers[i]);
+
+				if (layer) {
+					layer.removeMeshInstances([this.meshInstance]);
+				}
+			}
+		};
+
+		_proto.updateBoundingBox = function updateBoundingBox() {
+			this._aabb.copy(this.origMeshInstances[0].aabb);
+
+			for (var i = 1; i < this.origMeshInstances.length; i++) {
+				this._aabb.add(this.origMeshInstances[i].aabb);
+			}
+
+			this.meshInstance.aabb = this._aabb;
+			this._aabb._radiusVer = -1;
+			this.meshInstance._aabbVer = 0;
+		};
+
+		return Batch;
+	}();
 
 	var BatchGroup = function BatchGroup(id, name, dynamic, maxAabbSize, layers) {
 		if (layers === void 0) {
@@ -18526,6 +18593,13 @@
 		}
 
 		var _proto = RefCountedCache.prototype;
+
+		_proto.destroy = function destroy() {
+			this.cache.forEach(function (refCount, object) {
+				object.destroy();
+			});
+			this.cache.clear();
+		};
 
 		_proto.incRef = function incRef(object) {
 			var refCount = (this.cache.get(object) || 0) + 1;
@@ -19447,6 +19521,10 @@
 			this._lightmapCache.decRef(texture);
 		};
 
+		MeshInstance.destroyLightmapCache = function destroyLightmapCache() {
+			this._lightmapCache.destroy();
+		};
+
 		MeshInstance._prepareRenderStyleForArray = function _prepareRenderStyleForArray(meshInstances, renderStyle) {
 			if (meshInstances) {
 				for (var i = 0; i < meshInstances.length; i++) {
@@ -19753,26 +19831,20 @@
 				return this._material;
 			},
 			set: function set(material) {
-				var i;
-
-				for (i = 0; i < this._shader.length; i++) {
+				for (var i = 0; i < this._shader.length; i++) {
 					this._shader[i] = null;
 				}
 
-				if (this._material) {
-					var meshInstances = this._material.meshInstances;
-					i = meshInstances.indexOf(this);
+				var prevMat = this._material;
 
-					if (i !== -1) {
-						meshInstances.splice(i, 1);
-					}
+				if (prevMat) {
+					prevMat.removeMeshInstanceRef(this);
 				}
 
-				var prevMat = this._material;
 				this._material = material;
 
 				if (this._material) {
-					this._material.meshInstances.push(this);
+					this._material.addMeshInstanceRef(this);
 
 					this.updateKey();
 					var prevBlend = prevMat && prevMat.blendType !== BLEND_NONE;
@@ -19902,681 +19974,6 @@
 		return (layer & 0x0f) << 27 | (blendType === BLEND_NONE ? 1 : 0) << 26 | (isCommand ? 1 : 0) << 25 | (materialId & 0x1ffffff) << 0;
 	}
 
-	var Morph = function (_RefCountedObject) {
-		_inheritsLoose(Morph, _RefCountedObject);
-
-		function Morph(targets, graphicsDevice) {
-			var _this;
-
-			_this = _RefCountedObject.call(this) || this;
-			_this.device = graphicsDevice || getApplication().graphicsDevice;
-			_this._targets = targets;
-
-			if (_this.device.supportsMorphTargetTexturesCore) {
-				if (_this.device.extTextureHalfFloat && _this.device.textureHalfFloatRenderable) {
-					_this._renderTextureFormat = Morph.FORMAT_HALF_FLOAT;
-				} else if (_this.device.extTextureFloat && _this.device.textureFloatRenderable) {
-					_this._renderTextureFormat = Morph.FORMAT_FLOAT;
-				}
-
-				if (_this.device.extTextureHalfFloat && _this.device.textureHalfFloatUpdatable) {
-					_this._textureFormat = Morph.FORMAT_HALF_FLOAT;
-				} else if (_this.device.extTextureFloat) {
-					_this._textureFormat = Morph.FORMAT_FLOAT;
-				}
-
-				if (_this._renderTextureFormat !== undefined && _this._textureFormat !== undefined) {
-					_this._useTextureMorph = true;
-				}
-			}
-
-			_this._init();
-
-			_this._updateMorphFlags();
-
-			_this._calculateAabb();
-
-			return _this;
-		}
-
-		var _proto = Morph.prototype;
-
-		_proto._init = function _init() {
-			if (this._useTextureMorph) {
-				this._useTextureMorph = this._initTextureBased();
-			}
-
-			var i;
-
-			if (!this._useTextureMorph) {
-				for (i = 0; i < this._targets.length; i++) {
-					this._targets[i]._initVertexBuffers(this.device);
-				}
-			}
-
-			for (i = 0; i < this._targets.length; i++) {
-				this._targets[i]._postInit();
-			}
-		};
-
-		_proto._initTextureBased = function _initTextureBased() {
-			var target, i, v;
-			var deltaArrays = [],
-					deltaInfos = [];
-
-			for (i = 0; i < this._targets.length; i++) {
-				target = this._targets[i];
-
-				if (target.options.deltaPositions) {
-					deltaArrays.push(target.options.deltaPositions);
-					deltaInfos.push({
-						target: target,
-						name: 'texturePositions'
-					});
-				}
-
-				if (target.options.deltaNormals) {
-					deltaArrays.push(target.options.deltaNormals);
-					deltaInfos.push({
-						target: target,
-						name: 'textureNormals'
-					});
-				}
-			}
-
-			var ids = [],
-					usedDataIndices = [];
-			var vertexUsed, data;
-			var freeIndex = 1;
-			var dataCount = deltaArrays[0].length;
-
-			for (v = 0; v < dataCount; v += 3) {
-				vertexUsed = false;
-
-				for (i = 0; i < deltaArrays.length; i++) {
-					data = deltaArrays[i];
-
-					if (data[v] !== 0 || data[v + 1] !== 0 || data[v + 2] !== 0) {
-						vertexUsed = true;
-						break;
-					}
-				}
-
-				if (vertexUsed) {
-					ids.push(freeIndex);
-					usedDataIndices.push(v / 3);
-					freeIndex++;
-				} else {
-					ids.push(0);
-				}
-			}
-
-			var maxTextureSize = Math.min(this.device.maxTextureSize, 4096);
-			var morphTextureWidth = Math.ceil(Math.sqrt(freeIndex));
-			morphTextureWidth = Math.min(morphTextureWidth, maxTextureSize);
-			var morphTextureHeight = Math.ceil(freeIndex / morphTextureWidth);
-
-			if (morphTextureHeight > maxTextureSize) {
-				return false;
-			}
-
-			this.morphTextureWidth = morphTextureWidth;
-			this.morphTextureHeight = morphTextureHeight;
-			var halfFloat = false;
-			var numComponents = 3;
-			var float2Half = math.float2Half;
-
-			if (this._textureFormat === Morph.FORMAT_HALF_FLOAT) {
-				halfFloat = true;
-				numComponents = 4;
-			}
-
-			var arraySize = this.morphTextureWidth * this.morphTextureHeight * numComponents;
-			var packedDeltas = halfFloat ? new Uint16Array(arraySize) : new Float32Array(arraySize);
-
-			for (i = 0; i < deltaArrays.length; i++) {
-				data = deltaArrays[i];
-
-				for (v = 0; v < usedDataIndices.length; v++) {
-					var index = usedDataIndices[v];
-
-					if (halfFloat) {
-						packedDeltas[v * numComponents + numComponents] = float2Half(data[index * 3]);
-						packedDeltas[v * numComponents + numComponents + 1] = float2Half(data[index * 3 + 1]);
-						packedDeltas[v * numComponents + numComponents + 2] = float2Half(data[index * 3 + 2]);
-					} else {
-						packedDeltas[v * numComponents + numComponents] = data[index * 3];
-						packedDeltas[v * numComponents + numComponents + 1] = data[index * 3 + 1];
-						packedDeltas[v * numComponents + numComponents + 2] = data[index * 3 + 2];
-					}
-				}
-
-				target = deltaInfos[i].target;
-				var format = this._textureFormat === Morph.FORMAT_FLOAT ? PIXELFORMAT_RGB32F : PIXELFORMAT_RGBA16F;
-
-				target._setTexture(deltaInfos[i].name, this._createTexture("MorphTarget", format, packedDeltas));
-			}
-
-			var formatDesc = [{
-				semantic: SEMANTIC_ATTR15,
-				components: 1,
-				type: TYPE_FLOAT32
-			}];
-			this.vertexBufferIds = new VertexBuffer(this.device, new VertexFormat(this.device, formatDesc), ids.length, BUFFER_STATIC, new Float32Array(ids));
-			return true;
-		};
-
-		_proto.destroy = function destroy() {
-			if (this.vertexBufferIds) {
-				this.vertexBufferIds.destroy();
-				this.vertexBufferIds = null;
-			}
-
-			for (var i = 0; i < this._targets.length; i++) {
-				this._targets[i].destroy();
-			}
-
-			this._targets.length = 0;
-		};
-
-		_proto._updateMorphFlags = function _updateMorphFlags() {
-			this._morphPositions = false;
-			this._morphNormals = false;
-			var target;
-
-			for (var i = 0; i < this._targets.length; i++) {
-				target = this._targets[i];
-
-				if (target.morphPositions) {
-					this._morphPositions = true;
-				}
-
-				if (target.morphNormals) {
-					this._morphNormals = true;
-				}
-			}
-		};
-
-		_proto._calculateAabb = function _calculateAabb() {
-			this.aabb = new BoundingBox(new Vec3(0, 0, 0), new Vec3(0, 0, 0));
-			var target;
-
-			for (var i = 0; i < this._targets.length; i++) {
-				target = this._targets[i];
-
-				this.aabb._expand(target.aabb.getMin(), target.aabb.getMax());
-			}
-		};
-
-		_proto._createTexture = function _createTexture(name, format, pixelData) {
-			var texture = new Texture(this.device, {
-				width: this.morphTextureWidth,
-				height: this.morphTextureHeight,
-				format: format,
-				cubemap: false,
-				mipmaps: false,
-				minFilter: FILTER_NEAREST,
-				magFilter: FILTER_NEAREST,
-				addressU: ADDRESS_CLAMP_TO_EDGE,
-				addressV: ADDRESS_CLAMP_TO_EDGE
-			});
-			texture.name = name;
-
-			if (pixelData) {
-				var pixels = texture.lock();
-				pixels.set(pixelData);
-				texture.unlock();
-			}
-
-			return texture;
-		};
-
-		_createClass(Morph, [{
-			key: "morphPositions",
-			get: function get() {
-				return this._morphPositions;
-			}
-		}, {
-			key: "morphNormals",
-			get: function get() {
-				return this._morphNormals;
-			}
-		}, {
-			key: "maxActiveTargets",
-			get: function get() {
-				if (this._useTextureMorph) return this._targets.length;
-				return this._morphPositions && this._morphNormals ? 4 : 8;
-			}
-		}, {
-			key: "useTextureMorph",
-			get: function get() {
-				return this._useTextureMorph;
-			}
-		}, {
-			key: "targets",
-			get: function get() {
-				return this._targets;
-			}
-		}]);
-
-		return Morph;
-	}(RefCountedObject);
-
-	Morph.FORMAT_FLOAT = 0;
-	Morph.FORMAT_HALF_FLOAT = 1;
-
-	var textureMorphVertexShader = 'attribute vec2 vertex_position;\n' + 'varying vec2 uv0;\n' + 'void main(void) {\n' + '		gl_Position = vec4(vertex_position, 0.5, 1.0);\n' + '		uv0 = vertex_position.xy * 0.5 + 0.5;\n' + '}\n';
-
-	var MorphInstance = function () {
-		function MorphInstance(morph) {
-			this.morph = morph;
-			morph.incRefCount();
-			this.device = morph.device;
-			this.meshInstance = null;
-			this._weights = [];
-
-			for (var v = 0; v < morph._targets.length; v++) {
-				this.setWeight(v, morph._targets[v].defaultWeight);
-			}
-
-			this._activeTargets = [];
-
-			if (morph.useTextureMorph) {
-				this.shaderCache = {};
-				this.maxSubmitCount = this.device.maxTextures;
-				this._shaderMorphWeights = new Float32Array(this.maxSubmitCount);
-
-				var createRT = function (name, textureVar) {
-					var format = morph._renderTextureFormat === Morph.FORMAT_FLOAT ? PIXELFORMAT_RGBA32F : PIXELFORMAT_RGBA16F;
-					this[textureVar] = morph._createTexture(name, format);
-					return new RenderTarget({
-						colorBuffer: this[textureVar],
-						depth: false
-					});
-				}.bind(this);
-
-				if (morph.morphPositions) {
-					this.rtPositions = createRT("MorphRTPos", "texturePositions");
-				}
-
-				if (morph.morphNormals) {
-					this.rtNormals = createRT("MorphRTNrm", "textureNormals");
-				}
-
-				this._textureParams = new Float32Array([morph.morphTextureWidth, morph.morphTextureHeight, 1 / morph.morphTextureWidth, 1 / morph.morphTextureHeight]);
-
-				for (var i = 0; i < this.maxSubmitCount; i++) {
-					this["morphBlendTex" + i] = this.device.scope.resolve("morphBlendTex" + i);
-				}
-
-				this.morphFactor = this.device.scope.resolve("morphFactor[0]");
-				this.zeroTextures = false;
-			} else {
-				this.maxSubmitCount = 8;
-				this._shaderMorphWeights = new Float32Array(this.maxSubmitCount);
-				this._shaderMorphWeightsA = new Float32Array(this._shaderMorphWeights.buffer, 0, 4);
-				this._shaderMorphWeightsB = new Float32Array(this._shaderMorphWeights.buffer, 4 * 4, 4);
-				this._activeVertexBuffers = new Array(this.maxSubmitCount);
-			}
-		}
-
-		var _proto = MorphInstance.prototype;
-
-		_proto.destroy = function destroy() {
-			this.meshInstance = null;
-			this.shader = null;
-			var morph = this.morph;
-
-			if (morph) {
-				this.morph = null;
-				morph.decRefCount();
-
-				if (morph.getRefCount() < 1) {
-					morph.destroy();
-				}
-			}
-
-			if (this.rtPositions) {
-				this.rtPositions.destroy();
-				this.rtPositions = null;
-			}
-
-			if (this.texturePositions) {
-				this.texturePositions.destroy();
-				this.texturePositions = null;
-			}
-
-			if (this.rtNormals) {
-				this.rtNormals.destroy();
-				this.rtNormals = null;
-			}
-
-			if (this.textureNormals) {
-				this.textureNormals.destroy();
-				this.textureNormals = null;
-			}
-		};
-
-		_proto.clone = function clone() {
-			var clone = new MorphInstance(this.morph);
-			return clone;
-		};
-
-		_proto.getWeight = function getWeight(index) {
-			return this._weights[index];
-		};
-
-		_proto.setWeight = function setWeight(index, weight) {
-			this._weights[index] = weight;
-			this._dirty = true;
-		};
-
-		_proto._getFragmentShader = function _getFragmentShader(numTextures) {
-			var i,
-					fragmentShader = '';
-
-			if (numTextures > 0) {
-				fragmentShader += 'varying vec2 uv0;\n' + 'uniform highp float morphFactor[' + numTextures + '];\n';
-			}
-
-			for (i = 0; i < numTextures; i++) {
-				fragmentShader += 'uniform highp sampler2D morphBlendTex' + i + ';\n';
-			}
-
-			fragmentShader += 'void main (void) {\n' + '		highp vec4 color = vec4(0, 0, 0, 1);\n';
-
-			for (i = 0; i < numTextures; i++) {
-				fragmentShader += '		color.xyz += morphFactor[' + i + '] * texture2D(morphBlendTex' + i + ', uv0).xyz;\n';
-			}
-
-			fragmentShader += '		gl_FragColor = color;\n' + '}\n';
-			return fragmentShader;
-		};
-
-		_proto._getShader = function _getShader(count) {
-			var shader = this.shaderCache[count];
-
-			if (!shader) {
-				var fs = this._getFragmentShader(count);
-
-				shader = createShaderFromCode(this.device, textureMorphVertexShader, fs, "textureMorph" + count);
-				this.shaderCache[count] = shader;
-			}
-
-			return shader;
-		};
-
-		_proto._updateTextureRenderTarget = function _updateTextureRenderTarget(renderTarget, srcTextureName) {
-			var device = this.device;
-
-			var submitBatch = function (usedCount, blending) {
-				this.morphFactor.setValue(this._shaderMorphWeights);
-				device.setBlending(blending);
-
-				if (blending) {
-					device.setBlendFunction(BLENDMODE_ONE, BLENDMODE_ONE);
-					device.setBlendEquation(BLENDEQUATION_ADD);
-				}
-
-				var shader = this._getShader(usedCount);
-
-				drawQuadWithShader(device, renderTarget, shader, undefined, undefined, blending);
-			}.bind(this);
-
-			var usedCount = 0;
-			var blending = false;
-			var count = this._activeTargets.length;
-
-			for (var i = 0; i < count; i++) {
-				var activeTarget = this._activeTargets[i];
-				var tex = activeTarget.target[srcTextureName];
-
-				if (tex) {
-					this["morphBlendTex" + usedCount].setValue(tex);
-					this._shaderMorphWeights[usedCount] = activeTarget.weight;
-					usedCount++;
-
-					if (usedCount >= this.maxSubmitCount) {
-						submitBatch(usedCount, blending);
-						usedCount = 0;
-						blending = true;
-					}
-				}
-			}
-
-			if (usedCount > 0 || count === 0 && !this.zeroTextures) {
-				submitBatch(usedCount, blending);
-			}
-		};
-
-		_proto._updateTextureMorph = function _updateTextureMorph() {
-			this.device;
-
-			if (this._activeTargets.length > 0 || !this.zeroTextures) {
-				this._updateTextureRenderTarget(this.rtPositions, 'texturePositions');
-
-				this._updateTextureRenderTarget(this.rtNormals, 'textureNormals');
-
-				this.zeroTextures = this._activeTargets.length === 0;
-			}
-		};
-
-		_proto._updateVertexMorph = function _updateVertexMorph() {
-			var i,
-					count = this.maxSubmitCount;
-
-			for (i = 0; i < count; i++) {
-				this._shaderMorphWeights[i] = 0;
-				this._activeVertexBuffers[i] = null;
-			}
-
-			var posIndex = 0;
-			var nrmIndex = this.morph.morphPositions ? 4 : 0;
-			var target;
-
-			for (i = 0; i < this._activeTargets.length; i++) {
-				target = this._activeTargets[i].target;
-
-				if (target._vertexBufferPositions) {
-					this._activeVertexBuffers[posIndex] = target._vertexBufferPositions;
-					this._shaderMorphWeights[posIndex] = this._activeTargets[i].weight;
-					posIndex++;
-				}
-
-				if (target._vertexBufferNormals) {
-					this._activeVertexBuffers[nrmIndex] = target._vertexBufferNormals;
-					this._shaderMorphWeights[nrmIndex] = this._activeTargets[i].weight;
-					nrmIndex++;
-				}
-			}
-		};
-
-		_proto.update = function update() {
-			this._dirty = false;
-			var targets = this.morph._targets;
-			var activeCount = 0,
-					activeTarget;
-			var i,
-					absWeight,
-					epsilon = 0.00001;
-
-			for (i = 0; i < targets.length; i++) {
-				absWeight = Math.abs(this.getWeight(i));
-
-				if (absWeight > epsilon) {
-					if (this._activeTargets.length <= activeCount) {
-						this._activeTargets[activeCount] = {};
-					}
-
-					activeTarget = this._activeTargets[activeCount++];
-					activeTarget.absWeight = absWeight;
-					activeTarget.weight = this.getWeight(i);
-					activeTarget.target = targets[i];
-				}
-			}
-
-			this._activeTargets.length = activeCount;
-			var maxActiveTargets = this.morph.maxActiveTargets;
-
-			if (this._activeTargets.length > maxActiveTargets) {
-				this._activeTargets.sort(function (l, r) {
-					return l.absWeight < r.absWeight ? 1 : r.absWeight < l.absWeight ? -1 : 0;
-				});
-
-				this._activeTargets.length = maxActiveTargets;
-			}
-
-			if (this.morph.useTextureMorph) {
-				this._updateTextureMorph();
-			} else {
-				this._updateVertexMorph();
-			}
-		};
-
-		return MorphInstance;
-	}();
-
-	var Model = function () {
-		function Model() {
-			this.graph = null;
-			this.meshInstances = [];
-			this.skinInstances = [];
-			this.morphInstances = [];
-			this.cameras = [];
-			this.lights = [];
-			this._shadersVersion = 0;
-			this._immutable = false;
-		}
-
-		var _proto = Model.prototype;
-
-		_proto.getGraph = function getGraph() {
-			return this.graph;
-		};
-
-		_proto.setGraph = function setGraph(graph) {
-			this.graph = graph;
-		};
-
-		_proto.getCameras = function getCameras() {
-			return this.cameras;
-		};
-
-		_proto.setCameras = function setCameras(cameras) {
-			this.cameras = cameras;
-		};
-
-		_proto.getLights = function getLights() {
-			return this.lights;
-		};
-
-		_proto.setLights = function setLights(lights) {
-			this.lights = lights;
-		};
-
-		_proto.getMaterials = function getMaterials() {
-			var i;
-			var materials = [];
-
-			for (i = 0; i < this.meshInstances.length; i++) {
-				var meshInstance = this.meshInstances[i];
-
-				if (materials.indexOf(meshInstance.material) === -1) {
-					materials.push(meshInstance.material);
-				}
-			}
-
-			return materials;
-		};
-
-		_proto.clone = function clone() {
-			var i, j;
-			var srcNodes = [];
-			var cloneNodes = [];
-
-			var _duplicate = function _duplicate(node) {
-				var newNode = node.clone();
-				srcNodes.push(node);
-				cloneNodes.push(newNode);
-
-				for (var idx = 0; idx < node._children.length; idx++) {
-					newNode.addChild(_duplicate(node._children[idx]));
-				}
-
-				return newNode;
-			};
-
-			var cloneGraph = _duplicate(this.graph);
-
-			var cloneMeshInstances = [];
-			var cloneSkinInstances = [];
-			var cloneMorphInstances = [];
-
-			for (i = 0; i < this.skinInstances.length; i++) {
-				var skin = this.skinInstances[i].skin;
-				var cloneSkinInstance = new SkinInstance(skin);
-				var bones = [];
-
-				for (j = 0; j < skin.boneNames.length; j++) {
-					var boneName = skin.boneNames[j];
-					var bone = cloneGraph.findByName(boneName);
-					bones.push(bone);
-				}
-
-				cloneSkinInstance.bones = bones;
-				cloneSkinInstances.push(cloneSkinInstance);
-			}
-
-			for (i = 0; i < this.morphInstances.length; i++) {
-				var morph = this.morphInstances[i].morph;
-				var cloneMorphInstance = new MorphInstance(morph);
-				cloneMorphInstances.push(cloneMorphInstance);
-			}
-
-			for (i = 0; i < this.meshInstances.length; i++) {
-				var meshInstance = this.meshInstances[i];
-				var nodeIndex = srcNodes.indexOf(meshInstance.node);
-				var cloneMeshInstance = new MeshInstance(meshInstance.mesh, meshInstance.material, cloneNodes[nodeIndex]);
-
-				if (meshInstance.skinInstance) {
-					var skinInstanceIndex = this.skinInstances.indexOf(meshInstance.skinInstance);
-					cloneMeshInstance.skinInstance = cloneSkinInstances[skinInstanceIndex];
-				}
-
-				if (meshInstance.morphInstance) {
-					var morphInstanceIndex = this.morphInstances.indexOf(meshInstance.morphInstance);
-					cloneMeshInstance.morphInstance = cloneMorphInstances[morphInstanceIndex];
-				}
-
-				cloneMeshInstances.push(cloneMeshInstance);
-			}
-
-			var clone = new Model();
-			clone.graph = cloneGraph;
-			clone.meshInstances = cloneMeshInstances;
-			clone.skinInstances = cloneSkinInstances;
-			clone.morphInstances = cloneMorphInstances;
-			clone.getGraph().syncHierarchy();
-			return clone;
-		};
-
-		_proto.destroy = function destroy() {
-			var meshInstances = this.meshInstances;
-
-			for (var i = 0; i < meshInstances.length; i++) {
-				meshInstances[i].destroy();
-			}
-
-			this.meshInstances.length = 0;
-		};
-
-		_proto.generateWireframe = function generateWireframe() {
-			MeshInstance._prepareRenderStyleForArray(this.meshInstances, RENDERSTYLE_WIREFRAME);
-		};
-
-		return Model;
-	}();
-
 	function paramsIdentical(a, b) {
 		if (a && !b) return false;
 		if (!a && b) return false;
@@ -20653,7 +20050,7 @@
 
 		var _proto = BatchManager.prototype;
 
-		_proto.destroyManager = function destroyManager() {
+		_proto.destroy = function destroy() {
 			this.device = null;
 			this.rootNode = null;
 			this.scene = null;
@@ -20685,12 +20082,11 @@
 			var newBatchList = [];
 
 			for (var i = 0; i < this._batchList.length; i++) {
-				if (this._batchList[i].batchGroupId !== id) {
+				if (this._batchList[i].batchGroupId == id) {
+					this.destroyBatch(this._batchList[i]);
+				} else {
 					newBatchList.push(this._batchList[i]);
-					continue;
 				}
-
-				this.destroy(this._batchList[i]);
 			}
 
 			this._batchList = newBatchList;
@@ -20788,19 +20184,18 @@
 		_proto._extractRender = function _extractRender(node, arr, group, groupMeshInstances) {
 			if (node.render) {
 				if (node.render.isStatic) {
-					var i,
-							drawCalls = this.scene.drawCalls;
+					var drawCalls = this.scene.drawCalls;
 					var nodeMeshInstances = node.render.meshInstances;
 
-					for (i = 0; i < drawCalls.length; i++) {
+					for (var i = 0; i < drawCalls.length; i++) {
 						if (!drawCalls[i]._staticSource) continue;
 						if (nodeMeshInstances.indexOf(drawCalls[i]._staticSource) < 0) continue;
 						arr.push(drawCalls[i]);
 					}
 
-					for (i = 0; i < nodeMeshInstances.length; i++) {
-						if (drawCalls.indexOf(nodeMeshInstances[i]) >= 0) {
-							arr.push(nodeMeshInstances[i]);
+					for (var _i = 0; _i < nodeMeshInstances.length; _i++) {
+						if (drawCalls.indexOf(nodeMeshInstances[_i]) >= 0) {
+							arr.push(nodeMeshInstances[_i]);
 						}
 					}
 				} else {
@@ -20815,21 +20210,19 @@
 
 		_proto._extractModel = function _extractModel(node, arr, group, groupMeshInstances) {
 			if (node.model && node.model.model) {
-				var i;
-
 				if (node.model.isStatic) {
 					var drawCalls = this.scene.drawCalls;
 					var nodeMeshInstances = node.model.meshInstances;
 
-					for (i = 0; i < drawCalls.length; i++) {
+					for (var i = 0; i < drawCalls.length; i++) {
 						if (!drawCalls[i]._staticSource) continue;
 						if (nodeMeshInstances.indexOf(drawCalls[i]._staticSource) < 0) continue;
 						arr.push(drawCalls[i]);
 					}
 
-					for (i = 0; i < nodeMeshInstances.length; i++) {
-						if (drawCalls.indexOf(nodeMeshInstances[i]) >= 0) {
-							arr.push(nodeMeshInstances[i]);
+					for (var _i2 = 0; _i2 < nodeMeshInstances.length; _i2++) {
+						if (drawCalls.indexOf(nodeMeshInstances[_i2]) >= 0) {
+							arr.push(nodeMeshInstances[_i2]);
 						}
 					}
 				} else {
@@ -20873,13 +20266,11 @@
 		};
 
 		_proto._collectAndRemoveMeshInstances = function _collectAndRemoveMeshInstances(groupMeshInstances, groupIds) {
-			var node, group, arr, id;
-
 			for (var g = 0; g < groupIds.length; g++) {
-				id = groupIds[g];
-				group = this._batchGroups[id];
+				var id = groupIds[g];
+				var group = this._batchGroups[id];
 				if (!group) continue;
-				arr = groupMeshInstances[id];
+				var arr = groupMeshInstances[id];
 				if (!arr) arr = groupMeshInstances[id] = [];
 
 				for (var m = 0; m < group._obj.model.length; m++) {
@@ -20895,7 +20286,7 @@
 				}
 
 				for (var s = 0; s < group._obj.sprite.length; s++) {
-					node = group._obj.sprite[s];
+					var node = group._obj.sprite[s];
 
 					if (node.sprite && node.sprite._meshInstance && (group.dynamic || node.sprite.sprite._renderMode === SPRITE_RENDERMODE_SIMPLE)) {
 						arr.push(node.sprite._meshInstance);
@@ -20908,7 +20299,6 @@
 		};
 
 		_proto.generate = function generate(groupIds) {
-			var i, j;
 			var groupMeshInstances = {};
 
 			if (!groupIds) {
@@ -20917,13 +20307,13 @@
 
 			var newBatchList = [];
 
-			for (i = 0; i < this._batchList.length; i++) {
+			for (var i = 0; i < this._batchList.length; i++) {
 				if (groupIds.indexOf(this._batchList[i].batchGroupId) < 0) {
 					newBatchList.push(this._batchList[i]);
 					continue;
 				}
 
-				this.destroy(this._batchList[i]);
+				this.destroyBatch(this._batchList[i]);
 			}
 
 			this._batchList = newBatchList;
@@ -20935,8 +20325,8 @@
 			} else {
 				var newDirtyGroups = [];
 
-				for (i = 0; i < this._dirtyGroups.length; i++) {
-					if (groupIds.indexOf(this._dirtyGroups[i]) < 0) newDirtyGroups.push(this._dirtyGroups[i]);
+				for (var _i3 = 0; _i3 < this._dirtyGroups.length; _i3++) {
+					if (groupIds.indexOf(this._dirtyGroups[_i3]) < 0) newDirtyGroups.push(this._dirtyGroups[_i3]);
 				}
 
 				this._dirtyGroups = newDirtyGroups;
@@ -20955,13 +20345,11 @@
 
 				lists = this.prepare(group, groupData.dynamic, groupData.maxAabbSize, groupData._ui || groupData._sprite);
 
-				for (i = 0; i < lists.length; i++) {
-					batch = this.create(lists[i], groupData.dynamic, parseInt(groupId, 10));
-					if (!batch) continue;
+				for (var _i4 = 0; _i4 < lists.length; _i4++) {
+					batch = this.create(lists[_i4], groupData.dynamic, parseInt(groupId, 10));
 
-					for (j = 0; j < groupData.layers.length; j++) {
-						var layer = this.scene.layers.getLayerById(groupData.layers[j]);
-						if (layer) layer.addMeshInstances(batch.model.meshInstances);
+					if (batch) {
+						batch.addToLayers(this.scene, groupData.layers);
 					}
 				}
 			}
@@ -21278,27 +20666,12 @@
 				meshInstance.stencilFront = batch.origMeshInstances[0].stencilFront;
 				meshInstance.stencilBack = batch.origMeshInstances[0].stencilBack;
 				meshInstance.flipFaces = getScaleSign(batch.origMeshInstances[0]) < 0;
+				meshInstance.castShadow = batch.origMeshInstances[0].castShadow;
 				batch.meshInstance = meshInstance;
-				this.update(batch);
-				var newModel = new Model();
-				newModel.meshInstances = [batch.meshInstance];
-				newModel.castShadows = batch.origMeshInstances[0].castShadows;
-				batch.model = newModel;
+				batch.updateBoundingBox();
 			}
 
 			return batch;
-		};
-
-		_proto.update = function update(batch) {
-			batch._aabb.copy(batch.origMeshInstances[0].aabb);
-
-			for (var i = 1; i < batch.origMeshInstances.length; i++) {
-				batch._aabb.add(batch.origMeshInstances[i].aabb);
-			}
-
-			batch.meshInstance.aabb = batch._aabb;
-			batch._aabb._radiusVer = -1;
-			batch.meshInstance._aabbVer = 0;
 		};
 
 		_proto.updateAll = function updateAll() {
@@ -21308,7 +20681,8 @@
 
 			for (var i = 0; i < this._batchList.length; i++) {
 				if (!this._batchList[i].dynamic) continue;
-				this.update(this._batchList[i]);
+
+				this._batchList[i].updateBoundingBox();
 			}
 		};
 
@@ -21337,23 +20711,12 @@
 
 			batch2.meshInstance.castShadow = batch.meshInstance.castShadow;
 			batch2.meshInstance._shader = batch.meshInstance._shader;
-			var newModel = new Model();
-			newModel.meshInstances = [batch2.meshInstance];
-			newModel.castShadows = batch.origMeshInstances[0].castShadows;
-			batch2.model = newModel;
+			batch2.meshInstance.castShadow = batch.meshInstance.castShadow;
 			return batch2;
 		};
 
-		_proto.destroy = function destroy(batch) {
-			if (!batch.model) return;
-			var layers = this._batchGroups[batch.batchGroupId].layers;
-
-			for (var i = 0; i < layers.length; i++) {
-				var layer = this.scene.layers.getLayerById(layers[i]);
-				if (layer) layer.removeMeshInstances(batch.model.meshInstances);
-			}
-
-			batch.model.destroy();
+		_proto.destroyBatch = function destroyBatch(batch) {
+			batch.destroy(this.scene, this._batchGroups[batch.batchGroupId].layers);
 		};
 
 		return BatchManager;
@@ -25553,6 +24916,7 @@
 		_proto2.destroy = function destroy() {
 			MeshInstance.decRefLightmap(this.blackTex);
 			this.blackTex = null;
+			MeshInstance.destroyLightmapCache();
 			this.device = null;
 			this.root = null;
 			this.scene = null;
@@ -26249,6 +25613,681 @@
 		};
 
 		return Lightmapper;
+	}();
+
+	var Morph = function (_RefCountedObject) {
+		_inheritsLoose(Morph, _RefCountedObject);
+
+		function Morph(targets, graphicsDevice) {
+			var _this;
+
+			_this = _RefCountedObject.call(this) || this;
+			_this.device = graphicsDevice || getApplication().graphicsDevice;
+			_this._targets = targets;
+
+			if (_this.device.supportsMorphTargetTexturesCore) {
+				if (_this.device.extTextureHalfFloat && _this.device.textureHalfFloatRenderable) {
+					_this._renderTextureFormat = Morph.FORMAT_HALF_FLOAT;
+				} else if (_this.device.extTextureFloat && _this.device.textureFloatRenderable) {
+					_this._renderTextureFormat = Morph.FORMAT_FLOAT;
+				}
+
+				if (_this.device.extTextureHalfFloat && _this.device.textureHalfFloatUpdatable) {
+					_this._textureFormat = Morph.FORMAT_HALF_FLOAT;
+				} else if (_this.device.extTextureFloat) {
+					_this._textureFormat = Morph.FORMAT_FLOAT;
+				}
+
+				if (_this._renderTextureFormat !== undefined && _this._textureFormat !== undefined) {
+					_this._useTextureMorph = true;
+				}
+			}
+
+			_this._init();
+
+			_this._updateMorphFlags();
+
+			_this._calculateAabb();
+
+			return _this;
+		}
+
+		var _proto = Morph.prototype;
+
+		_proto._init = function _init() {
+			if (this._useTextureMorph) {
+				this._useTextureMorph = this._initTextureBased();
+			}
+
+			var i;
+
+			if (!this._useTextureMorph) {
+				for (i = 0; i < this._targets.length; i++) {
+					this._targets[i]._initVertexBuffers(this.device);
+				}
+			}
+
+			for (i = 0; i < this._targets.length; i++) {
+				this._targets[i]._postInit();
+			}
+		};
+
+		_proto._initTextureBased = function _initTextureBased() {
+			var target, i, v;
+			var deltaArrays = [],
+					deltaInfos = [];
+
+			for (i = 0; i < this._targets.length; i++) {
+				target = this._targets[i];
+
+				if (target.options.deltaPositions) {
+					deltaArrays.push(target.options.deltaPositions);
+					deltaInfos.push({
+						target: target,
+						name: 'texturePositions'
+					});
+				}
+
+				if (target.options.deltaNormals) {
+					deltaArrays.push(target.options.deltaNormals);
+					deltaInfos.push({
+						target: target,
+						name: 'textureNormals'
+					});
+				}
+			}
+
+			var ids = [],
+					usedDataIndices = [];
+			var vertexUsed, data;
+			var freeIndex = 1;
+			var dataCount = deltaArrays[0].length;
+
+			for (v = 0; v < dataCount; v += 3) {
+				vertexUsed = false;
+
+				for (i = 0; i < deltaArrays.length; i++) {
+					data = deltaArrays[i];
+
+					if (data[v] !== 0 || data[v + 1] !== 0 || data[v + 2] !== 0) {
+						vertexUsed = true;
+						break;
+					}
+				}
+
+				if (vertexUsed) {
+					ids.push(freeIndex);
+					usedDataIndices.push(v / 3);
+					freeIndex++;
+				} else {
+					ids.push(0);
+				}
+			}
+
+			var maxTextureSize = Math.min(this.device.maxTextureSize, 4096);
+			var morphTextureWidth = Math.ceil(Math.sqrt(freeIndex));
+			morphTextureWidth = Math.min(morphTextureWidth, maxTextureSize);
+			var morphTextureHeight = Math.ceil(freeIndex / morphTextureWidth);
+
+			if (morphTextureHeight > maxTextureSize) {
+				return false;
+			}
+
+			this.morphTextureWidth = morphTextureWidth;
+			this.morphTextureHeight = morphTextureHeight;
+			var halfFloat = false;
+			var numComponents = 3;
+			var float2Half = math.float2Half;
+
+			if (this._textureFormat === Morph.FORMAT_HALF_FLOAT) {
+				halfFloat = true;
+				numComponents = 4;
+			}
+
+			var arraySize = this.morphTextureWidth * this.morphTextureHeight * numComponents;
+			var packedDeltas = halfFloat ? new Uint16Array(arraySize) : new Float32Array(arraySize);
+
+			for (i = 0; i < deltaArrays.length; i++) {
+				data = deltaArrays[i];
+
+				for (v = 0; v < usedDataIndices.length; v++) {
+					var index = usedDataIndices[v];
+
+					if (halfFloat) {
+						packedDeltas[v * numComponents + numComponents] = float2Half(data[index * 3]);
+						packedDeltas[v * numComponents + numComponents + 1] = float2Half(data[index * 3 + 1]);
+						packedDeltas[v * numComponents + numComponents + 2] = float2Half(data[index * 3 + 2]);
+					} else {
+						packedDeltas[v * numComponents + numComponents] = data[index * 3];
+						packedDeltas[v * numComponents + numComponents + 1] = data[index * 3 + 1];
+						packedDeltas[v * numComponents + numComponents + 2] = data[index * 3 + 2];
+					}
+				}
+
+				target = deltaInfos[i].target;
+				var format = this._textureFormat === Morph.FORMAT_FLOAT ? PIXELFORMAT_RGB32F : PIXELFORMAT_RGBA16F;
+
+				target._setTexture(deltaInfos[i].name, this._createTexture("MorphTarget", format, packedDeltas));
+			}
+
+			var formatDesc = [{
+				semantic: SEMANTIC_ATTR15,
+				components: 1,
+				type: TYPE_FLOAT32
+			}];
+			this.vertexBufferIds = new VertexBuffer(this.device, new VertexFormat(this.device, formatDesc), ids.length, BUFFER_STATIC, new Float32Array(ids));
+			return true;
+		};
+
+		_proto.destroy = function destroy() {
+			if (this.vertexBufferIds) {
+				this.vertexBufferIds.destroy();
+				this.vertexBufferIds = null;
+			}
+
+			for (var i = 0; i < this._targets.length; i++) {
+				this._targets[i].destroy();
+			}
+
+			this._targets.length = 0;
+		};
+
+		_proto._updateMorphFlags = function _updateMorphFlags() {
+			this._morphPositions = false;
+			this._morphNormals = false;
+			var target;
+
+			for (var i = 0; i < this._targets.length; i++) {
+				target = this._targets[i];
+
+				if (target.morphPositions) {
+					this._morphPositions = true;
+				}
+
+				if (target.morphNormals) {
+					this._morphNormals = true;
+				}
+			}
+		};
+
+		_proto._calculateAabb = function _calculateAabb() {
+			this.aabb = new BoundingBox(new Vec3(0, 0, 0), new Vec3(0, 0, 0));
+			var target;
+
+			for (var i = 0; i < this._targets.length; i++) {
+				target = this._targets[i];
+
+				this.aabb._expand(target.aabb.getMin(), target.aabb.getMax());
+			}
+		};
+
+		_proto._createTexture = function _createTexture(name, format, pixelData) {
+			var texture = new Texture(this.device, {
+				width: this.morphTextureWidth,
+				height: this.morphTextureHeight,
+				format: format,
+				cubemap: false,
+				mipmaps: false,
+				minFilter: FILTER_NEAREST,
+				magFilter: FILTER_NEAREST,
+				addressU: ADDRESS_CLAMP_TO_EDGE,
+				addressV: ADDRESS_CLAMP_TO_EDGE
+			});
+			texture.name = name;
+
+			if (pixelData) {
+				var pixels = texture.lock();
+				pixels.set(pixelData);
+				texture.unlock();
+			}
+
+			return texture;
+		};
+
+		_createClass(Morph, [{
+			key: "morphPositions",
+			get: function get() {
+				return this._morphPositions;
+			}
+		}, {
+			key: "morphNormals",
+			get: function get() {
+				return this._morphNormals;
+			}
+		}, {
+			key: "maxActiveTargets",
+			get: function get() {
+				if (this._useTextureMorph) return this._targets.length;
+				return this._morphPositions && this._morphNormals ? 4 : 8;
+			}
+		}, {
+			key: "useTextureMorph",
+			get: function get() {
+				return this._useTextureMorph;
+			}
+		}, {
+			key: "targets",
+			get: function get() {
+				return this._targets;
+			}
+		}]);
+
+		return Morph;
+	}(RefCountedObject);
+
+	Morph.FORMAT_FLOAT = 0;
+	Morph.FORMAT_HALF_FLOAT = 1;
+
+	var textureMorphVertexShader = 'attribute vec2 vertex_position;\n' + 'varying vec2 uv0;\n' + 'void main(void) {\n' + '		gl_Position = vec4(vertex_position, 0.5, 1.0);\n' + '		uv0 = vertex_position.xy * 0.5 + 0.5;\n' + '}\n';
+
+	var MorphInstance = function () {
+		function MorphInstance(morph) {
+			this.morph = morph;
+			morph.incRefCount();
+			this.device = morph.device;
+			this.meshInstance = null;
+			this._weights = [];
+
+			for (var v = 0; v < morph._targets.length; v++) {
+				this.setWeight(v, morph._targets[v].defaultWeight);
+			}
+
+			this._activeTargets = [];
+
+			if (morph.useTextureMorph) {
+				this.shaderCache = {};
+				this.maxSubmitCount = this.device.maxTextures;
+				this._shaderMorphWeights = new Float32Array(this.maxSubmitCount);
+
+				var createRT = function (name, textureVar) {
+					var format = morph._renderTextureFormat === Morph.FORMAT_FLOAT ? PIXELFORMAT_RGBA32F : PIXELFORMAT_RGBA16F;
+					this[textureVar] = morph._createTexture(name, format);
+					return new RenderTarget({
+						colorBuffer: this[textureVar],
+						depth: false
+					});
+				}.bind(this);
+
+				if (morph.morphPositions) {
+					this.rtPositions = createRT("MorphRTPos", "texturePositions");
+				}
+
+				if (morph.morphNormals) {
+					this.rtNormals = createRT("MorphRTNrm", "textureNormals");
+				}
+
+				this._textureParams = new Float32Array([morph.morphTextureWidth, morph.morphTextureHeight, 1 / morph.morphTextureWidth, 1 / morph.morphTextureHeight]);
+
+				for (var i = 0; i < this.maxSubmitCount; i++) {
+					this["morphBlendTex" + i] = this.device.scope.resolve("morphBlendTex" + i);
+				}
+
+				this.morphFactor = this.device.scope.resolve("morphFactor[0]");
+				this.zeroTextures = false;
+			} else {
+				this.maxSubmitCount = 8;
+				this._shaderMorphWeights = new Float32Array(this.maxSubmitCount);
+				this._shaderMorphWeightsA = new Float32Array(this._shaderMorphWeights.buffer, 0, 4);
+				this._shaderMorphWeightsB = new Float32Array(this._shaderMorphWeights.buffer, 4 * 4, 4);
+				this._activeVertexBuffers = new Array(this.maxSubmitCount);
+			}
+		}
+
+		var _proto = MorphInstance.prototype;
+
+		_proto.destroy = function destroy() {
+			this.meshInstance = null;
+			this.shader = null;
+			var morph = this.morph;
+
+			if (morph) {
+				this.morph = null;
+				morph.decRefCount();
+
+				if (morph.getRefCount() < 1) {
+					morph.destroy();
+				}
+			}
+
+			if (this.rtPositions) {
+				this.rtPositions.destroy();
+				this.rtPositions = null;
+			}
+
+			if (this.texturePositions) {
+				this.texturePositions.destroy();
+				this.texturePositions = null;
+			}
+
+			if (this.rtNormals) {
+				this.rtNormals.destroy();
+				this.rtNormals = null;
+			}
+
+			if (this.textureNormals) {
+				this.textureNormals.destroy();
+				this.textureNormals = null;
+			}
+		};
+
+		_proto.clone = function clone() {
+			var clone = new MorphInstance(this.morph);
+			return clone;
+		};
+
+		_proto.getWeight = function getWeight(index) {
+			return this._weights[index];
+		};
+
+		_proto.setWeight = function setWeight(index, weight) {
+			this._weights[index] = weight;
+			this._dirty = true;
+		};
+
+		_proto._getFragmentShader = function _getFragmentShader(numTextures) {
+			var i,
+					fragmentShader = '';
+
+			if (numTextures > 0) {
+				fragmentShader += 'varying vec2 uv0;\n' + 'uniform highp float morphFactor[' + numTextures + '];\n';
+			}
+
+			for (i = 0; i < numTextures; i++) {
+				fragmentShader += 'uniform highp sampler2D morphBlendTex' + i + ';\n';
+			}
+
+			fragmentShader += 'void main (void) {\n' + '		highp vec4 color = vec4(0, 0, 0, 1);\n';
+
+			for (i = 0; i < numTextures; i++) {
+				fragmentShader += '		color.xyz += morphFactor[' + i + '] * texture2D(morphBlendTex' + i + ', uv0).xyz;\n';
+			}
+
+			fragmentShader += '		gl_FragColor = color;\n' + '}\n';
+			return fragmentShader;
+		};
+
+		_proto._getShader = function _getShader(count) {
+			var shader = this.shaderCache[count];
+
+			if (!shader) {
+				var fs = this._getFragmentShader(count);
+
+				shader = createShaderFromCode(this.device, textureMorphVertexShader, fs, "textureMorph" + count);
+				this.shaderCache[count] = shader;
+			}
+
+			return shader;
+		};
+
+		_proto._updateTextureRenderTarget = function _updateTextureRenderTarget(renderTarget, srcTextureName) {
+			var device = this.device;
+
+			var submitBatch = function (usedCount, blending) {
+				this.morphFactor.setValue(this._shaderMorphWeights);
+				device.setBlending(blending);
+
+				if (blending) {
+					device.setBlendFunction(BLENDMODE_ONE, BLENDMODE_ONE);
+					device.setBlendEquation(BLENDEQUATION_ADD);
+				}
+
+				var shader = this._getShader(usedCount);
+
+				drawQuadWithShader(device, renderTarget, shader, undefined, undefined, blending);
+			}.bind(this);
+
+			var usedCount = 0;
+			var blending = false;
+			var count = this._activeTargets.length;
+
+			for (var i = 0; i < count; i++) {
+				var activeTarget = this._activeTargets[i];
+				var tex = activeTarget.target[srcTextureName];
+
+				if (tex) {
+					this["morphBlendTex" + usedCount].setValue(tex);
+					this._shaderMorphWeights[usedCount] = activeTarget.weight;
+					usedCount++;
+
+					if (usedCount >= this.maxSubmitCount) {
+						submitBatch(usedCount, blending);
+						usedCount = 0;
+						blending = true;
+					}
+				}
+			}
+
+			if (usedCount > 0 || count === 0 && !this.zeroTextures) {
+				submitBatch(usedCount, blending);
+			}
+		};
+
+		_proto._updateTextureMorph = function _updateTextureMorph() {
+			this.device;
+
+			if (this._activeTargets.length > 0 || !this.zeroTextures) {
+				this._updateTextureRenderTarget(this.rtPositions, 'texturePositions');
+
+				this._updateTextureRenderTarget(this.rtNormals, 'textureNormals');
+
+				this.zeroTextures = this._activeTargets.length === 0;
+			}
+		};
+
+		_proto._updateVertexMorph = function _updateVertexMorph() {
+			var i,
+					count = this.maxSubmitCount;
+
+			for (i = 0; i < count; i++) {
+				this._shaderMorphWeights[i] = 0;
+				this._activeVertexBuffers[i] = null;
+			}
+
+			var posIndex = 0;
+			var nrmIndex = this.morph.morphPositions ? 4 : 0;
+			var target;
+
+			for (i = 0; i < this._activeTargets.length; i++) {
+				target = this._activeTargets[i].target;
+
+				if (target._vertexBufferPositions) {
+					this._activeVertexBuffers[posIndex] = target._vertexBufferPositions;
+					this._shaderMorphWeights[posIndex] = this._activeTargets[i].weight;
+					posIndex++;
+				}
+
+				if (target._vertexBufferNormals) {
+					this._activeVertexBuffers[nrmIndex] = target._vertexBufferNormals;
+					this._shaderMorphWeights[nrmIndex] = this._activeTargets[i].weight;
+					nrmIndex++;
+				}
+			}
+		};
+
+		_proto.update = function update() {
+			this._dirty = false;
+			var targets = this.morph._targets;
+			var activeCount = 0,
+					activeTarget;
+			var i,
+					absWeight,
+					epsilon = 0.00001;
+
+			for (i = 0; i < targets.length; i++) {
+				absWeight = Math.abs(this.getWeight(i));
+
+				if (absWeight > epsilon) {
+					if (this._activeTargets.length <= activeCount) {
+						this._activeTargets[activeCount] = {};
+					}
+
+					activeTarget = this._activeTargets[activeCount++];
+					activeTarget.absWeight = absWeight;
+					activeTarget.weight = this.getWeight(i);
+					activeTarget.target = targets[i];
+				}
+			}
+
+			this._activeTargets.length = activeCount;
+			var maxActiveTargets = this.morph.maxActiveTargets;
+
+			if (this._activeTargets.length > maxActiveTargets) {
+				this._activeTargets.sort(function (l, r) {
+					return l.absWeight < r.absWeight ? 1 : r.absWeight < l.absWeight ? -1 : 0;
+				});
+
+				this._activeTargets.length = maxActiveTargets;
+			}
+
+			if (this.morph.useTextureMorph) {
+				this._updateTextureMorph();
+			} else {
+				this._updateVertexMorph();
+			}
+		};
+
+		return MorphInstance;
+	}();
+
+	var Model = function () {
+		function Model() {
+			this.graph = null;
+			this.meshInstances = [];
+			this.skinInstances = [];
+			this.morphInstances = [];
+			this.cameras = [];
+			this.lights = [];
+			this._shadersVersion = 0;
+			this._immutable = false;
+		}
+
+		var _proto = Model.prototype;
+
+		_proto.getGraph = function getGraph() {
+			return this.graph;
+		};
+
+		_proto.setGraph = function setGraph(graph) {
+			this.graph = graph;
+		};
+
+		_proto.getCameras = function getCameras() {
+			return this.cameras;
+		};
+
+		_proto.setCameras = function setCameras(cameras) {
+			this.cameras = cameras;
+		};
+
+		_proto.getLights = function getLights() {
+			return this.lights;
+		};
+
+		_proto.setLights = function setLights(lights) {
+			this.lights = lights;
+		};
+
+		_proto.getMaterials = function getMaterials() {
+			var i;
+			var materials = [];
+
+			for (i = 0; i < this.meshInstances.length; i++) {
+				var meshInstance = this.meshInstances[i];
+
+				if (materials.indexOf(meshInstance.material) === -1) {
+					materials.push(meshInstance.material);
+				}
+			}
+
+			return materials;
+		};
+
+		_proto.clone = function clone() {
+			var i, j;
+			var srcNodes = [];
+			var cloneNodes = [];
+
+			var _duplicate = function _duplicate(node) {
+				var newNode = node.clone();
+				srcNodes.push(node);
+				cloneNodes.push(newNode);
+
+				for (var idx = 0; idx < node._children.length; idx++) {
+					newNode.addChild(_duplicate(node._children[idx]));
+				}
+
+				return newNode;
+			};
+
+			var cloneGraph = _duplicate(this.graph);
+
+			var cloneMeshInstances = [];
+			var cloneSkinInstances = [];
+			var cloneMorphInstances = [];
+
+			for (i = 0; i < this.skinInstances.length; i++) {
+				var skin = this.skinInstances[i].skin;
+				var cloneSkinInstance = new SkinInstance(skin);
+				var bones = [];
+
+				for (j = 0; j < skin.boneNames.length; j++) {
+					var boneName = skin.boneNames[j];
+					var bone = cloneGraph.findByName(boneName);
+					bones.push(bone);
+				}
+
+				cloneSkinInstance.bones = bones;
+				cloneSkinInstances.push(cloneSkinInstance);
+			}
+
+			for (i = 0; i < this.morphInstances.length; i++) {
+				var morph = this.morphInstances[i].morph;
+				var cloneMorphInstance = new MorphInstance(morph);
+				cloneMorphInstances.push(cloneMorphInstance);
+			}
+
+			for (i = 0; i < this.meshInstances.length; i++) {
+				var meshInstance = this.meshInstances[i];
+				var nodeIndex = srcNodes.indexOf(meshInstance.node);
+				var cloneMeshInstance = new MeshInstance(meshInstance.mesh, meshInstance.material, cloneNodes[nodeIndex]);
+
+				if (meshInstance.skinInstance) {
+					var skinInstanceIndex = this.skinInstances.indexOf(meshInstance.skinInstance);
+					cloneMeshInstance.skinInstance = cloneSkinInstances[skinInstanceIndex];
+				}
+
+				if (meshInstance.morphInstance) {
+					var morphInstanceIndex = this.morphInstances.indexOf(meshInstance.morphInstance);
+					cloneMeshInstance.morphInstance = cloneMorphInstances[morphInstanceIndex];
+				}
+
+				cloneMeshInstances.push(cloneMeshInstance);
+			}
+
+			var clone = new Model();
+			clone.graph = cloneGraph;
+			clone.meshInstances = cloneMeshInstances;
+			clone.skinInstances = cloneSkinInstances;
+			clone.morphInstances = cloneMorphInstances;
+			clone.getGraph().syncHierarchy();
+			return clone;
+		};
+
+		_proto.destroy = function destroy() {
+			var meshInstances = this.meshInstances;
+
+			for (var i = 0; i < meshInstances.length; i++) {
+				meshInstances[i].destroy();
+			}
+
+			this.meshInstances.length = 0;
+		};
+
+		_proto.generateWireframe = function generateWireframe() {
+			MeshInstance._prepareRenderStyleForArray(this.meshInstances, RENDERSTYLE_WIREFRAME);
+		};
+
+		return Model;
 	}();
 
 	var MorphTarget = function () {
@@ -28687,7 +28726,7 @@
 				var skyLayer = this.layers.getLayerById(LAYERID_SKYBOX);
 
 				if (skyLayer) {
-					var node = new GraphNode();
+					var node = new GraphNode("Skybox");
 					var mesh = createBox(device);
 					var meshInstance = new MeshInstance(mesh, material, node);
 					meshInstance.cull = false;
@@ -30535,7 +30574,7 @@
 			}
 		} else {
 			var bufferView = bufferViews[gltfAccessor.bufferView];
-			result = new dataType(bufferView.buffer, bufferView.byteOffset + (gltfAccessor.hasOwnProperty('byteOffset') ? gltfAccessor.byteOffset : 0), gltfAccessor.count * numComponents);
+			result = new dataType(bufferView.buffer, bufferView.byteOffset + (gltfAccessor.byteOffset || 0), gltfAccessor.count * numComponents);
 		}
 
 		return result;
@@ -30780,8 +30819,8 @@
 				target = vertexBuffer.format.elements[i];
 				targetStride = target.stride / 4;
 				source = sourceDesc[target.name];
-				sourceArray = new Uint32Array(source.buffer, source.offset, source.count * source.stride / 4);
 				sourceStride = source.stride / 4;
+				sourceArray = new Uint32Array(source.buffer, source.offset, (source.count - 1) * sourceStride + source.size / 4);
 				var src = 0;
 				var dst = target.offset / 4;
 				var kend = Math.floor((source.size + 3) / 4);
@@ -32215,7 +32254,7 @@
 					onLoad(i, result);
 				} else {
 					var buffer = buffers[gltfBufferView.buffer];
-					var typedArray = new Uint8Array(buffer.buffer, buffer.byteOffset + (gltfBufferView.hasOwnProperty('byteOffset') ? gltfBufferView.byteOffset : 0), gltfBufferView.byteLength);
+					var typedArray = new Uint8Array(buffer.buffer, buffer.byteOffset + (gltfBufferView.byteOffset || 0), gltfBufferView.byteLength);
 					onLoad(i, typedArray);
 				}
 			}.bind(null, i, gltfBufferView));
@@ -37241,6 +37280,8 @@
 	}();
 
 	function BasisWorker() {
+		var _basisToEngineMapping;
+
 		var BASIS_FORMAT = {
 			cTFETC1: 0,
 			cTFETC2: 1,
@@ -37255,11 +37296,25 @@
 			cTFRGB565: 14,
 			cTFRGBA4444: 16
 		};
+		var PIXEL_FORMAT = {
+			ETC1: 21,
+			ETC2_RGBA: 23,
+			DXT1: 8,
+			DXT5: 10,
+			PVRTC_4BPP_RGB_1: 26,
+			PVRTC_4BPP_RGBA_1: 27,
+			ASTC_4x4: 28,
+			ATC_RGB: 29,
+			ATC_RGBA: 30,
+			R8_G8_B8_A8: 7,
+			R5_G6_B5: 3,
+			R4_G4_B4_A4: 5
+		};
 		var opaqueMapping = {
 			astc: BASIS_FORMAT.cTFASTC_4x4,
 			dxt: BASIS_FORMAT.cTFBC1,
-			etc2: BASIS_FORMAT.cTFETC1,
 			etc1: BASIS_FORMAT.cTFETC1,
+			etc2: BASIS_FORMAT.cTFETC1,
 			pvr: BASIS_FORMAT.cTFPVRTC1_4_RGB,
 			atc: BASIS_FORMAT.cTFATC_RGB,
 			none: BASIS_FORMAT.cTFRGB565
@@ -37267,26 +37322,13 @@
 		var alphaMapping = {
 			astc: BASIS_FORMAT.cTFASTC_4x4,
 			dxt: BASIS_FORMAT.cTFBC3,
-			etc2: BASIS_FORMAT.cTFETC2,
 			etc1: BASIS_FORMAT.cTFRGBA4444,
+			etc2: BASIS_FORMAT.cTFETC2,
 			pvr: BASIS_FORMAT.cTFPVRTC1_4_RGBA,
 			atc: BASIS_FORMAT.cTFATC_RGBA_INTERPOLATED_ALPHA,
 			none: BASIS_FORMAT.cTFRGBA4444
 		};
-		var basisToEngineMapping = {};
-		basisToEngineMapping[BASIS_FORMAT.cTFETC1] = 21;
-		basisToEngineMapping[BASIS_FORMAT.cTFETC2] = 23;
-		basisToEngineMapping[BASIS_FORMAT.cTFBC1] = 8;
-		basisToEngineMapping[BASIS_FORMAT.cTFBC3] = 10;
-		basisToEngineMapping[BASIS_FORMAT.cTFPVRTC1_4_RGB] = 26;
-		basisToEngineMapping[BASIS_FORMAT.cTFPVRTC1_4_RGBA] = 27;
-		basisToEngineMapping[BASIS_FORMAT.cTFASTC_4x4] = 28;
-		basisToEngineMapping[BASIS_FORMAT.cTFATC_RGB] = 29;
-		basisToEngineMapping[BASIS_FORMAT.cTFATC_RGBA_INTERPOLATED_ALPHA] = 30;
-		basisToEngineMapping[BASIS_FORMAT.cTFRGBA32] = 7;
-		basisToEngineMapping[BASIS_FORMAT.cTFRGB565] = 3;
-		basisToEngineMapping[BASIS_FORMAT.cTFRGBA4444] = 5;
-		var hasPerformance = typeof performance !== 'undefined';
+		var basisToEngineMapping = (_basisToEngineMapping = {}, _basisToEngineMapping[BASIS_FORMAT.cTFETC1] = PIXEL_FORMAT.ETC1, _basisToEngineMapping[BASIS_FORMAT.cTFETC2] = PIXEL_FORMAT.ETC2_RGBA, _basisToEngineMapping[BASIS_FORMAT.cTFBC1] = PIXEL_FORMAT.DXT1, _basisToEngineMapping[BASIS_FORMAT.cTFBC3] = PIXEL_FORMAT.DXT5, _basisToEngineMapping[BASIS_FORMAT.cTFPVRTC1_4_RGB] = PIXEL_FORMAT.PVRTC_4BPP_RGB_1, _basisToEngineMapping[BASIS_FORMAT.cTFPVRTC1_4_RGBA] = PIXEL_FORMAT.PVRTC_4BPP_RGBA_1, _basisToEngineMapping[BASIS_FORMAT.cTFASTC_4x4] = PIXEL_FORMAT.ASTC_4x4, _basisToEngineMapping[BASIS_FORMAT.cTFATC_RGB] = PIXEL_FORMAT.ATC_RGB, _basisToEngineMapping[BASIS_FORMAT.cTFATC_RGBA_INTERPOLATED_ALPHA] = PIXEL_FORMAT.ATC_RGBA, _basisToEngineMapping[BASIS_FORMAT.cTFRGBA32] = PIXEL_FORMAT.R8_G8_B8_A8, _basisToEngineMapping[BASIS_FORMAT.cTFRGB565] = PIXEL_FORMAT.R5_G6_B5, _basisToEngineMapping[BASIS_FORMAT.cTFRGBA4444] = PIXEL_FORMAT.R4_G4_B4_A4, _basisToEngineMapping);
 
 		var unswizzleGGGR = function unswizzleGGGR(data) {
 			var genB = function genB(R, G) {
@@ -37307,6 +37349,10 @@
 			return data;
 		};
 
+		var isCompressedFormat = function isCompressedFormat(basisFormat) {
+			return basisFormat !== BASIS_FORMAT.cTFRGBA32 && basisFormat !== BASIS_FORMAT.cTFRGB565 && basisFormat !== BASIS_FORMAT.cTFRGBA4444;
+		};
+
 		var pack565 = function pack565(data) {
 			var result = new Uint16Array(data.length / 4);
 
@@ -37320,14 +37366,55 @@
 			return result;
 		};
 
-		var transcode = function transcode(basis, url, format, data, options) {
-			var funcStart = hasPerformance ? performance.now() : 0;
+		var performanceNow = function performanceNow() {
+			return typeof performance !== 'undefined' ? performance.now() : 0;
+		};
+
+		var basis;
+		var rgbPriority;
+		var rgbaPriority;
+
+		var chooseTargetFormat = function chooseTargetFormat(deviceDetails, hasAlpha, isUASTC) {
+			if (isUASTC) {
+				if (deviceDetails.formats.astc) {
+					return 'astc';
+				}
+			} else {
+				if (hasAlpha) {
+					if (deviceDetails.formats.etc2) {
+						return 'etc2';
+					}
+				} else {
+					if (deviceDetails.formats.etc1) {
+						return 'etc1';
+					}
+				}
+			}
+
+			var testInOrder = function testInOrder(priority) {
+				for (var i = 0; i < priority.length; ++i) {
+					var format = priority[i];
+
+					if (deviceDetails.formats[format]) {
+						return format;
+					}
+				}
+
+				return 'none';
+			};
+
+			return testInOrder(hasAlpha ? rgbaPriority : rgbPriority);
+		};
+
+		var transcode = function transcode(url, data, options) {
+			var funcStart = performanceNow();
 			var basisFile = new basis.BasisFile(new Uint8Array(data));
 			var width = basisFile.getImageWidth(0, 0);
 			var height = basisFile.getImageHeight(0, 0);
 			var images = basisFile.getNumImages();
 			var levels = basisFile.getNumLevels(0);
 			var hasAlpha = !!basisFile.getHasAlpha();
+			var isUASTC = basisFile.isUASTC && basisFile.isUASTC();
 
 			if (!width || !height || !images || !levels) {
 				basisFile.close();
@@ -37335,16 +37422,21 @@
 				throw new Error('Invalid image dimensions url=' + url + ' width=' + width + ' height=' + height + ' images=' + images + ' levels=' + levels);
 			}
 
-			var basisFormat = hasAlpha ? alphaMapping[format] : opaqueMapping[format];
+			var format = chooseTargetFormat(options.deviceDetails, hasAlpha, isUASTC);
+			var unswizzle = !!options.isGGGR && format === 'pvr';
+			var basisFormat;
 
-			if (basisFormat === BASIS_FORMAT.cTFPVRTC1_4_RGB || basisFormat === BASIS_FORMAT.cTFPVRTC1_4_RGBA) {
-				if ((width & width - 1) !== 0 || width !== height) {
-					basisFormat = basisFormat === BASIS_FORMAT.cTFPVRTC1_4_RGB ? BASIS_FORMAT.cTFRGB565 : BASIS_FORMAT.cTFRGBA32;
-				}
-			}
-
-			if (options && options.unswizzleGGGR) {
+			if (unswizzle) {
 				basisFormat = BASIS_FORMAT.cTFRGBA32;
+			} else {
+				basisFormat = hasAlpha ? alphaMapping[format] : opaqueMapping[format];
+				var isPVRTC = basisFormat === BASIS_FORMAT.cTFPVRTC1_4_RGB || basisFormat === BASIS_FORMAT.cTFPVRTC1_4_RGBA;
+				var notPOT = (width & width - 1) !== 0 || (height & height - 1) !== 0;
+				var notSquare = width !== height;
+
+				if (isPVRTC && (notPOT || notSquare) || !options.deviceDetails.webgl2 && notPOT) {
+					basisFormat = hasAlpha ? BASIS_FORMAT.cTFRGBA32 : BASIS_FORMAT.cTFRGB565;
+				}
 			}
 
 			if (!basisFile.startTranscoding()) {
@@ -37366,23 +37458,14 @@
 					throw new Error('Failed to transcode image url=' + url);
 				}
 
-				if (basisFormat === BASIS_FORMAT.cTFRGB565 || basisFormat === BASIS_FORMAT.cTFRGBA4444) {
-					var dst16 = new Uint16Array(dstSize / 2);
-
-					for (i = 0; i < dstSize / 2; ++i) {
-						dst16[i] = dst[i * 2] + dst[i * 2 + 1] * 256;
-					}
-
-					dst = dst16;
-				}
-
-				levelData.push(dst);
+				var is16BitFormat = basisFormat === BASIS_FORMAT.cTFRGB565 || basisFormat === BASIS_FORMAT.cTFRGBA4444;
+				levelData.push(is16BitFormat ? new Uint16Array(dst.buffer) : dst);
 			}
 
 			basisFile.close();
 			basisFile.delete();
 
-			if (options && options.unswizzleGGGR) {
+			if (unswizzle) {
 				basisFormat = BASIS_FORMAT.cTFRGB565;
 
 				for (i = 0; i < levelData.length; ++i) {
@@ -37390,24 +37473,23 @@
 				}
 			}
 
+			var compressedFormat = isCompressedFormat(basisFormat);
 			return {
 				format: basisToEngineMapping[basisFormat],
-				width: width + 3 & ~3,
-				height: height + 3 & ~3,
+				width: compressedFormat ? width + 3 & ~3 : width,
+				height: compressedFormat ? height + 3 & ~3 : height,
 				levels: levelData,
 				cubemap: false,
 				mipmaps: true,
-				transcodeTime: hasPerformance ? performance.now() - funcStart : 0,
-				url: url
+				transcodeTime: performanceNow() - funcStart,
+				url: url,
+				unswizzledGGGR: unswizzle
 			};
 		};
 
-		var basis = null;
-		var queue = [];
-
-		var workerTranscode = function workerTranscode(url, format, data, options) {
+		var workerTranscode = function workerTranscode(url, data, options) {
 			try {
-				var result = transcode(basis, url, format, data, options);
+				var result = transcode(url, data, options);
 				result.levels = result.levels.map(function (v) {
 					return v.buffer;
 				});
@@ -37417,45 +37499,54 @@
 				}, result.levels);
 			} catch (err) {
 				self.postMessage({
-					url: url.toString(),
-					err: err.toString()
+					url: url,
+					err: err
 				});
 			}
 		};
 
-		var workerInit = function workerInit(basisModule) {
+		var workerInit = function workerInit(config, callback) {
+			self.importScripts(config.basisUrl);
+
 			var instantiateWasmFunc = function instantiateWasmFunc(imports, successCallback) {
-				WebAssembly.instantiate(basisModule, imports).then(function (result) {
+				WebAssembly.instantiate(config.module, imports).then(function (result) {
 					successCallback(result);
+				}).catch(function (reason) {
+					console.error('instantiate failed + ' + reason);
 				});
 				return {};
 			};
 
-			self.BASIS(basisModule ? {
+			self.BASIS(config.module ? {
 				instantiateWasm: instantiateWasmFunc
 			} : null).then(function (instance) {
+				instance.initializeBasis();
 				basis = instance;
-				basis.initializeBasis();
-
-				for (var i = 0; i < queue.length; ++i) {
-					workerTranscode(queue[i].url, queue[i].format, queue[i].data, queue[i].options);
-				}
-
-				queue = [];
+				rgbPriority = config.rgbPriority;
+				rgbaPriority = config.rgbaPriority;
+				callback(null);
 			});
 		};
+
+		var queue = [];
 
 		self.onmessage = function (message) {
 			var data = message.data;
 
 			switch (data.type) {
 				case 'init':
-					workerInit(data.module);
+					workerInit(data.config, function () {
+						for (var i = 0; i < queue.length; ++i) {
+							workerTranscode(queue[i].url, queue[i].data, queue[i].options);
+						}
+
+						queue.length = 0;
+					});
 					break;
 
 				case 'transcode':
 					if (basis) {
-						workerTranscode(data.url, data.format, data.data, data.options);
+						workerTranscode(data.url, data.data, data.options);
 					} else {
 						queue.push(data);
 					}
@@ -37465,247 +37556,301 @@
 		};
 	}
 
-	var wasmSupported = function () {
-		try {
-			if (typeof WebAssembly === "object" && typeof WebAssembly.instantiate === "function") {
-				var module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
-				if (module instanceof WebAssembly.Module) return new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
-			}
-		} catch (e) {}
+	var getCompressionFormats = function getCompressionFormats(device) {
+		return {
+			astc: !!device.extCompressedTextureASTC,
+			atc: !!device.extCompressedTextureATC,
+			dxt: !!device.extCompressedTextureS3TC,
+			etc1: !!device.extCompressedTextureETC1,
+			etc2: !!device.extCompressedTextureETC,
+			pvr: !!device.extCompressedTexturePVRTC
+		};
+	};
 
-		return false;
-	}();
-
-	function chooseTargetFormat(device) {
-		if (device.extCompressedTextureASTC) {
-			return 'astc';
-		} else if (device.extCompressedTextureS3TC) {
-			return 'dxt';
-		} else if (device.extCompressedTextureETC) {
-			return 'etc2';
-		} else if (device.extCompressedTextureETC1) {
-			return 'etc1';
-		} else if (device.extCompressedTexturePVRTC) {
-			return 'pvr';
-		} else if (device.extCompressedTextureATC) {
-			return 'atc';
-		}
-
-		return 'none';
-	}
-
-	var downloadInitiated = false;
-	var downloadConfig = null;
-	var worker = null;
-	var format = null;
-	var callbacks = {};
-	var transcodeQueue = [];
-
-	function basisTargetFormat() {
-		if (!format) {
-			format = chooseTargetFormat(getApplication().graphicsDevice);
-		}
-
-		return format;
-	}
-
-	function handleWorkerResponse(message) {
-		var url = message.data.url;
-		var err = message.data.err;
-		var data = message.data.data;
-		var callback = callbacks[url];
-
-		if (!callback) {
-			console.error('internal logical error encountered in basis transcoder');
-			return;
-		}
-
-		var i;
-
-		if (err) {
-			for (i = 0; i < callback.length; ++i) {
-				callback[i](err);
-			}
-
-			return;
-		}
-
-		if (data.format === PIXELFORMAT_R5_G6_B5 || data.format === PIXELFORMAT_R4_G4_B4_A4) {
-			data.levels = data.levels.map(function (v) {
-				return new Uint16Array(v);
+	var prepareWorkerModules = function prepareWorkerModules(config, callback) {
+		var getWorkerBlob = function getWorkerBlob() {
+			var code = '(' + BasisWorker.toString() + ')()\n\n';
+			return new File([code], 'basis_worker.js', {
+				type: 'application/javascript'
 			});
-		} else {
-			data.levels = data.levels.map(function (v) {
-				return new Uint8Array(v);
-			});
-		}
+		};
 
-		for (i = 0; i < callback.length; ++i) {
-			callback[i](null, data);
-		}
-
-		delete callbacks[url];
-	}
-
-	function transcode(url, data, callback, options) {
-		if (!callbacks.hasOwnProperty(url)) {
-			callbacks[url] = [callback];
-			worker.postMessage({
-				type: 'transcode',
-				url: url,
-				format: basisTargetFormat(),
-				data: data,
-				options: options
-			}, [data]);
-		} else {
-			callbacks[url].push(callback);
-		}
-	}
-
-	function basisInitialize(basisCode, basisModule, callback) {
-		var code = ["/* basis.js */", basisCode, "", "/* worker */", '(' + BasisWorker.toString() + ')()\n\n'].join('\n');
-		var blob = new Blob([code], {
-			type: 'application/javascript'
-		});
-		var url = URL.createObjectURL(blob);
-		worker = new Worker(url);
-		worker.addEventListener('message', handleWorkerResponse);
-		worker.postMessage({
-			type: 'init',
-			module: basisModule
-		});
-
-		if (callback) {
-			callback();
-		}
-
-		for (var i = 0; i < transcodeQueue.length; ++i) {
-			var entry = transcodeQueue[i];
-			transcode(entry.url, entry.data, entry.callback, entry.options);
-		}
-	}
-
-	function basisDownload(glueUrl, wasmUrl, fallbackUrl, callback) {
-		if (downloadInitiated) {
-			console.warn('basis module is being downloaded more than once');
-		}
-
-		downloadInitiated = true;
-
-		if (wasmSupported) {
-			var glueCode = null;
-			var compiledModule = null;
-
-			var downloadCompleted = function downloadCompleted() {
-				if (glueCode && compiledModule) {
-					basisInitialize(glueCode, compiledModule, callback);
+		var wasmSupported = function wasmSupported() {
+			try {
+				if (typeof WebAssembly === "object" && typeof WebAssembly.instantiate === "function") {
+					var module = new WebAssembly.Module(Uint8Array.of(0x0, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00));
+					if (module instanceof WebAssembly.Module) return new WebAssembly.Instance(module) instanceof WebAssembly.Instance;
 				}
-			};
+			} catch (e) {}
 
-			var performHttpDownload = function performHttpDownload() {
-				http.get(wasmUrl, {
-					cache: true,
-					responseType: "arraybuffer",
-					retry: false
-				}, function (err, result) {
-					if (result) {
-						WebAssembly.compile(result).then(function (result) {
-							compiledModule = result;
-							downloadCompleted();
-						});
+			return false;
+		};
+
+		var sendResponse = function sendResponse(basisCode, module) {
+			callback(null, {
+				workerUrl: URL.createObjectURL(getWorkerBlob()),
+				basisUrl: URL.createObjectURL(basisCode),
+				module: module,
+				rgbPriority: config.rgbPriority,
+				rgbaPriority: config.rgbaPriority
+			});
+		};
+
+		if (config.glueUrl && config.wasmUrl && wasmSupported()) {
+			var basisCode = null;
+			var module = null;
+			http.get(config.glueUrl, {
+				responseType: 'blob'
+			}, function (err, response) {
+				if (err) {
+					callback(err);
+				} else {
+					if (module) {
+						sendResponse(response, module);
+					} else {
+						basisCode = response;
 					}
+				}
+			});
+			var fetchPromise = fetch(config.wasmUrl);
+
+			var compileManual = function compileManual() {
+				fetchPromise.then(function (result) {
+					return result.arrayBuffer();
+				}).then(function (buffer) {
+					return WebAssembly.compile(buffer);
+				}).then(function (module_) {
+					if (basisCode) {
+						sendResponse(basisCode, module_);
+					} else {
+						module = module_;
+					}
+				}).catch(function (err) {
+					callback(err, null);
 				});
 			};
 
 			if (WebAssembly.compileStreaming) {
-				WebAssembly.compileStreaming(fetch(wasmUrl)).then(function (result) {
-					compiledModule = result;
-					downloadCompleted();
-				}).catch(function (reason) {
-					console.error(reason);
-					console.warn('compileStreaming() failed for ' + wasmUrl + ', falling back to arraybuffer download...');
-					performHttpDownload();
+				WebAssembly.compileStreaming(fetchPromise).then(function (module_) {
+					if (basisCode) {
+						sendResponse(basisCode, module_);
+					} else {
+						module = module_;
+					}
+				}).catch(function (err) {
+					compileManual();
 				});
 			} else {
-				performHttpDownload();
+				compileManual();
 			}
-
-			http.get(glueUrl, {
-				cache: true,
-				responseType: "text",
-				retry: false
-			}, function (err, result) {
-				glueCode = result;
-				downloadCompleted();
-			});
 		} else {
-			http.get(fallbackUrl, {
-				cache: true,
-				responseType: "text",
-				retry: false
-			}, function (err, result) {
-				if (result) {
-					basisInitialize(result, null, callback);
+			http.get(config.fallbackUrl, {
+				responseType: 'blob'
+			}, function (err, response) {
+				if (err) {
+					callback(err, null);
+				} else {
+					sendResponse(response, null);
 				}
 			});
 		}
-	}
+	};
 
-	function basisSetDownloadConfig(glueUrl, wasmUrl, fallbackUrl) {
-		downloadConfig = {
-			glueUrl: glueUrl,
-			wasmUrl: wasmUrl,
-			fallbackUrl: fallbackUrl
+	var BasisQueue = function () {
+		function BasisQueue() {
+			this.callbacks = {};
+			this.queue = [];
+			this.clients = [];
+		}
+
+		var _proto = BasisQueue.prototype;
+
+		_proto.enqueueJob = function enqueueJob(url, data, callback, options) {
+			if (this.callbacks.hasOwnProperty(url)) {
+				this.callbacks[url].push(callback);
+			} else {
+				this.callbacks[url] = [callback];
+				var job = {
+					url: url,
+					data: data,
+					options: options
+				};
+
+				if (this.clients.length > 0) {
+					this.clients.shift().run(job);
+				} else {
+					this.queue.push(job);
+				}
+			}
 		};
-	}
 
-	function basisDownloadFromConfig(callback) {
-		if (downloadConfig) {
-			basisDownload(downloadConfig.glueUrl, downloadConfig.wasmUrl, downloadConfig.fallbackUrl, callback);
-		} else {
+		_proto.enqueueClient = function enqueueClient(client) {
+			if (this.queue.length > 0) {
+				client.run(this.queue.shift());
+			} else {
+				this.clients.push(client);
+			}
+		};
+
+		_proto.handleResponse = function handleResponse(url, err, data) {
+			var callback = this.callbacks[url];
+
+			if (err) {
+				for (var i = 0; i < callback.length; ++i) {
+					callback[i](err);
+				}
+			} else {
+				if (data.format === PIXELFORMAT_R5_G6_B5 || data.format === PIXELFORMAT_R4_G4_B4_A4) {
+					data.levels = data.levels.map(function (v) {
+						return new Uint16Array(v);
+					});
+				} else {
+					data.levels = data.levels.map(function (v) {
+						return new Uint8Array(v);
+					});
+				}
+
+				for (var _i = 0; _i < callback.length; ++_i) {
+					callback[_i](null, data);
+				}
+			}
+
+			delete this.callbacks[url];
+		};
+
+		return BasisQueue;
+	}();
+
+	var BasisClient = function () {
+		function BasisClient(queue, config, eager) {
+			var _this = this;
+
+			this.queue = queue;
+			this.worker = new Worker(config.workerUrl);
+			this.worker.addEventListener('message', function (message) {
+				var data = message.data;
+
+				_this.queue.handleResponse(data.url, data.err, data.data);
+
+				if (!_this.eager) {
+					_this.queue.enqueueClient(_this);
+				}
+			});
+			this.worker.postMessage({
+				type: 'init',
+				config: config
+			});
+			this.eager = eager;
+		}
+
+		var _proto2 = BasisClient.prototype;
+
+		_proto2.run = function run(job) {
+			this.worker.postMessage({
+				type: 'transcode',
+				url: job.url,
+				format: job.format,
+				data: job.data,
+				options: job.options
+			}, [job.data]);
+
+			if (this.eager) {
+				this.queue.enqueueClient(this);
+			}
+		};
+
+		return BasisClient;
+	}();
+
+	var defaultNumWorkers = 1;
+	var defaultRgbPriority = ['etc1', 'etc2', 'astc', 'dxt', 'pvr', 'atc'];
+	var defaultRgbaPriority = ['astc', 'dxt', 'etc2', 'pvr', 'atc'];
+	var queue = new BasisQueue();
+	var lazyConfig = null;
+	var initializing = false;
+
+	function basisInitialize(config) {
+		if (initializing) {
+			return;
+		}
+
+		if (!config) {
+			config = lazyConfig || {};
+		} else if (config.lazyInit) {
+			lazyConfig = config;
+			return;
+		}
+
+		if (!config.glueUrl || !config.wasmUrl || !config.fallbackUrl) {
 			var modules = (window.config ? window.config.wasmModules : window.PRELOAD_MODULES) || [];
 			var wasmModule = modules.find(function (m) {
 				return m.moduleName === 'BASIS';
 			});
 
 			if (wasmModule) {
-				var urlBase = window.ASSET_PREFIX ? window.ASSET_PREFIX : "";
-				basisDownload(urlBase + wasmModule.glueUrl, urlBase + wasmModule.wasmUrl, urlBase + wasmModule.fallbackUrl, callback);
-			} else {
-				return false;
+				var urlBase = window.ASSET_PREFIX || "";
+
+				if (!config.glueUrl) {
+					config.glueUrl = urlBase + wasmModule.glueUrl;
+				}
+
+				if (!config.wasmUrl) {
+					config.wasmUrl = urlBase + wasmModule.wasmUrl;
+				}
+
+				if (!config.fallbackUrl) {
+					config.fallbackUrl = urlBase + wasmModule.fallbackUrl;
+				}
 			}
 		}
 
-		return true;
+		if (config.glueUrl || config.wasmUrl || config.fallbackUrl) {
+			initializing = true;
+			var numWorkers = Math.max(1, Math.min(16, config.numWorkers || defaultNumWorkers));
+			var eagerWorkers = config.numWorkers === 1 || (config.hasOwnProperty('eagerWorkers') ? config.eagerWorkers : true);
+			config.rgbPriority = config.rgbPriority || defaultRgbPriority;
+			config.rgbaPriority = config.rgbaPriority || defaultRgbaPriority;
+			prepareWorkerModules(config, function (err, clientConfig) {
+				if (err) {
+					console.error("failed to initialize basis worker: " + err);
+				} else {
+					for (var i = 0; i < numWorkers; ++i) {
+						queue.enqueueClient(new BasisClient(queue, clientConfig, eagerWorkers));
+					}
+				}
+			});
+		}
 	}
 
-	function basisTranscode(url, data, callback, options) {
-		if (!worker) {
-			transcodeQueue.push({
-				url: url,
-				data: data,
-				callback: callback,
-				options: options
-			});
+	var deviceDetails = null;
 
-			if (!downloadInitiated) {
-				return basisDownloadFromConfig();
-			}
-		} else {
-			transcode(url, data, callback, options);
+	function basisTranscode(device, url, data, callback, options) {
+		basisInitialize();
+
+		if (!deviceDetails) {
+			deviceDetails = {
+				webgl2: device.webgl2,
+				formats: getCompressionFormats(device)
+			};
 		}
 
-		return true;
+		queue.enqueueJob(url, data, callback, {
+			deviceDetails: deviceDetails,
+			isGGGR: !!(options != null && options.isGGGR)
+		});
+		return initializing;
 	}
 
 	var BasisParser = function () {
-		function BasisParser(registry) {
+		function BasisParser(registry, device) {
+			this.device = device;
 			this.maxRetries = 0;
 		}
 
 		var _proto = BasisParser.prototype;
 
 		_proto.load = function load(url, callback, asset) {
+			var device = this.device;
 			var options = {
 				cache: true,
 				responseType: "arraybuffer",
@@ -37716,14 +37861,10 @@
 				if (err) {
 					callback(err, result);
 				} else {
-					var unswizzleGGGR = basisTargetFormat() === 'pvr' && asset && asset.file && asset.file.variants && asset.file.variants.basis && (asset.file.variants.basis.opt & 8) !== 0;
+					var _asset$file, _asset$file$variants, _asset$file$variants$;
 
-					if (unswizzleGGGR) {
-						asset.file.variants.basis.opt &= ~8;
-					}
-
-					var basisModuleFound = basisTranscode(url.load, result, callback, {
-						unswizzleGGGR: unswizzleGGGR
+					var basisModuleFound = basisTranscode(device, url.load, result, callback, {
+						isGGGR: ((asset == null ? void 0 : (_asset$file = asset.file) == null ? void 0 : (_asset$file$variants = _asset$file.variants) == null ? void 0 : (_asset$file$variants$ = _asset$file$variants.basis) == null ? void 0 : _asset$file$variants$.opt) & 8) !== 0
 					});
 
 					if (!basisModuleFound) {
@@ -38451,7 +38592,7 @@
 			this.parsers = {
 				dds: new LegacyDdsParser(assets),
 				ktx: new KtxParser(assets),
-				basis: new BasisParser(assets),
+				basis: new BasisParser(assets, device),
 				hdr: new HdrParser(assets)
 			};
 		}
@@ -38491,6 +38632,10 @@
 				});
 			} else {
 				_completePartialMipmapChain(texture);
+
+				if (data.unswizzledGGGR) {
+					asset.file.variants.basis.opt &= ~8;
+				}
 			}
 
 			return texture;
@@ -39560,6 +39705,15 @@
 		};
 
 		var _proto = I18n.prototype;
+
+		_proto.findAvailableLocale = function findAvailableLocale(desiredLocale) {
+			if (this._translations[desiredLocale]) {
+				return desiredLocale;
+			}
+
+			var lang = getLang(desiredLocale);
+			return this._findFallbackLocale(desiredLocale, lang);
+		};
 
 		_proto.getText = function getText(key, locale) {
 			var result = key;
@@ -41920,8 +42074,10 @@
 		var _proto = XrPlaneDetection.prototype;
 
 		_proto._onSessionEnd = function _onSessionEnd() {
-			for (var i = 0; i < this._planes.length; i++) {
-				this._planes[i].destroy();
+			if (this._planes) {
+				for (var i = 0; i < this._planes.length; i++) {
+					this._planes[i].destroy();
+				}
 			}
 
 			this._planesIndex.clear();
@@ -43370,7 +43526,7 @@
 
 			var i, j;
 
-			for (i = 0; i < clips.length; ++i) {
+			for (i = 0; i < order.length; ++i) {
 				var index = order[i];
 				var clip = clips[index];
 				var inputs = this._inputs[index];
@@ -45084,11 +45240,17 @@
 			key: "speed",
 			get: function get() {
 				return this._speed;
+			},
+			set: function set(value) {
+				this._speed = value;
 			}
 		}, {
 			key: "loop",
 			get: function get() {
 				return this._loop;
+			},
+			set: function set(value) {
+				this._loop = value;
 			}
 		}, {
 			key: "nodeCount",
@@ -45150,19 +45312,28 @@
 	}();
 
 	var AnimTransition = function () {
-		function AnimTransition(controller, from, to, time, priority, conditions, exitTime, transitionOffset, interruptionSource) {
-			if (interruptionSource === void 0) {
-				interruptionSource = ANIM_INTERRUPTION_NONE;
-			}
-
-			this._controller = controller;
+		function AnimTransition(_ref) {
+			var from = _ref.from,
+					to = _ref.to,
+					_ref$time = _ref.time,
+					time = _ref$time === void 0 ? 0 : _ref$time,
+					_ref$priority = _ref.priority,
+					priority = _ref$priority === void 0 ? 0 : _ref$priority,
+					_ref$conditions = _ref.conditions,
+					conditions = _ref$conditions === void 0 ? [] : _ref$conditions,
+					_ref$exitTime = _ref.exitTime,
+					exitTime = _ref$exitTime === void 0 ? null : _ref$exitTime,
+					_ref$transitionOffset = _ref.transitionOffset,
+					transitionOffset = _ref$transitionOffset === void 0 ? null : _ref$transitionOffset,
+					_ref$interruptionSour = _ref.interruptionSource,
+					interruptionSource = _ref$interruptionSour === void 0 ? ANIM_INTERRUPTION_NONE : _ref$interruptionSour;
 			this._from = from;
 			this._to = to;
 			this._time = time;
 			this._priority = priority;
-			this._conditions = conditions || [];
-			this._exitTime = exitTime || null;
-			this._transitionOffset = transitionOffset || null;
+			this._conditions = conditions;
+			this._exitTime = exitTime;
+			this._transitionOffset = transitionOffset;
 			this._interruptionSource = interruptionSource;
 		}
 
@@ -45214,48 +45385,6 @@
 			get: function get() {
 				return !!this.exitTime;
 			}
-		}, {
-			key: "hasConditionsMet",
-			get: function get() {
-				var conditionsMet = true;
-				var i;
-
-				for (i = 0; i < this.conditions.length; i++) {
-					var condition = this.conditions[i];
-
-					var parameter = this._controller.findParameter(condition.parameterName);
-
-					switch (condition.predicate) {
-						case ANIM_GREATER_THAN:
-							conditionsMet = conditionsMet && parameter.value > condition.value;
-							break;
-
-						case ANIM_LESS_THAN:
-							conditionsMet = conditionsMet && parameter.value < condition.value;
-							break;
-
-						case ANIM_GREATER_THAN_EQUAL_TO:
-							conditionsMet = conditionsMet && parameter.value >= condition.value;
-							break;
-
-						case ANIM_LESS_THAN_EQUAL_TO:
-							conditionsMet = conditionsMet && parameter.value <= condition.value;
-							break;
-
-						case ANIM_EQUAL_TO:
-							conditionsMet = conditionsMet && parameter.value === condition.value;
-							break;
-
-						case ANIM_NOT_EQUAL_TO:
-							conditionsMet = conditionsMet && parameter.value !== condition.value;
-							break;
-					}
-
-					if (!conditionsMet) return conditionsMet;
-				}
-
-				return conditionsMet;
-			}
 		}]);
 
 		return AnimTransition;
@@ -45267,17 +45396,16 @@
 			this._states = {};
 			this._stateNames = [];
 			this._eventHandler = eventHandler;
-			var i;
 
-			for (i = 0; i < states.length; i++) {
+			for (var i = 0; i < states.length; i++) {
 				this._states[states[i].name] = new AnimState(this, states[i].name, states[i].speed, states[i].loop, states[i].blendTree);
 
 				this._stateNames.push(states[i].name);
 			}
 
 			this._transitions = transitions.map(function (transition) {
-				return new AnimTransition(this, transition.from, transition.to, transition.time, transition.priority, transition.conditions, transition.exitTime, transition.transitionOffset, transition.interruptionSource);
-			}.bind(this));
+				return new AnimTransition(_extends({}, transition));
+			});
 			this._findTransitionsFromStateCache = {};
 			this._findTransitionsBetweenStatesCache = {};
 			this._parameters = parameters;
@@ -45344,6 +45472,45 @@
 			return transitions;
 		};
 
+		_proto._transitionHasConditionsMet = function _transitionHasConditionsMet(transition) {
+			var conditionsMet = true;
+
+			for (var i = 0; i < transition.conditions.length; i++) {
+				var condition = transition.conditions[i];
+				var parameter = this.findParameter(condition.parameterName);
+
+				switch (condition.predicate) {
+					case ANIM_GREATER_THAN:
+						conditionsMet = conditionsMet && parameter.value > condition.value;
+						break;
+
+					case ANIM_LESS_THAN:
+						conditionsMet = conditionsMet && parameter.value < condition.value;
+						break;
+
+					case ANIM_GREATER_THAN_EQUAL_TO:
+						conditionsMet = conditionsMet && parameter.value >= condition.value;
+						break;
+
+					case ANIM_LESS_THAN_EQUAL_TO:
+						conditionsMet = conditionsMet && parameter.value <= condition.value;
+						break;
+
+					case ANIM_EQUAL_TO:
+						conditionsMet = conditionsMet && parameter.value === condition.value;
+						break;
+
+					case ANIM_NOT_EQUAL_TO:
+						conditionsMet = conditionsMet && parameter.value !== condition.value;
+						break;
+				}
+
+				if (!conditionsMet) return conditionsMet;
+			}
+
+			return conditionsMet;
+		};
+
 		_proto._findTransition = function _findTransition(from, to) {
 			var transitions = [];
 
@@ -45400,7 +45567,7 @@
 					}
 				}
 
-				return transition.hasConditionsMet;
+				return this._transitionHasConditionsMet(transition);
 			}.bind(this));
 
 			if (transitions.length > 0) {
@@ -45418,16 +45585,14 @@
 			return null;
 		};
 
-		_proto._updateStateFromTransition = function _updateStateFromTransition(transition) {
-			var i;
-			var j;
+		_proto.updateStateFromTransition = function updateStateFromTransition(transition) {
 			var state;
 			var animation;
 			var clip;
 			this.previousState = transition.from;
 			this.activeState = transition.to;
 
-			for (i = 0; i < transition.conditions.length; i++) {
+			for (var i = 0; i < transition.conditions.length; i++) {
 				var condition = transition.conditions[i];
 				var parameter = this.findParameter(condition.parameterName);
 
@@ -45448,27 +45613,27 @@
 
 				var interpolatedTime = Math.min(this._currTransitionTime / this._totalTransitionTime, 1.0);
 
-				for (i = 0; i < this._transitionPreviousStates.length; i++) {
+				for (var _i = 0; _i < this._transitionPreviousStates.length; _i++) {
 					if (!this._isTransitioning) {
-						this._transitionPreviousStates[i].weight = 1.0;
-					} else if (i !== this._transitionPreviousStates.length - 1) {
-						this._transitionPreviousStates[i].weight *= 1.0 - interpolatedTime;
+						this._transitionPreviousStates[_i].weight = 1.0;
+					} else if (_i !== this._transitionPreviousStates.length - 1) {
+						this._transitionPreviousStates[_i].weight *= 1.0 - interpolatedTime;
 					} else {
-						this._transitionPreviousStates[i].weight = interpolatedTime;
+						this._transitionPreviousStates[_i].weight = interpolatedTime;
 					}
 
-					state = this._findState(this._transitionPreviousStates[i].name);
+					state = this._findState(this._transitionPreviousStates[_i].name);
 
-					for (j = 0; j < state.animations.length; j++) {
+					for (var j = 0; j < state.animations.length; j++) {
 						animation = state.animations[j];
-						clip = this._animEvaluator.findClip(animation.name + '.previous.' + i);
+						clip = this._animEvaluator.findClip(animation.name + '.previous.' + _i);
 
 						if (!clip) {
 							clip = this._animEvaluator.findClip(animation.name);
-							clip.name = animation.name + '.previous.' + i;
+							clip.name = animation.name + '.previous.' + _i;
 						}
 
-						if (i !== this._transitionPreviousStates.length - 1) {
+						if (_i !== this._transitionPreviousStates.length - 1) {
 							clip.pause();
 						}
 					}
@@ -45493,13 +45658,13 @@
 			this._timeInState = timeInState;
 			this._timeInStateBefore = timeInStateBefore;
 
-			for (i = 0; i < activeState.animations.length; i++) {
-				clip = this._animEvaluator.findClip(activeState.animations[i].name);
+			for (var _i2 = 0; _i2 < activeState.animations.length; _i2++) {
+				clip = this._animEvaluator.findClip(activeState.animations[_i2].name);
 
 				if (!clip) {
-					var speed = Number.isFinite(activeState.animations[i].speed) ? activeState.animations[i].speed : activeState.speed;
-					clip = new AnimClip(activeState.animations[i].animTrack, this._timeInState, speed, true, activeState.loop, this._eventHandler);
-					clip.name = activeState.animations[i].name;
+					var speed = Number.isFinite(activeState.animations[_i2].speed) ? activeState.animations[_i2].speed : activeState.speed;
+					clip = new AnimClip(activeState.animations[_i2].animTrack, this._timeInState, speed, true, activeState.loop, this._eventHandler);
+					clip.name = activeState.animations[_i2].name;
 
 					this._animEvaluator.addClip(clip);
 				} else {
@@ -45509,7 +45674,7 @@
 				if (transition.time > 0) {
 					clip.blendWeight = 0.0;
 				} else {
-					clip.blendWeight = activeState.animations[i].normalizedWeight;
+					clip.blendWeight = activeState.animations[_i2].normalizedWeight;
 				}
 
 				clip.play();
@@ -45533,22 +45698,36 @@
 			if (!transition) {
 				this._animEvaluator.removeClips();
 
-				transition = new AnimTransition(this, null, newStateName, 0, 0);
+				transition = new AnimTransition({
+					from: null,
+					to: newStateName
+				});
 			}
 
-			this._updateStateFromTransition(transition);
+			this.updateStateFromTransition(transition);
 		};
 
-		_proto.assignAnimation = function assignAnimation(pathString, animTrack) {
+		_proto.assignAnimation = function assignAnimation(pathString, animTrack, speed, loop) {
 			var path = pathString.split('.');
 
 			var state = this._findState(path[0]);
 
 			if (!state) {
-				return;
+				state = new AnimState(this, path[0], 1.0);
+				this._states[path[0]] = state;
+
+				this._stateNames.push(path[0]);
 			}
 
 			state.addAnimation(path, animTrack);
+
+			if (speed !== undefined) {
+				state.speed = speed;
+			}
+
+			if (loop !== undefined) {
+				state.loop = loop;
+			}
 
 			if (!this._playing && this._activate && this.playable) {
 				this.play();
@@ -45604,8 +45783,6 @@
 				return;
 			}
 
-			var i;
-			var j;
 			var state;
 			var animation;
 			var clip;
@@ -45614,7 +45791,7 @@
 
 			var transition = this._findTransition(this._activeStateName);
 
-			if (transition) this._updateStateFromTransition(transition);
+			if (transition) this.updateStateFromTransition(transition);
 
 			if (this._isTransitioning) {
 				this._currTransitionTime += dt;
@@ -45622,11 +45799,11 @@
 				if (this._currTransitionTime <= this._totalTransitionTime) {
 					var interpolatedTime = this._currTransitionTime / this._totalTransitionTime;
 
-					for (i = 0; i < this._transitionPreviousStates.length; i++) {
+					for (var i = 0; i < this._transitionPreviousStates.length; i++) {
 						state = this._findState(this._transitionPreviousStates[i].name);
 						var stateWeight = this._transitionPreviousStates[i].weight;
 
-						for (j = 0; j < state.animations.length; j++) {
+						for (var j = 0; j < state.animations.length; j++) {
 							animation = state.animations[j];
 							clip = this._animEvaluator.findClip(animation.name + '.previous.' + i);
 
@@ -45638,8 +45815,8 @@
 
 					state = this.activeState;
 
-					for (i = 0; i < state.animations.length; i++) {
-						animation = state.animations[i];
+					for (var _i3 = 0; _i3 < state.animations.length; _i3++) {
+						animation = state.animations[_i3];
 						this._animEvaluator.findClip(animation.name).blendWeight = interpolatedTime * animation.normalizedWeight;
 					}
 				} else {
@@ -45647,15 +45824,15 @@
 					var activeClips = this.activeStateAnimations.length;
 					var totalClips = this._animEvaluator.clips.length;
 
-					for (i = 0; i < totalClips - activeClips; i++) {
+					for (var _i4 = 0; _i4 < totalClips - activeClips; _i4++) {
 						this._animEvaluator.removeClip(0);
 					}
 
 					this._transitionPreviousStates = [];
 					state = this.activeState;
 
-					for (i = 0; i < state.animations.length; i++) {
-						animation = state.animations[i];
+					for (var _i5 = 0; _i5 < state.animations.length; _i5++) {
+						animation = state.animations[_i5];
 						clip = this._animEvaluator.findClip(animation.name);
 
 						if (clip) {
@@ -45667,8 +45844,8 @@
 				if (this.activeState._blendTree.constructor !== AnimNode) {
 					state = this.activeState;
 
-					for (i = 0; i < state.animations.length; i++) {
-						animation = state.animations[i];
+					for (var _i6 = 0; _i6 < state.animations.length; _i6++) {
+						animation = state.animations[_i6];
 						clip = this._animEvaluator.findClip(animation.name);
 
 						if (clip) {
@@ -45729,9 +45906,8 @@
 			key: "playable",
 			get: function get() {
 				var playable = true;
-				var i;
 
-				for (i = 0; i < this._stateNames.length; i++) {
+				for (var i = 0; i < this._stateNames.length; i++) {
 					if (!this._states[this._stateNames[i]].playable) {
 						playable = false;
 					}
@@ -46100,12 +46276,12 @@
 			this._controller.update(dt);
 		};
 
-		_proto.assignAnimation = function assignAnimation(nodeName, animTrack) {
+		_proto.assignAnimation = function assignAnimation(nodeName, animTrack, speed, loop) {
 			if (animTrack.constructor !== AnimTrack) {
 				return;
 			}
 
-			this._controller.assignAnimation(nodeName, animTrack);
+			this._controller.assignAnimation(nodeName, animTrack, speed, loop);
 
 			if (this._component.activate && this._component.playable) {
 				this._component.playing = true;
@@ -46116,6 +46292,23 @@
 			if (this._controller.removeNodeAnimations(nodeName)) {
 				this._component.playing = false;
 			}
+		};
+
+		_proto.transition = function transition(to, time, transitionOffset) {
+			if (time === void 0) {
+				time = 0;
+			}
+
+			if (transitionOffset === void 0) {
+				transitionOffset = null;
+			}
+
+			this._controller.updateStateFromTransition(new AnimTransition({
+				from: this._controller.activeStateName,
+				to: to,
+				time: time,
+				transitionOffset: transitionOffset
+			}));
 		};
 
 		_createClass(AnimComponentLayer, [{
@@ -46191,28 +46384,33 @@
 	var AnimComponent = function (_Component) {
 		_inheritsLoose(AnimComponent, _Component);
 
-		function AnimComponent() {
-			return _Component.apply(this, arguments) || this;
+		function AnimComponent(system, entity) {
+			var _this;
+
+			_this = _Component.call(this, system, entity) || this;
+
+			_this._onStateGraphAssetChangeEvent = function (asset) {
+				_this._stateGraph = new AnimStateGraph(asset._data);
+
+				_this.loadStateGraph(_this._stateGraph);
+			};
+
+			_this._stateGraphAsset = null;
+			_this._animationAssets = {};
+			_this._speed = 1.0;
+			_this._activate = true;
+			_this._playing = false;
+			_this._rootBone = null;
+			_this._stateGraph = null;
+			_this._layers = [];
+			_this._layerIndices = {};
+			_this._parameters = {};
+			return _this;
 		}
 
 		var _proto = AnimComponent.prototype;
 
-		_proto.loadStateGraph = function loadStateGraph(stateGraph) {
-			var i;
-			var data = this.data;
-			data.stateGraph = stateGraph;
-			data.parameters = {};
-			var paramKeys = Object.keys(stateGraph.parameters);
-
-			for (i = 0; i < paramKeys.length; i++) {
-				var paramKey = paramKeys[i];
-				data.parameters[paramKey] = {
-					type: stateGraph.parameters[paramKey].type,
-					value: stateGraph.parameters[paramKey].value
-				};
-			}
-
-			data.layers = [];
+		_proto._addLayer = function _addLayer(name, states, transitions, order) {
 			var graph;
 
 			if (this.rootBone) {
@@ -46221,25 +46419,54 @@
 				graph = this.entity;
 			}
 
-			function addLayer(name, states, transitions, order) {
-				var animBinder = new AnimComponentBinder(this, graph);
-				var animEvaluator = new AnimEvaluator(animBinder);
-				var controller = new AnimController(animEvaluator, states, transitions, data.parameters, data.activate, this);
-				data.layers.push(new AnimComponentLayer(name, controller, this));
-				data.layerIndices[name] = order;
+			var animBinder = new AnimComponentBinder(this, graph);
+			var animEvaluator = new AnimEvaluator(animBinder);
+			var controller = new AnimController(animEvaluator, states, transitions, this._parameters, this._activate, this);
+
+			this._layers.push(new AnimComponentLayer(name, controller, this));
+
+			this._layerIndices[name] = order;
+		};
+
+		_proto.addLayer = function addLayer(layerName) {
+			var layer = this.findAnimationLayer(layerName);
+			if (layer) return layer;
+			var states = [{
+				"name": "START",
+				"speed": 1
+			}];
+			var transitions = [];
+
+			this._addLayer(layerName, states, transitions, this._layers.length);
+		};
+
+		_proto.loadStateGraph = function loadStateGraph(stateGraph) {
+			this._stateGraph = stateGraph;
+			this._parameters = {};
+			var paramKeys = Object.keys(stateGraph.parameters);
+
+			for (var i = 0; i < paramKeys.length; i++) {
+				var paramKey = paramKeys[i];
+				this._parameters[paramKey] = {
+					type: stateGraph.parameters[paramKey].type,
+					value: stateGraph.parameters[paramKey].value
+				};
 			}
 
-			for (i = 0; i < stateGraph.layers.length; i++) {
-				var layer = stateGraph.layers[i];
-				addLayer.bind(this)(layer.name, layer.states, layer.transitions, i);
+			this._layers = [];
+
+			for (var _i = 0; _i < stateGraph.layers.length; _i++) {
+				var layer = stateGraph.layers[_i];
+
+				this._addLayer.bind(this)(layer.name, layer.states, layer.transitions, _i);
 			}
 
 			this.setupAnimationAssets();
 		};
 
 		_proto.setupAnimationAssets = function setupAnimationAssets() {
-			for (var i = 0; i < this.data.layers.length; i++) {
-				var layer = this.data.layers[i];
+			for (var i = 0; i < this._layers.length; i++) {
+				var layer = this._layers[i];
 				var layerName = layer.name;
 
 				for (var j = 0; j < layer.states.length; j++) {
@@ -46248,8 +46475,8 @@
 					if (ANIM_CONTROL_STATES.indexOf(stateName) === -1) {
 						var stateKey = layerName + ':' + stateName;
 
-						if (!this.data.animationAssets[stateKey]) {
-							this.data.animationAssets[stateKey] = {
+						if (!this._animationAssets[stateKey]) {
+							this._animationAssets[stateKey] = {
 								asset: null
 							};
 						}
@@ -46261,13 +46488,13 @@
 		};
 
 		_proto.loadAnimationAssets = function loadAnimationAssets() {
-			for (var i = 0; i < this.data.layers.length; i++) {
-				var layer = this.data.layers[i];
+			for (var i = 0; i < this._layers.length; i++) {
+				var layer = this._layers[i];
 
 				for (var j = 0; j < layer.states.length; j++) {
 					var stateName = layer.states[j];
 					if (ANIM_CONTROL_STATES.indexOf(stateName) !== -1) continue;
-					var animationAsset = this.data.animationAssets[layer.name + ':' + stateName];
+					var animationAsset = this._animationAssets[layer.name + ':' + stateName];
 
 					if (!animationAsset || !animationAsset.asset) {
 						this.removeNodeAnimations(stateName, layer.name);
@@ -46300,13 +46527,13 @@
 		};
 
 		_proto.removeStateGraph = function removeStateGraph() {
-			this.data.stateGraph = null;
-			this.data.stateGraphAsset = null;
-			this.data.animationAssets = {};
-			this.data.layers = [];
-			this.data.layerIndices = {};
-			this.data.parameters = {};
-			this.data.playing = false;
+			this._stateGraph = null;
+			this._stateGraphAsset = null;
+			this._animationAssets = {};
+			this._layers = [];
+			this._layerIndices = {};
+			this._parameters = {};
+			this._playing = false;
 		};
 
 		_proto.resetStateGraph = function resetStateGraph() {
@@ -46319,28 +46546,104 @@
 		};
 
 		_proto.reset = function reset() {
-			this.data.parameters = Object.assign({}, this.data.stateGraph.parameters);
+			this._parameters = Object.assign({}, this._stateGraph.parameters);
 
-			for (var i = 0; i < this.data.layers.length; i++) {
-				var layerPlaying = this.data.layers[i].playing;
-				this.data.layers[i].reset();
-				this.data.layers[i].playing = layerPlaying;
+			for (var i = 0; i < this._layers.length; i++) {
+				var layerPlaying = this._layers[i].playing;
+
+				this._layers[i].reset();
+
+				this._layers[i].playing = layerPlaying;
 			}
 		};
 
 		_proto.rebind = function rebind() {
-			for (var i = 0; i < this.data.layers.length; i++) {
-				this.data.layers[i].rebind();
+			for (var i = 0; i < this._layers.length; i++) {
+				this._layers[i].rebind();
 			}
 		};
 
 		_proto.findAnimationLayer = function findAnimationLayer(layerName) {
-			var layerIndex = this.data.layerIndices[layerName];
-			return this.data.layers[layerIndex] || null;
+			var layerIndex = this._layerIndices[layerName];
+			return this._layers[layerIndex] || null;
 		};
 
-		_proto.assignAnimation = function assignAnimation(nodeName, animTrack, layerName) {
-			if (!this.data.stateGraph) {
+		_proto.addAnimationState = function addAnimationState(nodeName, animTrack, speed, loop, layerName) {
+			if (speed === void 0) {
+				speed = 1;
+			}
+
+			if (loop === void 0) {
+				loop = true;
+			}
+
+			if (layerName === void 0) {
+				layerName = 'Base';
+			}
+
+			if (!this._stateGraph) {
+				this.loadStateGraph(new AnimStateGraph({
+					"layers": [{
+						"name": layerName,
+						"states": [{
+							"name": "START",
+							"speed": 1
+						}, {
+							"name": nodeName,
+							"speed": speed,
+							"loop": loop,
+							"defaultState": true
+						}],
+						"transitions": [{
+							"from": 'START',
+							"to": nodeName
+						}]
+					}],
+					"parameters": {}
+				}));
+			}
+
+			var layer = this.findAnimationLayer(layerName);
+
+			if (layer) {
+				layer.assignAnimation(nodeName, animTrack, speed, loop);
+			} else {
+				var _this$addLayer;
+
+				(_this$addLayer = this.addLayer(layerName)) == null ? void 0 : _this$addLayer.assignAnimation(nodeName, animTrack, speed, loop);
+			}
+		};
+
+		_proto.assignAnimation = function assignAnimation(nodeName, animTrack, layerName, speed, loop) {
+			if (speed === void 0) {
+				speed = 1;
+			}
+
+			if (loop === void 0) {
+				loop = true;
+			}
+
+			if (!this._stateGraph) {
+				this.loadStateGraph(new AnimStateGraph({
+					"layers": [{
+						"name": "Base",
+						"states": [{
+							"name": "START",
+							"speed": 1
+						}, {
+							"name": nodeName,
+							"speed": speed,
+							"loop": loop,
+							"defaultState": true
+						}],
+						"transitions": [{
+							"from": 'START',
+							"to": nodeName
+						}]
+					}],
+					"parameters": {}
+				}));
+				this.baseLayer.assignAnimation(nodeName, animTrack);
 				return;
 			}
 
@@ -46350,7 +46653,7 @@
 				return;
 			}
 
-			layer.assignAnimation(nodeName, animTrack);
+			layer.assignAnimation(nodeName, animTrack, speed, loop);
 		};
 
 		_proto.removeNodeAnimations = function removeNodeAnimations(nodeName, layerName) {
@@ -46364,7 +46667,7 @@
 		};
 
 		_proto.getParameterValue = function getParameterValue(name, type) {
-			var param = this.data.parameters[name];
+			var param = this._parameters[name];
 
 			if (param && param.type === type) {
 				return param.value;
@@ -46372,7 +46675,7 @@
 		};
 
 		_proto.setParameterValue = function setParameterValue(name, type, value) {
-			var param = this.data.parameters[name];
+			var param = this._parameters[name];
 
 			if (param && param.type === type) {
 				param.value = value;
@@ -46418,33 +46721,26 @@
 			this.setParameterValue(name, ANIM_PARAMETER_TRIGGER, false);
 		};
 
-		_createClass(AnimComponent, [{
-			key: "rootBone",
-			get: function get() {
-				return this.data.rootBone;
-			},
-			set: function set(value) {
-				if (typeof value === 'string') {
-					var entity = this.entity.root.findByGuid(value);
-					this.data.rootBone = entity;
-				} else if ((value == null ? void 0 : value.constructor.name) === 'Entity') {
-					this.data.rootBone = value;
-				} else {
-					this.data.rootBone = null;
-				}
-
-				this.rebind();
+		_proto.onBeforeRemove = function onBeforeRemove() {
+			if (Number.isFinite(this._stateGraphAsset)) {
+				this.system.app.assets.get(this._stateGraphAsset).off('change', this._onStateGraphAssetChangeEvent);
 			}
-		}, {
+		};
+
+		_createClass(AnimComponent, [{
 			key: "stateGraphAsset",
 			get: function get() {
-				return this.data.stateGraphAsset;
+				return this._stateGraphAsset;
 			},
 			set: function set(value) {
+				var _this2 = this;
+
 				if (value === null) {
 					this.removeStateGraph();
 					return;
 				}
+
+				if (this._stateGraphAsset) this.system.app.assets.get(this._stateGraphAsset).off('change', this._onStateGraphAssetChangeEvent);
 
 				var _id;
 
@@ -46463,48 +46759,116 @@
 					_asset = this.system.app.assets.get(_id);
 				}
 
-				if (!_asset || this.data.stateGraphAsset === _id) {
+				if (!_asset || this._stateGraphAsset === _id) {
 					return;
 				}
 
 				if (_asset.resource) {
-					this.data.stateGraph = _asset.resource;
-					this.loadStateGraph(this.data.stateGraph);
+					this._stateGraph = _asset.resource;
+					this.loadStateGraph(this._stateGraph);
 
-					_asset.on('change', function (asset) {
-						this.data.stateGraph = new AnimStateGraph(asset._data);
-						this.loadStateGraph(this.data.stateGraph);
-					}.bind(this));
+					_asset.on('change', this._onStateGraphAssetChangeEvent);
 				} else {
 					_asset.once('load', function (asset) {
-						this.data.stateGraph = asset.resource;
-						this.loadStateGraph(this.data.stateGraph);
-					}.bind(this));
+						_this2._stateGraph = asset.resource;
 
-					_asset.on('change', function (asset) {
-						this.data.stateGraph = new AnimStateGraph(asset._data);
-						this.loadStateGraph(this.data.stateGraph);
-					}.bind(this));
+						_this2.loadStateGraph(_this2._stateGraph);
+					});
+
+					_asset.on('change', this._onStateGraphAssetChangeEvent);
 
 					this.system.app.assets.load(_asset);
 				}
 
-				this.data.stateGraphAsset = _id;
+				this._stateGraphAsset = _id;
 			}
 		}, {
 			key: "animationAssets",
 			get: function get() {
-				return this.data.animationAssets;
+				return this._animationAssets;
 			},
 			set: function set(value) {
-				this.data.animationAssets = value;
+				this._animationAssets = value;
 				this.loadAnimationAssets();
+			}
+		}, {
+			key: "speed",
+			get: function get() {
+				return this._speed;
+			},
+			set: function set(value) {
+				this._speed = value;
+			}
+		}, {
+			key: "activate",
+			get: function get() {
+				return this._activate;
+			},
+			set: function set(value) {
+				this._activate = value;
+			}
+		}, {
+			key: "playing",
+			get: function get() {
+				return this._playing;
+			},
+			set: function set(value) {
+				this._playing = value;
+			}
+		}, {
+			key: "rootBone",
+			get: function get() {
+				return this._rootBone;
+			},
+			set: function set(value) {
+				if (typeof value === 'string') {
+					var entity = this.entity.root.findByGuid(value);
+					this._rootBone = entity;
+				} else if ((value == null ? void 0 : value.constructor.name) === 'Entity') {
+					this._rootBone = value;
+				} else {
+					this._rootBone = null;
+				}
+
+				this.rebind();
+			}
+		}, {
+			key: "stateGraph",
+			get: function get() {
+				return this._stateGraph;
+			},
+			set: function set(value) {
+				this._stateGraph = value;
+			}
+		}, {
+			key: "layers",
+			get: function get() {
+				return this._layers;
+			},
+			set: function set(value) {
+				this._layers = value;
+			}
+		}, {
+			key: "layerIndicies",
+			get: function get() {
+				return this._layerIndicies;
+			},
+			set: function set(value) {
+				this._layerIndicies = value;
+			}
+		}, {
+			key: "parameters",
+			get: function get() {
+				return this._parameters;
+			},
+			set: function set(value) {
+				this._parameters = value;
 			}
 		}, {
 			key: "playable",
 			get: function get() {
-				for (var i = 0; i < this.data.layers.length; i++) {
-					if (!this.data.layers[i].playable) {
+				for (var i = 0; i < this._layers.length; i++) {
+					if (!this._layers[i].playable) {
 						return false;
 					}
 				}
@@ -46514,8 +46878,8 @@
 		}, {
 			key: "baseLayer",
 			get: function get() {
-				if (this.data.layers.length > 0) {
-					return this.data.layers[0];
+				if (this._layers.length > 0) {
+					return this._layers[0];
 				}
 
 				return null;
@@ -46526,20 +46890,10 @@
 	}(Component);
 
 	var AnimComponentData = function AnimComponentData() {
-		this.stateGraphAsset = null;
-		this.animationAssets = {};
-		this.speed = 1.0;
-		this.activate = true;
 		this.enabled = true;
-		this.playing = false;
-		this.rootBone = null;
-		this.stateGraph = null;
-		this.layers = [];
-		this.layerIndices = {};
-		this.parameters = {};
 	};
 
-	var _schema$k = ['enabled', 'speed', 'activate', 'playing'];
+	var _schema$k = ['enabled'];
 
 	var AnimComponentSystem = function (_ComponentSystem) {
 		_inheritsLoose(AnimComponentSystem, _ComponentSystem);
@@ -46562,20 +46916,30 @@
 		var _proto = AnimComponentSystem.prototype;
 
 		_proto.initializeComponentData = function initializeComponentData(component, data, properties) {
-			properties = ['activate', 'enabled', 'speed', 'playing'];
 
-			_ComponentSystem.prototype.initializeComponentData.call(this, component, data, properties);
+			_ComponentSystem.prototype.initializeComponentData.call(this, component, data, _schema$k);
 
-			if (data.stateGraphAsset) {
-				component.stateGraphAsset = data.stateGraphAsset;
+			var complexProperties = ['animationAssets', 'stateGraph', 'layers'];
+			Object.keys(data).forEach(function (key) {
+				if (complexProperties.includes(key)) return;
+				component[key] = data[key];
+			});
+
+			if (data.stateGraph) {
+				component.stateGraph = data.stateGraph;
+				component.loadStateGraph(component.stateGraph);
 			}
 
-			if (data.animationAssets) {
-				component.animationAssets = Object.assign(component.data.animationAssets, data.animationAssets);
-			}
-
-			if (data.rootBone) {
-				component.rootBone = data.rootBone;
+			if (data.layers) {
+				data.layers.forEach(function (layer, i) {
+					layer._controller.states.forEach(function (stateKey) {
+						layer._controller._states[stateKey]._animationList.forEach(function (node) {
+							component.layers[i].assignAnimation(node.name, node.animTrack);
+						});
+					});
+				});
+			} else if (data.animationAssets) {
+				component.animationAssets = Object.assign(component.animationAssets, data.animationAssets);
 			}
 		};
 
@@ -46584,16 +46948,36 @@
 
 			for (var id in components) {
 				if (components.hasOwnProperty(id)) {
-					var component = components[id];
+					var component = components[id].entity.anim;
 					var componentData = component.data;
 
-					if (componentData.enabled && component.entity.enabled && componentData.playing) {
-						for (var i = 0; i < componentData.layers.length; i++) {
-							componentData.layers[i].update(dt * componentData.speed);
+					if (componentData.enabled && component.entity.enabled && component.playing) {
+						for (var i = 0; i < component.layers.length; i++) {
+							component.layers[i].update(dt * component.speed);
 						}
 					}
 				}
 			}
+		};
+
+		_proto.cloneComponent = function cloneComponent(entity, clone) {
+			var data = {
+				stateGraphAsset: entity.anim.stateGraphAsset,
+				animationAssets: entity.anim.animationAssets,
+				speed: entity.anim.speed,
+				activate: entity.anim.activate,
+				playing: entity.anim.playing,
+				rootBone: entity.anim.rootBone,
+				stateGraph: entity.anim.stateGraph,
+				layers: entity.anim.layers,
+				layerIndices: entity.anim.layerIndices,
+				parameters: entity.anim.parameters
+			};
+			this.addComponent(clone, data);
+		};
+
+		_proto.onBeforeRemove = function onBeforeRemove(entity, component) {
+			component.onBeforeRemove();
 		};
 
 		return AnimComponentSystem;
@@ -69455,7 +69839,7 @@
 		};
 
 		_proto2.updateCanvasSize = function updateCanvasSize() {
-			if (this.vr && this.vr.display || this.xr.active && this.xr.type === XRTYPE_VR) {
+			if (!this._allowResize || this.xr.active) {
 				return;
 			}
 
@@ -69889,7 +70273,7 @@
 			this.scenes = null;
 			this.lightmapper.destroy();
 			this.lightmapper = null;
-			this.batcher.destroyManager();
+			this.batcher.destroy();
 			this.batcher = null;
 			this._entityIndex = {};
 			this.defaultLayerDepth.onPreRenderOpaque = null;
@@ -73648,6 +74032,11 @@
 		Skin: Skin,
 		SkinInstance: SkinInstance
 	};
+	Object.defineProperty(Batch.prototype, 'model', {
+		get: function get() {
+			return null;
+		}
+	});
 
 	Morph.prototype.getTarget = function (index) {
 		return this.targets[index];
@@ -74002,6 +74391,15 @@
 			this.gravity.set(arguments[0], arguments[1], arguments[2]);
 		}
 	};
+
+	function basisSetDownloadConfig(glueUrl, wasmUrl, fallbackUrl) {
+		basisInitialize({
+			glueUrl: glueUrl,
+			wasmUrl: wasmUrl,
+			fallbackUrl: fallbackUrl,
+			lazyInit: true
+		});
+	}
 
 	exports.ABSOLUTE_URL = ABSOLUTE_URL;
 	exports.ACTION_GAMEPAD = ACTION_GAMEPAD;
@@ -74847,11 +75245,8 @@
 	exports.apps = apps;
 	exports.asset = asset;
 	exports.audio = audio;
-	exports.basisDownload = basisDownload;
-	exports.basisDownloadFromConfig = basisDownloadFromConfig;
 	exports.basisInitialize = basisInitialize;
 	exports.basisSetDownloadConfig = basisSetDownloadConfig;
-	exports.basisTargetFormat = basisTargetFormat;
 	exports.basisTranscode = basisTranscode;
 	exports.calculateNormals = calculateNormals;
 	exports.calculateTangents = calculateTangents;
