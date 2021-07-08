@@ -404,6 +404,10 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+            } else if ( modelName == 'PearlGoldOliveCoveredGlassDish' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Pathtracer', scale));
             } else if ( modelName == 'StainedGlassLamp' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
@@ -431,7 +435,8 @@ function replaceContentName(type) {
         "glTF-IBL": "[glTF-IBL]",
         "glTF-BasisU": "[BasisU]",
         "glTF-JPG-PNG": "[JPG/PNG]",
-        "glTF-KTX-BasisU": "[KTX/BasisU]"
+        "glTF-KTX-BasisU": "[KTX/BasisU]",
+        "glTF-Pathtracer": "[Pathtracer]"
     }
     return hashMap[type] ? hashMap[type] : type;
 }
