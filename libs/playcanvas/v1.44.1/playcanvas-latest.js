@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.44.0 revision 398d9a6
+ * PlayCanvas Engine v1.44.1 revision 3e94e72
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -637,8 +637,8 @@
 		return result;
 	}();
 
-	var version = "1.44.0";
-	var revision = "398d9a6";
+	var version = "1.44.1";
+	var revision = "3e94e72";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -37280,8 +37280,6 @@
 	}();
 
 	function BasisWorker() {
-		var _basisToEngineMapping;
-
 		var BASIS_FORMAT = {
 			cTFETC1: 0,
 			cTFETC2: 1,
@@ -37295,20 +37293,6 @@
 			cTFRGBA32: 13,
 			cTFRGB565: 14,
 			cTFRGBA4444: 16
-		};
-		var PIXEL_FORMAT = {
-			ETC1: 21,
-			ETC2_RGBA: 23,
-			DXT1: 8,
-			DXT5: 10,
-			PVRTC_4BPP_RGB_1: 26,
-			PVRTC_4BPP_RGBA_1: 27,
-			ASTC_4x4: 28,
-			ATC_RGB: 29,
-			ATC_RGBA: 30,
-			R8_G8_B8_A8: 7,
-			R5_G6_B5: 3,
-			R4_G4_B4_A4: 5
 		};
 		var opaqueMapping = {
 			astc: BASIS_FORMAT.cTFASTC_4x4,
@@ -37328,7 +37312,61 @@
 			atc: BASIS_FORMAT.cTFATC_RGBA_INTERPOLATED_ALPHA,
 			none: BASIS_FORMAT.cTFRGBA4444
 		};
-		var basisToEngineMapping = (_basisToEngineMapping = {}, _basisToEngineMapping[BASIS_FORMAT.cTFETC1] = PIXEL_FORMAT.ETC1, _basisToEngineMapping[BASIS_FORMAT.cTFETC2] = PIXEL_FORMAT.ETC2_RGBA, _basisToEngineMapping[BASIS_FORMAT.cTFBC1] = PIXEL_FORMAT.DXT1, _basisToEngineMapping[BASIS_FORMAT.cTFBC3] = PIXEL_FORMAT.DXT5, _basisToEngineMapping[BASIS_FORMAT.cTFPVRTC1_4_RGB] = PIXEL_FORMAT.PVRTC_4BPP_RGB_1, _basisToEngineMapping[BASIS_FORMAT.cTFPVRTC1_4_RGBA] = PIXEL_FORMAT.PVRTC_4BPP_RGBA_1, _basisToEngineMapping[BASIS_FORMAT.cTFASTC_4x4] = PIXEL_FORMAT.ASTC_4x4, _basisToEngineMapping[BASIS_FORMAT.cTFATC_RGB] = PIXEL_FORMAT.ATC_RGB, _basisToEngineMapping[BASIS_FORMAT.cTFATC_RGBA_INTERPOLATED_ALPHA] = PIXEL_FORMAT.ATC_RGBA, _basisToEngineMapping[BASIS_FORMAT.cTFRGBA32] = PIXEL_FORMAT.R8_G8_B8_A8, _basisToEngineMapping[BASIS_FORMAT.cTFRGB565] = PIXEL_FORMAT.R5_G6_B5, _basisToEngineMapping[BASIS_FORMAT.cTFRGBA4444] = PIXEL_FORMAT.R4_G4_B4_A4, _basisToEngineMapping);
+		var PIXEL_FORMAT = {
+			ETC1: 21,
+			ETC2_RGB: 22,
+			ETC2_RGBA: 23,
+			DXT1: 8,
+			DXT5: 10,
+			PVRTC_4BPP_RGB_1: 26,
+			PVRTC_4BPP_RGBA_1: 27,
+			ASTC_4x4: 28,
+			ATC_RGB: 29,
+			ATC_RGBA: 30,
+			R8_G8_B8_A8: 7,
+			R5_G6_B5: 3,
+			R4_G4_B4_A4: 5
+		};
+
+		var basisToEngineMapping = function basisToEngineMapping(basisFormat, deviceDetails) {
+			switch (basisFormat) {
+				case BASIS_FORMAT.cTFETC1:
+					return deviceDetails.formats.etc1 ? PIXEL_FORMAT.ETC1 : PIXEL_FORMAT.ETC2_RGB;
+
+				case BASIS_FORMAT.cTFETC2:
+					return PIXEL_FORMAT.ETC2_RGBA;
+
+				case BASIS_FORMAT.cTFBC1:
+					return PIXEL_FORMAT.DXT1;
+
+				case BASIS_FORMAT.cTFBC3:
+					return PIXEL_FORMAT.DXT5;
+
+				case BASIS_FORMAT.cTFPVRTC1_4_RGB:
+					return PIXEL_FORMAT.PVRTC_4BPP_RGB_1;
+
+				case BASIS_FORMAT.cTFPVRTC1_4_RGBA:
+					return PIXEL_FORMAT.PVRTC_4BPP_RGBA_1;
+
+				case BASIS_FORMAT.cTFASTC_4x4:
+					return PIXEL_FORMAT.ASTC_4x4;
+
+				case BASIS_FORMAT.cTFATC_RGB:
+					return PIXEL_FORMAT.ATC_RGB;
+
+				case BASIS_FORMAT.cTFATC_RGBA_INTERPOLATED_ALPHA:
+					return PIXEL_FORMAT.ATC_RGBA;
+
+				case BASIS_FORMAT.cTFRGBA32:
+					return PIXEL_FORMAT.R8_G8_B8_A8;
+
+				case BASIS_FORMAT.cTFRGB565:
+					return PIXEL_FORMAT.R5_G6_B5;
+
+				case BASIS_FORMAT.cTFRGBA4444:
+					return PIXEL_FORMAT.R4_G4_B4_A4;
+			}
+		};
 
 		var unswizzleGGGR = function unswizzleGGGR(data) {
 			var genB = function genB(R, G) {
@@ -37385,7 +37423,7 @@
 						return 'etc2';
 					}
 				} else {
-					if (deviceDetails.formats.etc1) {
+					if (deviceDetails.formats.etc1 || deviceDetails.formats.etc2) {
 						return 'etc1';
 					}
 				}
@@ -37475,7 +37513,7 @@
 
 			var compressedFormat = isCompressedFormat(basisFormat);
 			return {
-				format: basisToEngineMapping[basisFormat],
+				format: basisToEngineMapping(basisFormat, options.deviceDetails),
 				width: compressedFormat ? width + 3 & ~3 : width,
 				height: compressedFormat ? height + 3 & ~3 : height,
 				levels: levelData,
