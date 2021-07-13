@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.44.1 revision 3e94e72
+ * PlayCanvas Engine v1.44.2 revision 7758ea1
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -637,8 +637,8 @@
 		return result;
 	}();
 
-	var version = "1.44.1";
-	var revision = "3e94e72";
+	var version = "1.44.2";
+	var revision = "7758ea1";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -29662,13 +29662,52 @@
 			return _this;
 		}
 
+		var _proto = Render.prototype;
+
+		_proto.destroy = function destroy() {
+			this.meshes = null;
+		};
+
+		_proto.decRefMeshes = function decRefMeshes() {
+			if (this._meshes) {
+				var count = this._meshes.length;
+
+				for (var i = 0; i < count; i++) {
+					var mesh = this._meshes[i];
+
+					if (mesh) {
+						mesh.decRefCount();
+
+						if (mesh.getRefCount() < 1) {
+							mesh.destroy();
+							this._meshes[i] = null;
+						}
+					}
+				}
+			}
+		};
+
+		_proto.incRefMeshes = function incRefMeshes() {
+			if (this._meshes) {
+				var count = this._meshes.length;
+
+				for (var i = 0; i < count; i++) {
+					if (this._meshes[i]) {
+						this._meshes[i].incRefCount();
+					}
+				}
+			}
+		};
+
 		_createClass(Render, [{
 			key: "meshes",
 			get: function get() {
 				return this._meshes;
 			},
 			set: function set(value) {
+				this.decRefMeshes();
 				this._meshes = value;
+				this.incRefMeshes();
 				this.fire('set:meshes', value);
 			}
 		}]);
@@ -35119,8 +35158,14 @@
 			for (i = 0; i < TEXTURES.length; i++) {
 				name = TEXTURES[i];
 				assetReference = material._assetReferences[name];
+				var dataAssetId = data[name];
+				var materialTexture = material[name];
 
-				if (data[name] && (!materialAsset.resource[name] || materialAsset.resource[name] === this._getPlaceholderTexture(name, materialAsset))) {
+				var isPlaceHolderTexture = materialTexture === this._getPlaceholderTexture(name, materialAsset);
+
+				var dataValidated = data.validated;
+
+				if (dataAssetId && (!materialTexture || !dataValidated || isPlaceHolderTexture)) {
 					if (!assetReference) {
 						assetReference = new AssetReference(name, materialAsset, assets, {
 							load: this._onTextureLoad,
@@ -35132,9 +35177,9 @@
 					}
 
 					if (pathMapping) {
-						assetReference.url = materialAsset.getAbsoluteUrl(data[name]);
+						assetReference.url = materialAsset.getAbsoluteUrl(dataAssetId);
 					} else {
-						assetReference.id = data[name];
+						assetReference.id = dataAssetId;
 					}
 
 					if (assetReference.asset) {
@@ -36123,7 +36168,7 @@
 		renderAsset.registry.off('load:' + containerAsset.id, onContainerAssetLoaded, renderAsset);
 
 		if (renderAsset.resource) {
-			renderAsset.resource.meshes = null;
+			renderAsset.resource.destroy();
 		}
 	}
 
@@ -46550,11 +46595,11 @@
 								animTrack.events = new AnimEvents(Object.values(asset.data.events));
 							}
 
-							this.assignAnimation(stateName, animTrack, layer.name);
+							this.findAnimationLayer(layer.name).assignAnimation(stateName, animTrack);
 						} else {
 							asset.once('load', function (layerName, stateName) {
 								return function (asset) {
-									this.assignAnimation(stateName, asset.resource, layerName);
+									this.findAnimationLayer(layerName).assignAnimation(stateName, asset.resource);
 								}.bind(this);
 							}.bind(this)(layer.name, stateName));
 							this.system.app.assets.load(asset);
