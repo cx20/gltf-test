@@ -162,15 +162,15 @@ function init() {
             }
         }
         const hdrUrls = [
-            'specular_right_0.hdr',
-            'specular_left_0.hdr',
-            'specular_top_0.hdr',
-            'specular_bottom_0.hdr',
-            'specular_front_0.hdr',
-            'specular_back_0.hdr'
+            'specular_posx_0.hdr',
+            'specular_negx_0.hdr',
+            'specular_posy_0.hdr',
+            'specular_negy_0.hdr',
+            'specular_posz_0.hdr',
+            'specular_negz_0.hdr'
         ];
         hdrCubeMap = new HDRCubeTextureLoader()
-            .setPath( 'https://rawcdn.githack.com/ux3d/glTF-Sample-Environments/4eace30f795fa77f6e059e3b31aa640c08a82133/papermill/specular/' )
+            .setPath( '../../textures/papermill_hdr/specular/' )
             .setDataType( THREE.UnsignedByteType )
             .load( hdrUrls, function () {
 
