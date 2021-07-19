@@ -240,8 +240,8 @@ function makeTutorialPbrModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
-                td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
+                //td.appendChild(document.createElement('br'));
+                //td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-pbrSpecularGlossiness', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
                 if (modelName == 'Avocado' || modelName == 'Lantern') {
@@ -397,10 +397,11 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-IBL', scale));
-            } else if ( modelName == 'ClearCoatTest' 
+            } else if ( modelName == 'ClearCoatTest'
                      || modelName == 'GlamVelvetSofa'
-                     || modelName == 'MaterialsVariantsChair' 
-                     || modelName == 'MaterialsVariantsShoe' ) {
+                     || modelName == 'MaterialsVariantsChair'
+                     || modelName == 'MaterialsVariantsShoe'
+                     || modelName == 'SpecGlossVsMetalRough' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
