@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.45.0 revision 52e8bbf
+ * PlayCanvas Engine v1.45.2 revision f9cd308
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -637,8 +637,8 @@
 		return result;
 	}();
 
-	var version = "1.45.0";
-	var revision = "52e8bbf";
+	var version = "1.45.2";
+	var revision = "f9cd308";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -15891,6 +15891,8 @@
 			if (!this.name) {
 				this.name = "Untitled";
 			}
+
+			this.flipY = !!options.flipY;
 		}
 
 		var _proto = RenderTarget.prototype;
@@ -21856,6 +21858,9 @@
 	var viewMat3 = new Mat3();
 	var viewProjMat = new Mat4();
 	var projMat;
+	var flipYMat = new Mat4().setScale(1, -1, 1);
+	var flippedViewProjMat = new Mat4();
+	var flippedSkyboxProjMat = new Mat4();
 	var viewInvL = new Mat4();
 	var viewInvR = new Mat4();
 	var viewL = new Mat4();
@@ -22180,7 +22185,17 @@
 				viewMat3.setFromMat4(viewMat);
 				this.viewId3.setValue(viewMat3.data);
 				viewProjMat.mul2(projMat, viewMat);
-				this.viewProjId.setValue(viewProjMat.data);
+
+				if (target && target.flipY) {
+					flippedViewProjMat.mul2(flipYMat, viewProjMat);
+					flippedSkyboxProjMat.mul2(flipYMat, camera.getProjectionMatrixSkybox());
+					this.viewProjId.setValue(flippedViewProjMat.data);
+					this.projSkyboxId.setValue(flippedSkyboxProjMat.data);
+				} else {
+					this.viewProjId.setValue(viewProjMat.data);
+					this.projSkyboxId.setValue(camera.getProjectionMatrixSkybox().data);
+				}
+
 				this.dispatchViewPos(camera._node.getPosition());
 				camera.frustum.setFromMat4(viewProjMat);
 			}
@@ -22866,7 +22881,7 @@
 			this.viewPosId.setValue(vp);
 		};
 
-		_proto.renderForward = function renderForward(camera, drawCalls, drawCallsCount, sortedLights, pass, cullingMask, drawCallback, layer) {
+		_proto.renderForward = function renderForward(camera, drawCalls, drawCallsCount, sortedLights, pass, cullingMask, drawCallback, layer, flipFaces) {
 			var device = this.device;
 			var scene = this.scene;
 			var vrDisplay = camera.vrDisplay;
@@ -22971,7 +22986,7 @@
 						}
 					}
 
-					this.setCullMode(camera._cullFaces, camera._flipFaces, drawCall);
+					this.setCullMode(camera._cullFaces, flipFaces, drawCall);
 					stencilFront = drawCall.stencilFront || material.stencilFront;
 					stencilBack = drawCall.stencilBack || material.stencilBack;
 
@@ -23672,6 +23687,8 @@
 				}
 
 				if (camera) {
+					var _renderAction, _renderAction$renderT;
+
 					if (renderAction.clearColor || renderAction.clearDepth || renderAction.clearStencil) {
 						var backupColor = camera.camera._clearColorBuffer;
 						var backupDepth = camera.camera._clearDepthBuffer;
@@ -23696,8 +23713,9 @@
 						renderAction.lightClusters.activate();
 					}
 
+					var flipFaces = !!(camera.camera._flipFaces ^ ((_renderAction = renderAction) == null ? void 0 : (_renderAction$renderT = _renderAction.renderTarget) == null ? void 0 : _renderAction$renderT.flipY));
 					var draws = this._forwardDrawCalls;
-					this.renderForward(camera.camera, visible.list, visible.length, layer._splitLights, layer.shaderPass, layer.cullingMask, layer.onDrawCall, layer);
+					this.renderForward(camera.camera, visible.list, visible.length, layer._splitLights, layer.shaderPass, layer.cullingMask, layer.onDrawCall, layer, flipFaces);
 					layer._forwardDrawCalls += this._forwardDrawCalls - draws;
 					device.setColorWrite(true, true, true, true);
 					device.setStencilTest(false);
@@ -30428,6 +30446,32 @@
 		return Asset;
 	}(EventHandler);
 
+	var GlbResources = function () {
+		function GlbResources(gltf) {
+			this.gltf = gltf;
+			this.nodes = null;
+			this.scenes = null;
+			this.animations = null;
+			this.textures = null;
+			this.materials = null;
+			this.renders = null;
+			this.skins = null;
+			this.lights = null;
+		}
+
+		var _proto = GlbResources.prototype;
+
+		_proto.destroy = function destroy() {
+			if (this.renders) {
+				this.renders.forEach(function (render) {
+					render.meshes = null;
+				});
+			}
+		};
+
+		return GlbResources;
+	}();
+
 	var isDataURI = function isDataURI(uri) {
 		return /^data:.*,.*$/i.test(uri);
 	};
@@ -31815,6 +31859,17 @@
 		return lights;
 	};
 
+	var linkSkins = function linkSkins(gltf, renders, skins) {
+		gltf.nodes.forEach(function (gltfNode) {
+			if (gltfNode.hasOwnProperty('mesh') && gltfNode.hasOwnProperty('skin')) {
+				var meshGroup = renders[gltfNode.mesh].meshes;
+				meshGroup.forEach(function (mesh) {
+					mesh.skin = skins[gltfNode.skin];
+				});
+			}
+		});
+	};
+
 	var createResources = function createResources(device, gltf, bufferViews, textureAssets, options, callback) {
 		var preprocess = options && options.global && options.global.preprocess;
 		var postprocess = options && options.global && options.global.postprocess;
@@ -31840,17 +31895,16 @@
 			renders[i].meshes = meshes[i];
 		}
 
-		var result = {
-			'gltf': gltf,
-			'nodes': nodes,
-			'scenes': scenes,
-			'animations': animations,
-			'textures': textureAssets,
-			'materials': materials,
-			'renders': renders,
-			'skins': skins,
-			'lights': lights
-		};
+		linkSkins(gltf, renders, skins);
+		var result = new GlbResources(gltf);
+		result.nodes = nodes;
+		result.scenes = scenes;
+		result.animations = animations;
+		result.textures = textureAssets;
+		result.materials = materials;
+		result.renders = renders;
+		result.skins = skins;
+		result.lights = lights;
 
 		if (postprocess) {
 			postprocess(gltf, result);
@@ -32407,13 +32461,15 @@
 
 		_proto.open = function open(url, data) {
 			if (path.getExtension(url).toLowerCase() === '.glb') {
-				var glb = GlbParser.parse("filename.glb", data, null);
+				var glbResources = GlbParser.parse("filename.glb", data, null);
 
-				if (!glb) {
-					return null;
+				if (glbResources) {
+					var animations = glbResources.animations;
+					glbResources.destroy();
+					return animations;
 				}
 
-				return glb.animations;
+				return null;
 			}
 
 			return this["_parseAnimationV" + data.animation.version](data);
@@ -33420,7 +33476,6 @@
 				if (gltfNode.hasOwnProperty('skin')) {
 					skinedMeshInstances.push({
 						meshInstance: meshInstance,
-						skin: skins[gltfNode.skin],
 						rootBone: root,
 						entity: entity
 					});
@@ -33496,8 +33551,7 @@
 			}
 
 			skinedMeshInstances.forEach(function (data) {
-				data.meshInstance.mesh.skin = data.skin;
-				data.meshInstance.skinInstance = SkinInstanceCache.createCachedSkinedInstance(data.skin, data.rootBone, data.entity);
+				data.meshInstance.skinInstance = SkinInstanceCache.createCachedSkinedInstance(data.meshInstance.mesh.skin, data.rootBone, data.entity);
 			});
 			return ContainerResource.createSceneHierarchy(sceneClones, "Entity");
 		};
@@ -35223,13 +35277,15 @@
 		var _proto = GlbModelParser.prototype;
 
 		_proto.parse = function parse(data) {
-			var glb = GlbParser.parse("filename.glb", data, this._device);
+			var glbResources = GlbParser.parse("filename.glb", data, this._device);
 
-			if (!glb) {
-				return null;
+			if (glbResources) {
+				var model = ContainerResource.createModel(glbResources, Material.defaultMaterial);
+				glbResources.destroy();
+				return model;
 			}
 
-			return ContainerResource.createModel(glb, Material.defaultMaterial);
+			return null;
 		};
 
 		return GlbModelParser;
