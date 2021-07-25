@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.45.2 revision f9cd308
+ * PlayCanvas Engine v1.45.3 revision 895add4
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -637,8 +637,8 @@
 		return result;
 	}();
 
-	var version = "1.45.2";
-	var revision = "f9cd308";
+	var version = "1.45.3";
+	var revision = "895add4";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -6554,7 +6554,7 @@
 
 	var TBNPS = "void getTBN() {\n\tdTBN = mat3(normalize(dTangentW), normalize(dBinormalW), normalize(dVertexNormalW));\n}\n";
 
-	var TBNderivativePS = "\nvoid getTBN() {\n\tvec2 uv = $UV;\n\tvec3 dp1 = dFdx( vPositionW );\n\tvec3 dp2 = dFdy( vPositionW );\n\tvec2 duv1 = dFdx( uv );\n\tvec2 duv2 = dFdy( uv );\n\tvec3 dp2perp = cross( dp2, dVertexNormalW );\n\tvec3 dp1perp = cross( dVertexNormalW, dp1 );\n\tvec3 T = dp2perp * duv1.x + dp1perp * duv2.x;\n\tvec3 B = dp2perp * duv1.y + dp1perp * duv2.y;\n\tfloat denom = max( dot(T,T), dot(B,B) );\n\tfloat invmax = (denom == 0.0) ? 0.0 : 1.0 / sqrt( denom );\n\tdTBN = mat3( T * invmax, B * invmax, dVertexNormalW );\n}\n";
+	var TBNderivativePS = "\nvoid getTBN() {\n\tvec2 uv = $UV;\n\tvec3 dp1 = dFdx( vPositionW );\n\tvec3 dp2 = dFdy( vPositionW );\n\tvec2 duv1 = dFdx( uv );\n\tvec2 duv2 = dFdy( uv );\n\tvec3 dp2perp = cross( dp2, dVertexNormalW );\n\tvec3 dp1perp = cross( dVertexNormalW, dp1 );\n\tvec3 T = dp2perp * duv1.x + dp1perp * duv2.x;\n\tvec3 B = dp2perp * duv1.y + dp1perp * duv2.y;\n\tfloat denom = max( dot(T,T), dot(B,B) );\n\tfloat invmax = (denom == 0.0) ? 0.0 : 1.0 / sqrt( denom );\n\tdTBN = mat3( T * invmax, -B * invmax, dVertexNormalW );\n}\n";
 
 	var TBNfastPS = "void getTBN() {\n\tdTBN = mat3(dTangentW, dBinormalW, dVertexNormalW);\n}\n";
 
@@ -31290,7 +31290,7 @@
 
 			for (map = 0; map < maps.length; ++map) {
 				material[maps[map] + 'MapTiling'] = new Vec2(scale[0], scale[1]);
-				material[maps[map] + 'MapOffset'] = new Vec2(offset[0], disableFlipV ? offset[1] : 1.0 - scale[1] - offset[1]);
+				material[maps[map] + 'MapOffset'] = new Vec2(offset[0], disableFlipV ? 1.0 - scale[1] - offset[1] : offset[1]);
 			}
 		};
 
