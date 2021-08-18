@@ -20,6 +20,8 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+const pcRoot = '../../libs/playcanvas/v1.46.0';
+
 // GUI
 let gui = new dat.GUI();
 
@@ -67,6 +69,10 @@ var Viewer = function (canvas) {
         var canvasSize = getCanvasSize();
         app.resizeCanvas(canvasSize.width, canvasSize.height);
     });
+
+    pc.basisSetDownloadConfig(pcRoot + '/basis/basis.wasm.js',
+                              pcRoot + '/basis/basis.wasm.wasm',
+                              pcRoot + '/basis/basis.js');
 
     // set a prefiltered cubemap as the skybox
     // Please refer to the following when setting a 6-sided texture different from the prefiltered texture
@@ -147,7 +153,7 @@ var Viewer = function (canvas) {
 
     // load orbit script
     app.assets.loadFromUrl(
-        "../../libs/playcanvas/v1.46.0/orbit-camera.js",
+        pcRoot + "/orbit-camera.js",
         "script",
         function (err, asset) {
             // setup orbit script component
@@ -439,9 +445,9 @@ function startViewer() {
 
 function main(){
     if (wasmSupported()) {
-        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.46.0/draco.wasm.js', '../../libs/playcanvas/v1.46.0/draco.wasm.wasm', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', pcRoot + '/draco.wasm.js', pcRoot + '/draco.wasm.wasm', startViewer);
     } else {
-        loadWasmModuleAsync('DracoDecoderModule', '../../libs/playcanvas/v1.46.0/draco.js', '', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', pcRoot + '/draco.js', '', startViewer);
     }
 }
 
