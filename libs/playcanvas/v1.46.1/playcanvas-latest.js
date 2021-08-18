@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.46.0 revision 47dbf32
+ * PlayCanvas Engine v1.46.1 revision 49b2ea2
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.46.0";
-	var revision = "47dbf32";
+	var version = "1.46.1";
+	var revision = "49b2ea2";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -31437,6 +31437,7 @@
 
 	var createLight = function createLight(gltfLight, node) {
 		var lightProps = {
+			enabled: false,
 			type: gltfLight.type === "point" ? "omni" : gltfLight.type,
 			color: gltfLight.hasOwnProperty('color') ? new Color(gltfLight.color) : Color.WHITE,
 			range: gltfLight.hasOwnProperty('range') ? gltfLight.range : Number.MAX_VALUE,
@@ -49274,6 +49275,7 @@
 				clearDepthBuffer: c.clearDepthBuffer,
 				clearStencilBuffer: c.clearStencilBuffer,
 				cullFaces: c.cullFaces,
+				enabled: c.enabled,
 				farClip: c.farClip,
 				flipFaces: c.flipFaces,
 				fov: c.fov,

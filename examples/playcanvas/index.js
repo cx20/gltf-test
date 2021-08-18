@@ -20,7 +20,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-const pcRoot = '../../libs/playcanvas/v1.46.0';
+const pcRoot = '../../libs/playcanvas/v1.46.1';
 
 // GUI
 let gui = new dat.GUI();
@@ -445,9 +445,9 @@ function startViewer() {
 
 function main(){
     if (wasmSupported()) {
-        loadWasmModuleAsync('DracoDecoderModule', pcRoot + '/draco.wasm.js', pcRoot + '/draco.wasm.wasm', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', pcRoot + '/draco/draco.wasm.js', pcRoot + '/draco/draco.wasm.wasm', startViewer);
     } else {
-        loadWasmModuleAsync('DracoDecoderModule', pcRoot + '/draco.js', '', startViewer);
+        loadWasmModuleAsync('DracoDecoderModule', pcRoot + '/draco/draco.js', '', startViewer);
     }
 }
 
