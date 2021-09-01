@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.46.1 revision 49b2ea2
+ * PlayCanvas Engine v1.46.2 revision ab94f3b
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.46.1";
-	var revision = "49b2ea2";
+	var version = "1.46.2";
+	var revision = "ab94f3b";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -6493,7 +6493,7 @@
 
 	var rgbmPS = "vec3 decodeRGBM(vec4 rgbm) {\n\tvec3 color = (8.0 * rgbm.a) * rgbm.rgb;\n\treturn color * color;\n}\nvec3 texture2DRGBM(sampler2D tex, vec2 uv) {\n\treturn decodeRGBM(texture2D(tex, uv));\n}\nvec3 textureCubeRGBM(samplerCube tex, vec3 uvw) {\n\treturn decodeRGBM(textureCube(tex, uvw));\n}\n";
 
-	var screenDepthPS = "uniform sampler2D uDepthMap;\n#ifndef SCREENSIZE\n#define SCREENSIZE\nuniform vec4 uScreenSize;\n#endif\n#ifndef VIEWMATRIX\n#define VIEWMATRIX\nuniform mat4 matrix_view;\n#endif\n#ifndef CAMERAPLANES\n#define CAMERAPLANES\nuniform vec4 camera_params;\n#endif\n#ifdef GL2\nfloat linearizeDepth(float z) {\n\tz = z * 2.0 - 1.0;\n\treturn 1.0 / (camera_params.z * z + camera_params.w);\n}\n#else\n#ifndef UNPACKFLOAT\n#define UNPACKFLOAT\nfloat unpackFloat(vec4 rgbaDepth) {\n\tconst vec4 bitShift = vec4(1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0);\n\treturn dot(rgbaDepth, bitShift);\n}\n#endif\n#endif\nfloat getLinearScreenDepth(vec2 uv) {\n\t#ifdef GL2\n\treturn linearizeDepth(texture2D(uDepthMap, uv).r) * camera_params.y;\n\t#else\n\treturn unpackFloat(texture2D(uDepthMap, uv)) * camera_params.y;\n\t#endif\n}\n#ifndef VERTEXSHADER\nfloat getLinearScreenDepth() {\n\tvec2 uv = gl_FragCoord.xy * uScreenSize.zw;\n\treturn getLinearScreenDepth(uv);\n}\n#endif\nfloat getLinearDepth(vec3 pos) {\n\treturn -(matrix_view * vec4(pos, 1.0)).z;\n}\n";
+	var screenDepthPS = "uniform highp sampler2D uDepthMap;\n#ifndef SCREENSIZE\n#define SCREENSIZE\nuniform vec4 uScreenSize;\n#endif\n#ifndef VIEWMATRIX\n#define VIEWMATRIX\nuniform mat4 matrix_view;\n#endif\n#ifndef CAMERAPLANES\n#define CAMERAPLANES\nuniform vec4 camera_params;\n#endif\n#ifdef GL2\nfloat linearizeDepth(float z) {\n\tz = z * 2.0 - 1.0;\n\treturn 1.0 / (camera_params.z * z + camera_params.w);\n}\n#else\n#ifndef UNPACKFLOAT\n#define UNPACKFLOAT\nfloat unpackFloat(vec4 rgbaDepth) {\n\tconst vec4 bitShift = vec4(1.0 / (256.0 * 256.0 * 256.0), 1.0 / (256.0 * 256.0), 1.0 / 256.0, 1.0);\n\treturn dot(rgbaDepth, bitShift);\n}\n#endif\n#endif\nfloat getLinearScreenDepth(vec2 uv) {\n\t#ifdef GL2\n\treturn linearizeDepth(texture2D(uDepthMap, uv).r) * camera_params.y;\n\t#else\n\treturn unpackFloat(texture2D(uDepthMap, uv)) * camera_params.y;\n\t#endif\n}\n#ifndef VERTEXSHADER\nfloat getLinearScreenDepth() {\n\tvec2 uv = gl_FragCoord.xy * uScreenSize.zw;\n\treturn getLinearScreenDepth(uv);\n}\n#endif\nfloat getLinearDepth(vec3 pos) {\n\treturn -(matrix_view * vec4(pos, 1.0)).z;\n}\n";
 
 	var shadowCascadesPS = "const float maxCascades = 4.0;\nmat4 cascadeShadowMat;\nvoid getShadowCascadeMatrix(mat4 shadowMatrixPalette[4], float shadowCascadeDistances[4], float shadowCascadeCount) {\n\tfloat depth = 1.0 / gl_FragCoord.w;\n\tfloat cascadeIndex = 0.0;\n\tfor (float i = 0.0; i < maxCascades; i++) {\n\t\tif (depth < shadowCascadeDistances[int(i)]) {\n\t\t\tcascadeIndex = i;\n\t\t\tbreak;\n\t\t}\n\t}\n\tcascadeIndex = min(cascadeIndex, shadowCascadeCount - 1.0);\n\t#ifdef GL2\n\t\tcascadeShadowMat = shadowMatrixPalette[int(cascadeIndex)];\n\t#else\n\t\tif (cascadeIndex == 0.0) {\n\t\t\tcascadeShadowMat = shadowMatrixPalette[0];\n\t\t}\n\t\telse if (cascadeIndex == 1.0) {\n\t\t\tcascadeShadowMat = shadowMatrixPalette[1];\n\t\t}\n\t\telse if (cascadeIndex == 2.0) {\n\t\t\tcascadeShadowMat = shadowMatrixPalette[2];\n\t\t}\n\t\telse {\n\t\t\tcascadeShadowMat = shadowMatrixPalette[3];\n\t\t}\n\t#endif\n}\nvoid fadeShadow(float shadowCascadeDistances[4]) {\n\tfloat depth = 1.0 / gl_FragCoord.w;\n\tif (depth > shadowCascadeDistances[int(maxCascades - 1.0)]) {\n\t\tdShadowCoord.z = -9999999.0;\n\t}\n}\n";
 
@@ -6555,7 +6555,7 @@
 
 	var TBNPS = "void getTBN() {\n\tdTBN = mat3(normalize(dTangentW), normalize(dBinormalW), normalize(dVertexNormalW));\n}\n";
 
-	var TBNderivativePS = "\nvoid getTBN() {\n\tvec2 uv = $UV;\n\tvec3 dp1 = dFdx( vPositionW );\n\tvec3 dp2 = dFdy( vPositionW );\n\tvec2 duv1 = dFdx( uv );\n\tvec2 duv2 = dFdy( uv );\n\tvec3 dp2perp = cross( dp2, dVertexNormalW );\n\tvec3 dp1perp = cross( dVertexNormalW, dp1 );\n\tvec3 T = dp2perp * duv1.x + dp1perp * duv2.x;\n\tvec3 B = dp2perp * duv1.y + dp1perp * duv2.y;\n\tfloat denom = max( dot(T,T), dot(B,B) );\n\tfloat invmax = (denom == 0.0) ? 0.0 : 1.0 / sqrt( denom );\n\tdTBN = mat3( T * invmax, -B * invmax, dVertexNormalW );\n}\n";
+	var TBNderivativePS = "uniform float tbnBasis;\nvoid getTBN() {\n\tvec2 uv = $UV;\n\tvec3 dp1 = dFdx( vPositionW );\n\tvec3 dp2 = dFdy( vPositionW );\n\tvec2 duv1 = dFdx( uv );\n\tvec2 duv2 = dFdy( uv );\n\tvec3 dp2perp = cross( dp2, dVertexNormalW );\n\tvec3 dp1perp = cross( dVertexNormalW, dp1 );\n\tvec3 T = dp2perp * duv1.x + dp1perp * duv2.x;\n\tvec3 B = dp2perp * duv1.y + dp1perp * duv2.y;\n\tfloat denom = max( dot(T,T), dot(B,B) );\n\tfloat invmax = (denom == 0.0) ? 0.0 : tbnBasis / sqrt( denom );\n\tdTBN = mat3(T * invmax, -B * invmax, dVertexNormalW );\n}\n";
 
 	var TBNfastPS = "void getTBN() {\n\tdTBN = mat3(dTangentW, dBinormalW, dVertexNormalW);\n}\n";
 
@@ -12444,7 +12444,7 @@
 			set: function set(value) {
 				var oldValue = this[internalName];
 
-				if (!funcs.equals(value, oldValue)) {
+				if (!funcs.equals(oldValue, value)) {
 					if (!this._dirtyShader) {
 						this._dirtyShader = dirtyShaderFunc ? dirtyShaderFunc(oldValue, value) : true;
 					}
@@ -16870,6 +16870,50 @@
 				iterator.next();
 			}
 
+			var positionElement = this.vertexBuffer.getFormat().elements.find(function (e) {
+				return e.name === SEMANTIC_POSITION;
+			});
+
+			if (positionElement && positionElement.normalize) {
+				var func = function () {
+					switch (positionElement.dataType) {
+						case TYPE_INT8:
+							return function (x) {
+								return Math.max(x / 127.0, -1.0);
+							};
+
+						case TYPE_UINT8:
+							return function (x) {
+								return x / 255.0;
+							};
+
+						case TYPE_INT16:
+							return function (x) {
+								return Math.max(x / 32767.0, -1.0);
+							};
+
+						case TYPE_UINT16:
+							return function (x) {
+								return x / 65535.0;
+							};
+
+						default:
+							return function (x) {
+								return x;
+							};
+					}
+				}();
+
+				for (i = 0; i < numBones; i++) {
+					if (boneUsed[i]) {
+						var min = boneMin[i];
+						var max = boneMax[i];
+						min.set(func(min.x), func(min.y), func(min.z));
+						max.set(func(max.x), func(max.y), func(max.z));
+					}
+				}
+			}
+
 			for (i = 0; i < numBones; i++) {
 				aabb = new BoundingBox();
 				aabb.setMinMax(boneMin[i], boneMax[i]);
@@ -17539,9 +17583,9 @@
 					var _v = v;
 					v = u;
 					u = _v;
-					u /= 3;
 					u = u * primitiveUv1PaddingScale + primitiveUv1Padding;
 					v = v * primitiveUv1PaddingScale + primitiveUv1Padding;
+					u /= 3;
 					uvs1.push(u, 1.0 - v);
 
 					if (i < heightSegments && j < capSegments) {
@@ -17579,10 +17623,10 @@
 					positions.push(x * peakRadius, y * peakRadius + capOffset, z * peakRadius);
 					normals.push(x, y, z);
 					uvs.push(u, 1.0 - v);
-					u /= 3;
-					v /= 3;
 					u = u * primitiveUv1PaddingScale + primitiveUv1Padding;
 					v = v * primitiveUv1PaddingScale + primitiveUv1Padding;
+					u /= 3;
+					v /= 3;
 					u += 1.0 / 3;
 					uvs1.push(u, 1.0 - v);
 				}
@@ -17616,10 +17660,10 @@
 					positions.push(x * peakRadius, y * peakRadius - capOffset, z * peakRadius);
 					normals.push(x, y, z);
 					uvs.push(u, 1.0 - v);
-					u /= 3;
-					v /= 3;
 					u = u * primitiveUv1PaddingScale + primitiveUv1Padding;
 					v = v * primitiveUv1PaddingScale + primitiveUv1Padding;
+					u /= 3;
+					v /= 3;
 					u += 2.0 / 3;
 					uvs1.push(u, 1.0 - v);
 				}
@@ -17649,10 +17693,10 @@
 					positions.push(x * baseRadius, y, z * baseRadius);
 					normals.push(0.0, -1.0, 0.0);
 					uvs.push(u, 1.0 - v);
-					u /= 3;
-					v /= 3;
 					u = u * primitiveUv1PaddingScale + primitiveUv1Padding;
 					v = v * primitiveUv1PaddingScale + primitiveUv1Padding;
+					u /= 3;
+					v /= 3;
 					u += 1.0 / 3;
 					uvs1.push(u, 1.0 - v);
 
@@ -17675,10 +17719,10 @@
 					positions.push(x * peakRadius, y, z * peakRadius);
 					normals.push(0.0, 1.0, 0.0);
 					uvs.push(u, 1.0 - v);
-					u /= 3;
-					v /= 3;
 					u = u * primitiveUv1PaddingScale + primitiveUv1Padding;
 					v = v * primitiveUv1PaddingScale + primitiveUv1Padding;
+					u /= 3;
+					v /= 3;
 					u += 2.0 / 3;
 					uvs1.push(u, 1.0 - v);
 
@@ -17895,10 +17939,10 @@
 					positions.push(r.x, r.y, r.z);
 					normals.push(faceNormals[side][0], faceNormals[side][1], faceNormals[side][2]);
 					uvs.push(u, 1.0 - v);
-					u /= 3;
-					v /= 3;
 					u = u * primitiveUv1PaddingScale + primitiveUv1Padding;
 					v = v * primitiveUv1PaddingScale + primitiveUv1Padding;
+					u /= 3;
+					v /= 3;
 					u += side % 3 / 3;
 					v += Math.floor(side / 3) / 3;
 					uvs1.push(u, 1.0 - v);
@@ -18915,6 +18959,14 @@
 			this._onInsertChild(node);
 		};
 
+		_proto._fireOnHierarchy = function _fireOnHierarchy(name) {
+			this.fire(name);
+
+			for (var i = 0; i < this._children.length; i++) {
+				this._children[i]._fireOnHierarchy(name);
+			}
+		};
+
 		_proto._onInsertChild = function _onInsertChild(node) {
 			node._parent = this;
 			var enabledInHierarchy = node._enabled && this.enabled;
@@ -18930,7 +18982,9 @@
 			node._dirtifyWorld();
 
 			if (this._frozen) node._unfreezeParentToRoot();
-			if (node.fire) node.fire('insert', this);
+
+			node._fireOnHierarchy('insert');
+
 			if (this.fire) this.fire('childinsert', node);
 		};
 
@@ -18955,7 +19009,9 @@
 					this._children.splice(i, 1);
 
 					child._parent = null;
-					if (child.fire) child.fire('remove', this);
+
+					child._fireOnHierarchy('remove');
+
 					if (this.fire) this.fire('childremove', child);
 					return;
 				}
@@ -21703,6 +21759,7 @@
 			this.nearClipId = scope.resolve('camera_near');
 			this.farClipId = scope.resolve('camera_far');
 			this.cameraParamsId = scope.resolve('camera_params');
+			this.tbnBasis = scope.resolve('tbnBasis');
 			this.fogColorId = scope.resolve('fog_color');
 			this.fogStartId = scope.resolve('fog_start');
 			this.fogEndId = scope.resolve('fog_end');
@@ -21983,6 +22040,7 @@
 				camera.frustum.setFromMat4(viewProjMat);
 			}
 
+			this.tbnBasis.setValue(target && target.flipY ? -1 : 1);
 			this.nearClipId.setValue(camera._nearClip);
 			this.farClipId.setValue(camera._farClip);
 			var n = camera._nearClip;
@@ -30339,7 +30397,51 @@
 		'TEXCOORD_1': SEMANTIC_TEXCOORD1
 	};
 
-	var getAccessorData = function getAccessorData(gltfAccessor, bufferViews) {
+	var getDequantizeFunc = function getDequantizeFunc(srcType) {
+		switch (srcType) {
+			case TYPE_INT8:
+				return function (x) {
+					return Math.max(x / 127.0, -1.0);
+				};
+
+			case TYPE_UINT8:
+				return function (x) {
+					return x / 255.0;
+				};
+
+			case TYPE_INT16:
+				return function (x) {
+					return Math.max(x / 32767.0, -1.0);
+				};
+
+			case TYPE_UINT16:
+				return function (x) {
+					return x / 65535.0;
+				};
+
+			default:
+				return function (x) {
+					return x;
+				};
+		}
+	};
+
+	var dequantizeArray = function dequantizeArray(dstArray, srcArray, srcType) {
+		var convFunc = getDequantizeFunc(srcType);
+		var len = srcArray.length;
+
+		for (var i = 0; i < len; ++i) {
+			dstArray[i] = convFunc(srcArray[i]);
+		}
+
+		return dstArray;
+	};
+
+	var getAccessorData = function getAccessorData(gltfAccessor, bufferViews, flatten) {
+		if (flatten === void 0) {
+			flatten = false;
+		}
+
 		var numComponents = getNumComponents(gltfAccessor.type);
 		var dataType = getComponentDataType(gltfAccessor.componentType);
 
@@ -30347,6 +30449,7 @@
 			return null;
 		}
 
+		var bufferView = bufferViews[gltfAccessor.bufferView];
 		var result;
 
 		if (gltfAccessor.sparse) {
@@ -30355,13 +30458,13 @@
 				count: sparse.count,
 				type: "SCALAR"
 			};
-			var indices = getAccessorData(Object.assign(indicesAccessor, sparse.indices), bufferViews);
+			var indices = getAccessorData(Object.assign(indicesAccessor, sparse.indices), bufferViews, true);
 			var valuesAccessor = {
 				count: sparse.count,
 				type: gltfAccessor.scalar,
 				componentType: gltfAccessor.componentType
 			};
-			var values = getAccessorData(Object.assign(valuesAccessor, sparse.values), bufferViews);
+			var values = getAccessorData(Object.assign(valuesAccessor, sparse.values), bufferViews, true);
 
 			if (gltfAccessor.hasOwnProperty('bufferView')) {
 				var baseAccessor = {
@@ -30371,7 +30474,7 @@
 					count: gltfAccessor.count,
 					type: gltfAccessor.type
 				};
-				result = getAccessorData(baseAccessor, bufferViews).slice();
+				result = getAccessorData(baseAccessor, bufferViews, true).slice();
 			} else {
 				result = new dataType(gltfAccessor.count * numComponents);
 			}
@@ -30383,12 +30486,55 @@
 					result[targetIndex * numComponents + j] = values[i * numComponents + j];
 				}
 			}
+		} else if (flatten && bufferView.hasOwnProperty('byteStride')) {
+			var bytesPerElement = numComponents * dataType.BYTES_PER_ELEMENT;
+			var storage = new ArrayBuffer(gltfAccessor.count * bytesPerElement);
+			var tmpArray = new Uint8Array(storage);
+			var dstOffset = 0;
+
+			for (var _i = 0; _i < gltfAccessor.count; ++_i) {
+				var srcOffset = (gltfAccessor.byteOffset || 0) + _i * bufferView.byteStride;
+
+				for (var b = 0; b < bytesPerElement; ++b) {
+					tmpArray[dstOffset++] = bufferView[srcOffset++];
+				}
+			}
+
+			result = new dataType(storage);
 		} else {
-			var bufferView = bufferViews[gltfAccessor.bufferView];
 			result = new dataType(bufferView.buffer, bufferView.byteOffset + (gltfAccessor.byteOffset || 0), gltfAccessor.count * numComponents);
 		}
 
 		return result;
+	};
+
+	var getAccessorDataFloat32 = function getAccessorDataFloat32(gltfAccessor, bufferViews) {
+		var data = getAccessorData(gltfAccessor, bufferViews, true);
+
+		if (data instanceof Float32Array || !gltfAccessor.normalized) {
+			return data;
+		}
+
+		var float32Data = new Float32Array(data.length);
+		dequantizeArray(float32Data, data, getComponentType(gltfAccessor.componentType));
+		return float32Data;
+	};
+
+	var getAccessorBoundingBox = function getAccessorBoundingBox(gltfAccessor) {
+		var min = gltfAccessor.min;
+		var max = gltfAccessor.max;
+
+		if (!min || !max) {
+			return null;
+		}
+
+		if (gltfAccessor.normalized) {
+			var ctype = getComponentType(gltfAccessor.componentType);
+			min = dequantizeArray([], min, ctype);
+			max = dequantizeArray([], max, ctype);
+		}
+
+		return new BoundingBox(new Vec3((max[0] + min[0]) * 0.5, (max[1] + min[1]) * 0.5, (max[2] + min[2]) * 0.5), new Vec3((max[0] - min[0]) * 0.5, (max[1] - min[1]) * 0.5, (max[2] - min[2]) * 0.5));
 	};
 
 	var getPrimitiveType = function getPrimitiveType(primitive) {
@@ -30787,7 +30933,7 @@
 
 		if (gltfSkin.hasOwnProperty('inverseBindMatrices')) {
 			var inverseBindMatrices = gltfSkin.inverseBindMatrices;
-			var ibmData = getAccessorData(accessors[inverseBindMatrices], bufferViews);
+			var ibmData = getAccessorData(accessors[inverseBindMatrices], bufferViews, true);
 			var ibmValues = [];
 
 			for (i = 0; i < numJoints; i++) {
@@ -30902,7 +31048,7 @@
 			}
 
 			if (!vertexBuffer) {
-				indices = primitive.hasOwnProperty('indices') ? getAccessorData(accessors[primitive.indices], bufferViews) : null;
+				indices = primitive.hasOwnProperty('indices') ? getAccessorData(accessors[primitive.indices], bufferViews, true) : null;
 				vertexBuffer = createVertexBuffer(device, primitive.attributes, indices, accessors, bufferViews, flipV, vertexBufferDict);
 				primitiveType = getPrimitiveType(primitive);
 			}
@@ -30941,10 +31087,7 @@
 
 				mesh.materialIndex = primitive.material;
 				var accessor = accessors[primitive.attributes.POSITION];
-				var min = accessor.min;
-				var max = accessor.max;
-				var aabb = new BoundingBox(new Vec3((max[0] + min[0]) / 2, (max[1] + min[1]) / 2, (max[2] + min[2]) / 2), new Vec3((max[0] - min[0]) / 2, (max[1] - min[1]) / 2, (max[2] - min[2]) / 2));
-				mesh.aabb = aabb;
+				mesh.aabb = getAccessorBoundingBox(accessor);
 
 				if (canUseMorph && primitive.hasOwnProperty('targets')) {
 					var targets = [];
@@ -30953,19 +31096,15 @@
 
 						if (target.hasOwnProperty('POSITION')) {
 							accessor = accessors[target.POSITION];
-							options.deltaPositions = getAccessorData(accessor, bufferViews);
-							options.deltaPositionsType = getComponentType(accessor.componentType);
-
-							if (accessor.hasOwnProperty('min') && accessor.hasOwnProperty('max')) {
-								options.aabb = new BoundingBox();
-								options.aabb.setMinMax(new Vec3(accessor.min), new Vec3(accessor.max));
-							}
+							options.deltaPositions = getAccessorDataFloat32(accessor, bufferViews);
+							options.deltaPositionsType = TYPE_FLOAT32;
+							options.aabb = getAccessorBoundingBox(accessor);
 						}
 
 						if (target.hasOwnProperty('NORMAL')) {
 							accessor = accessors[target.NORMAL];
-							options.deltaNormals = getAccessorData(accessor, bufferViews);
-							options.deltaNormalsType = getComponentType(accessor.componentType);
+							options.deltaNormals = getAccessorDataFloat32(accessor, bufferViews);
+							options.deltaNormalsType = TYPE_FLOAT32;
 						}
 
 						if (gltfMesh.hasOwnProperty('extras') && gltfMesh.extras.hasOwnProperty('targetNames')) {
@@ -31262,8 +31401,7 @@
 
 	var createAnimation = function createAnimation(gltfAnimation, animationIndex, gltfAccessors, bufferViews, nodes) {
 		var createAnimData = function createAnimData(gltfAccessor) {
-			var data = getAccessorData(gltfAccessor, bufferViews);
-			return new AnimData(getNumComponents(gltfAccessor.type), new data.constructor(data));
+			return new AnimData(getNumComponents(gltfAccessor.type), getAccessorDataFloat32(gltfAccessor, bufferViews));
 		};
 
 		var interpMap = {
@@ -34326,7 +34464,7 @@
 	}();
 
 	var SceneUtils = {
-		load: function load(url, callback) {
+		load: function load(url, maxRetries, callback) {
 			if (typeof url === 'string') {
 				url = {
 					load: url,
@@ -34335,8 +34473,8 @@
 			}
 
 			http.get(url.load, {
-				retry: this.maxRetries > 0,
-				maxRetries: this.maxRetries
+				retry: maxRetries > 0,
+				maxRetries: maxRetries
 			}, function (err, response) {
 				if (!err) {
 					callback(err, response);
@@ -34368,7 +34506,7 @@
 		var _proto = HierarchyHandler.prototype;
 
 		_proto.load = function load(url, callback) {
-			SceneUtils.load(url, callback);
+			SceneUtils.load(url, this.maxRetries, callback);
 		};
 
 		_proto.open = function open(url, data) {
@@ -36238,7 +36376,7 @@
 		var _proto = SceneHandler.prototype;
 
 		_proto.load = function load(url, callback) {
-			SceneUtils.load(url, callback);
+			SceneUtils.load(url, this.maxRetries, callback);
 		};
 
 		_proto.open = function open(url, data) {
@@ -45538,11 +45676,12 @@
 	}();
 
 	var AnimController = function () {
-		function AnimController(animEvaluator, states, transitions, parameters, activate, eventHandler) {
+		function AnimController(animEvaluator, states, transitions, parameters, activate, eventHandler, consumedTriggers) {
 			this._animEvaluator = animEvaluator;
 			this._states = {};
 			this._stateNames = [];
 			this._eventHandler = eventHandler;
+			this._consumedTriggers = consumedTriggers;
 
 			for (var i = 0; i < states.length; i++) {
 				this._states[states[i].name] = new AnimState(this, states[i].name, states[i].speed, states[i].loop, states[i].blendTree);
@@ -45695,10 +45834,6 @@
 			}
 
 			transitions = transitions.filter(function (transition) {
-				if (transition.to === this.activeStateName) {
-					return false;
-				}
-
 				if (transition.hasExitTime) {
 					var progressBefore = this._getActiveStateProgressForTime(this._timeInStateBefore);
 
@@ -45744,7 +45879,7 @@
 				var parameter = this.findParameter(condition.parameterName);
 
 				if (parameter.type === ANIM_PARAMETER_TRIGGER) {
-					parameter.value = false;
+					this._consumedTriggers.add(condition.parameterName);
 				}
 			}
 
@@ -46552,6 +46687,7 @@
 			_this._layers = [];
 			_this._layerIndices = {};
 			_this._parameters = {};
+			_this._consumedTriggers = new Set();
 			return _this;
 		}
 
@@ -46568,7 +46704,7 @@
 
 			var animBinder = new AnimComponentBinder(this, graph);
 			var animEvaluator = new AnimEvaluator(animBinder);
-			var controller = new AnimController(animEvaluator, states, transitions, this._parameters, this._activate, this);
+			var controller = new AnimController(animEvaluator, states, transitions, this._parameters, this._activate, this, this._consumedTriggers);
 
 			this._layers.push(new AnimComponentLayer(name, controller, this));
 
@@ -46860,8 +46996,16 @@
 			return this.getParameterValue(name, ANIM_PARAMETER_TRIGGER);
 		};
 
-		_proto.setTrigger = function setTrigger(name) {
+		_proto.setTrigger = function setTrigger(name, singleFrame) {
+			if (singleFrame === void 0) {
+				singleFrame = false;
+			}
+
 			this.setParameterValue(name, ANIM_PARAMETER_TRIGGER, true);
+
+			if (singleFrame) {
+				this._consumedTriggers.add(name);
+			}
 		};
 
 		_proto.resetTrigger = function resetTrigger(name) {
@@ -46874,13 +47018,27 @@
 			}
 		};
 
+		_proto.update = function update(dt) {
+			var _this2 = this;
+
+			for (var i = 0; i < this.layers.length; i++) {
+				this.layers[i].update(dt * this.speed);
+			}
+
+			this._consumedTriggers.forEach(function (trigger) {
+				_this2.parameters[trigger].value = false;
+			});
+
+			this._consumedTriggers.clear();
+		};
+
 		_createClass(AnimComponent, [{
 			key: "stateGraphAsset",
 			get: function get() {
 				return this._stateGraphAsset;
 			},
 			set: function set(value) {
-				var _this2 = this;
+				var _this3 = this;
 
 				if (value === null) {
 					this.removeStateGraph();
@@ -46917,9 +47075,9 @@
 					_asset.on('change', this._onStateGraphAssetChangeEvent);
 				} else {
 					_asset.once('load', function (asset) {
-						_this2._stateGraph = asset.resource;
+						_this3._stateGraph = asset.resource;
 
-						_this2.loadStateGraph(_this2._stateGraph);
+						_this3.loadStateGraph(_this3._stateGraph);
 					});
 
 					_asset.on('change', this._onStateGraphAssetChangeEvent);
@@ -47099,9 +47257,7 @@
 					var componentData = component.data;
 
 					if (componentData.enabled && component.entity.enabled && component.playing) {
-						for (var i = 0; i < component.layers.length; i++) {
-							component.layers[i].update(dt * component.speed);
-						}
+						component.update(dt);
 					}
 				}
 			}
@@ -70340,12 +70496,15 @@
 			var i, l;
 			var canvasId = this.graphicsDevice.canvas.id;
 			this.off('librariesloaded');
-			document.removeEventListener('visibilitychange', this._visibilityChangeHandler, false);
-			document.removeEventListener('mozvisibilitychange', this._visibilityChangeHandler, false);
-			document.removeEventListener('msvisibilitychange', this._visibilityChangeHandler, false);
-			document.removeEventListener('webkitvisibilitychange', this._visibilityChangeHandler, false);
+
+			if (typeof document !== 'undefined') {
+				document.removeEventListener('visibilitychange', this._visibilityChangeHandler, false);
+				document.removeEventListener('mozvisibilitychange', this._visibilityChangeHandler, false);
+				document.removeEventListener('msvisibilitychange', this._visibilityChangeHandler, false);
+				document.removeEventListener('webkitvisibilitychange', this._visibilityChangeHandler, false);
+			}
+
 			this._visibilityChangeHandler = null;
-			this.onVisibilityChange = null;
 			this.root.destroy();
 			this.root = null;
 
@@ -71416,7 +71575,7 @@
 		var _proto = SceneSettingsHandler.prototype;
 
 		_proto.load = function load(url, callback) {
-			SceneUtils.load(url, callback);
+			SceneUtils.load(url, this.maxRetries, callback);
 		};
 
 		_proto.open = function open(url, data) {
