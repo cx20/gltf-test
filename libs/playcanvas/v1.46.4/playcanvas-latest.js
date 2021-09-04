@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.46.2 revision ab94f3b
+ * PlayCanvas Engine v1.46.4 revision 720c2fa
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.46.2";
-	var revision = "ab94f3b";
+	var version = "1.46.4";
+	var revision = "720c2fa";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -45834,6 +45834,10 @@
 			}
 
 			transitions = transitions.filter(function (transition) {
+				if (transition.to === this.activeStateName) {
+					return false;
+				}
+
 				if (transition.hasExitTime) {
 					var progressBefore = this._getActiveStateProgressForTime(this._timeInStateBefore);
 
@@ -45871,7 +45875,7 @@
 			var state;
 			var animation;
 			var clip;
-			this.previousState = transition.from;
+			this.previousState = transition.from ? this.activeStateName : null;
 			this.activeState = transition.to;
 
 			for (var i = 0; i < transition.conditions.length; i++) {
