@@ -104,6 +104,8 @@ let createScene = function(engine) {
             parentMesh.position.z += 3.21;
         } else if ( modelInfo.name == "Fox" ) {
             scene.animationGroups[2].play(true); // 0:Survey, 1:Walk, 2:Run
+        } else if ( modelInfo.name == "MorphStressTest" ) {
+            scene.animationGroups[1].play(true); // 0:Individuals, 1:TheWave, 2:Pulse
         }
         let modelScaling = parentMesh.scaling;
         let camera = new BABYLON.ArcRotateCamera(DEFAULT_NAME, 0, 1, 5, BABYLON.Vector3.Zero(), scene);
