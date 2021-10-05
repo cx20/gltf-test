@@ -8,6 +8,7 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'DragonAttenuation', scale:1.0},
     {category:'tutorialModels', name:'EnvironmentTest', scale:0.3},
     {category:'tutorialModels', name:'GlamVelvetSofa', scale:2.0},
+    {category:'tutorialModels', name:'IridescenceSuzanne', scale:1.0},
     {category:'tutorialModels', name:'IridescentDishWithOlives', scale:8.0},
     {category:'tutorialModels', name:'Lights', scale:1.0},
     {category:'tutorialModels', name:'MaterialsVariantsChair', scale:0.7},
