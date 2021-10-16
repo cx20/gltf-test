@@ -124,8 +124,8 @@ const load = async function () {
   }
   mainExpression.renderPasses[0].toClearColorBuffer = true;
   mainExpression.renderPasses[0].toClearDepthBuffer = true;
-  mainExpression.renderPasses[0].clearColor = new Rn.Vector4(0, 0, 0, 0);
-
+  mainExpression.renderPasses[0].clearColor = Rn.Vector4.fromCopyArray4([0, 0, 0, 0]);
+  
   const gammaRenderPass = createPostEffectRenderPass('createGammaCorrectionMaterial');
   setTextureParameterForMeshComponents(gammaRenderPass.meshComponents, Rn.ShaderSemantics.BaseColorTexture, gammaTargetFramebuffer.colorAttachments[0]);
 
