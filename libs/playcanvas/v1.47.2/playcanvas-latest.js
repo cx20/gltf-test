@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.47.0 revision 41e3906
+ * PlayCanvas Engine v1.47.2 revision b336e2b
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.47.0";
-	var revision = "41e3906";
+	var version = "1.47.2";
+	var revision = "b336e2b";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -5976,7 +5976,7 @@
 
 	var clusteredLightShadowsPS = "\n#ifdef GL2\nfloat getShadowOmniClusteredSingleSample(sampler2DShadow shadowMap, vec4 shadowParams, vec3 omniAtlasViewport, float shadowEdgePixels, vec3 dir) {\n\tfloat shadowTextureResolution = shadowParams.x;\n\tvec2 uv = getCubemapAtlasCoordinates(omniAtlasViewport, shadowEdgePixels, shadowTextureResolution, dir);\n\tfloat shadowZ = length(dir) * shadowParams.w + shadowParams.z;\n\treturn texture(shadowMap, vec3(uv, shadowZ));\n}\nfloat getShadowOmniClusteredPCF3x3(sampler2DShadow shadowMap, vec4 shadowParams, vec3 omniAtlasViewport, float shadowEdgePixels, vec3 dir) {\n\tfloat shadowTextureResolution = shadowParams.x;\n\tvec2 uv = getCubemapAtlasCoordinates(omniAtlasViewport, shadowEdgePixels, shadowTextureResolution, dir);\n\tfloat shadowZ = length(dir) * shadowParams.w + shadowParams.z;\n\tdShadowCoord = vec3(uv, shadowZ);\n\treturn getShadowPCF3x3(shadowMap, shadowParams.xyz);\n}\n#else\nfloat getShadowOmniClusteredSingleSample(sampler2D shadowMap, vec4 shadowParams, vec3 omniAtlasViewport, float shadowEdgePixels, vec3 dir) {\n\tfloat shadowTextureResolution = shadowParams.x;\n\tvec2 uv = getCubemapAtlasCoordinates(omniAtlasViewport, shadowEdgePixels, shadowTextureResolution, dir);\n\tfloat depth = unpackFloat(texture2D(shadowMap, uv));\n\tfloat shadowZ = length(dir) * shadowParams.w + shadowParams.z;\n\treturn depth > shadowZ ? 1.0 : 0.0;\n}\nfloat getShadowOmniClusteredPCF3x3(sampler2D shadowMap, vec4 shadowParams, vec3 omniAtlasViewport, float shadowEdgePixels, vec3 dir) {\n\tfloat shadowTextureResolution = shadowParams.x;\n\tvec2 uv = getCubemapAtlasCoordinates(omniAtlasViewport, shadowEdgePixels, shadowTextureResolution, dir);\n\tfloat shadowZ = length(dir) * shadowParams.w + shadowParams.z;\n\tdShadowCoord = vec3(uv, shadowZ);\n\treturn getShadowPCF3x3(shadowMap, shadowParams.xyz);\n}\n#endif\n";
 
-	var clusteredLightPS = "uniform sampler2D clusterWorldTexture;\nuniform sampler2D lightsTexture8;\nuniform highp sampler2D lightsTextureFloat;\n#ifdef GL2\n\tuniform sampler2DShadow shadowAtlasTexture;\n#else\n\tuniform sampler2D shadowAtlasTexture;\n#endif\nuniform sampler2D cookieAtlasTexture;\nuniform float clusterPixelsPerCell;\nuniform vec3 clusterCellsCountByBoundsSize;\nuniform vec4 lightsTextureInvSize;\nuniform vec3 clusterTextureSize;\nuniform vec3 clusterBoundsMin;\nuniform vec3 clusterBoundsDelta;\nuniform vec3 clusterCellsDot;\nuniform vec3 clusterCellsMax;\nuniform vec2 clusterCompressionLimit0;\nuniform vec2 shadowAtlasParams;\nstruct ClusterLightData {\n\tfloat lightV;\n\tbool isSpot;\n\tfloat shape;\n\tfloat falloffMode;\n\tbool castShadows;\n\tfloat shadowBias;\n\tfloat shadowNormalBias;\n\tmat4 lightProjectionMatrix;\n\tvec3 position;\n\tvec3 direction;\n\tfloat range;\n\tfloat innerConeAngleCos;\n\tfloat outerConeAngleCos;\n\tvec3 color;\n\tvec3 omniAtlasViewport;\n\tbool isCookie;\n\tbool isCookieRgb;\n\tfloat cookieIntensity;\n\tvec4 cookieChannelMask;\n};\nvec4 decodeClusterLowRange4Vec4(vec4 d0, vec4 d1, vec4 d2, vec4 d3) {\n\treturn vec4(\n\t\tbytes2floatRange4(d0, -2.0, 2.0),\n\t\tbytes2floatRange4(d1, -2.0, 2.0),\n\t\tbytes2floatRange4(d2, -2.0, 2.0),\n\t\tbytes2floatRange4(d3, -2.0, 2.0)\n\t);\n}\nvec4 sampleLightsTexture8(const ClusterLightData clusterLightData, float index) {\n\treturn texture2D(lightsTexture8, vec2(index * lightsTextureInvSize.z, clusterLightData.lightV));\n}\nvec4 sampleLightTextureF(const ClusterLightData clusterLightData, float index) {\n\treturn texture2D(lightsTextureFloat, vec2(index * lightsTextureInvSize.x, clusterLightData.lightV));\n}\nvoid decodeClusterLightCore(inout ClusterLightData clusterLightData, float lightIndex) {\n\tclusterLightData.lightV = (lightIndex + 0.5) * lightsTextureInvSize.w;\n\tvec4 lightInfo = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_FLAGS);\n\tclusterLightData.isSpot = lightInfo.x > 0.5;\n\tclusterLightData.shape = lightInfo.y;\n\tclusterLightData.falloffMode = lightInfo.z;\n\tclusterLightData.castShadows = lightInfo.w > 0.5;\n\tvec4 colorA = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_COLOR_A);\n\tvec4 colorB = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_COLOR_B);\n\tclusterLightData.color = vec3(bytes2float2(colorA.xy), bytes2float2(colorA.zw), bytes2float2(colorB.xy)) * clusterCompressionLimit0.y;\n\tclusterLightData.isCookie = colorB.z > 0.5;\n\t#ifdef CLUSTER_TEXTURE_FLOAT\n\t\tvec4 lightPosRange = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_POSITION_RANGE);\n\t\tclusterLightData.position = lightPosRange.xyz;\n\t\tclusterLightData.range = lightPosRange.w;\n\t\tvec4 lightDir_Unused = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_SPOT_DIRECTION);\n\t\tclusterLightData.direction = lightDir_Unused.xyz;\n\t#else\n\t\tvec4 encPosX = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_POSITION_X);\n\t\tvec4 encPosY = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_POSITION_Y);\n\t\tvec4 encPosZ = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_POSITION_Z);\n\t\tclusterLightData.position = vec3(bytes2float4(encPosX), bytes2float4(encPosY), bytes2float4(encPosZ)) * clusterBoundsDelta + clusterBoundsMin;\n\t\tvec4 encRange = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_RANGE);\n\t\tclusterLightData.range = bytes2float4(encRange) * clusterCompressionLimit0.x;\n\t\tvec4 encDirX = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SPOT_DIRECTION_X);\n\t\tvec4 encDirY = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SPOT_DIRECTION_Y);\n\t\tvec4 encDirZ = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SPOT_DIRECTION_Z);\n\t\tclusterLightData.direction = vec3(bytes2float4(encDirX), bytes2float4(encDirY), bytes2float4(encDirZ)) * 2.0 - 1.0;\n\t#endif\n}\nvoid decodeClusterLightSpot(inout ClusterLightData clusterLightData) {\n\tvec4 coneAngle = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SPOT_ANGLES);\n\tclusterLightData.innerConeAngleCos = bytes2float2(coneAngle.xy) * 2.0 - 1.0;\n\tclusterLightData.outerConeAngleCos = bytes2float2(coneAngle.zw) * 2.0 - 1.0;\n}\nvoid decodeClusterLightOmniAtlasViewport(inout ClusterLightData clusterLightData) {\n\t#ifdef CLUSTER_TEXTURE_FLOAT\n\t\tclusterLightData.omniAtlasViewport = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_0).xyz;\n\t#else\n\t\tvec4 viewportA = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_ATLAS_VIEWPORT_A);\n\t\tvec4 viewportB = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_ATLAS_VIEWPORT_B);\n\t\tclusterLightData.omniAtlasViewport = vec3(bytes2float2(viewportA.xy), bytes2float2(viewportA.zw), bytes2float2(viewportB.xy));\n\t#endif\n}\nvoid decodeClusterLightProjectionMatrixData(inout ClusterLightData clusterLightData) {\n\t#ifdef CLUSTER_TEXTURE_FLOAT\n\t\tvec4 m0 = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_0);\n\t\tvec4 m1 = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_1);\n\t\tvec4 m2 = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_2);\n\t\tvec4 m3 = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_3);\n\t#else\n\t\tvec4 m00 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_00);\n\t\tvec4 m01 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_01);\n\t\tvec4 m02 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_02);\n\t\tvec4 m03 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_03);\n\t\tvec4 m0 = decodeClusterLowRange4Vec4(m00, m01, m02, m03);\n\t\tvec4 m10 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_10);\n\t\tvec4 m11 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_11);\n\t\tvec4 m12 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_12);\n\t\tvec4 m13 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_13);\n\t\tvec4 m1 = decodeClusterLowRange4Vec4(m10, m11, m12, m13);\n\t\tvec4 m20 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_20);\n\t\tvec4 m21 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_21);\n\t\tvec4 m22 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_22);\n\t\tvec4 m23 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_23);\n\t\tvec4 m2 = decodeClusterLowRange4Vec4(m20, m21, m22, m23);\n\t\tvec4 m30 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_30);\n\t\tvec4 m31 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_31);\n\t\tvec4 m32 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_32);\n\t\tvec4 m33 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_33);\n\t\tvec4 m3 = vec4(mantisaExponent2Float(m30), mantisaExponent2Float(m31), mantisaExponent2Float(m32), mantisaExponent2Float(m33));\n\t#endif\n\tclusterLightData.lightProjectionMatrix = mat4(m0, m1, m2, m3);\n}\nvoid decodeClusterLightShadowData(inout ClusterLightData clusterLightData) {\n\tvec4 biases = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SHADOW_BIAS);\n\tclusterLightData.shadowBias = bytes2floatRange2(biases.xy, -1.0, 20.0),\n\tclusterLightData.shadowNormalBias = bytes2float2(biases.zw);\n}\nvoid decodeClusterLightCookieData(inout ClusterLightData clusterLightData) {\n\tvec4 cookieA = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_COOKIE_A);\n\tclusterLightData.cookieIntensity = cookieA.x;\n\tclusterLightData.isCookieRgb = cookieA.y > 0.5;\n\tclusterLightData.cookieChannelMask = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_COOKIE_B);\n}\nvoid evaluateLight(ClusterLightData light) {\n\tdAtten3 = vec3(1.0);\n\tgetLightDirPoint(light.position);\n\tdAtten = getFalloffLinear(light.range);\n\tif (dAtten > 0.00001) {\n\t\tdAtten *= getLightDiffuse();\n\t\tif (light.isSpot == true) {\n\t\t\tdecodeClusterLightSpot(light);\n\t\t\tdAtten *= getSpotEffect(light.direction, light.innerConeAngleCos, light.outerConeAngleCos);\n\t\t}\n\t\tif (dAtten > 0.00001) {\n\t\t\tif (light.castShadows == true || light.isCookie == true) {\n\t\t\t\tif (light.isSpot == true) {\n\t\t\t\t\tdecodeClusterLightProjectionMatrixData(light);\n\t\t\t\t} else {\n\t\t\t\t\tdecodeClusterLightOmniAtlasViewport(light);\n\t\t\t\t}\n\t\t\t\tfloat shadowTextureResolution = shadowAtlasParams.x;\n\t\t\t\tfloat shadowEdgePixels = shadowAtlasParams.y;\n\t\t\t\tif (light.isCookie == true) {\n\t\t\t\t\tdecodeClusterLightCookieData(light);\n\t\t\t\t\tif (light.isSpot == true) {\n\t\t\t\t\t\tdAtten3 = getCookie2DClustered(cookieAtlasTexture, light.lightProjectionMatrix, vPositionW, light.cookieIntensity, light.isCookieRgb, light.cookieChannelMask);\n\t\t\t\t\t} else {\n\t\t\t\t\t\tdAtten3 = getCookieCubeClustered(cookieAtlasTexture, dLightDirW, light.cookieIntensity, light.isCookieRgb, light.cookieChannelMask, shadowTextureResolution, shadowEdgePixels, light.omniAtlasViewport);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tif (light.castShadows== true) {\n\t\t\t\t\tdecodeClusterLightShadowData(light);\n\t\t\t\t\tvec4 shadowParams = vec4(shadowTextureResolution, light.shadowNormalBias, light.shadowBias, 1.0 / light.range);\n\t\t\t\t\tif (light.isSpot == true) {\n\t\t\t\t\t\tgetShadowCoordPerspZbufferNormalOffset(light.lightProjectionMatrix, shadowParams);\n\t\t\t\t\t\tdAtten *= getShadowSpotPCF3x3(shadowAtlasTexture, shadowParams);\n\t\t\t\t\t} else {\n\t\t\t\t\t\tnormalOffsetPointShadow(shadowParams);\n\t\t\t\t\t\tdAtten *= getShadowOmniClusteredPCF3x3(shadowAtlasTexture, shadowParams, light.omniAtlasViewport, shadowEdgePixels, dLightDirW);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tdDiffuseLight += dAtten * light.color * dAtten3;\n\t}\n}\nvoid evaluateClusterLight(float lightIndex) {\n\tClusterLightData clusterLightData;\n\tdecodeClusterLightCore(clusterLightData, lightIndex);\n\tevaluateLight(clusterLightData);\n}\nvoid addClusteredLights() {\n\tvec3 cellCoords = floor((vPositionW - clusterBoundsMin) * clusterCellsCountByBoundsSize);\n\tif (!(any(lessThan(cellCoords, vec3(0.0))) || any(greaterThanEqual(cellCoords, clusterCellsMax)))) {\n\t\tfloat cellIndex = dot(clusterCellsDot, cellCoords);\n\t\tfloat clusterV = floor(cellIndex * clusterTextureSize.y);\n\t\tfloat clusterU = cellIndex - (clusterV * clusterTextureSize.x);\n\t\tclusterV = (clusterV + 0.5) * clusterTextureSize.z;\n\t\tconst float maxLightCells = 256.0 / 4.0;\n\t\tfor (float lightCellIndex = 0.5; lightCellIndex < maxLightCells; lightCellIndex++) {\n\t\t\tvec4 lightIndices = texture2D(clusterWorldTexture, vec2(clusterTextureSize.y * (clusterU + lightCellIndex), clusterV));\n\t\t\tvec4 indices = lightIndices * 255.0;\n\t\t\tif (indices.x <= 0.0)\n\t\t\t\tbreak;\n\t\t\tevaluateClusterLight(indices.x);\n\t\t\tif (indices.y <= 0.0)\n\t\t\t\tbreak;\n\t\t\tevaluateClusterLight(indices.y);\n\t\t\tif (indices.z <= 0.0)\n\t\t\t\tbreak;\n\t\t\tevaluateClusterLight(indices.z);\n\t\t\tif (indices.w <= 0.0)\n\t\t\t\tbreak;\n\t\t\tevaluateClusterLight(indices.w);\n\t\t\tif (lightCellIndex > clusterPixelsPerCell) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\t}\n}\n";
+	var clusteredLightPS = "uniform sampler2D clusterWorldTexture;\nuniform sampler2D lightsTexture8;\nuniform highp sampler2D lightsTextureFloat;\n#ifdef GL2\n\tuniform sampler2DShadow shadowAtlasTexture;\n#else\n\tuniform sampler2D shadowAtlasTexture;\n#endif\nuniform sampler2D cookieAtlasTexture;\nuniform float clusterPixelsPerCell;\nuniform vec3 clusterCellsCountByBoundsSize;\nuniform vec4 lightsTextureInvSize;\nuniform vec3 clusterTextureSize;\nuniform vec3 clusterBoundsMin;\nuniform vec3 clusterBoundsDelta;\nuniform vec3 clusterCellsDot;\nuniform vec3 clusterCellsMax;\nuniform vec2 clusterCompressionLimit0;\nuniform vec2 shadowAtlasParams;\nstruct ClusterLightData {\n\tfloat lightV;\n\tbool isSpot;\n\tfloat shape;\n\tfloat falloffMode;\n\tbool castShadows;\n\tfloat shadowBias;\n\tfloat shadowNormalBias;\n\tmat4 lightProjectionMatrix;\n\tvec3 position;\n\tvec3 direction;\n\tfloat range;\n\tfloat innerConeAngleCos;\n\tfloat outerConeAngleCos;\n\tvec3 color;\n\tvec3 omniAtlasViewport;\n\tbool isCookie;\n\tbool isCookieRgb;\n\tfloat cookieIntensity;\n\tvec4 cookieChannelMask;\n};\nvec4 decodeClusterLowRange4Vec4(vec4 d0, vec4 d1, vec4 d2, vec4 d3) {\n\treturn vec4(\n\t\tbytes2floatRange4(d0, -2.0, 2.0),\n\t\tbytes2floatRange4(d1, -2.0, 2.0),\n\t\tbytes2floatRange4(d2, -2.0, 2.0),\n\t\tbytes2floatRange4(d3, -2.0, 2.0)\n\t);\n}\nvec4 sampleLightsTexture8(const ClusterLightData clusterLightData, float index) {\n\treturn texture2D(lightsTexture8, vec2(index * lightsTextureInvSize.z, clusterLightData.lightV));\n}\nvec4 sampleLightTextureF(const ClusterLightData clusterLightData, float index) {\n\treturn texture2D(lightsTextureFloat, vec2(index * lightsTextureInvSize.x, clusterLightData.lightV));\n}\nvoid decodeClusterLightCore(inout ClusterLightData clusterLightData, float lightIndex) {\n\tclusterLightData.lightV = (lightIndex + 0.5) * lightsTextureInvSize.w;\n\tvec4 lightInfo = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_FLAGS);\n\tclusterLightData.isSpot = lightInfo.x > 0.5;\n\tclusterLightData.shape = lightInfo.y;\n\tclusterLightData.falloffMode = lightInfo.z;\n\tclusterLightData.castShadows = lightInfo.w > 0.5;\n\tvec4 colorA = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_COLOR_A);\n\tvec4 colorB = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_COLOR_B);\n\tclusterLightData.color = vec3(bytes2float2(colorA.xy), bytes2float2(colorA.zw), bytes2float2(colorB.xy)) * clusterCompressionLimit0.y;\n\tclusterLightData.isCookie = colorB.z > 0.5;\n\t#ifdef CLUSTER_TEXTURE_FLOAT\n\t\tvec4 lightPosRange = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_POSITION_RANGE);\n\t\tclusterLightData.position = lightPosRange.xyz;\n\t\tclusterLightData.range = lightPosRange.w;\n\t\tvec4 lightDir_Unused = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_SPOT_DIRECTION);\n\t\tclusterLightData.direction = lightDir_Unused.xyz;\n\t#else\n\t\tvec4 encPosX = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_POSITION_X);\n\t\tvec4 encPosY = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_POSITION_Y);\n\t\tvec4 encPosZ = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_POSITION_Z);\n\t\tclusterLightData.position = vec3(bytes2float4(encPosX), bytes2float4(encPosY), bytes2float4(encPosZ)) * clusterBoundsDelta + clusterBoundsMin;\n\t\tvec4 encRange = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_RANGE);\n\t\tclusterLightData.range = bytes2float4(encRange) * clusterCompressionLimit0.x;\n\t\tvec4 encDirX = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SPOT_DIRECTION_X);\n\t\tvec4 encDirY = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SPOT_DIRECTION_Y);\n\t\tvec4 encDirZ = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SPOT_DIRECTION_Z);\n\t\tclusterLightData.direction = vec3(bytes2float4(encDirX), bytes2float4(encDirY), bytes2float4(encDirZ)) * 2.0 - 1.0;\n\t#endif\n}\nvoid decodeClusterLightSpot(inout ClusterLightData clusterLightData) {\n\tvec4 coneAngle = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SPOT_ANGLES);\n\tclusterLightData.innerConeAngleCos = bytes2float2(coneAngle.xy) * 2.0 - 1.0;\n\tclusterLightData.outerConeAngleCos = bytes2float2(coneAngle.zw) * 2.0 - 1.0;\n}\nvoid decodeClusterLightOmniAtlasViewport(inout ClusterLightData clusterLightData) {\n\t#ifdef CLUSTER_TEXTURE_FLOAT\n\t\tclusterLightData.omniAtlasViewport = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_0).xyz;\n\t#else\n\t\tvec4 viewportA = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_ATLAS_VIEWPORT_A);\n\t\tvec4 viewportB = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_ATLAS_VIEWPORT_B);\n\t\tclusterLightData.omniAtlasViewport = vec3(bytes2float2(viewportA.xy), bytes2float2(viewportA.zw), bytes2float2(viewportB.xy));\n\t#endif\n}\nvoid decodeClusterLightProjectionMatrixData(inout ClusterLightData clusterLightData) {\n\t#ifdef CLUSTER_TEXTURE_FLOAT\n\t\tvec4 m0 = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_0);\n\t\tvec4 m1 = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_1);\n\t\tvec4 m2 = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_2);\n\t\tvec4 m3 = sampleLightTextureF(clusterLightData, CLUSTER_TEXTURE_F_PROJ_MAT_3);\n\t#else\n\t\tvec4 m00 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_00);\n\t\tvec4 m01 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_01);\n\t\tvec4 m02 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_02);\n\t\tvec4 m03 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_03);\n\t\tvec4 m0 = decodeClusterLowRange4Vec4(m00, m01, m02, m03);\n\t\tvec4 m10 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_10);\n\t\tvec4 m11 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_11);\n\t\tvec4 m12 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_12);\n\t\tvec4 m13 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_13);\n\t\tvec4 m1 = decodeClusterLowRange4Vec4(m10, m11, m12, m13);\n\t\tvec4 m20 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_20);\n\t\tvec4 m21 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_21);\n\t\tvec4 m22 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_22);\n\t\tvec4 m23 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_23);\n\t\tvec4 m2 = decodeClusterLowRange4Vec4(m20, m21, m22, m23);\n\t\tvec4 m30 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_30);\n\t\tvec4 m31 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_31);\n\t\tvec4 m32 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_32);\n\t\tvec4 m33 = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_PROJ_MAT_33);\n\t\tvec4 m3 = vec4(mantisaExponent2Float(m30), mantisaExponent2Float(m31), mantisaExponent2Float(m32), mantisaExponent2Float(m33));\n\t#endif\n\tclusterLightData.lightProjectionMatrix = mat4(m0, m1, m2, m3);\n}\nvoid decodeClusterLightShadowData(inout ClusterLightData clusterLightData) {\n\tvec4 biases = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_SHADOW_BIAS);\n\tclusterLightData.shadowBias = bytes2floatRange2(biases.xy, -1.0, 20.0),\n\tclusterLightData.shadowNormalBias = bytes2float2(biases.zw);\n}\nvoid decodeClusterLightCookieData(inout ClusterLightData clusterLightData) {\n\tvec4 cookieA = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_COOKIE_A);\n\tclusterLightData.cookieIntensity = cookieA.x;\n\tclusterLightData.isCookieRgb = cookieA.y > 0.5;\n\tclusterLightData.cookieChannelMask = sampleLightsTexture8(clusterLightData, CLUSTER_TEXTURE_8_COOKIE_B);\n}\nvoid evaluateLight(ClusterLightData light) {\n\tdAtten3 = vec3(1.0);\n\tgetLightDirPoint(light.position);\n\tdAtten = getFalloffLinear(light.range);\n\tif (dAtten > 0.00001) {\n\t\tdAtten *= getLightDiffuse();\n\t\tif (light.isSpot == true) {\n\t\t\tdecodeClusterLightSpot(light);\n\t\t\tdAtten *= getSpotEffect(light.direction, light.innerConeAngleCos, light.outerConeAngleCos);\n\t\t}\n\t\tif (dAtten > 0.00001) {\n\t\t\tif (light.castShadows == true || light.isCookie == true) {\n\t\t\t\tif (light.isSpot == true) {\n\t\t\t\t\tdecodeClusterLightProjectionMatrixData(light);\n\t\t\t\t} else {\n\t\t\t\t\tdecodeClusterLightOmniAtlasViewport(light);\n\t\t\t\t}\n\t\t\t\tfloat shadowTextureResolution = shadowAtlasParams.x;\n\t\t\t\tfloat shadowEdgePixels = shadowAtlasParams.y;\n\t\t\t\tif (light.isCookie == true) {\n\t\t\t\t\tdecodeClusterLightCookieData(light);\n\t\t\t\t\tif (light.isSpot == true) {\n\t\t\t\t\t\tdAtten3 = getCookie2DClustered(cookieAtlasTexture, light.lightProjectionMatrix, vPositionW, light.cookieIntensity, light.isCookieRgb, light.cookieChannelMask);\n\t\t\t\t\t} else {\n\t\t\t\t\t\tdAtten3 = getCookieCubeClustered(cookieAtlasTexture, dLightDirW, light.cookieIntensity, light.isCookieRgb, light.cookieChannelMask, shadowTextureResolution, shadowEdgePixels, light.omniAtlasViewport);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t\tif (light.castShadows== true) {\n\t\t\t\t\tdecodeClusterLightShadowData(light);\n\t\t\t\t\tvec4 shadowParams = vec4(shadowTextureResolution, light.shadowNormalBias, light.shadowBias, 1.0 / light.range);\n\t\t\t\t\tif (light.isSpot == true) {\n\t\t\t\t\t\tgetShadowCoordPerspZbufferNormalOffset(light.lightProjectionMatrix, shadowParams);\n\t\t\t\t\t\tdAtten *= getShadowSpotPCF3x3(shadowAtlasTexture, shadowParams);\n\t\t\t\t\t} else {\n\t\t\t\t\t\tnormalOffsetPointShadow(shadowParams);\n\t\t\t\t\t\tdAtten *= getShadowOmniClusteredPCF3x3(shadowAtlasTexture, shadowParams, light.omniAtlasViewport, shadowEdgePixels, dLightDirW);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\tdDiffuseLight += dAtten * light.color * dAtten3;\n\t}\n}\nvoid evaluateClusterLight(float lightIndex) {\n\tClusterLightData clusterLightData;\n\tdecodeClusterLightCore(clusterLightData, lightIndex);\n\tevaluateLight(clusterLightData);\n}\nconst vec4 channelSelector[4] = vec4[4] (\n\tvec4(1., 0., 0., 0.),\n\tvec4(0., 1., 0., 0.),\n\tvec4(0., 0., 1., 0.),\n\tvec4(0., 0., 0., 1.)\n);\nvoid addClusteredLights() {\n\tvec3 cellCoords = floor((vPositionW - clusterBoundsMin) * clusterCellsCountByBoundsSize);\n\tif (!(any(lessThan(cellCoords, vec3(0.0))) || any(greaterThanEqual(cellCoords, clusterCellsMax)))) {\n\t\tfloat cellIndex = dot(clusterCellsDot, cellCoords);\n\t\tfloat clusterV = floor(cellIndex * clusterTextureSize.y);\n\t\tfloat clusterU = cellIndex - (clusterV * clusterTextureSize.x);\n\t\tclusterV = (clusterV + 0.5) * clusterTextureSize.z;\n\t\tconst float maxLightCells = 256.0 / 4.0;\n\t\tfor (float lightCellIndex = 0.5; lightCellIndex < maxLightCells; lightCellIndex++) {\n\t\t\tvec4 lightIndices = texture2D(clusterWorldTexture, vec2(clusterTextureSize.y * (clusterU + lightCellIndex), clusterV));\n\t\t\tvec4 indices = lightIndices * 255.0;\n\t\t\tfor (int i = 0; i < 4; i++) {\n\t\t\t\tfloat index = dot(channelSelector[i], indices);\n\t\t\t\tif (index <= 0.0)\n\t\t\t\t\treturn;\n\t\t\t\tevaluateClusterLight(index);\n\t\t\t}\n\t\t\tif (lightCellIndex > clusterPixelsPerCell) {\n\t\t\t\tbreak;\n\t\t\t}\n\t\t}\n\t}\n}\n";
 
 	var combineClearCoatPS = "vec3 combineColorCC() {\n\treturn combineColor()+(ccSpecularLight*ccSpecularity+ccReflection.rgb*ccSpecularity*ccReflection.a);\n}\n";
 
@@ -11580,6 +11580,7 @@
 			var useVsm = false;
 			var usePerspZbufferShadow = false;
 			var light;
+			var isClustered = LayerComposition.clusteredLightingEnabled;
 			var hasAreaLights = options.lights.some(function (light) {
 				return light._shape && light._shape !== LIGHTSHAPE_PUNCTUAL;
 			});
@@ -11602,6 +11603,7 @@
 			for (i = 0; i < options.lights.length; i++) {
 				light = options.lights[i];
 				lightType = light._type;
+				if (isClustered && lightType !== LIGHTTYPE_DIRECTIONAL) continue;
 
 				if (hasAreaLights && light._shape) {
 					lightShape = light._shape;
@@ -32575,8 +32577,6 @@
 					var dataLayer = data.layers[layerId];
 					var layer = {
 						name: dataLayer.name,
-						blendType: dataLayer.blendType,
-						weight: dataLayer.weight,
 						states: [],
 						transitions: []
 					};
@@ -38356,7 +38356,7 @@
 		};
 
 		_proto.readU64 = function readU64() {
-			return this.dataView.getBigUint64(this._inc(8), true);
+			return this.readU32() + Math.pow(2, 32) * this.readU32();
 		};
 
 		_proto.readU32be = function readU32be() {
@@ -43617,111 +43617,6 @@
 		return AnimClip;
 	}();
 
-	var ANIM_INTERRUPTION_NONE = 'NONE';
-	var ANIM_INTERRUPTION_PREV = 'PREV_STATE';
-	var ANIM_INTERRUPTION_NEXT = 'NEXT_STATE';
-	var ANIM_INTERRUPTION_PREV_NEXT = 'PREV_STATE_NEXT_STATE';
-	var ANIM_INTERRUPTION_NEXT_PREV = 'NEXT_STATE_PREV_STATE';
-	var ANIM_GREATER_THAN = 'GREATER_THAN';
-	var ANIM_LESS_THAN = 'LESS_THAN';
-	var ANIM_GREATER_THAN_EQUAL_TO = 'GREATER_THAN_EQUAL_TO';
-	var ANIM_LESS_THAN_EQUAL_TO = 'LESS_THAN_EQUAL_TO';
-	var ANIM_EQUAL_TO = 'EQUAL_TO';
-	var ANIM_NOT_EQUAL_TO = 'NOT_EQUAL_TO';
-	var ANIM_PARAMETER_INTEGER = 'INTEGER';
-	var ANIM_PARAMETER_FLOAT = 'FLOAT';
-	var ANIM_PARAMETER_BOOLEAN = 'BOOLEAN';
-	var ANIM_PARAMETER_TRIGGER = 'TRIGGER';
-	var ANIM_BLEND_1D = '1D';
-	var ANIM_BLEND_2D_DIRECTIONAL = '2D_DIRECTIONAL';
-	var ANIM_BLEND_2D_CARTESIAN = '2D_CARTESIAN';
-	var ANIM_BLEND_DIRECT = 'DIRECT';
-	var ANIM_STATE_START = 'START';
-	var ANIM_STATE_END = 'END';
-	var ANIM_STATE_ANY = 'ANY';
-	var ANIM_CONTROL_STATES = [ANIM_STATE_START, ANIM_STATE_END, ANIM_STATE_ANY];
-	var ANIM_LAYER_OVERWRITE = 'OVERWRITE';
-	var ANIM_LAYER_ADDITIVE = 'ADDITIVE';
-
-	var AnimTargetValue = function () {
-		function AnimTargetValue(component, type) {
-			this._component = component;
-			this.mask = new Int8Array(component.layers.length);
-			this.weights = new Float32Array(component.layers.length);
-			this.totalWeight = 0;
-			this.counter = 0;
-			this.layerCounter = 0;
-			this.valueType = type;
-			this.dirty = true;
-
-			if (this.valueType === AnimTargetValue.TYPE_QUAT) {
-				this.value = new Quat();
-				this._currentValue = new Quat();
-			} else {
-				this.value = new Vec3();
-				this._currentValue = new Vec3();
-			}
-		}
-
-		var _proto = AnimTargetValue.prototype;
-
-		_proto.getWeight = function getWeight(index) {
-			if (this._dirty) this.updateWeights();
-			if (this.totalWeight === 0) return 0;
-			return this.weights[index] / this.totalWeight;
-		};
-
-		_proto.setMask = function setMask(index, value) {
-			this.mask[index] = value;
-
-			if (this._component.layers[index].blendType === ANIM_LAYER_OVERWRITE) {
-				this.mask = this.mask.fill(0, 0, index - 1);
-			}
-
-			this._dirty = true;
-		};
-
-		_proto.updateWeights = function updateWeights() {
-			this.totalWeight = 0;
-
-			for (var i = 0; i < this.weights.length; i++) {
-				this.weights[i] = this._component.layers[i].weight;
-				this.totalWeight += this.mask[i] * this.weights[i];
-			}
-
-			this.dirty = false;
-		};
-
-		_proto.updateValue = function updateValue(index, value) {
-			var _this$_currentValue;
-
-			if (this.counter === 0) {
-				this.value.set(0, 0, 0, 1);
-			}
-
-			(_this$_currentValue = this._currentValue).set.apply(_this$_currentValue, value);
-
-			switch (this.valueType) {
-				case AnimTargetValue.TYPE_QUAT:
-					{
-						this.value.mul(this._currentValue.slerp(Quat.IDENTITY, this._currentValue, this.getWeight(index)));
-						break;
-					}
-
-				case AnimTargetValue.TYPE_VEC3:
-					{
-						this.value.add(this._currentValue.mulScalar(this.getWeight(index)));
-						break;
-					}
-			}
-		};
-
-		return AnimTargetValue;
-	}();
-
-	AnimTargetValue.TYPE_QUAT = 'QUATERNION';
-	AnimTargetValue.TYPE_VEC3 = 'VECTOR3';
-
 	var AnimEvaluator = function () {
 		function AnimEvaluator(binder) {
 			this._binder = binder;
@@ -43826,7 +43721,6 @@
 
 		_proto.addClip = function addClip(clip) {
 			var targets = this._targets;
-			var binder = this._binder;
 			var curves = clip.track.curves;
 			var snapshot = clip.snapshot;
 			var inputs = [];
@@ -43838,7 +43732,9 @@
 
 				for (var j = 0; j < paths.length; ++j) {
 					var path = paths[j];
-					var resolved = binder.resolve(path);
+
+					var resolved = this._binder.resolve(path);
+
 					var target = targets[resolved && resolved.targetPath || null];
 
 					if (!target && resolved) {
@@ -43854,23 +43750,6 @@
 						}
 
 						targets[resolved.targetPath] = target;
-
-						if (binder.animComponent) {
-							if (!binder.animComponent.targets[resolved.targetPath]) {
-								var type = void 0;
-
-								if (resolved.targetPath.substring(resolved.targetPath.length - 13) === 'localRotation') {
-									type = AnimTargetValue.TYPE_QUAT;
-								} else {
-									type = AnimTargetValue.TYPE_VEC3;
-								}
-
-								binder.animComponent.targets[resolved.targetPath] = new AnimTargetValue(binder.animComponent, type);
-							}
-
-							binder.animComponent.targets[resolved.targetPath].layerCounter++;
-							binder.animComponent.targets[resolved.targetPath].setMask(binder.layerIndex, 1);
-						}
 					}
 
 					if (target) {
@@ -43890,7 +43769,6 @@
 
 		_proto.removeClip = function removeClip(index) {
 			var targets = this._targets;
-			var binder = this._binder;
 			var clips = this._clips;
 			var clip = clips[index];
 			var curves = clip.track.curves;
@@ -43908,12 +43786,9 @@
 						target.curves--;
 
 						if (target.curves === 0) {
-							binder.unresolve(path);
-							delete targets[target.targetPath];
+							this._binder.unresolve(path);
 
-							if (binder.animComponent) {
-								binder.animComponent.targets[target.targetPath].layerCounter--;
-							}
+							delete targets[target.targetPath];
 						}
 					}
 				}
@@ -43959,10 +43834,6 @@
 			});
 		};
 
-		_proto.assignMask = function assignMask(mask) {
-			this._binder.assignMask(mask);
-		};
-
 		_proto.update = function update(deltaTime) {
 			var clips = this._clips;
 			var order = clips.map(function (c, i) {
@@ -43986,9 +43857,9 @@
 					clip._update(deltaTime);
 				}
 
-				var input = void 0;
-				var output = void 0;
-				var value = void 0;
+				var input;
+				var output;
+				var value;
 
 				if (blendWeight >= 1.0) {
 					for (j = 0; j < inputs.length; ++j) {
@@ -44018,39 +43889,16 @@
 			}
 
 			var targets = this._targets;
-			var targetValue = new Array(4);
-			var binder = this._binder;
 
 			for (var path in targets) {
 				if (targets.hasOwnProperty(path)) {
 					var target = targets[path];
-
-					if (binder.animComponent && target.target.isTransform) {
-						var animTarget = binder.animComponent.targets[path];
-
-						if (animTarget.counter === animTarget.layerCounter) {
-							animTarget.counter = 0;
-						}
-
-						if (animTarget.mask[binder.layerIndex]) {
-							animTarget.updateValue(binder.layerIndex, target.value);
-						}
-
-						targetValue[0] = animTarget.value.x;
-						targetValue[1] = animTarget.value.y;
-						targetValue[2] = animTarget.value.z;
-						targetValue[3] = animTarget.value.w;
-						target.target.func(targetValue);
-						animTarget.counter++;
-					} else {
-						target.target.func(target.value);
-					}
-
+					target.target.func(target.value);
 					target.blendCounter = 0;
 				}
 			}
 
-			binder.update(deltaTime);
+			this._binder.update(deltaTime);
 		};
 
 		_createClass(AnimEvaluator, [{
@@ -44069,7 +43917,6 @@
 			this._type = type;
 			this._components = components;
 			this._targetPath = targetPath;
-			this._isTransform = this._targetPath.substring(this._targetPath.length - 13) === 'localRotation' || this._targetPath.substring(this._targetPath.length - 13) === 'localPosition' || this._targetPath.substring(this._targetPath.length - 10) === 'localScale';
 		}
 
 		_createClass(AnimTarget, [{
@@ -44092,11 +43939,6 @@
 			get: function get() {
 				return this._targetPath;
 			}
-		}, {
-			key: "isTransform",
-			get: function get() {
-				return this._isTransform;
-			}
 		}]);
 
 		return AnimTarget;
@@ -44104,17 +43946,8 @@
 
 	var DefaultAnimBinder = function () {
 		function DefaultAnimBinder(graph) {
-			var _this = this;
-
-			this._isPathInMask = function (path, checkMaskValue) {
-				var maskItem = _this._mask[path];
-				if (!maskItem) return false;else if (maskItem.children || checkMaskValue && maskItem.value !== false) return true;
-				return false;
-			};
-
 			this.graph = graph;
 			if (!graph) return;
-			this._mask = null;
 			var nodes = {};
 
 			var flatten = function flatten(node) {
@@ -44193,9 +44026,9 @@
 
 						if (morphInstances.length > 0) {
 							var func = function func(value) {
-								for (var _i = 0; _i < value.length; ++_i) {
+								for (var i = 0; i < value.length; ++i) {
 									for (var j = 0; j < morphInstances.length; j++) {
-										morphInstances[j].setWeight(_i, value[_i]);
+										morphInstances[j].setWeight(i, value[i]);
 									}
 								}
 							};
@@ -44240,28 +44073,7 @@
 
 		var _proto = DefaultAnimBinder.prototype;
 
-		_proto._isPathActive = function _isPathActive(path) {
-			if (!this._mask) return true;
-			var rootNodeNames = [path.entityPath[0], this.graph.name];
-
-			for (var j = 0; j < rootNodeNames.length; ++j) {
-				var currEntityPath = rootNodeNames[j];
-				if (this._isPathInMask(currEntityPath, path.entityPath.length === 1)) return true;
-
-				for (var i = 1; i < path.entityPath.length; i++) {
-					currEntityPath += '/' + path.entityPath[i];
-					if (this._isPathInMask(currEntityPath, i === path.entityPath.length - 1)) return true;
-				}
-			}
-
-			return false;
-		};
-
 		_proto.findNode = function findNode(path) {
-			if (!this._isPathActive(path)) {
-				return null;
-			}
-
 			var node;
 
 			if (this.graph) {
@@ -44338,10 +44150,6 @@
 			for (var i = 0; i < activeNodes.length; ++i) {
 				activeNodes[i]._dirtifyLocal();
 			}
-		};
-
-		_proto.assignMask = function assignMask(mask) {
-			this._mask = mask;
 		};
 
 		return DefaultAnimBinder;
@@ -45641,6 +45449,30 @@
 		return AnimBlendTreeDirect;
 	}(AnimBlendTree);
 
+	var ANIM_INTERRUPTION_NONE = 'NONE';
+	var ANIM_INTERRUPTION_PREV = 'PREV_STATE';
+	var ANIM_INTERRUPTION_NEXT = 'NEXT_STATE';
+	var ANIM_INTERRUPTION_PREV_NEXT = 'PREV_STATE_NEXT_STATE';
+	var ANIM_INTERRUPTION_NEXT_PREV = 'NEXT_STATE_PREV_STATE';
+	var ANIM_GREATER_THAN = 'GREATER_THAN';
+	var ANIM_LESS_THAN = 'LESS_THAN';
+	var ANIM_GREATER_THAN_EQUAL_TO = 'GREATER_THAN_EQUAL_TO';
+	var ANIM_LESS_THAN_EQUAL_TO = 'LESS_THAN_EQUAL_TO';
+	var ANIM_EQUAL_TO = 'EQUAL_TO';
+	var ANIM_NOT_EQUAL_TO = 'NOT_EQUAL_TO';
+	var ANIM_PARAMETER_INTEGER = 'INTEGER';
+	var ANIM_PARAMETER_FLOAT = 'FLOAT';
+	var ANIM_PARAMETER_BOOLEAN = 'BOOLEAN';
+	var ANIM_PARAMETER_TRIGGER = 'TRIGGER';
+	var ANIM_BLEND_1D = '1D';
+	var ANIM_BLEND_2D_DIRECTIONAL = '2D_DIRECTIONAL';
+	var ANIM_BLEND_2D_CARTESIAN = '2D_CARTESIAN';
+	var ANIM_BLEND_DIRECT = 'DIRECT';
+	var ANIM_STATE_START = 'START';
+	var ANIM_STATE_END = 'END';
+	var ANIM_STATE_ANY = 'ANY';
+	var ANIM_CONTROL_STATES = [ANIM_STATE_START, ANIM_STATE_END, ANIM_STATE_ANY];
+
 	var AnimState = function () {
 		function AnimState(controller, name, speed, loop, blendTree) {
 			this._controller = controller;
@@ -45906,10 +45738,6 @@
 		}
 
 		var _proto = AnimController.prototype;
-
-		_proto.assignMask = function assignMask(mask) {
-			this._animEvaluator.assignMask(mask);
-		};
 
 		_proto._findState = function _findState(stateName) {
 			return this._states[stateName];
@@ -46477,14 +46305,11 @@
 	var AnimComponentBinder = function (_DefaultAnimBinder) {
 		_inheritsLoose(AnimComponentBinder, _DefaultAnimBinder);
 
-		function AnimComponentBinder(animComponent, graph, layerName, mask, layerIndex) {
+		function AnimComponentBinder(animComponent, graph) {
 			var _this;
 
 			_this = _DefaultAnimBinder.call(this, graph) || this;
 			_this.animComponent = animComponent;
-			_this._mask = mask;
-			_this.layerName = layerName;
-			_this.layerIndex = layerIndex;
 			return _this;
 		}
 
@@ -46738,20 +46563,10 @@
 	}(DefaultAnimBinder);
 
 	var AnimComponentLayer = function () {
-		function AnimComponentLayer(name, controller, component, weight, blendType) {
-			if (weight === void 0) {
-				weight = 1;
-			}
-
-			if (blendType === void 0) {
-				blendType = ANIM_LAYER_OVERWRITE;
-			}
-
+		function AnimComponentLayer(name, controller, component) {
 			this._name = name;
 			this._controller = controller;
 			this._component = component;
-			this._weight = weight;
-			this._blendType = blendType;
 		}
 
 		var _proto = AnimComponentLayer.prototype;
@@ -46774,10 +46589,6 @@
 
 		_proto.update = function update(dt) {
 			this._controller.update(dt);
-		};
-
-		_proto.assignMask = function assignMask(mask) {
-			this._controller.assignMask(mask);
 		};
 
 		_proto.assignAnimation = function assignAnimation(nodeName, animTrack, speed, loop) {
@@ -46880,21 +46691,6 @@
 			get: function get() {
 				return this._controller.states;
 			}
-		}, {
-			key: "weight",
-			get: function get() {
-				return this._weight;
-			},
-			set: function set(value) {
-				this._weight = value;
-
-				this._component.dirtifyTargets();
-			}
-		}, {
-			key: "blendType",
-			get: function get() {
-				return this._blendType;
-			}
 		}]);
 
 		return AnimComponentLayer;
@@ -46924,29 +46720,13 @@
 			_this._layers = [];
 			_this._layerIndices = {};
 			_this._parameters = {};
-			_this._targets = {};
 			_this._consumedTriggers = new Set();
 			return _this;
 		}
 
 		var _proto = AnimComponent.prototype;
 
-		_proto.dirtifyTargets = function dirtifyTargets() {
-			var targets = Object.values(this._targets);
-
-			for (var i = 0; i < targets.length; i++) {
-				targets[i].dirty = true;
-			}
-		};
-
-		_proto._addLayer = function _addLayer(_ref) {
-			var name = _ref.name,
-					states = _ref.states,
-					transitions = _ref.transitions,
-					order = _ref.order,
-					weight = _ref.weight,
-					mask = _ref.mask,
-					blendType = _ref.blendType;
+		_proto._addLayer = function _addLayer(name, states, transitions, order) {
 			var graph;
 
 			if (this.rootBone) {
@@ -46955,17 +46735,17 @@
 				graph = this.entity;
 			}
 
-			var animBinder = new AnimComponentBinder(this, graph, name, mask, order);
+			var animBinder = new AnimComponentBinder(this, graph);
 			var animEvaluator = new AnimEvaluator(animBinder);
 			var controller = new AnimController(animEvaluator, states, transitions, this._parameters, this._activate, this, this._consumedTriggers);
 
-			this._layers.push(new AnimComponentLayer(name, controller, this, weight, blendType));
+			this._layers.push(new AnimComponentLayer(name, controller, this));
 
 			this._layerIndices[name] = order;
 		};
 
-		_proto.addLayer = function addLayer(name, weight, mask, blendType) {
-			var layer = this.findAnimationLayer(name);
+		_proto.addLayer = function addLayer(layerName) {
+			var layer = this.findAnimationLayer(layerName);
 			if (layer) return layer;
 			var states = [{
 				"name": "START",
@@ -46973,15 +46753,7 @@
 			}];
 			var transitions = [];
 
-			this._addLayer({
-				name: name,
-				states: states,
-				transitions: transitions,
-				order: this._layers.length,
-				weight: weight,
-				mask: mask,
-				blendType: blendType
-			});
+			this._addLayer(layerName, states, transitions, this._layers.length);
 		};
 
 		_proto.loadStateGraph = function loadStateGraph(stateGraph) {
@@ -47002,9 +46774,7 @@
 			for (var _i = 0; _i < stateGraph.layers.length; _i++) {
 				var layer = stateGraph.layers[_i];
 
-				this._addLayer.bind(this)(_extends({}, layer, {
-					order: _i
-				}));
+				this._addLayer.bind(this)(layer.name, layer.states, layer.transitions, _i);
 			}
 
 			this.setupAnimationAssets();
@@ -47109,8 +46879,8 @@
 			}
 		};
 
-		_proto.findAnimationLayer = function findAnimationLayer(name) {
-			var layerIndex = this._layerIndices[name];
+		_proto.findAnimationLayer = function findAnimationLayer(layerName) {
+			var layerIndex = this._layerIndices[layerName];
 			return this._layers[layerIndex] || null;
 		};
 
@@ -47441,14 +47211,6 @@
 				this._parameters = value;
 			}
 		}, {
-			key: "targets",
-			get: function get() {
-				return this._targets;
-			},
-			set: function set(value) {
-				this._targets = value;
-			}
-		}, {
 			key: "playable",
 			get: function get() {
 				for (var i = 0; i < this._layers.length; i++) {
@@ -47503,7 +47265,7 @@
 
 			_ComponentSystem.prototype.initializeComponentData.call(this, component, data, _schema$k);
 
-			var complexProperties = ['animationAssets', 'stateGraph', 'layers', 'masks'];
+			var complexProperties = ['animationAssets', 'stateGraph', 'layers'];
 			Object.keys(data).forEach(function (key) {
 				if (complexProperties.includes(key)) return;
 				component[key] = data[key];
@@ -47524,14 +47286,6 @@
 				});
 			} else if (data.animationAssets) {
 				component.animationAssets = Object.assign(component.animationAssets, data.animationAssets);
-			}
-
-			if (data.masks) {
-				Object.keys(data.masks).forEach(function (key) {
-					if (component.layers[key]) {
-						component.layers[key].assignMask(data.masks[key].mask);
-					}
-				});
 			}
 		};
 
@@ -71788,12 +71542,11 @@
 			}
 		};
 
-		_proto.calculateLightmapSize = function calculateLightmapSize(bakeNode) {
+		_proto.calculateLightmapSize = function calculateLightmapSize(node) {
 			var data;
 			var sizeMult = this.scene.lightmapSizeMultiplier || 16;
 			var scale = tempVec;
 			var srcArea, lightmapSizeMultiplier;
-			var node = bakeNode.node;
 
 			if (node.model) {
 				lightmapSizeMultiplier = node.model.lightmapSizeMultiplier;
@@ -71843,7 +71596,9 @@
 			area.x *= areaMult;
 			area.y *= areaMult;
 			area.z *= areaMult;
-			scale.copy(bakeNode.bounds.halfExtents);
+			var component = node.render || node.model;
+			var bounds = this.computeNodeBounds(component.meshInstances);
+			scale.copy(bounds.halfExtents);
 			var totalArea = area.x * scale.y * scale.z + area.y * scale.x * scale.z + area.z * scale.x * scale.y;
 			totalArea /= area.uv;
 			totalArea = Math.sqrt(totalArea);
@@ -71937,7 +71692,7 @@
 		_proto.allocateTextures = function allocateTextures(bakeNodes, passCount) {
 			for (var i = 0; i < bakeNodes.length; i++) {
 				var bakeNode = bakeNodes[i];
-				var size = this.calculateLightmapSize(bakeNode);
+				var size = this.calculateLightmapSize(bakeNode.node);
 
 				for (var pass = 0; pass < passCount; pass++) {
 					var tex = this.createTexture(size, TEXTURETYPE_DEFAULT, "lightmapper_lightmap_" + i);
@@ -72018,21 +71773,24 @@
 			}
 		};
 
-		_proto.computeNodeBounds = function computeNodeBounds(nodes) {
+		_proto.computeNodeBounds = function computeNodeBounds(meshInstances) {
 			var bounds = new BoundingBox();
 
+			if (meshInstances.length > 0) {
+				bounds.copy(meshInstances[0].aabb);
+
+				for (var m = 1; m < meshInstances.length; m++) {
+					bounds.add(meshInstances[m].aabb);
+				}
+			}
+
+			return bounds;
+		};
+
+		_proto.computeNodesBounds = function computeNodesBounds(nodes) {
 			for (var i = 0; i < nodes.length; i++) {
 				var meshInstances = nodes[i].meshInstances;
-
-				if (meshInstances.length > 0) {
-					bounds.copy(meshInstances[0].aabb);
-
-					for (var m = 1; m < meshInstances.length; m++) {
-						bounds.add(meshInstances[m].aabb);
-					}
-				}
-
-				nodes[i].bounds = bounds.clone();
+				nodes[i].bounds = this.computeNodeBounds(meshInstances);
 			}
 		};
 
@@ -72188,7 +71946,7 @@
 
 			scene.layers._update();
 
-			this.computeNodeBounds(bakeNodes);
+			this.computeNodesBounds(bakeNodes);
 			this.allocateTextures(bakeNodes, passCount);
 			var allLights = [],
 					bakeLights = [];
@@ -76064,8 +75822,6 @@
 	exports.ANIM_INTERRUPTION_NONE = ANIM_INTERRUPTION_NONE;
 	exports.ANIM_INTERRUPTION_PREV = ANIM_INTERRUPTION_PREV;
 	exports.ANIM_INTERRUPTION_PREV_NEXT = ANIM_INTERRUPTION_PREV_NEXT;
-	exports.ANIM_LAYER_ADDITIVE = ANIM_LAYER_ADDITIVE;
-	exports.ANIM_LAYER_OVERWRITE = ANIM_LAYER_OVERWRITE;
 	exports.ANIM_LESS_THAN = ANIM_LESS_THAN;
 	exports.ANIM_LESS_THAN_EQUAL_TO = ANIM_LESS_THAN_EQUAL_TO;
 	exports.ANIM_NOT_EQUAL_TO = ANIM_NOT_EQUAL_TO;
