@@ -33,6 +33,7 @@ TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that
     'ClearCoatTest',
     'DragonAttenuation',
     'GlamVelvetSofa',
+    'IridescenceSuzanne',
     'IridescentDishWithOlives',
     'MaterialsVariantsChair',
     'MaterialsVariantsShoe',
