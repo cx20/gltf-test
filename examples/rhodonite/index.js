@@ -68,26 +68,26 @@ const load = async function () {
 
   // Lights
   const lightEntity1 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
-  lightEntity1.getTransform().translate = new Rn.Vector3(1.0, 1.0, 100000.0);
-  //lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
-  lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0, 0, 0);
+  lightEntity1.getTransform().translate = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
+  //lightEntity1.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([1, 1, 1]);
+  lightEntity1.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
   lightEntity1.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
-  lightEntity1.getTransform().rotate = new Rn.Vector3(-Math.PI / 2, -Math.PI / 4, Math.PI / 4);
+  lightEntity1.getTransform().rotate = Rn.Vector3.fromCopyArray([-Math.PI / 2, -Math.PI / 4, Math.PI / 4]);
 
   const lightEntity2 = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.LightComponent])
-  lightEntity2.getTransform().translate = new Rn.Vector3(1.0, 1.0, 100000.0);
-  //lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
-  lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0, 0, 0);
+  lightEntity2.getTransform().translate = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
+  //lightEntity2.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([1, 1, 1]);
+  lightEntity2.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
   lightEntity2.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
-  lightEntity2.getTransform().rotate = new Rn.Vector3(Math.PI / 2, Math.PI / 4, -Math.PI / 4);
+  lightEntity2.getTransform().rotate = Rn.Vector3.fromCopyArray([Math.PI / 2, Math.PI / 4, -Math.PI / 4]);
 
   guiLights.onChange(function(value) {
     if (value) {
-      lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
-      lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(1, 1, 1);
+      lightEntity1.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([1, 1, 1]);
+      lightEntity2.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([1, 1, 1]);
     } else {
-      lightEntity1.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0, 0, 0);
-      lightEntity2.getComponent(Rn.LightComponent).intensity = new Rn.Vector3(0, 0, 0);
+      lightEntity1.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
+      lightEntity2.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
     }
   });
 
@@ -247,7 +247,7 @@ const load = async function () {
 
     const entityRepository = Rn.EntityRepository.getInstance();
     const sphereEntity = entityRepository.createEntity([Rn.TransformComponent, Rn.SceneGraphComponent, Rn.MeshComponent, Rn.MeshRendererComponent]);
-    sphereEntity.getTransform().scale = new Rn.Vector3(-1/scale, 1/scale, 1/scale);
+    sphereEntity.getTransform().scale = Rn.Vector3.fromCopyArray([-1/scale, 1/scale, 1/scale]);
 
     const sphereMeshComponent = sphereEntity.getComponent(Rn.MeshComponent);
     sphereMeshComponent.setMesh(sphereMesh);
@@ -293,8 +293,8 @@ const load = async function () {
     });
 
     const boardEntity = generateEntity();
-    boardEntity.getTransform().rotate = new Rn.Vector3(Math.PI / 2, 0.0, 0.0);
-    boardEntity.getTransform().translate = new Rn.Vector3(0.0, 0.0, -0.5);
+    boardEntity.getTransform().rotate = Rn.Vector3.fromCopyArray([Math.PI / 2, 0.0, 0.0]);
+    boardEntity.getTransform().translate = Rn.Vector3.fromCopyArray([0.0, 0.0, -0.5]);
 
     const boardMesh = new Rn.Mesh();
     boardMesh.addPrimitive(boardPrimitive);
