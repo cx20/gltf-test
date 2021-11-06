@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.49.0 revision eb609bf4e
+ * PlayCanvas Engine v1.49.1 revision a6e7b8d7c
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.49.0";
-	var revision = "eb609bf4e";
+	var version = "1.49.1";
+	var revision = "a6e7b8d7c";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -9844,7 +9844,7 @@
 			}
 
 			this._worldClusters.forEach(function (cluster) {
-				return cluster.destroy();
+				cluster.destroy();
 			});
 
 			this._worldClusters = null;
@@ -10209,7 +10209,7 @@
 			}
 
 			tempClusterArray.forEach(function (item) {
-				return item.destroy();
+				item.destroy();
 			});
 			tempClusterArray.length = 0;
 		};
@@ -13502,16 +13502,14 @@
 		};
 
 		_proto._processParameters = function _processParameters(paramsName) {
+			var _this5 = this;
+
 			var prevParams = this[paramsName];
-
-			for (var _iterator = _createForOfIteratorHelperLoose(prevParams), _step; !(_step = _iterator()).done;) {
-				var param = _step.value;
-
+			prevParams.forEach(function (param) {
 				if (!_params.has(param)) {
-					delete this.parameters[param];
+					delete _this5.parameters[param];
 				}
-			}
-
+			});
 			this[paramsName] = _params;
 			_params = prevParams;
 
@@ -13550,10 +13548,10 @@
 		};
 
 		_proto.updateUniforms = function updateUniforms(device, scene) {
-			var _this5 = this;
+			var _this6 = this;
 
 			var getUniform = function getUniform(name) {
-				return _this5.getUniform(name, device, scene);
+				return _this6.getUniform(name, device, scene);
 			};
 
 			this._setParameter('material_ambient', getUniform('ambient'));
@@ -25519,16 +25517,17 @@
 
 		_proto.startBake = function startBake() {
 			this.light.enabled = true;
-			this.light._cacheShadowMap = true;
+
+			this.light._destroyShadowMap();
 		};
 
-		_proto.endBake = function endBake() {
+		_proto.endBake = function endBake(shadowMapCache) {
 			var light = this.light;
 			light.enabled = false;
-			light._cacheShadowMap = false;
 
-			if (light._isCachedShadowMap) {
-				light._destroyShadowMap();
+			if (light.shadowMap && light.shadowMap.cached) {
+				shadowMapCache.add(light, light.shadowMap);
+				light.shadowMap = null;
 			}
 		};
 
@@ -37874,7 +37873,7 @@
 	var prepareWorkerModules = function prepareWorkerModules(config, callback) {
 		var getWorkerBlob = function getWorkerBlob() {
 			var code = '(' + BasisWorker.toString() + ')()\n\n';
-			return new File([code], 'basis_worker.js', {
+			return new Blob([code], {
 				type: 'application/javascript'
 			});
 		};
@@ -57589,7 +57588,8 @@
 				var line = lines[lineIndex];
 
 				if (line.length === 0) {
-					return;
+					positionsAllLines.push([]);
+					continue;
 				}
 
 				var positionsThisLine = [];
@@ -72166,7 +72166,9 @@
 			var light = bakeLight.light;
 
 			if (!shadowMapRendered && light.castShadows) {
-				light.shadowMap = this.shadowMapCache.get(this.device, light);
+				if (!light.shadowMap) {
+					light.shadowMap = this.shadowMapCache.get(this.device, light);
+				}
 
 				if (light.type === LIGHTTYPE_DIRECTIONAL) {
 					this.renderer._shadowRenderer.cullDirectional(light, casters, this.camera);
@@ -72339,7 +72341,7 @@
 						this.restoreMaterials(rcv);
 					}
 
-					bakeLight.endBake();
+					bakeLight.endBake(this.shadowMapCache);
 				}
 			}
 
@@ -72351,6 +72353,7 @@
 
 			this.restoreLights(allLights);
 			this.restoreScene();
+			this.shadowMapCache.clear();
 		};
 
 		return Lightmapper;

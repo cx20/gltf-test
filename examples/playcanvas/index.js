@@ -20,7 +20,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-const pcRoot = '../../libs/playcanvas/v1.49.0';
+const pcRoot = '../../libs/playcanvas/v1.49.1';
 
 // GUI
 let gui = new dat.GUI();
