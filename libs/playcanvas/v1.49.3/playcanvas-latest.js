@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.49.1 revision a6e7b8d7c
+ * PlayCanvas Engine v1.49.3 revision 2d25a6a17
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.49.1";
-	var revision = "a6e7b8d7c";
+	var version = "1.49.3";
+	var revision = "2d25a6a17";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -12585,6 +12585,31 @@
 		return tex;
 	}
 
+	var DefaultMaterial = function () {
+		function DefaultMaterial() {}
+
+		DefaultMaterial.get = function get(device) {
+			var material = this.cache.get(device);
+
+			if (!material) {
+				material = new StandardMaterial();
+				material.name = "Default Material";
+				material.shadingModel = SPECULAR_BLINN;
+				this.cache.set(device, material);
+			}
+
+			return material;
+		};
+
+		DefaultMaterial.remove = function remove(device) {
+			this.cache.delete(device);
+		};
+
+		return DefaultMaterial;
+	}();
+
+	DefaultMaterial.cache = new Map();
+
 	var id$1 = 0;
 
 	var Material = function () {
@@ -12770,6 +12795,11 @@
 				}
 
 				meshInstance._material = null;
+				var defaultMaterial = DefaultMaterial.get(meshInstance.mesh.device);
+
+				if (this !== defaultMaterial) {
+					meshInstance.material = defaultMaterial;
+				}
 			}
 		};
 
@@ -28467,9 +28497,6 @@
 			_this._shaderVersion = 0;
 			_this._statsUpdated = false;
 			_this._models = [];
-			_this.defaultMaterial = new StandardMaterial();
-			_this.defaultMaterial.name = "Default Material";
-			_this.defaultMaterial.shadingModel = SPECULAR_BLINN;
 			return _this;
 		}
 
@@ -28479,8 +28506,6 @@
 			this._resetSkyboxModel();
 
 			this.root = null;
-			this.defaultMaterial.destroy();
-			this.defaultMaterial = null;
 			this.off();
 		};
 
@@ -28659,6 +28684,11 @@
 		};
 
 		_createClass(Scene, [{
+			key: "defaultMaterial",
+			get: function get() {
+				return DefaultMaterial.get(getApplication().graphicsDevice);
+			}
+		}, {
 			key: "fog",
 			get: function get() {
 				return this._fog;
@@ -31852,23 +31882,28 @@
 	};
 
 	var createScenes = function createScenes(gltf, nodes) {
+		var _gltf$scenes$0$nodes;
+
 		var scenes = [];
 		var count = gltf.scenes.length;
 
-		if (count === 1 && gltf.scenes[0].nodes.length === 1) {
+		if (count === 1 && ((_gltf$scenes$0$nodes = gltf.scenes[0].nodes) == null ? void 0 : _gltf$scenes$0$nodes.length) === 1) {
 			var nodeIndex = gltf.scenes[0].nodes[0];
 			scenes.push(nodes[nodeIndex]);
 		} else {
 			for (var i = 0; i < count; i++) {
 				var scene = gltf.scenes[i];
-				var sceneRoot = new GraphNode(scene.name);
 
-				for (var n = 0; n < scene.nodes.length; n++) {
-					var childNode = nodes[scene.nodes[n]];
-					sceneRoot.addChild(childNode);
+				if (scene.nodes) {
+					var sceneRoot = new GraphNode(scene.name);
+
+					for (var n = 0; n < scene.nodes.length; n++) {
+						var childNode = nodes[scene.nodes[n]];
+						sceneRoot.addChild(childNode);
+					}
+
+					scenes.push(sceneRoot);
 				}
-
-				scenes.push(sceneRoot);
 			}
 		}
 
@@ -47518,7 +47553,12 @@
 			if (data.masks) {
 				Object.keys(data.masks).forEach(function (key) {
 					if (component.layers[key]) {
-						component.layers[key].assignMask(data.masks[key].mask);
+						var maskData = data.masks[key].mask;
+						var mask = {};
+						Object.keys(maskData).forEach(function (maskKey) {
+							mask[decodeURI(maskKey)] = maskData[maskKey];
+						});
+						component.layers[key].assignMask(mask);
 					}
 				});
 			}
@@ -48150,7 +48190,7 @@
 
 			this._parentComponent.system[onOrOff]('beforeremove', this._onParentComponentRemove, this);
 
-			this._app[onOrOff]('postinitialize', this._onPostInitialize, this);
+			this._app.systems[onOrOff]('postPostInitialize', this._updateEntityReference, this);
 
 			this._app[onOrOff]('tools:sceneloaded', this._onSceneLoaded, this);
 
@@ -48195,10 +48235,6 @@
 					this._updateEntityReference();
 				}
 			}
-		};
-
-		_proto._onPostInitialize = function _onPostInitialize() {
-			this._updateEntityReference();
 		};
 
 		_proto.onParentComponentEnable = function onParentComponentEnable() {
@@ -69556,6 +69592,8 @@
 
 					self._app.systems.fire('postInitialize', entity);
 
+					self._app.systems.fire('postPostInitialize', entity);
+
 					if (callback) callback(err, entity);
 				};
 
@@ -70471,6 +70509,7 @@
 			this.systems.fire('initialize', this.root);
 			this.fire('initialize');
 			this.systems.fire('postInitialize', this.root);
+			this.systems.fire('postPostInitialize', this.root);
 			this.fire('postinitialize');
 			this.tick();
 		};
@@ -71031,6 +71070,7 @@
 			ParticleEmitter.staticDestroy();
 			this.renderer.destroy();
 			this.renderer = null;
+			DefaultMaterial.remove(this.graphicsDevice);
 			this.graphicsDevice.destroy();
 			this.graphicsDevice = null;
 			this.tick = null;
