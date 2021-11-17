@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.49.3 revision 2d25a6a17
+ * PlayCanvas Engine v1.49.4 revision 508545f27
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.49.3";
-	var revision = "2d25a6a17";
+	var version = "1.49.4";
+	var revision = "508545f27";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -43650,14 +43650,7 @@
 			this.layerCounter = 0;
 			this.valueType = type;
 			this.dirty = true;
-
-			if (this.valueType === AnimTargetValue.TYPE_QUAT) {
-				this.value = new Quat();
-				this._currentValue = new Quat();
-			} else {
-				this.value = new Vec3();
-				this._currentValue = new Vec3();
-			}
+			this.value = [0, 0, 0, 1];
 		}
 
 		var _proto = AnimTargetValue.prototype;
@@ -43694,44 +43687,27 @@
 		};
 
 		_proto.updateValue = function updateValue(index, value) {
-			var _this$_currentValue;
-
 			if (this.counter === 0) {
-				this.value.set(0, 0, 0, 1);
+				this.value[0] = 0;
+				this.value[1] = 0;
+				this.value[2] = 0;
+				this.value[3] = 1;
 			}
 
 			if (!this.mask[index]) return;
 
-			(_this$_currentValue = this._currentValue).set.apply(_this$_currentValue, value);
-
-			switch (this.valueType) {
-				case AnimTargetValue.TYPE_QUAT:
-					{
-						var t = this.getWeight(index);
-
-						AnimTargetValue._weightedQuaternion.set(this._currentValue.x * t, this._currentValue.y * t, this._currentValue.z * t, 1.0 - t + this._currentValue.w * t);
-
-						var squaredMagnitude = AnimTargetValue._weightedQuaternion.dot(AnimTargetValue._weightedQuaternion);
-
-						if (squaredMagnitude > 0) AnimTargetValue._weightedQuaternion.mulScalar(1.0 / Math.sqrt(squaredMagnitude));
-						this.value.mul(AnimTargetValue._weightedQuaternion);
-						break;
-					}
-
-				case AnimTargetValue.TYPE_VEC3:
-					{
-						this.value.add(this._currentValue.mulScalar(this.getWeight(index)));
-						break;
-					}
+			if (this.counter === 0) {
+				AnimEvaluator._set(this.value, value, this.valueType);
+			} else {
+				AnimEvaluator._blend(this.value, value, this.getWeight(index), this.valueType);
 			}
 		};
 
 		return AnimTargetValue;
 	}();
 
-	AnimTargetValue.TYPE_QUAT = 'QUATERNION';
-	AnimTargetValue.TYPE_VEC3 = 'VECTOR3';
-	AnimTargetValue._weightedQuaternion = new Vec4();
+	AnimTargetValue.TYPE_QUAT = 'quaternion';
+	AnimTargetValue.TYPE_VEC3 = 'vector3';
 
 	var AnimEvaluator = function () {
 		function AnimEvaluator(binder) {
@@ -44026,7 +44002,6 @@
 			}
 
 			var targets = this._targets;
-			var targetValue = new Array(4);
 			var binder = this._binder;
 
 			for (var path in targets) {
@@ -44041,11 +44016,7 @@
 						}
 
 						animTarget.updateValue(binder.layerIndex, target.value);
-						targetValue[0] = animTarget.value.x;
-						targetValue[1] = animTarget.value.y;
-						targetValue[2] = animTarget.value.z;
-						targetValue[3] = animTarget.value.w;
-						target.target.func(targetValue);
+						target.target.func(animTarget.value);
 						animTarget.counter++;
 					} else {
 						target.target.func(target.value);
@@ -46760,6 +46731,7 @@
 			this._component = component;
 			this._weight = weight;
 			this._blendType = blendType;
+			this._mask = null;
 		}
 
 		var _proto = AnimComponentLayer.prototype;
@@ -46788,6 +46760,8 @@
 			if (this._controller.assignMask(mask)) {
 				this._component.rebind();
 			}
+
+			this._mask = mask;
 		};
 
 		_proto.assignAnimation = function assignAnimation(nodeName, animTrack, speed, loop) {
@@ -46833,6 +46807,11 @@
 		};
 
 		_createClass(AnimComponentLayer, [{
+			key: "mask",
+			get: function get() {
+				return this._mask;
+			}
+		}, {
 			key: "name",
 			get: function get() {
 				return this._name;
@@ -46931,13 +46910,6 @@
 			var _this;
 
 			_this = _Component.call(this, system, entity) || this;
-
-			_this._onStateGraphAssetChangeEvent = function (asset) {
-				_this._stateGraph = new AnimStateGraph(asset._data);
-
-				_this.loadStateGraph(_this._stateGraph);
-			};
-
 			_this._stateGraphAsset = null;
 			_this._animationAssets = {};
 			_this._speed = 1.0;
@@ -46954,6 +46926,22 @@
 		}
 
 		var _proto = AnimComponent.prototype;
+
+		_proto._onStateGraphAssetChangeEvent = function _onStateGraphAssetChangeEvent(asset) {
+			var prevAnimationAssets = this.animationAssets;
+			var prevMasks = this.layers.map(function (layer) {
+				return layer.mask;
+			});
+			this.removeStateGraph();
+			this._stateGraph = new AnimStateGraph(asset._data);
+			this.loadStateGraph(this._stateGraph);
+			this.animationAssets = prevAnimationAssets;
+			this.loadAnimationAssets();
+			this.layers.forEach(function (layer, i) {
+				return layer.assignMask(prevMasks[i]);
+			});
+			this.rebind();
+		};
 
 		_proto.dirtifyTargets = function dirtifyTargets() {
 			var targets = Object.values(this._targets);
@@ -47300,7 +47288,8 @@
 
 		_proto.onBeforeRemove = function onBeforeRemove() {
 			if (Number.isFinite(this._stateGraphAsset)) {
-				this.system.app.assets.get(this._stateGraphAsset).off('change', this._onStateGraphAssetChangeEvent);
+				var stateGraphAsset = this.system.app.assets.get(this._stateGraphAsset);
+				stateGraphAsset.off('change', this._onStateGraphAssetChangeEvent, this);
 			}
 		};
 
@@ -47339,7 +47328,10 @@
 					return;
 				}
 
-				if (this._stateGraphAsset) this.system.app.assets.get(this._stateGraphAsset).off('change', this._onStateGraphAssetChangeEvent);
+				if (this._stateGraphAsset) {
+					var stateGraphAsset = this.system.app.assets.get(this._stateGraphAsset);
+					stateGraphAsset.off('change', this._onStateGraphAssetChangeEvent, this);
+				}
 
 				var _id;
 
@@ -47366,7 +47358,7 @@
 					this._stateGraph = _asset.resource;
 					this.loadStateGraph(this._stateGraph);
 
-					_asset.on('change', this._onStateGraphAssetChangeEvent);
+					_asset.on('change', this._onStateGraphAssetChangeEvent, this);
 				} else {
 					_asset.once('load', function (asset) {
 						_this3._stateGraph = asset.resource;
@@ -47374,7 +47366,7 @@
 						_this3.loadStateGraph(_this3._stateGraph);
 					});
 
-					_asset.on('change', this._onStateGraphAssetChangeEvent);
+					_asset.on('change', this._onStateGraphAssetChangeEvent, this);
 
 					this.system.app.assets.load(_asset);
 				}
