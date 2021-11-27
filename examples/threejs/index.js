@@ -20,7 +20,7 @@ if (!modelInfo) {
 }
 
 import * as THREE from '../../libs/three.js/r135/build/three.module.js';
-import { GUI } from '../../libs/three.js/r135/examples/jsm/libs/dat.gui.module.js';
+import { GUI } from '../../libs/three.js/r135/examples/jsm/libs/lil-gui.module.min.js';
 import { OrbitControls } from '../../libs/three.js/r135/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from '../../libs/three.js/r135/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from '../../libs/three.js/r135/examples/jsm/loaders/DRACOLoader.js';
