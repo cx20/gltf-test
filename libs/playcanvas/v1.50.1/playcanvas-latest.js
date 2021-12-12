@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.50.0 revision e397e986a
+ * PlayCanvas Engine v1.50.1 revision 1f42a385f
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.50.0";
-	var revision = "e397e986a";
+	var version = "1.50.1";
+	var revision = "1f42a385f";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -8404,31 +8404,25 @@
 		};
 
 		_proto.findByPath = function findByPath(path) {
-			var parts;
+			var parts = Array.isArray(path) ? path : path.split('/');
+			var result = this;
 
-			if (Array.isArray(path)) {
-				if (path.length === 0) return null;
-				parts = path;
-			} else {
-				parts = path.split('/');
-			}
+			var _loop = function _loop(i, imax) {
+				result = result.children.find(function (c) {
+					return c.name === parts[i];
+				});
 
-			var currentParent = this;
-			var result = null;
-
-			for (var i = 0, imax = parts.length; i < imax && currentParent; i++) {
-				var part = parts[i];
-				result = null;
-				var children = currentParent._children;
-
-				for (var j = 0, jmax = children.length; j < jmax; j++) {
-					if (children[j].name === part) {
-						result = children[j];
-						break;
-					}
+				if (!result) {
+					return {
+						v: null
+					};
 				}
+			};
 
-				currentParent = result;
+			for (var i = 0, imax = parts.length; i < imax; ++i) {
+				var _ret = _loop(i);
+
+				if (typeof _ret === "object") return _ret.v;
 			}
 
 			return result;
@@ -19455,7 +19449,7 @@
 			}
 
 			if (opts.blendIndices) {
-				mesh.setVertexStream(SEMANTIC_BLENDINDICES, opts.blendIndices, 4, TYPE_UINT8);
+				mesh.setVertexStream(SEMANTIC_BLENDINDICES, opts.blendIndices, 4, opts.blendIndices.length / 4, TYPE_UINT8);
 			}
 
 			if (opts.blendWeights) {
@@ -30213,68 +30207,6 @@
 		return AnimTrack;
 	}();
 
-	var AnimBinder = function () {
-		function AnimBinder() {}
-
-		AnimBinder.joinPath = function joinPath(pathSegments, character) {
-			character = character || '.';
-
-			var escape = function escape(string) {
-				return string.replace(/\\/g, '\\\\').replace(new RegExp('\\' + character, 'g'), '\\' + character);
-			};
-
-			return pathSegments.map(escape).join(character);
-		};
-
-		AnimBinder.splitPath = function splitPath(path, character) {
-			character = character || '.';
-			var result = [];
-			var curr = "";
-			var i = 0;
-
-			while (i < path.length) {
-				var c = path[i++];
-
-				if (c === '\\' && i < path.length) {
-					c = path[i++];
-
-					if (c === '\\' || c === character) {
-						curr += c;
-					} else {
-						curr += '\\' + c;
-					}
-				} else if (c === character) {
-					result.push(curr);
-					curr = '';
-				} else {
-					curr += c;
-				}
-			}
-
-			if (curr.length > 0) {
-				result.push(curr);
-			}
-
-			return result;
-		};
-
-		AnimBinder.encode = function encode(entityPath, component, propertyPath) {
-			return (Array.isArray(entityPath) ? entityPath.join('/') : entityPath) + "/" + component + "/" + (Array.isArray(propertyPath) ? propertyPath.join('/') : propertyPath);
-		};
-
-		var _proto = AnimBinder.prototype;
-
-		_proto.resolve = function resolve(path) {
-			return null;
-		};
-
-		_proto.unresolve = function unresolve(path) {};
-
-		_proto.update = function update(deltaTime) {};
-
-		return AnimBinder;
-	}();
-
 	var INTERPOLATION_STEP = 0;
 	var INTERPOLATION_LINEAR = 1;
 	var INTERPOLATION_CUBIC = 2;
@@ -32352,12 +32284,23 @@
 			'weights': 'weights'
 		};
 
+		var constructNodePath = function constructNodePath(node) {
+			var path = [];
+
+			while (node) {
+				path.unshift(node.name);
+				node = node.parent;
+			}
+
+			return path;
+		};
+
 		for (i = 0; i < gltfAnimation.channels.length; ++i) {
 			var channel = gltfAnimation.channels[i];
 			var target = channel.target;
 			var curve = curves[channel.sampler];
 			var node = nodes[target.node];
-			var entityPath = [nodes[0].name].concat(AnimBinder.splitPath(node.path, '/'));
+			var entityPath = constructNodePath(node);
 
 			curve._paths.push({
 				entityPath: entityPath,
@@ -32598,11 +32541,19 @@
 			var gltfNode = gltf.nodes[i];
 
 			if (gltfNode.hasOwnProperty('children')) {
+				var parent = nodes[i];
+				var uniqueNames = {};
+
 				for (var j = 0; j < gltfNode.children.length; ++j) {
-					var parent = nodes[i];
 					var child = nodes[gltfNode.children[j]];
 
 					if (!child.parent) {
+						if (uniqueNames.hasOwnProperty(child.name)) {
+							child.name += uniqueNames[child.name]++;
+						} else {
+							uniqueNames[child.name] = 1;
+						}
+
 						parent.addChild(child);
 					}
 				}
@@ -44304,6 +44255,68 @@
 		return AnimEvaluator;
 	}();
 
+	var AnimBinder = function () {
+		function AnimBinder() {}
+
+		AnimBinder.joinPath = function joinPath(pathSegments, character) {
+			character = character || '.';
+
+			var escape = function escape(string) {
+				return string.replace(/\\/g, '\\\\').replace(new RegExp('\\' + character, 'g'), '\\' + character);
+			};
+
+			return pathSegments.map(escape).join(character);
+		};
+
+		AnimBinder.splitPath = function splitPath(path, character) {
+			character = character || '.';
+			var result = [];
+			var curr = "";
+			var i = 0;
+
+			while (i < path.length) {
+				var c = path[i++];
+
+				if (c === '\\' && i < path.length) {
+					c = path[i++];
+
+					if (c === '\\' || c === character) {
+						curr += c;
+					} else {
+						curr += '\\' + c;
+					}
+				} else if (c === character) {
+					result.push(curr);
+					curr = '';
+				} else {
+					curr += c;
+				}
+			}
+
+			if (curr.length > 0) {
+				result.push(curr);
+			}
+
+			return result;
+		};
+
+		AnimBinder.encode = function encode(entityPath, component, propertyPath) {
+			return (Array.isArray(entityPath) ? entityPath.join('/') : entityPath) + "/" + component + "/" + (Array.isArray(propertyPath) ? propertyPath.join('/') : propertyPath);
+		};
+
+		var _proto = AnimBinder.prototype;
+
+		_proto.resolve = function resolve(path) {
+			return null;
+		};
+
+		_proto.unresolve = function unresolve(path) {};
+
+		_proto.update = function update(deltaTime) {};
+
+		return AnimBinder;
+	}();
+
 	var AnimTarget = function () {
 		function AnimTarget(func, type, components, targetPath) {
 			this._func = func;
@@ -46533,7 +46546,7 @@
 				this._currTransitionTime += dt;
 
 				if (this._currTransitionTime <= this._totalTransitionTime) {
-					var interpolatedTime = this._currTransitionTime / this._totalTransitionTime;
+					var interpolatedTime = this._totalTransitionTime !== 0 ? this._currTransitionTime / this._totalTransitionTime : 1;
 
 					for (var i = 0; i < this._transitionPreviousStates.length; i++) {
 						state = this._findState(this._transitionPreviousStates[i].name);
@@ -47331,17 +47344,11 @@
 
 					if (asset) {
 						if (asset.resource) {
-							var animTrack = asset.resource;
-
-							if (asset.data.events) {
-								animTrack.events = new AnimEvents(Object.values(asset.data.events));
-							}
-
-							this.findAnimationLayer(layer.name).assignAnimation(stateName, animTrack);
+							this.onAnimationAssetLoaded(layer.name, stateName, asset);
 						} else {
 							asset.once('load', function (layerName, stateName) {
 								return function (asset) {
-									this.findAnimationLayer(layerName).assignAnimation(stateName, asset.resource);
+									this.onAnimationAssetLoaded(layerName, stateName, asset);
 								}.bind(this);
 							}.bind(this)(layer.name, stateName));
 							this.system.app.assets.load(asset);
@@ -47349,6 +47356,16 @@
 					}
 				}
 			}
+		};
+
+		_proto.onAnimationAssetLoaded = function onAnimationAssetLoaded(layerName, stateName, asset) {
+			var animTrack = asset.resource;
+
+			if (asset.data.events) {
+				animTrack.events = new AnimEvents(Object.values(asset.data.events));
+			}
+
+			this.findAnimationLayer(layerName).assignAnimation(stateName, asset.resource);
 		};
 
 		_proto.removeStateGraph = function removeStateGraph() {
@@ -52241,18 +52258,16 @@
 				var g = value.g;
 				var b = value.b;
 
-				if (this._color.r === r && this._color.g === g && this._color.b === b) {
-					return;
+				if (this._color.r !== r || this._color.g !== g || this._color.b !== b) {
+					this._color.r = r;
+					this._color.g = g;
+					this._color.b = b;
+					this._colorUniform[0] = r;
+					this._colorUniform[1] = g;
+					this._colorUniform[2] = b;
+
+					this._renderable.setParameter('material_emissive', this._colorUniform);
 				}
-
-				this._color.r = r;
-				this._color.g = g;
-				this._color.b = b;
-				this._colorUniform[0] = r;
-				this._colorUniform[1] = g;
-				this._colorUniform[2] = b;
-
-				this._renderable.setParameter('material_emissive', this._colorUniform);
 
 				if (this._element) {
 					this._element.fire('set:color', this._color);
@@ -52264,10 +52279,11 @@
 				return this._color.a;
 			},
 			set: function set(value) {
-				if (value === this._color.a) return;
-				this._color.a = value;
+				if (value !== this._color.a) {
+					this._color.a = value;
 
-				this._renderable.setParameter('material_opacity', value);
+					this._renderable.setParameter('material_opacity', value);
+				}
 
 				if (this._element) {
 					this._element.fire('set:opacity', value);
@@ -52511,10 +52527,10 @@
 					} else {
 						this.sprite = null;
 					}
+				}
 
-					if (this._element) {
-						this._element.fire('set:spriteAsset', _id);
-					}
+				if (this._element) {
+					this._element.fire('set:spriteAsset', _id);
 				}
 			}
 		}, {
@@ -52577,9 +52593,9 @@
 					this._spriteFrame = value;
 				}
 
-				if (this._spriteFrame === oldValue) return;
-
-				this._updateSprite();
+				if (this._spriteFrame !== oldValue) {
+					this._updateSprite();
+				}
 
 				if (this._element) {
 					this._element.fire('set:spriteFrame', value);
