@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.50.1 revision 1f42a385f
+ * PlayCanvas Engine v1.50.2 revision db39f193d
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.50.1";
-	var revision = "1f42a385f";
+	var version = "1.50.2";
+	var revision = "db39f193d";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -49103,8 +49103,15 @@
 
 			if (this._imageReference.hasComponent('element')) {
 				this._isApplyingSprite = true;
-				this._imageReference.entity.element.spriteAsset = spriteAsset;
-				this._imageReference.entity.element.spriteFrame = spriteFrame;
+
+				if (this._imageReference.entity.element.spriteAsset !== spriteAsset) {
+					this._imageReference.entity.element.spriteAsset = spriteAsset;
+				}
+
+				if (this._imageReference.entity.element.spriteFrame !== spriteFrame) {
+					this._imageReference.entity.element.spriteFrame = spriteFrame;
+				}
+
 				this._isApplyingSprite = false;
 			}
 		};
@@ -49120,25 +49127,26 @@
 		};
 
 		_proto._applyTintImmediately = function _applyTintImmediately(tintColor) {
-			if (this._imageReference.hasComponent('element') && tintColor) {
-				this._isApplyingTint = true;
-				this._imageReference.entity.element.color = toColor3(tintColor);
-				this._imageReference.entity.element.opacity = tintColor.a;
-				this._isApplyingTint = false;
-			}
+			if (!tintColor || !this._imageReference.hasComponent('element')) return;
+			var color3 = toColor3(tintColor);
+			this._isApplyingTint = true;
+			if (!color3.equals(this._imageReference.entity.element.color)) this._imageReference.entity.element.color = color3;
+			if (this._imageReference.entity.element.opacity != tintColor.a) this._imageReference.entity.element.opacity = tintColor.a;
+			this._isApplyingTint = false;
 		};
 
 		_proto._applyTintWithTween = function _applyTintWithTween(tintColor) {
-			if (this._imageReference.hasComponent('element') && tintColor) {
-				var color = this._imageReference.entity.element.color;
-				var opacity = this._imageReference.entity.element.opacity;
-				this._tweenInfo = {
-					startTime: now(),
-					from: new Color(color.r, color.g, color.b, opacity),
-					to: tintColor.clone(),
-					lerpColor: new Color()
-				};
-			}
+			if (!tintColor || !this._imageReference.hasComponent('element')) return;
+			var color3 = toColor3(tintColor);
+			var color = this._imageReference.entity.element.color;
+			var opacity = this._imageReference.entity.element.opacity;
+			if (color3.equals(color) && tintColor.a == opacity) return;
+			this._tweenInfo = {
+				startTime: now(),
+				from: new Color(color.r, color.g, color.b, opacity),
+				to: tintColor.clone(),
+				lerpColor: new Color()
+			};
 		};
 
 		_proto._updateTintTween = function _updateTintTween() {
