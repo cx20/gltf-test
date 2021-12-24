@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.51.0 revision 094433dc7
+ * PlayCanvas Engine v1.51.4 revision e91904d1b
  * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.51.0";
-	var revision = "094433dc7";
+	var version = "1.51.4";
+	var revision = "e91904d1b";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -6286,7 +6286,7 @@
 
 	var reflectionCubePS = "uniform samplerCube texture_cubeMap;\nuniform float material_reflectivity;\nvec3 calcReflection(vec3 tReflDirW, float tGlossiness) {\n\tvec3 lookupVec = fixSeams(cubeMapProject(tReflDirW));\n\tlookupVec.x *= -1.0;\n\treturn $DECODE(textureCube(texture_cubeMap, lookupVec));\n}\nvoid addReflection() {\n\tdReflection += vec4(calcReflection(dReflDirW, dGlossiness), material_reflectivity);\n}\n";
 
-	var reflectionEnvPS = "#ifndef ENV_ATLAS\n#define ENV_ATLAS\nuniform sampler2D texture_envAtlas;\n#endif\nuniform float material_reflectivity;\nfloat shinyMipLevel(vec2 uv) {\n\tvec2 dx = dFdx(uv);\n\tvec2 dy = dFdy(uv);\n\tvec2 uv2 = vec2(fract(uv.x + 0.5), uv.y);\n\tvec2 dx2 = dFdx(uv2);\n\tvec2 dy2 = dFdy(uv2);\n\tfloat maxd = min(max(dot(dx, dx), dot(dy, dy)), max(dot(dx2, dx2), dot(dy2, dy2)));\n\treturn clamp(0.5 * log2(maxd), 0.0, 10.0);\n}\nvec3 calcReflection(vec3 tReflDirW, float tGlossiness) {\n\tvec3 dir = cubeMapProject(tReflDirW) * vec3(-1.0, 1.0, 1.0);\n\tvec2 uv = toSphericalUv(dir);\n\tfloat level = saturate(1.0 - tGlossiness) * 5.0;\n\tfloat ilevel = floor(level);\n\tvec3 linear0;\n\tif (ilevel == 0.0) {\n\t\tfloat level2 = shinyMipLevel(uv * atlasSize);\n\t\tfloat ilevel2 = floor(level2);\n\t\tvec3 linearA = $DECODE(texture2D(texture_envAtlas, mapMip(uv, ilevel2)));\n\t\tvec3 linearB = $DECODE(texture2D(texture_envAtlas, mapMip(uv, ilevel2 + 1.0)));\n\t\tlinear0 = mix(linearA, linearB, level2 - ilevel2);\n\t} else {\n\t\tlinear0 = $DECODE(texture2D(texture_envAtlas, mapRoughnessUv(uv, ilevel)));\n\t}\n\tvec3 linear1 = $DECODE(texture2D(texture_envAtlas, mapRoughnessUv(uv, ilevel + 1.0)));\n\treturn processEnvironment(mix(linear0, linear1, level - ilevel));\n}\nvoid addReflection() {\n\tdReflection += vec4(calcReflection(dReflDirW, dGlossiness), material_reflectivity);\n}\n";
+	var reflectionEnvPS = "#ifndef ENV_ATLAS\n#define ENV_ATLAS\nuniform sampler2D texture_envAtlas;\n#endif\nuniform float material_reflectivity;\nfloat shinyMipLevel(vec2 uv) {\n\tvec2 dx = dFdx(uv);\n\tvec2 dy = dFdy(uv);\n\tvec2 uv2 = vec2(fract(uv.x + 0.5), uv.y);\n\tvec2 dx2 = dFdx(uv2);\n\tvec2 dy2 = dFdy(uv2);\n\tfloat maxd = min(max(dot(dx, dx), dot(dy, dy)), max(dot(dx2, dx2), dot(dy2, dy2)));\n\treturn clamp(0.5 * log2(maxd) - 1.0, 0.0, 6.0);\n}\nvec3 calcReflection(vec3 tReflDirW, float tGlossiness) {\n\tvec3 dir = cubeMapProject(tReflDirW) * vec3(-1.0, 1.0, 1.0);\n\tvec2 uv = toSphericalUv(dir);\n\tfloat level = saturate(1.0 - tGlossiness) * 5.0;\n\tfloat ilevel = floor(level);\n\tvec2 uv0, uv1;\n\tfloat weight;\n\tif (ilevel == 0.0) {\n\t\tfloat level2 = shinyMipLevel(uv * atlasSize);\n\t\tfloat ilevel2 = floor(level2);\n\t\tuv0 = mapMip(uv, ilevel2);\n\t\tuv1 = mapMip(uv, ilevel2 + 1.0);\n\t\tweight = level2 - ilevel2;\n\t} else {\n\t\tuv0 = uv1 = mapRoughnessUv(uv, ilevel);\n\t\tweight = 0.0;\n\t}\n\tvec3 linearA = $DECODE(texture2D(texture_envAtlas, uv0));\n\tvec3 linearB = $DECODE(texture2D(texture_envAtlas, uv1));\n\tvec3 linear0 = mix(linearA, linearB, weight);\n\tvec3 linear1 = $DECODE(texture2D(texture_envAtlas, mapRoughnessUv(uv, ilevel + 1.0)));\n\treturn processEnvironment(mix(linear0, linear1, level - ilevel));\n}\nvoid addReflection() {\n\tdReflection += vec4(calcReflection(dReflDirW, dGlossiness), material_reflectivity);\n}\n";
 
 	var reflectionSpherePS = "#ifndef VIEWMATRIX\n#define VIEWMATRIX\nuniform mat4 matrix_view;\n#endif\nuniform sampler2D texture_sphereMap;\nuniform float material_reflectivity;\nvec3 calcReflection(vec3 tReflDirW, float tGlossiness) {\n\tvec3 reflDirV = (mat3(matrix_view) * tReflDirW).xyz;\n\tfloat m = 2.0 * sqrt( dot(reflDirV.xy, reflDirV.xy) + (reflDirV.z+1.0)*(reflDirV.z+1.0) );\n\tvec2 sphereMapUv = reflDirV.xy / m + 0.5;\n\treturn $DECODE(texture2D(texture_sphereMap, sphereMapUv));\n}\nvoid addReflection() {\n\tdReflection += vec4(calcReflection(dReflDirW, dGlossiness), material_reflectivity);\n}\n";
 
@@ -6294,7 +6294,7 @@
 
 	var refractionPS = "uniform float material_refraction, material_refractionIndex;\nvec3 refract2(vec3 viewVec, vec3 Normal, float IOR) {\n\tfloat vn = dot(viewVec, Normal);\n\tfloat k = 1.0 - IOR * IOR * (1.0 - vn * vn);\n\tvec3 refrVec = IOR * viewVec - (IOR * vn + sqrt(k)) * Normal;\n\treturn refrVec;\n}\nvoid addRefraction() {\n\tvec3 tmp = dReflDirW;\n\tvec4 tmp2 = dReflection;\n\tdReflection = vec4(0.0);\n\tdReflDirW = refract2(-dViewDirW, dNormalW, material_refractionIndex);\n\taddReflection();\n\tdDiffuseLight = mix(dDiffuseLight, dReflection.rgb * dAlbedo, material_refraction);\n\tdReflDirW = tmp;\n\tdReflection = tmp2;\n}\n";
 
-	var reprojectPS = "\nvarying vec2 vUv0;\nuniform sampler2D sourceTex;\nuniform samplerCube sourceCube;\nuniform sampler2D samplesTex;\nuniform vec2 samplesTexInverseSize;\nuniform vec4 params;\nuniform vec4 params2;\nfloat targetFace() { return params.x; }\nfloat specularPower() { return params.y; }\nfloat sourceCubeSeamScale() { return params.z; }\nfloat targetCubeSeamScale() { return params.w; }\nfloat targetTotalPixels() { return params2.x; }\nfloat sourceTotalPixels() { return params2.y; }\nfloat targetSize() {  return params2.z; }\nfloat sourceSize() {  return params2.w; }\nfloat PI = 3.141592653589793;\nfloat saturate(float x) {\n\treturn clamp(x, 0.0, 1.0);\n}\nvec3 decodeLinear(vec4 source) {\n\treturn source.rgb;\n}\nvec4 encodeLinear(vec3 source) {\n\treturn vec4(source, 1.0);\n}\nvec3 decodeGamma(vec4 source) {\n\treturn pow(source.xyz, vec3(2.2));\n}\nvec4 encodeGamma(vec3 source) {\n\treturn vec4(pow(source + 0.0000001, vec3(1.0 / 2.2)), 1.0);\n}\nvec3 decodeRGBM(vec4 rgbm) {\n\tvec3 color = (8.0 * rgbm.a) * rgbm.rgb;\n\treturn color * color;\n}\nvec4 encodeRGBM(vec3 source) {\n\tvec4 result;\n\tresult.rgb = pow(source.rgb, vec3(0.5));\n\tresult.rgb *= 1.0 / 8.0;\n\tresult.a = saturate( max( max( result.r, result.g ), max( result.b, 1.0 / 255.0 ) ) );\n\tresult.a = ceil(result.a * 255.0) / 255.0;\n\tresult.rgb /= result.a;\n\treturn result;\n}\nvec3 decodeRGBE(vec4 source) {\n\tif (source.a == 0.0) {\n\t\treturn vec3(0.0, 0.0, 0.0);\n\t} else {\n\t\treturn source.xyz * pow(2.0, source.w * 255.0 - 128.0);\n\t}\n}\nvec4 encodeRGBE(vec3 source) {\n\tfloat maxVal = max(source.x, max(source.y, source.z));\n\tif (maxVal < 1e-32) {\n\t\treturn vec4(0, 0, 0, 0);\n\t} else {\n\t\tfloat e = ceil(log2(maxVal));\n\t\treturn vec4(source / pow(2.0, e), (e + 128.0) / 255.0);\n\t}\n}\nvec3 modifySeams(vec3 dir, float scale) {\n\tvec3 adir = abs(dir);\n\tfloat M = max(max(adir.x, adir.y), adir.z);\n\treturn dir / M * vec3(\n\t\tadir.x == M ? 1.0 : scale,\n\t\tadir.y == M ? 1.0 : scale,\n\t\tadir.z == M ? 1.0 : scale\n\t);\n}\nvec2 toSpherical(vec3 dir) {\n\treturn vec2(dir.xz == vec2(0.0) ? 0.0 : atan(dir.x, dir.z), asin(dir.y));\n}\nvec3 fromSpherical(vec2 uv) {\n\treturn vec3(cos(uv.y) * sin(uv.x),\n\t\t\t\tsin(uv.y),\n\t\t\t\tcos(uv.y) * cos(uv.x));\n}\nvec3 getDirectionEquirect() {\n\treturn fromSpherical((vec2(vUv0.x, 1.0 - vUv0.y) * 2.0 - 1.0) * vec2(PI, PI * 0.5));\n}\nvec4 sampleEquirect(vec2 sph) {\n\tvec2 uv = sph / vec2(PI * 2.0, PI) + 0.5;\n\treturn texture2D(sourceTex, vec2(uv.x, 1.0 - uv.y));\n}\nvec4 sampleEquirect(vec3 dir) {\n\treturn sampleEquirect(toSpherical(dir));\n}\nvec4 sampleCubemap(vec3 dir) {\n\treturn textureCube(sourceCube, modifySeams(dir, sourceCubeSeamScale()));\n}\nvec4 sampleCubemap(vec2 sph) {\n\treturn sampleCubemap(fromSpherical(sph));\n}\nvec4 sampleEquirect(vec2 sph, float mipLevel) {\n\tvec2 uv = sph / vec2(PI * 2.0, PI) + 0.5;\n#ifdef SUPPORTS_TEXLOD\n\treturn texture2DLodEXT(sourceTex, vec2(uv.x, 1.0 - uv.y), mipLevel);\n#else\n\treturn texture2D(sourceTex, vec2(uv.x, 1.0 - uv.y));\n#endif\n}\nvec4 sampleEquirect(vec3 dir, float mipLevel) {\n\treturn sampleEquirect(toSpherical(dir), mipLevel);\n}\nvec4 sampleCubemap(vec3 dir, float mipLevel) {\n#ifdef SUPPORTS_TEXLOD\n\treturn textureCubeLodEXT(sourceCube, modifySeams(dir, 1.0 - exp2(mipLevel) / sourceSize()), mipLevel);\n#else\n\treturn textureCube(sourceCube, modifySeams(dir, 1.0 - exp2(mipLevel) / sourceSize()));\n#endif\n}\nvec4 sampleCubemap(vec2 sph, float mipLevel) {\n\treturn sampleCubemap(fromSpherical(sph), mipLevel);\n}\nfloat signNotZero(float k){\n\treturn(k >= 0.0) ? 1.0 : -1.0;\n}\nvec2 signNotZero(vec2 v) {\n\treturn vec2(signNotZero(v.x), signNotZero(v.y));\n}\nvec3 octDecode(vec2 o) {\n\tvec3 v = vec3(o.x, 1.0 - abs(o.x) - abs(o.y), o.y);\n\tif (v.y < 0.0) {\n\t\tv.xz = (1.0 - abs(v.zx)) * signNotZero(v.xz);\n\t}\n\treturn normalize(v);\n}\nvec3 getDirectionOctahedral() {\n\treturn octDecode(vec2(vUv0.x, 1.0 - vUv0.y) * 2.0 - 1.0);\n}\nvec2 octEncode(in vec3 v) {\n\tfloat l1norm = abs(v.x) + abs(v.y) + abs(v.z);\n\tvec2 result = v.xz * (1.0 / l1norm);\n\tif (v.y < 0.0) {\n\t\tresult = (1.0 - abs(result.yx)) * signNotZero(result.xy);\n\t}\n\treturn result;\n}\nvec4 sampleOctahedral(vec3 dir) {\n\tvec2 uv = octEncode(dir) * 0.5 + 0.5;\n\treturn texture2D(sourceTex, vec2(uv.x, 1.0 - uv.y));\n}\nvec4 sampleOctahedral(vec2 sph) {\n\treturn sampleOctahedral(fromSpherical(sph));\n}\nvec4 sampleOctahedral(vec3 dir, float mipLevel) {\n\tvec2 uv = octEncode(dir) * 0.5 + 0.5;\n#ifdef SUPPORTS_TEXLOD\n\treturn texture2DLodEXT(sourceTex, vec2(uv.x, 1.0 - uv.y), mipLevel);\n#else\n\treturn texture2D(sourceTex, vec2(uv.x, 1.0 - uv.y));\n#endif\n}\nvec4 sampleOctahedral(vec2 sph, float mipLevel) {\n\treturn sampleOctahedral(fromSpherical(sph), mipLevel);\n}\nvec3 getDirectionCubemap() {\n\tvec2 st = vUv0 * 2.0 - 1.0;\n\tfloat face = targetFace();\n\tvec3 vec;\n\tif (face == 0.0) {\n\t\tvec = vec3(1, -st.y, -st.x);\n\t} else if (face == 1.0) {\n\t\tvec = vec3(-1, -st.y, st.x);\n\t} else if (face == 2.0) {\n\t\tvec = vec3(st.x, 1, st.y);\n\t} else if (face == 3.0) {\n\t\tvec = vec3(st.x, -1, -st.y);\n\t} else if (face == 4.0) {\n\t\tvec = vec3(st.x, -st.y, 1);\n\t} else {\n\t\tvec = vec3(-st.x, -st.y, -1);\n\t}\n\treturn normalize(modifySeams(vec, 1.0 / targetCubeSeamScale()));\n}\nmat3 matrixFromVector(vec3 n) {\n\tfloat a = 1.0 / (1.0 + n.z);\n\tfloat b = -n.x * n.y * a;\n\tvec3 b1 = vec3(1.0 - n.x * n.x * a, b, -n.x);\n\tvec3 b2 = vec3(b, 1.0 - n.y * n.y * a, -n.y);\n\treturn mat3(b1, b2, n);\n}\nmat3 matrixFromVectorSlow(vec3 n) {\n\tvec3 up = (1.0 - abs(n.y) <= 0.0000001) ? vec3(0.0, 0.0, n.y > 0.0 ? 1.0 : -1.0) : vec3(0.0, 1.0, 0.0);\n\tvec3 x = normalize(cross(up, n));\n\tvec3 y = cross(n, x);\n\treturn mat3(x, y, n);\n}\nvec4 reproject() {\n\tif (NUM_SAMPLES <= 1) {\n\t\treturn ENCODE_FUNC(DECODE_FUNC(SOURCE_FUNC(TARGET_FUNC())));\n\t} else {\n\t\tvec2 sph = toSpherical(TARGET_FUNC());\n\t\tvec2 sphu = dFdx(sph);\n\t\tvec2 sphv = dFdy(sph);\n\t\tconst float NUM_SAMPLES_SQRT = sqrt(float(NUM_SAMPLES));\n\t\tvec3 result = vec3(0.0);\n\t\tfor (float u = 0.0; u < NUM_SAMPLES_SQRT; ++u) {\n\t\t\tfor (float v = 0.0; v < NUM_SAMPLES_SQRT; ++v) {\n\t\t\t\tresult += DECODE_FUNC(SOURCE_FUNC(sph +\n\t\t\t\t\t\t\t\t\t\t\t\t  sphu * (u / NUM_SAMPLES_SQRT - 0.5) +\n\t\t\t\t\t\t\t\t\t\t\t\t  sphv * (v / NUM_SAMPLES_SQRT - 0.5)));\n\t\t\t}\n\t\t}\n\t\treturn ENCODE_FUNC(result / (NUM_SAMPLES_SQRT * NUM_SAMPLES_SQRT));\n\t}\n}\nvec4 unpackFloat = vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0);\nvoid unpackSample(int i, out vec3 L, out float mipLevel) {\n\tfloat u = (float(i * 4) + 0.5) * samplesTexInverseSize.x;\n\tfloat v = (floor(u) + 0.5) * samplesTexInverseSize.y;\n\tvec4 raw;\n\traw.x = dot(texture2D(samplesTex, vec2(u, v)), unpackFloat); u += samplesTexInverseSize.x;\n\traw.y = dot(texture2D(samplesTex, vec2(u, v)), unpackFloat); u += samplesTexInverseSize.x;\n\traw.z = dot(texture2D(samplesTex, vec2(u, v)), unpackFloat); u += samplesTexInverseSize.x;\n\traw.w = dot(texture2D(samplesTex, vec2(u, v)), unpackFloat);\n\tL.xyz = raw.xyz * 2.0 - 1.0;\n\tmipLevel = raw.w * 8.0;\n}\nvec4 prefilterSamples() {\n\tmat3 vecSpace = matrixFromVectorSlow(TARGET_FUNC());\n\tvec3 L;\n\tfloat mipLevel;\n\tvec3 result = vec3(0.0);\n\tfloat totalWeight = 0.0;\n\tfor (int i = 0; i < NUM_SAMPLES; ++i) {\n\t\tunpackSample(i, L, mipLevel);\n\t\tresult += DECODE_FUNC(SOURCE_FUNC(vecSpace * L, mipLevel)) * L.z;\n\t\ttotalWeight += L.z;\n\t}\n\treturn ENCODE_FUNC(result / totalWeight);\n}\nvec4 prefilterSamplesUnweighted() {\n\tmat3 vecSpace = matrixFromVectorSlow(TARGET_FUNC());\n\tvec3 L;\n\tfloat mipLevel;\n\tvec3 result = vec3(0.0);\n\tfloat totalWeight = 0.0;\n\tfor (int i = 0; i < NUM_SAMPLES; ++i) {\n\t\tunpackSample(i, L, mipLevel);\n\t\tresult += DECODE_FUNC(SOURCE_FUNC(vecSpace * L, mipLevel));\n\t}\n\treturn ENCODE_FUNC(result / float(NUM_SAMPLES));\n}\nvoid main(void) {\n\tgl_FragColor = PROCESS_FUNC();\n}\n";
+	var reprojectPS = "\nvarying vec2 vUv0;\nuniform sampler2D sourceTex;\nuniform samplerCube sourceCube;\nuniform sampler2D samplesTex;\nuniform vec2 samplesTexInverseSize;\nuniform vec4 params;\nuniform vec2 params2;\nfloat targetFace() { return params.x; }\nfloat specularPower() { return params.y; }\nfloat sourceCubeSeamScale() { return params.z; }\nfloat targetCubeSeamScale() { return params.w; }\nfloat targetTotalPixels() { return params2.x; }\nfloat sourceTotalPixels() { return params2.y; }\nfloat PI = 3.141592653589793;\nfloat saturate(float x) {\n\treturn clamp(x, 0.0, 1.0);\n}\nvec3 decodeLinear(vec4 source) {\n\treturn source.rgb;\n}\nvec4 encodeLinear(vec3 source) {\n\treturn vec4(source, 1.0);\n}\nvec3 decodeGamma(vec4 source) {\n\treturn pow(source.xyz, vec3(2.2));\n}\nvec4 encodeGamma(vec3 source) {\n\treturn vec4(pow(source + 0.0000001, vec3(1.0 / 2.2)), 1.0);\n}\nvec3 decodeRGBM(vec4 rgbm) {\n\tvec3 color = (8.0 * rgbm.a) * rgbm.rgb;\n\treturn color * color;\n}\nvec4 encodeRGBM(vec3 source) {\n\tvec4 result;\n\tresult.rgb = pow(source.rgb, vec3(0.5));\n\tresult.rgb *= 1.0 / 8.0;\n\tresult.a = saturate( max( max( result.r, result.g ), max( result.b, 1.0 / 255.0 ) ) );\n\tresult.a = ceil(result.a * 255.0) / 255.0;\n\tresult.rgb /= result.a;\n\treturn result;\n}\nvec3 decodeRGBE(vec4 source) {\n\tif (source.a == 0.0) {\n\t\treturn vec3(0.0, 0.0, 0.0);\n\t} else {\n\t\treturn source.xyz * pow(2.0, source.w * 255.0 - 128.0);\n\t}\n}\nvec4 encodeRGBE(vec3 source) {\n\tfloat maxVal = max(source.x, max(source.y, source.z));\n\tif (maxVal < 1e-32) {\n\t\treturn vec4(0, 0, 0, 0);\n\t} else {\n\t\tfloat e = ceil(log2(maxVal));\n\t\treturn vec4(source / pow(2.0, e), (e + 128.0) / 255.0);\n\t}\n}\nvec3 modifySeams(vec3 dir, float scale) {\n\tvec3 adir = abs(dir);\n\tfloat M = max(max(adir.x, adir.y), adir.z);\n\treturn dir / M * vec3(\n\t\tadir.x == M ? 1.0 : scale,\n\t\tadir.y == M ? 1.0 : scale,\n\t\tadir.z == M ? 1.0 : scale\n\t);\n}\nvec2 toSpherical(vec3 dir) {\n\treturn vec2(dir.xz == vec2(0.0) ? 0.0 : atan(dir.x, dir.z), asin(dir.y));\n}\nvec3 fromSpherical(vec2 uv) {\n\treturn vec3(cos(uv.y) * sin(uv.x),\n\t\t\t\tsin(uv.y),\n\t\t\t\tcos(uv.y) * cos(uv.x));\n}\nvec3 getDirectionEquirect() {\n\treturn fromSpherical((vec2(vUv0.x, 1.0 - vUv0.y) * 2.0 - 1.0) * vec2(PI, PI * 0.5));\n}\nvec4 sampleEquirect(vec2 sph) {\n\tvec2 uv = sph / vec2(PI * 2.0, PI) + 0.5;\n\treturn texture2D(sourceTex, vec2(uv.x, 1.0 - uv.y));\n}\nvec4 sampleEquirect(vec3 dir) {\n\treturn sampleEquirect(toSpherical(dir));\n}\nvec4 sampleCubemap(vec3 dir) {\n\treturn textureCube(sourceCube, modifySeams(dir, 1.0 - sourceCubeSeamScale()));\n}\nvec4 sampleCubemap(vec2 sph) {\n\treturn sampleCubemap(fromSpherical(sph));\n}\nvec4 sampleEquirect(vec2 sph, float mipLevel) {\n\tvec2 uv = sph / vec2(PI * 2.0, PI) + 0.5;\n#ifdef SUPPORTS_TEXLOD\n\treturn texture2DLodEXT(sourceTex, vec2(uv.x, 1.0 - uv.y), mipLevel);\n#else\n\treturn texture2D(sourceTex, vec2(uv.x, 1.0 - uv.y));\n#endif\n}\nvec4 sampleEquirect(vec3 dir, float mipLevel) {\n\treturn sampleEquirect(toSpherical(dir), mipLevel);\n}\nvec4 sampleCubemap(vec3 dir, float mipLevel) {\n#ifdef SUPPORTS_TEXLOD\n\treturn textureCubeLodEXT(sourceCube, modifySeams(dir, 1.0 - exp2(mipLevel) * sourceCubeSeamScale()), mipLevel);\n#else\n\treturn textureCube(sourceCube, modifySeams(dir, 1.0 - exp2(mipLevel) * sourceCubeSeamScale()));\n#endif\n}\nvec4 sampleCubemap(vec2 sph, float mipLevel) {\n\treturn sampleCubemap(fromSpherical(sph), mipLevel);\n}\nfloat signNotZero(float k){\n\treturn(k >= 0.0) ? 1.0 : -1.0;\n}\nvec2 signNotZero(vec2 v) {\n\treturn vec2(signNotZero(v.x), signNotZero(v.y));\n}\nvec3 octDecode(vec2 o) {\n\tvec3 v = vec3(o.x, 1.0 - abs(o.x) - abs(o.y), o.y);\n\tif (v.y < 0.0) {\n\t\tv.xz = (1.0 - abs(v.zx)) * signNotZero(v.xz);\n\t}\n\treturn normalize(v);\n}\nvec3 getDirectionOctahedral() {\n\treturn octDecode(vec2(vUv0.x, 1.0 - vUv0.y) * 2.0 - 1.0);\n}\nvec2 octEncode(in vec3 v) {\n\tfloat l1norm = abs(v.x) + abs(v.y) + abs(v.z);\n\tvec2 result = v.xz * (1.0 / l1norm);\n\tif (v.y < 0.0) {\n\t\tresult = (1.0 - abs(result.yx)) * signNotZero(result.xy);\n\t}\n\treturn result;\n}\nvec4 sampleOctahedral(vec3 dir) {\n\tvec2 uv = octEncode(dir) * 0.5 + 0.5;\n\treturn texture2D(sourceTex, vec2(uv.x, 1.0 - uv.y));\n}\nvec4 sampleOctahedral(vec2 sph) {\n\treturn sampleOctahedral(fromSpherical(sph));\n}\nvec4 sampleOctahedral(vec3 dir, float mipLevel) {\n\tvec2 uv = octEncode(dir) * 0.5 + 0.5;\n#ifdef SUPPORTS_TEXLOD\n\treturn texture2DLodEXT(sourceTex, vec2(uv.x, 1.0 - uv.y), mipLevel);\n#else\n\treturn texture2D(sourceTex, vec2(uv.x, 1.0 - uv.y));\n#endif\n}\nvec4 sampleOctahedral(vec2 sph, float mipLevel) {\n\treturn sampleOctahedral(fromSpherical(sph), mipLevel);\n}\nvec3 getDirectionCubemap() {\n\tvec2 st = vUv0 * 2.0 - 1.0;\n\tfloat face = targetFace();\n\tvec3 vec;\n\tif (face == 0.0) {\n\t\tvec = vec3(1, -st.y, -st.x);\n\t} else if (face == 1.0) {\n\t\tvec = vec3(-1, -st.y, st.x);\n\t} else if (face == 2.0) {\n\t\tvec = vec3(st.x, 1, st.y);\n\t} else if (face == 3.0) {\n\t\tvec = vec3(st.x, -1, -st.y);\n\t} else if (face == 4.0) {\n\t\tvec = vec3(st.x, -st.y, 1);\n\t} else {\n\t\tvec = vec3(-st.x, -st.y, -1);\n\t}\n\treturn normalize(modifySeams(vec, 1.0 / (1.0 - targetCubeSeamScale())));\n}\nmat3 matrixFromVector(vec3 n) {\n\tfloat a = 1.0 / (1.0 + n.z);\n\tfloat b = -n.x * n.y * a;\n\tvec3 b1 = vec3(1.0 - n.x * n.x * a, b, -n.x);\n\tvec3 b2 = vec3(b, 1.0 - n.y * n.y * a, -n.y);\n\treturn mat3(b1, b2, n);\n}\nmat3 matrixFromVectorSlow(vec3 n) {\n\tvec3 up = (1.0 - abs(n.y) <= 0.0000001) ? vec3(0.0, 0.0, n.y > 0.0 ? 1.0 : -1.0) : vec3(0.0, 1.0, 0.0);\n\tvec3 x = normalize(cross(up, n));\n\tvec3 y = cross(n, x);\n\treturn mat3(x, y, n);\n}\nvec4 reproject() {\n\tif (NUM_SAMPLES <= 1) {\n\t\treturn ENCODE_FUNC(DECODE_FUNC(SOURCE_FUNC(TARGET_FUNC())));\n\t} else {\n\t\tvec2 sph = toSpherical(TARGET_FUNC());\n\t\tvec2 sphu = dFdx(sph);\n\t\tvec2 sphv = dFdy(sph);\n\t\tconst float NUM_SAMPLES_SQRT = sqrt(float(NUM_SAMPLES));\n\t\tvec3 result = vec3(0.0);\n\t\tfor (float u = 0.0; u < NUM_SAMPLES_SQRT; ++u) {\n\t\t\tfor (float v = 0.0; v < NUM_SAMPLES_SQRT; ++v) {\n\t\t\t\tresult += DECODE_FUNC(SOURCE_FUNC(sph +\n\t\t\t\t\t\t\t\t\t\t\t\t  sphu * (u / NUM_SAMPLES_SQRT - 0.5) +\n\t\t\t\t\t\t\t\t\t\t\t\t  sphv * (v / NUM_SAMPLES_SQRT - 0.5)));\n\t\t\t}\n\t\t}\n\t\treturn ENCODE_FUNC(result / (NUM_SAMPLES_SQRT * NUM_SAMPLES_SQRT));\n\t}\n}\nvec4 unpackFloat = vec4(1.0, 1.0 / 255.0, 1.0 / 65025.0, 1.0 / 16581375.0);\nvoid unpackSample(int i, out vec3 L, out float mipLevel) {\n\tfloat u = (float(i * 4) + 0.5) * samplesTexInverseSize.x;\n\tfloat v = (floor(u) + 0.5) * samplesTexInverseSize.y;\n\tvec4 raw;\n\traw.x = dot(texture2D(samplesTex, vec2(u, v)), unpackFloat); u += samplesTexInverseSize.x;\n\traw.y = dot(texture2D(samplesTex, vec2(u, v)), unpackFloat); u += samplesTexInverseSize.x;\n\traw.z = dot(texture2D(samplesTex, vec2(u, v)), unpackFloat); u += samplesTexInverseSize.x;\n\traw.w = dot(texture2D(samplesTex, vec2(u, v)), unpackFloat);\n\tL.xyz = raw.xyz * 2.0 - 1.0;\n\tmipLevel = raw.w * 8.0;\n}\nvec4 prefilterSamples() {\n\tmat3 vecSpace = matrixFromVectorSlow(TARGET_FUNC());\n\tvec3 L;\n\tfloat mipLevel;\n\tvec3 result = vec3(0.0);\n\tfloat totalWeight = 0.0;\n\tfor (int i = 0; i < NUM_SAMPLES; ++i) {\n\t\tunpackSample(i, L, mipLevel);\n\t\tresult += DECODE_FUNC(SOURCE_FUNC(vecSpace * L, mipLevel)) * L.z;\n\t\ttotalWeight += L.z;\n\t}\n\treturn ENCODE_FUNC(result / totalWeight);\n}\nvec4 prefilterSamplesUnweighted() {\n\tmat3 vecSpace = matrixFromVectorSlow(TARGET_FUNC());\n\tvec3 L;\n\tfloat mipLevel;\n\tvec3 result = vec3(0.0);\n\tfloat totalWeight = 0.0;\n\tfor (int i = 0; i < NUM_SAMPLES; ++i) {\n\t\tunpackSample(i, L, mipLevel);\n\t\tresult += DECODE_FUNC(SOURCE_FUNC(vecSpace * L, mipLevel));\n\t}\n\treturn ENCODE_FUNC(result / float(NUM_SAMPLES));\n}\nvoid main(void) {\n\tgl_FragColor = PROCESS_FUNC();\n}\n";
 
 	var rgbmPS = "vec3 texture2DRGBM(sampler2D tex, vec2 uv) {\n\treturn decodeRGBM(texture2D(tex, uv));\n}\nvec3 textureCubeRGBM(samplerCube tex, vec3 uvw) {\n\treturn decodeRGBM(textureCube(tex, uvw));\n}\n";
 
@@ -10395,11 +10395,11 @@
 					code += options.packedNormal ? chunks.normalXYPS : chunks.normalXYZPS;
 
 					if (!options.hasTangents) {
-						var transformPropName = options.normalMap ? "normalMapTransform" : "clearCoatNormalMapTransform";
+						var baseName = options.normalMap ? "normalMap" : "clearCoatNormalMap";
 
-						var normalMapUv = this._getUvSourceExpression(transformPropName, "normalMapUv", options);
+						var uv = this._getUvSourceExpression(baseName + "Transform", baseName + "Uv", options);
 
-						tbn = tbn.replace(/\$UV/g, normalMapUv);
+						tbn = tbn.replace(/\$UV/g, uv);
 					}
 
 					code += tbn;
@@ -11351,7 +11351,7 @@
 	var packSamplesTex = function packSamplesTex(device, name, samples) {
 		var numSamples = samples.length;
 		var w = Math.min(numSamples, 512);
-		var h = Math.max(1, Math.floor(numSamples / w));
+		var h = Math.ceil(numSamples / w);
 		var data = new Uint8ClampedArray(w * h * 4);
 		var off = 0;
 
@@ -11480,8 +11480,8 @@
 			uvModParam.setValue([1, 1, 0, 0]);
 		}
 
-		var params = [0, specularPower, 1.0 - (source.fixCubemapSeams ? 1.0 / source.width : 0.0), 1.0 - (target.fixCubemapSeams ? 1.0 / target.width : 0.0)];
-		var params2 = [target.width * target.height * (target.cubemap ? 6 : 1), source.width * source.height * (source.cubemap ? 6 : 1), target.width, source.width];
+		var params = [0, specularPower, source.fixCubemapSeams ? 1.0 / source.width : 0.0, target.fixCubemapSeams ? 1.0 / target.width : 0.0];
+		var params2 = [target.width * target.height * (target.cubemap ? 6 : 1), source.width * source.height * (source.cubemap ? 6 : 1)];
 
 		if (processFunc.startsWith('prefilterSamples')) {
 			var sourceTotalPixels = source.width * source.height * (source.cubemap ? 6 : 1);
@@ -11545,27 +11545,6 @@
 		});
 	};
 
-	var generateMipmaps = function generateMipmaps(target) {
-		var device = target.device;
-		var result = new Texture(device, {
-			name: target.name + '-mipmaps',
-			cubemap: target.cubemap,
-			width: target.width,
-			height: target.height,
-			format: target.format,
-			type: target.type,
-			addressU: target.addressU,
-			addressV: target.addressV,
-			fixCubemapSeams: target.fixCubemapSeams,
-			mipmaps: true
-		});
-		reprojectTexture(target, result, {
-			numSamples: 1
-		});
-		target.destroy();
-		return result;
-	};
-
 	var EnvLighting = function () {
 		function EnvLighting() {}
 
@@ -11580,11 +11559,23 @@
 
 		EnvLighting.generateLightingSource = function generateLightingSource(source) {
 			var device = source.device;
-			var result = createCubemap(device, 128, lightingSourcePixelFormat(device), false);
+			var format = lightingSourcePixelFormat(device);
+			var result = new Texture(device, {
+				name: "lighting-source",
+				cubemap: true,
+				width: 128,
+				height: 128,
+				format: format,
+				type: format === PIXELFORMAT_R8_G8_B8_A8 ? TEXTURETYPE_RGBM : TEXTURETYPE_DEFAULT,
+				addressU: ADDRESS_CLAMP_TO_EDGE,
+				addressV: ADDRESS_CLAMP_TO_EDGE,
+				fixCubemapSeams: false,
+				mipmaps: true
+			});
 			reprojectTexture(source, result, {
 				numSamples: source.mipmaps ? 1 : 1024
 			});
-			return generateMipmaps(result);
+			return result;
 		};
 
 		EnvLighting.generateAtlas = function generateAtlas(source, options) {
@@ -48850,8 +48841,15 @@
 
 			if (this._imageReference.hasComponent('element')) {
 				this._isApplyingSprite = true;
-				this._imageReference.entity.element.spriteAsset = spriteAsset;
-				this._imageReference.entity.element.spriteFrame = spriteFrame;
+
+				if (this._imageReference.entity.element.spriteAsset !== spriteAsset) {
+					this._imageReference.entity.element.spriteAsset = spriteAsset;
+				}
+
+				if (this._imageReference.entity.element.spriteFrame !== spriteFrame) {
+					this._imageReference.entity.element.spriteFrame = spriteFrame;
+				}
+
 				this._isApplyingSprite = false;
 			}
 		};
@@ -48867,25 +48865,26 @@
 		};
 
 		_proto._applyTintImmediately = function _applyTintImmediately(tintColor) {
-			if (this._imageReference.hasComponent('element') && tintColor) {
-				this._isApplyingTint = true;
-				this._imageReference.entity.element.color = toColor3(tintColor);
-				this._imageReference.entity.element.opacity = tintColor.a;
-				this._isApplyingTint = false;
-			}
+			if (!tintColor || !this._imageReference.hasComponent('element')) return;
+			var color3 = toColor3(tintColor);
+			this._isApplyingTint = true;
+			if (!color3.equals(this._imageReference.entity.element.color)) this._imageReference.entity.element.color = color3;
+			if (this._imageReference.entity.element.opacity != tintColor.a) this._imageReference.entity.element.opacity = tintColor.a;
+			this._isApplyingTint = false;
 		};
 
 		_proto._applyTintWithTween = function _applyTintWithTween(tintColor) {
-			if (this._imageReference.hasComponent('element') && tintColor) {
-				var color = this._imageReference.entity.element.color;
-				var opacity = this._imageReference.entity.element.opacity;
-				this._tweenInfo = {
-					startTime: now(),
-					from: new Color(color.r, color.g, color.b, opacity),
-					to: tintColor.clone(),
-					lerpColor: new Color()
-				};
-			}
+			if (!tintColor || !this._imageReference.hasComponent('element')) return;
+			var color3 = toColor3(tintColor);
+			var color = this._imageReference.entity.element.color;
+			var opacity = this._imageReference.entity.element.opacity;
+			if (color3.equals(color) && tintColor.a == opacity) return;
+			this._tweenInfo = {
+				startTime: now(),
+				from: new Color(color.r, color.g, color.b, opacity),
+				to: tintColor.clone(),
+				lerpColor: new Color()
+			};
 		};
 
 		_proto._updateTintTween = function _updateTintTween() {
