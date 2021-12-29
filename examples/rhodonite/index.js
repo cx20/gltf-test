@@ -137,7 +137,8 @@ const load = async function () {
   const cameraComponents = componentRepository.getComponentsWithType(Rn.CameraComponent).filter(camera => camera.uniqueName.substring(0,1) !== "-");
   
   if (cameraComponents.length > 1) {
-    let cameraNames = cameraComponents.map(camera => camera.uniqueName);
+    //let cameraNames = cameraComponents.map(camera => camera.uniqueName);
+    let cameraNames = cameraComponents.map((value, index) => "camera" + index); // TODO: Set to [default] for default
     const defaultIndex = Math.floor(Math.random() * cameraNames.length); // Randomly switch if there are multiple cameras
     CAMERA = cameraNames[defaultIndex];
     guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
