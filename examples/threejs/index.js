@@ -19,13 +19,14 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-import * as THREE from '../../libs/three.js/r136/build/three.module.js';
-import { GUI } from '../../libs/three.js/r136/examples/jsm/libs/lil-gui.module.min.js';
-import { OrbitControls } from '../../libs/three.js/r136/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from '../../libs/three.js/r136/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from '../../libs/three.js/r136/examples/jsm/loaders/DRACOLoader.js';
-import { HDRCubeTextureLoader } from '../../libs/three.js/r136/examples/jsm/loaders/HDRCubeTextureLoader.js';
-import { KTX2Loader } from './../../libs/three.js/r136/examples/jsm/loaders/KTX2Loader.js';
+//import * as THREE from '../../libs/three.js/r137/build/three.module.js';
+import * as THREE from 'three';
+import { GUI } from '../../libs/three.js/r137/examples/jsm/libs/lil-gui.module.min.js';
+import { OrbitControls } from '../../libs/three.js/r137/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from '../../libs/three.js/r137/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from '../../libs/three.js/r137/examples/jsm/loaders/DRACOLoader.js';
+import { HDRCubeTextureLoader } from '../../libs/three.js/r137/examples/jsm/loaders/HDRCubeTextureLoader.js';
+import { KTX2Loader } from './../../libs/three.js/r137/examples/jsm/loaders/KTX2Loader.js';
 
 let gltf = null;
 let mixer = null;
@@ -100,10 +101,10 @@ function init() {
     const loader = new GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
-    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r136/examples/js/libs/draco/gltf/' );
+    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r137/examples/js/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
-    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r136/examples/js/libs/basis/' );
+    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r137/examples/js/libs/basis/' );
     ktx2Loader.detectSupport( renderer );
     loader.setKTX2Loader( ktx2Loader );
 
