@@ -19,14 +19,13 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-//import * as THREE from '../../libs/three.js/r137/build/three.module.js';
 import * as THREE from 'three';
-import { GUI } from '../../libs/three.js/r137/examples/jsm/libs/lil-gui.module.min.js';
-import { OrbitControls } from '../../libs/three.js/r137/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from '../../libs/three.js/r137/examples/jsm/loaders/GLTFLoader.js';
-import { DRACOLoader } from '../../libs/three.js/r137/examples/jsm/loaders/DRACOLoader.js';
-import { HDRCubeTextureLoader } from '../../libs/three.js/r137/examples/jsm/loaders/HDRCubeTextureLoader.js';
-import { KTX2Loader } from './../../libs/three.js/r137/examples/jsm/loaders/KTX2Loader.js';
+import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { HDRCubeTextureLoader } from 'three/examples/jsm/loaders/HDRCubeTextureLoader.js';
+import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 
 let gltf = null;
 let mixer = null;
