@@ -1,7 +1,7 @@
 /**
  * @license
- * PlayCanvas Engine v1.51.4 revision e91904d1b
- * Copyright 2011-2021 PlayCanvas Ltd. All rights reserved.
+ * PlayCanvas Engine v1.51.7 revision f3750a326
+ * Copyright 2011-2022 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -634,8 +634,8 @@
 		return result;
 	}();
 
-	var version = "1.51.4";
-	var revision = "e91904d1b";
+	var version = "1.51.7";
+	var revision = "f3750a326";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -6006,7 +6006,7 @@
 
 	var ambientConstantPS = "void addAmbient() {\n\tdDiffuseLight += light_globalAmbient;\n}\n";
 
-	var ambientEnvPS = "#ifndef ENV_ATLAS\n#define ENV_ATLAS\nuniform sampler2D texture_envAtlas;\n#endif\nvoid addAmbient() {\n\tvec3 dir = cubeMapRotate(dNormalW) * vec3(-1.0, 1.0, 1.0);\n\tvec2 uv = mapUv(toSphericalUv(dir), vec4(128.0, 256.0 + 128.0, 64.0, 32.0) / atlasSize);\n\tvec4 raw = texture2D(texture_envAtlas, uv);\n\tvec3 linear = $DECODE(raw);\n\tdDiffuseLight += processEnvironment(linear);\n}\n";
+	var ambientEnvPS = "#ifndef ENV_ATLAS\n#define ENV_ATLAS\nuniform sampler2D texture_envAtlas;\n#endif\nvoid addAmbient() {\n\tvec3 dir = normalize(cubeMapRotate(dNormalW) * vec3(-1.0, 1.0, 1.0));\n\tvec2 uv = mapUv(toSphericalUv(dir), vec4(128.0, 256.0 + 128.0, 64.0, 32.0) / atlasSize);\n\tvec4 raw = texture2D(texture_envAtlas, uv);\n\tvec3 linear = $DECODE(raw);\n\tdDiffuseLight += processEnvironment(linear);\n}\n";
 
 	var ambientSHPS = "uniform vec3 ambientSH[9];\nvoid addAmbient() {\n\tvec3 n = cubeMapRotate(dNormalW);\n\tvec3 color =\n\t\tambientSH[0] +\n\t\tambientSH[1] * n.x +\n\t\tambientSH[2] * n.y +\n\t\tambientSH[3] * n.z +\n\t\tambientSH[4] * n.x * n.z +\n\t\tambientSH[5] * n.z * n.y +\n\t\tambientSH[6] * n.y * n.x +\n\t\tambientSH[7] * (3.0 * n.z * n.z - 1.0) +\n\t\tambientSH[8] * (n.x * n.x - n.y * n.y);\n\tdDiffuseLight += processEnvironment(max(color, vec3(0.0)));\n}\n";
 
@@ -6286,7 +6286,7 @@
 
 	var reflectionCubePS = "uniform samplerCube texture_cubeMap;\nuniform float material_reflectivity;\nvec3 calcReflection(vec3 tReflDirW, float tGlossiness) {\n\tvec3 lookupVec = fixSeams(cubeMapProject(tReflDirW));\n\tlookupVec.x *= -1.0;\n\treturn $DECODE(textureCube(texture_cubeMap, lookupVec));\n}\nvoid addReflection() {\n\tdReflection += vec4(calcReflection(dReflDirW, dGlossiness), material_reflectivity);\n}\n";
 
-	var reflectionEnvPS = "#ifndef ENV_ATLAS\n#define ENV_ATLAS\nuniform sampler2D texture_envAtlas;\n#endif\nuniform float material_reflectivity;\nfloat shinyMipLevel(vec2 uv) {\n\tvec2 dx = dFdx(uv);\n\tvec2 dy = dFdy(uv);\n\tvec2 uv2 = vec2(fract(uv.x + 0.5), uv.y);\n\tvec2 dx2 = dFdx(uv2);\n\tvec2 dy2 = dFdy(uv2);\n\tfloat maxd = min(max(dot(dx, dx), dot(dy, dy)), max(dot(dx2, dx2), dot(dy2, dy2)));\n\treturn clamp(0.5 * log2(maxd) - 1.0, 0.0, 6.0);\n}\nvec3 calcReflection(vec3 tReflDirW, float tGlossiness) {\n\tvec3 dir = cubeMapProject(tReflDirW) * vec3(-1.0, 1.0, 1.0);\n\tvec2 uv = toSphericalUv(dir);\n\tfloat level = saturate(1.0 - tGlossiness) * 5.0;\n\tfloat ilevel = floor(level);\n\tvec2 uv0, uv1;\n\tfloat weight;\n\tif (ilevel == 0.0) {\n\t\tfloat level2 = shinyMipLevel(uv * atlasSize);\n\t\tfloat ilevel2 = floor(level2);\n\t\tuv0 = mapMip(uv, ilevel2);\n\t\tuv1 = mapMip(uv, ilevel2 + 1.0);\n\t\tweight = level2 - ilevel2;\n\t} else {\n\t\tuv0 = uv1 = mapRoughnessUv(uv, ilevel);\n\t\tweight = 0.0;\n\t}\n\tvec3 linearA = $DECODE(texture2D(texture_envAtlas, uv0));\n\tvec3 linearB = $DECODE(texture2D(texture_envAtlas, uv1));\n\tvec3 linear0 = mix(linearA, linearB, weight);\n\tvec3 linear1 = $DECODE(texture2D(texture_envAtlas, mapRoughnessUv(uv, ilevel + 1.0)));\n\treturn processEnvironment(mix(linear0, linear1, level - ilevel));\n}\nvoid addReflection() {\n\tdReflection += vec4(calcReflection(dReflDirW, dGlossiness), material_reflectivity);\n}\n";
+	var reflectionEnvPS = "#ifndef ENV_ATLAS\n#define ENV_ATLAS\nuniform sampler2D texture_envAtlas;\n#endif\nuniform float material_reflectivity;\nfloat shinyMipLevel(vec2 uv) {\n\tvec2 dx = dFdx(uv);\n\tvec2 dy = dFdy(uv);\n\tvec2 uv2 = vec2(fract(uv.x + 0.5), uv.y);\n\tvec2 dx2 = dFdx(uv2);\n\tvec2 dy2 = dFdy(uv2);\n\tfloat maxd = min(max(dot(dx, dx), dot(dy, dy)), max(dot(dx2, dx2), dot(dy2, dy2)));\n\treturn clamp(0.5 * log2(maxd) - 1.0, 0.0, 6.0);\n}\nvec3 calcReflection(vec3 tReflDirW, float tGlossiness) {\n\tvec3 dir = cubeMapProject(tReflDirW) * vec3(-1.0, 1.0, 1.0);\n\tvec2 uv = toSphericalUv(dir);\n\tfloat level = saturate(1.0 - tGlossiness) * 5.0;\n\tfloat ilevel = floor(level);\n\tfloat level2 = shinyMipLevel(uv * atlasSize);\n\tfloat ilevel2 = floor(level2);\n\tvec2 uv0, uv1;\n\tfloat weight;\n\tif (ilevel == 0.0) {\n\t\tuv0 = mapMip(uv, ilevel2);\n\t\tuv1 = mapMip(uv, ilevel2 + 1.0);\n\t\tweight = level2 - ilevel2;\n\t} else {\n\t\tuv0 = uv1 = mapRoughnessUv(uv, ilevel);\n\t\tweight = 0.0;\n\t}\n\tvec3 linearA = $DECODE(texture2D(texture_envAtlas, uv0));\n\tvec3 linearB = $DECODE(texture2D(texture_envAtlas, uv1));\n\tvec3 linear0 = mix(linearA, linearB, weight);\n\tvec3 linear1 = $DECODE(texture2D(texture_envAtlas, mapRoughnessUv(uv, ilevel + 1.0)));\n\treturn processEnvironment(mix(linear0, linear1, level - ilevel));\n}\nvoid addReflection() {\n\tdReflection += vec4(calcReflection(dReflDirW, dGlossiness), material_reflectivity);\n}\n";
 
 	var reflectionSpherePS = "#ifndef VIEWMATRIX\n#define VIEWMATRIX\nuniform mat4 matrix_view;\n#endif\nuniform sampler2D texture_sphereMap;\nuniform float material_reflectivity;\nvec3 calcReflection(vec3 tReflDirW, float tGlossiness) {\n\tvec3 reflDirV = (mat3(matrix_view) * tReflDirW).xyz;\n\tfloat m = 2.0 * sqrt( dot(reflDirV.xy, reflDirV.xy) + (reflDirV.z+1.0)*(reflDirV.z+1.0) );\n\tvec2 sphereMapUv = reflDirV.xy / m + 0.5;\n\treturn $DECODE(texture2D(texture_sphereMap, sphereMapUv));\n}\nvoid addReflection() {\n\tdReflection += vec4(calcReflection(dReflDirW, dGlossiness), material_reflectivity);\n}\n";
 
@@ -11352,7 +11352,7 @@
 		var numSamples = samples.length;
 		var w = Math.min(numSamples, 512);
 		var h = Math.ceil(numSamples / w);
-		var data = new Uint8ClampedArray(w * h * 4);
+		var data = new Uint8Array(w * h * 4);
 		var off = 0;
 
 		for (var i = 0; i < numSamples; ++i) {
@@ -11901,10 +11901,13 @@
 				}
 
 				meshInstance._material = null;
-				var defaultMaterial = DefaultMaterial.get(meshInstance.mesh.device);
 
-				if (this !== defaultMaterial) {
-					meshInstance.material = defaultMaterial;
+				if (meshInstance.mesh) {
+					var defaultMaterial = DefaultMaterial.get(meshInstance.mesh.device);
+
+					if (this !== defaultMaterial) {
+						meshInstance.material = defaultMaterial;
+					}
 				}
 			}
 		};
@@ -12211,9 +12214,8 @@
 			options.toneMap = stdMat.useGammaTonemap ? scene.toneMapping : -1;
 			options.useRgbm = stdMat.emissiveMap && stdMat.emissiveMap.type === TEXTURETYPE_RGBM || stdMat.lightMap && stdMat.lightMap.type === TEXTURETYPE_RGBM;
 			options.fixSeams = stdMat.cubeMap ? stdMat.cubeMap.fixCubemapSeams : false;
-			options.skyboxIntensity = scene.skyboxIntensity !== 1;
-			options.useCubeMapRotation = !stdMat.cubeMap && stdMat.useSkybox && scene && scene.skyboxRotation && !scene.skyboxRotation.equals(Quat.IDENTITY);
 			var isPhong = stdMat.shadingModel === SPECULAR_PHONG;
+			var usingSceneEnv = false;
 
 			if (stdMat.envAtlas && !isPhong) {
 				options.reflectionSource = 'envAtlas';
@@ -12227,6 +12229,7 @@
 			} else if (stdMat.useSkybox && scene.envAtlas && !isPhong) {
 				options.reflectionSource = 'envAtlas';
 				options.reflectionEncoding = scene.envAtlas.encoding;
+				usingSceneEnv = true;
 			} else {
 				options.reflectionSource = null;
 				options.reflectionEncoding = null;
@@ -12246,6 +12249,9 @@
 					options.ambientEncoding = null;
 				}
 			}
+
+			options.skyboxIntensity = usingSceneEnv && scene.skyboxIntensity !== 1;
+			options.useCubeMapRotation = usingSceneEnv && scene.skyboxRotation && !scene.skyboxRotation.equals(Quat.IDENTITY);
 		};
 
 		_proto._updateLightOptions = function _updateLightOptions(options, stdMat, objDefs, sortedLights, staticLightList) {
@@ -33950,7 +33956,7 @@
 		};
 
 		_proto2._getParser = function _getParser(url) {
-			var ext = path.getExtension(this._getUrlWithoutParams(url)).toLowerCase().replace('.', '');
+			var ext = url ? path.getExtension(this._getUrlWithoutParams(url)).toLowerCase().replace('.', '') : null;
 			return this.parsers[ext] || this.glbParser;
 		};
 
@@ -46284,7 +46290,7 @@
 				this._currTransitionTime += dt;
 
 				if (this._currTransitionTime <= this._totalTransitionTime) {
-					var interpolatedTime = this._totalTransitionTime === 0 ? this._currTransitionTime / this._totalTransitionTime : 1;
+					var interpolatedTime = this._totalTransitionTime !== 0 ? this._currTransitionTime / this._totalTransitionTime : 1;
 
 					for (var i = 0; i < this._transitionPreviousStates.length; i++) {
 						state = this._findState(this._transitionPreviousStates[i].name);
@@ -67422,7 +67428,7 @@
 				if (this._hasAsset()) {
 					var asset = this._assets.get(this._asset);
 
-					assetDuration = asset.resource ? asset.resource.duration : 0;
+					assetDuration = asset != null && asset.resource ? asset.resource.duration : 0;
 				}
 
 				if (this._duration != null) {
