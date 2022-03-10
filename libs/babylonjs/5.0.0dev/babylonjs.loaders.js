@@ -97,9 +97,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ ({
 
 /***/ "../../node_modules/tslib/tslib.es6.js":
-/*!************************************************************************************!*\
-  !*** C:/Users/raweber/Documents/GitHub/Babylon.js/node_modules/tslib/tslib.es6.js ***!
-  \************************************************************************************/
+/*!*************************************************************!*\
+  !*** E:/Babylon/Babylon.js/node_modules/tslib/tslib.es6.js ***!
+  \*************************************************************/
 /*! exports provided: __extends, __assign, __rest, __decorate, __param, __metadata, __awaiter, __generator, __createBinding, __exportStar, __values, __read, __spread, __spreadArrays, __spreadArray, __await, __asyncGenerator, __asyncDelegator, __asyncValues, __makeTemplateObject, __importStar, __importDefault, __classPrivateFieldGet, __classPrivateFieldSet */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -472,7 +472,7 @@ var MTLFileLoader = /** @class */ (function () {
         }
         //Split the lines from the file
         var lines = data.split('\n');
-        //Space char
+        // whitespace char ie: [ \t\r\n\f]
         var delimiter_pattern = /\s+/;
         //Array with RGB colors
         var color;
@@ -570,7 +570,17 @@ var MTLFileLoader = /** @class */ (function () {
             }
             else if (key === "map_bump" && material) {
                 //The bump texture
-                material.bumpTexture = MTLFileLoader._getTexture(rootUrl, value, scene);
+                var values = value.split(delimiter_pattern);
+                var bumpMultiplierIndex = values.indexOf('-bm');
+                var bumpMultiplier = null;
+                if (bumpMultiplierIndex >= 0) {
+                    bumpMultiplier = values[bumpMultiplierIndex + 1];
+                    values.splice(bumpMultiplierIndex, 2); // remove
+                }
+                material.bumpTexture = MTLFileLoader._getTexture(rootUrl, values.join(' '), scene);
+                if (material.bumpTexture && bumpMultiplier !== null) {
+                    material.bumpTexture.level = parseFloat(bumpMultiplier);
+                }
             }
             else if (key === "map_d" && material) {
                 // The dissolve of the material
@@ -7818,6 +7828,9 @@ var GLTFLoader = /** @class */ (function () {
                 if (node._babylonTransformNode && node._babylonTransformNode.getClassName() === "TransformNode") {
                     transformNodes.push(node._babylonTransformNode);
                 }
+                if (node._babylonTransformNodeForSkin) {
+                    transformNodes.push(node._babylonTransformNodeForSkin);
+                }
             }
         }
         return transformNodes;
@@ -7917,10 +7930,16 @@ var GLTFLoader = /** @class */ (function () {
         if (node.mesh == undefined || node.skin != undefined) {
             var nodeName = node.name || "node".concat(node.index);
             this._babylonScene._blockEntityCollection = !!this._assetContainer;
-            node._babylonTransformNode = new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["TransformNode"](nodeName, this._babylonScene);
-            node._babylonTransformNode._parentContainer = this._assetContainer;
+            var transformNode = new babylonjs_Misc_deferred__WEBPACK_IMPORTED_MODULE_0__["TransformNode"](nodeName, this._babylonScene);
+            transformNode._parentContainer = this._assetContainer;
             this._babylonScene._blockEntityCollection = false;
-            loadNode(node._babylonTransformNode);
+            if (node.mesh == undefined) {
+                node._babylonTransformNode = transformNode;
+            }
+            else {
+                node._babylonTransformNodeForSkin = transformNode;
+            }
+            loadNode(transformNode);
         }
         if (node.mesh != undefined) {
             if (node.skin == undefined) {
@@ -7933,7 +7952,8 @@ var GLTFLoader = /** @class */ (function () {
                 // transform, which effectively ignores the transform of the skinned mesh, as per spec.
                 var mesh = ArrayItem.Get("".concat(context, "/mesh"), this._gltf.meshes, node.mesh);
                 promises.push(this._loadMeshAsync("/meshes/".concat(mesh.index), node, mesh, function (babylonTransformNode) {
-                    GLTFLoader.AddPointerMetadata(babylonTransformNode, context);
+                    // Duplicate the metadata from the skin node to the skinned mesh in case any loader extension added metadata.
+                    babylonTransformNode.metadata = node._babylonTransformNodeForSkin.metadata;
                     var skin = ArrayItem.Get("".concat(context, "/skin"), _this._gltf.skins, node.skin);
                     promises.push(_this._loadSkinAsync("/skins/".concat(skin.index), node, skin, function (babylonSkeleton) {
                         _this._forEachPrimitive(node, function (babylonMesh) {
@@ -8344,6 +8364,9 @@ var GLTFLoader = /** @class */ (function () {
         }
     };
     GLTFLoader.prototype._findSkeletonRootNode = function (context, joints) {
+        if (joints.length === 0) {
+            return null;
+        }
         var paths = {};
         for (var _i = 0, joints_1 = joints; _i < joints_1.length; _i++) {
             var index = joints_1[_i];
@@ -10684,12 +10707,14 @@ var GLTFValidation = /** @class */ (function () {
                             worker.removeEventListener("error", onError);
                             worker.removeEventListener("message", onMessage);
                             resolve(data.value);
+                            worker.terminate();
                             break;
                         }
                         case "validate.reject": {
                             worker.removeEventListener("error", onError);
                             worker.removeEventListener("message", onMessage);
                             reject(data.reason);
+                            worker.terminate();
                         }
                     }
                 };
