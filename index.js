@@ -401,6 +401,7 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-IBL', scale));
             } else if ( modelName == 'ClearCoatTest'
+                     || modelName == 'DirectionalLight'
                      || modelName == 'GlamVelvetSofa'
                      || modelName == 'EmissiveStrengthTest'
                      || modelName == 'IridescentDishWithOlives'
