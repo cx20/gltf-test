@@ -58,6 +58,7 @@ let createScene = function(engine) {
 
     let variants = null;
     let variantsExtension = null;
+    let emissiveStrengthExtension = null;
 
     BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (loader) {
         loader.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
@@ -65,6 +66,8 @@ let createScene = function(engine) {
         loader.onExtensionLoadedObservable.add(function (extension) {
             if (extension.name === "KHR_materials_variants") {
                 variantsExtension = extension;
+            } else if (extension.name === "KHR_materials_emissive_strength") {
+                emissiveStrengthExtension = extension;
             }
         });
     });
@@ -182,7 +185,16 @@ let createScene = function(engine) {
 */
             environmentTexture = cubeTexture;
         }
-        //scene.debugLayer.show(true, camera);
+
+        if ( emissiveStrengthExtension != null ) {
+            var pipeline = new BABYLON.DefaultRenderingPipeline(
+                "defaultPipeline", // The name of the pipeline
+                true, // Do you want the pipeline to use HDR texture?
+                scene, // The scene instance
+                [camera] // The list of cameras to be attached to
+            );
+            pipeline.bloomEnabled = true;
+        }
 
         guiBoundingBox.onChange(function (value) {
             scene.forceShowBoundingBoxes = value;
