@@ -5,6 +5,8 @@ var TutorialExtensionTestModelIndex = {};
 TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'AttenuationTest', scale:0.2},
     {category:'tutorialModels', name:'ClearCoatTest', scale:0.3},
+    {category:'tutorialModels', name:'ClearcoatRing', scale:5.0},
+    {category:'tutorialModels', name:'ClearcoatSphere', scale:1.0},
     {category:'tutorialModels', name:'DirectionalLight', scale:10.0},
     {category:'tutorialModels', name:'DragonAttenuation', scale:1.0},
     {category:'tutorialModels', name:'EmissiveStrengthTest', scale:0.3},
@@ -18,23 +20,28 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'MaterialsVariantsChair', scale:0.7},
     {category:'tutorialModels', name:'MaterialsVariantsShoe', scale:10.0},
     {category:'tutorialModels', name:'MosquitoInAmber', scale:30.0},
+    {category:'tutorialModels', name:'SheenChair', scale:3.0},
+    {category:'tutorialModels', name:'SheenCloth', scale:50.0},
+    {category:'tutorialModels', name:'SheenDamask', scale:0.1},
+    {category:'tutorialModels', name:'SheenHighHeel', scale:0.1},
     {category:'tutorialModels', name:'SpecGlossVsMetalRough', scale:10.0},
     {category:'tutorialModels', name:'SpecularTest', scale:5.0},
+    {category:'tutorialModels', name:'StainedGlassLamp', scale:3.0},
     {category:'tutorialModels', name:'TextureTransformTest', scale:1.0},
     {category:'tutorialModels', name:'TextureTransformMultiTest', scale:1.0},
     {category:'tutorialModels', name:'ToyCar', scale:100.0},
     {category:'tutorialModels', name:'ToyCarSpecular', scale:10.0},
     {category:'tutorialModels', name:'TransmissionRoughnessTest', scale:3.0},
+    {category:'tutorialModels', name:'TransmissionSuzanne', scale:1.0},
     {category:'tutorialModels', name:'TransmissionTest', scale:3.0},
-    {category:'tutorialModels', name:'UnlitTest', scale:1.0},
-    {category:'tutorialModels', name:'SheenChair', scale:3.0},
-    {category:'tutorialModels', name:'SheenCloth', scale:50.0},
-    {category:'tutorialModels', name:'StainedGlassLamp', scale:3.0}
+    {category:'tutorialModels', name:'UnlitTest', scale:1.0}
 ];
 
 TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'AttenuationTest',
     'ClearCoatTest',
+    'ClearcoatRing',
+    'ClearcoatSphere',
     'DirectionalLight',
     'DragonAttenuation',
     'GlamVelvetSofa',
@@ -46,17 +53,20 @@ TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that
     'MaterialsVariantsChair',
     'MaterialsVariantsShoe',
     'MosquitoInAmber',
+    'SheenChair',
+    'SheenCloth',
+    'SheenDamask',
+    'SheenHighHeel',
     'SpecGlossVsMetalRough',
     'SpecularTest',
+    'StainedGlassLamp',
     'TextureTransformTest',
     'TextureTransformMultiTest',
     'ToyCar',
     'ToyCarSpecular',
     'TransmissionRoughnessTest',
-    'TransmissionTest',
-    'SheenChair',
-    'SheenCloth',
-    'StainedGlassLamp'
+    'TransmissionSuzanne',
+    'TransmissionTest'
 ];
 
 TutorialExtensionTestModelIndex.getScreenshot = function(name) {
