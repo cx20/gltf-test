@@ -7534,7 +7534,7 @@
                     : new Shader(glsl.stylize2.vs, glsl.stylize2.fs);
                 // Load brdfLUT
                 if (this.brdfLUT === undefined) {
-                    const brdfurl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Viewer/master/assets/images/brdfLUT.png';
+                    const brdfurl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Viewer/master/assets/images/lut_ggx.png';
                     this.brdfLUT = yield this.loadTexture(brdfurl, { minFilter: WebGL2RenderingContext.LINEAR });
                 }
                 gltf.brdfLUT = this.brdfLUT;
