@@ -97,9 +97,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ ({
 
 /***/ "../../node_modules/tslib/tslib.es6.js":
-/*!*************************************************************!*\
-  !*** E:/Babylon/Babylon.js/node_modules/tslib/tslib.es6.js ***!
-  \*************************************************************/
+/*!************************************************************************************!*\
+  !*** C:/Users/raweber/Documents/GitHub/Babylon.js/node_modules/tslib/tslib.es6.js ***!
+  \************************************************************************************/
 /*! exports provided: __extends, __assign, __rest, __decorate, __param, __metadata, __awaiter, __generator, __createBinding, __exportStar, __values, __read, __spread, __spreadArrays, __spreadArray, __await, __asyncGenerator, __asyncDelegator, __asyncValues, __makeTemplateObject, __importStar, __importDefault, __classPrivateFieldGet, __classPrivateFieldSet */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -2903,6 +2903,14 @@ var GLTFFileLoader = /** @class */ (function () {
          * If true, load all materials defined in the file, even if not used by any mesh. Defaults to false.
          */
         this.loadAllMaterials = false;
+        /**
+         * If true, load only the materials defined in the file. Defaults to false.
+         */
+        this.loadOnlyMaterials = false;
+        /**
+         * If true, do not load any materials defined in the file. Defaults to false.
+         */
+        this.skipMaterials = false;
         /**
          * If true, load the color (gamma encoded) textures into sRGB buffers (if supported by the GPU), which will yield more accurate results when sampling the texture. Defaults to true.
          */
