@@ -20,7 +20,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-const pcRoot = '../../libs/playcanvas/v1.52.6';
+const pcRoot = '../../libs/playcanvas/v1.53.0';
 
 // GUI
 let gui = new dat.GUI();
@@ -36,23 +36,23 @@ let guiCameras = null;
 
 let decoderModule;
 
-var getAbsolutePathFromRelativePath = function(href) {
-    var link = document.createElement("a");
+let getAbsolutePathFromRelativePath = function(href) {
+    let link = document.createElement("a");
     link.href = href;
     return link.href;
 }
 
-var Viewer = function (canvas) {
+let Viewer = function (canvas) {
 
-    var self = this;
+    let self = this;
 
     // create the application
-    var app = new pc.Application(canvas, {
+    let app = new pc.Application(canvas, {
         mouse: new pc.Mouse(canvas),
         touch: new pc.TouchDevice(canvas)
     });
 
-    var getCanvasSize = function () {
+    let getCanvasSize = function () {
         return {
             width: window.innerWidth,
             height: window.innerHeight
@@ -63,11 +63,11 @@ var Viewer = function (canvas) {
     app.scene.gammaCorrection = pc.GAMMA_SRGB;
 
     // Set the canvas to fill the window and automatically change resolution to be the same as the canvas size
-    var canvasSize = getCanvasSize();
+    let canvasSize = getCanvasSize();
     app.setCanvasFillMode(pc.FILLMODE_NONE, canvasSize.width, canvasSize.height);
     app.setCanvasResolution(pc.RESOLUTION_AUTO);
     window.addEventListener("resize", function () {
-        var canvasSize = getCanvasSize();
+        let canvasSize = getCanvasSize();
         app.resizeCanvas(canvasSize.width, canvasSize.height);
     });
 
@@ -104,7 +104,7 @@ var Viewer = function (canvas) {
     });
 
     // create the orbit camera
-    var camera = new pc.Entity("Camera");
+    let camera = new pc.Entity("Camera");
     camera.addComponent("camera", {
         fov: 60,
         clearColor: new pc.Color(0.4, 0.45, 0.5)
@@ -126,7 +126,7 @@ var Viewer = function (canvas) {
             camera.script.create("orbitCameraInputTouch");
             app.root.addChild(camera);
 
-            var timer = 0;
+            let timer = 0;
             app.on("update", function (deltaTime) {
                 if ( ROTATE ) {
                     timer += deltaTime * 20;
@@ -136,7 +136,7 @@ var Viewer = function (canvas) {
         });
 
     // create the light
-    var light = new pc.Entity();
+    let light = new pc.Entity();
     light.addComponent("light", {
         type: "directional",
         color: new pc.Color(1, 1, 1),
@@ -170,7 +170,7 @@ var Viewer = function (canvas) {
     if(modelInfo.url) {
         url = modelInfo.url;
     }
-    var filename = url.split('/').pop();
+    let filename = url.split('/').pop();
     self.load(url, filename);
 
     // start the application
@@ -180,9 +180,9 @@ var Viewer = function (canvas) {
 Object.assign(Viewer.prototype, {
     // reset the viewer, unloading resources
     resetScene: function() {
-        var app = this.app;
+        let app = this.app;
 
-        var entity = this.entity;
+        let entity = this.entity;
         if (entity) {
             app.root.removeChild(entity);
             entity.destroy();
@@ -201,19 +201,19 @@ Object.assign(Viewer.prototype, {
 
     // move the camera to view the loaded object
     focusCamera: function() {
-        var entity = this.entity;
+        let entity = this.entity;
         if (entity) {
-            var camera = this.camera;
+            let camera = this.camera;
 
             if (camera.script && camera.script.orbitCamera) {
-                var orbitCamera = camera.script.orbitCamera;
+                let orbitCamera = camera.script.orbitCamera;
                 orbitCamera.focus(entity);
 
-                var distance = orbitCamera.distance;
+                let distance = orbitCamera.distance;
                 camera.camera.nearClip = distance / 10;
                 camera.camera.farClip = distance * 10;
 
-                var light = this.light;
+                let light = this.light;
                 light.light.shadowDistance = distance * 2;
             }
         }
@@ -227,7 +227,7 @@ Object.assign(Viewer.prototype, {
     // play the animation
     play: function(animationName) {
         if (!animationName) {
-            for (var key in this.animationMap) {
+            for (let key in this.animationMap) {
                 if (this.animationMap.hasOwnProperty(key)) {
                     if (animationName) {
                         this.animationMap[key].pause();
@@ -252,7 +252,7 @@ Object.assign(Viewer.prototype, {
 
     setSpeed: function(speed) {
         if (this.entity && this.entity.animation) {
-            var entity = this.entity;
+            let entity = this.entity;
             if (entity) {
                 entity.animation.speed = speed;
             }
@@ -261,7 +261,7 @@ Object.assign(Viewer.prototype, {
     // set the morphing value
     setMorphWeight: function (name, weight) {
         if (this.morphMap.hasOwnProperty(name)) {
-            var morphs = this.morphMap[name];
+            let morphs = this.morphMap[name];
             morphs.forEach(function (morph) {
                 morph.instance.setWeight(morph.targetIndex, weight);
             });
@@ -273,7 +273,7 @@ Object.assign(Viewer.prototype, {
 
             this.resetScene();
 
-            var resource = asset.resource;
+            let resource = asset.resource;
 
             // add glTF's embedded lights
             const lightsEntity = resource.instantiateRenderEntity();
@@ -281,7 +281,7 @@ Object.assign(Viewer.prototype, {
             //this.app.root.addChild(lightsEntity);
 
             // create entity and add model
-            var entity = new pc.Entity();
+            let entity = new pc.Entity();
             entity.addComponent("model", {
                 type: "asset",
                 asset: resource.model,
@@ -298,7 +298,7 @@ Object.assign(Viewer.prototype, {
                     });
                 }
 
-                var stateGraph = {
+                let stateGraph = {
                     layers: [],
                     parameters: { }
                 };
@@ -327,12 +327,12 @@ Object.assign(Viewer.prototype, {
                 // construct an anim layer for this set of animations
                 entity.anim.loadStateGraph(new pc.AnimStateGraph(stateGraph));
 
-                var animationMap = {};
+                let animationMap = {};
 
                 // set animations on each layer
                 for (let i = 0; i < resource.animations.length; ++i) {
-                    var animTrack = resource.animations[i].resource;
-                    var layer = entity.anim.findAnimationLayer(asset.name + '_layer_' + i);
+                    let animTrack = resource.animations[i].resource;
+                    let layer = entity.anim.findAnimationLayer(asset.name + '_layer_' + i);
                     layer.assignAnimation('default', animTrack);
                     layer.pause();
                     animationMap[animTrack.name] = layer;
@@ -345,9 +345,9 @@ Object.assign(Viewer.prototype, {
 
             // setup morph targets
             if (entity.model && entity.model.model && entity.model.model.morphInstances.length > 0) {
-                var morphInstances = entity.model.model.morphInstances;
+                let morphInstances = entity.model.model.morphInstances;
                 // make a list of all the morph instance target names
-                var morphMap = { };
+                let morphMap = { };
                 morphInstances.forEach(function (morphInstance) {
                     morphInstance.morph._targets.forEach(function (target, targetIndex) {
                         if (!morphMap.hasOwnProperty(target.name)) {
@@ -397,7 +397,7 @@ Object.assign(Viewer.prototype, {
     }
 });
 
-var viewer;
+let viewer;
 function startViewer() {
     viewer = new Viewer(document.getElementById("application"));
 }
