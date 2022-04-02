@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.52.4 revision 1ce88f3d0
+ * PlayCanvas Engine v1.52.6 revision 2409b8a86
  * Copyright 2011-2022 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -623,8 +623,8 @@
 		};
 	};
 
-	var version = "1.52.4";
-	var revision = "1ce88f3d0";
+	var version = "1.52.6";
+	var revision = "2409b8a86";
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -15739,6 +15739,14 @@
 				options.powerPreference = 'high-performance';
 			}
 
+			if (typeof navigator !== 'undefined') {
+				var ua = navigator.userAgent;
+
+				if (ua.includes('AppleWebKit') && (ua.includes('15.4') || ua.includes('15_4'))) {
+					options.antialias = false;
+				}
+			}
+
 			var preferWebGl2 = options.preferWebGl2 !== undefined ? options.preferWebGl2 : true;
 			var names = preferWebGl2 ? ["webgl2", "webgl", "experimental-webgl"] : ["webgl", "experimental-webgl"];
 			var gl = null;
@@ -27906,20 +27914,25 @@
 			return this.position;
 		};
 
+		_proto.setPosition = function setPosition(position) {
+			this.position.copy(position);
+			var panner = this.panner;
+
+			if ('positionX' in panner) {
+				panner.positionX.value = position.x;
+				panner.positionY.value = position.y;
+				panner.positionZ.value = position.z;
+			} else if (panner.setPosition) {
+				panner.setPosition(position.x, position.y, position.z);
+			}
+		};
+
 		_proto.getVelocity = function getVelocity() {
 			return this.velocity;
 		};
 
-		_proto.setPosition = function setPosition(position) {
-			this.position.copy(position);
-			this.panner.positionX.value = position.x;
-			this.panner.positionY.value = position.y;
-			this.panner.positionZ.value = position.z;
-		};
-
 		_proto.setVelocity = function setVelocity(velocity) {
 			this.velocity.copy(velocity);
-			this.panner.setVelocity(velocity.x, velocity.y, velocity.z);
 		};
 
 		_proto.getMaxDistance = function getMaxDistance() {
@@ -28008,9 +28021,6 @@
 					this.source.volume = v * factor;
 				}
 			},
-			setVelocity: function setVelocity(velocity) {
-				this.velocity.copy(velocity);
-			},
 			getMaxDistance: function getMaxDistance() {
 				return this.maxDistance;
 			},
@@ -28057,9 +28067,13 @@
 			var listener = this.listener;
 
 			if (listener) {
-				listener.positionX.value = position.x;
-				listener.positionY.value = position.y;
-				listener.positionZ.value = position.z;
+				if ('positionX' in listener) {
+					listener.positionX.value = position.x;
+					listener.positionY.value = position.y;
+					listener.positionZ.value = position.z;
+				} else if (listener.setPosition) {
+					listener.setPosition(position.x, position.y, position.z);
+				}
 			}
 		};
 
@@ -28067,16 +28081,7 @@
 			return this.velocity;
 		};
 
-		_proto.setVelocity = function setVelocity(velocity) {
-			this.velocity.copy(velocity);
-			var listener = this.listener;
-
-			if (listener) {
-				listener.positionX.value = velocity.x;
-				listener.positionY.value = velocity.y;
-				listener.positionZ.value = velocity.z;
-			}
-		};
+		_proto.setVelocity = function setVelocity(velocity) {};
 
 		_proto.setOrientation = function setOrientation(orientation) {
 			this.orientation.copy(orientation);
@@ -28084,12 +28089,17 @@
 
 			if (listener) {
 				var m = orientation.data;
-				listener.forwardX.value = -m[8];
-				listener.forwardY.value = -m[9];
-				listener.forwardZ.value = -m[10];
-				listener.upX.value = m[4];
-				listener.upY.value = m[5];
-				listener.upZ.value = m[6];
+
+				if ('forwardX' in listener) {
+					listener.forwardX.value = -m[8];
+					listener.forwardY.value = -m[9];
+					listener.forwardZ.value = -m[10];
+					listener.upX.value = m[4];
+					listener.upY.value = m[5];
+					listener.upZ.value = m[6];
+				} else if (listener.setOrientation) {
+					listener.setOrientation(-m[8], -m[9], -m[10], m[4], m[5], m[6]);
+				}
 			}
 		};
 
@@ -67670,7 +67680,6 @@
 			_this._position = new Vec3();
 			_this._velocity = new Vec3();
 			if (options.position) _this.position = options.position;
-			if (options.velocity) _this.velocity = options.velocity;
 			_this.maxDistance = options.maxDistance !== undefined ? Number(options.maxDistance) : MAX_DISTANCE;
 			_this.refDistance = options.refDistance !== undefined ? Number(options.refDistance) : 1;
 			_this.rollOffFactor = options.rollOffFactor !== undefined ? Number(options.rollOffFactor) : 1;
@@ -67698,9 +67707,15 @@
 			set: function set(value) {
 				this._position.copy(value);
 
-				this.panner.positionX.value = value.x;
-				this.panner.positionY.value = value.y;
-				this.panner.positionZ.value = value.z;
+				var panner = this.panner;
+
+				if ('positionX' in panner) {
+					panner.positionX.value = value.x;
+					panner.positionY.value = value.y;
+					panner.positionZ.value = value.z;
+				} else if (panner.setPosition) {
+					panner.setPosition(value.x, value.y, value.z);
+				}
 			}
 		}, {
 			key: "velocity",
@@ -67709,8 +67724,6 @@
 			},
 			set: function set(velocity) {
 				this._velocity.copy(velocity);
-
-				this.panner.setVelocity(velocity.x, velocity.y, velocity.z);
 			}
 		}, {
 			key: "maxDistance",
@@ -67789,14 +67802,6 @@
 					var v = this.volume;
 					this.source.volume = v * factor * this._manager.volume;
 				}
-			}
-		});
-		Object.defineProperty(SoundInstance3d.prototype, 'velocity', {
-			get: function get() {
-				return this._velocity;
-			},
-			set: function set(velocity) {
-				this._velocity.copy(velocity);
 			}
 		});
 		Object.defineProperty(SoundInstance3d.prototype, 'maxDistance', {
