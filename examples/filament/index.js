@@ -21,15 +21,16 @@ if (!modelInfo) {
 
 // GUI
 let gui = new dat.GUI();
-
+const DEFAULT_STRING = "[default]";
 var ROTATE = false;
-var CAMERA = "[default]";
+var CAMERA = DEFAULT_STRING;
 var SKYBOX = true;
 var LIGHTS = false;
 var IBL = true;
 var aperture = 16.0;
 var shutterSpeed = 125.0;
 var ISO = 100.0;
+var VARIANT = DEFAULT_STRING;
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 let guiSkybox = gui.add(window, 'SKYBOX').name('Skybox');
 let guiLights = gui.add(window, 'LIGHTS').name('Lights');
@@ -40,6 +41,7 @@ let guiShutterSpeed = guiCameraFolder.add(window, 'shutterSpeed', 1, 1000, 0.1).
 let guiISO          = guiCameraFolder.add(window, 'ISO',         24, 6400, 0.1).name('ISO');
 let guiCameras = null;
 guiCameraFolder.open();
+let guiVariants = null;
 
 const env = 'papermill';
 const ibl_url = `../../textures/ktx/${env}/${env}_ibl.ktx`;
@@ -194,7 +196,7 @@ class App {
                 for (let i = 0; i < cameras.length; i++) {
                     cameraNames.push("camera" + i);
                 }
-                cameraNames.push("[default]");
+                cameraNames.push(DEFAULT_STRING);
                 let index = 0;
                 guiCameras = guiCameraFolder.add(window, 'CAMERA', cameraNames).name('Cameras');
                 guiCameras.onChange(function(value) {
@@ -209,6 +211,16 @@ class App {
                         app.view.setCamera(app.camera);
                         app.resize();
                     }
+                });
+            }
+
+            const variantNames = asset.getMaterialVariantNames();
+            if (variantNames.length > 0) {
+                variantNames.push(DEFAULT_STRING);
+                guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variants");
+                guiVariants.onChange(function(value) {
+                    const selectedIndex = value == DEFAULT_STRING ? 0 : variantNames.indexOf(value);
+                    asset.applyMaterialVariant(selectedIndex);
                 });
             }
 
