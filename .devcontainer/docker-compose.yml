@@ -1,0 +1,26 @@
+version: "3"
+
+services:
+  node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VARIANT=16-bullseye
+    working_dir: /node
+    volumes:
+      - type: bind
+        source: ../
+        target: /node
+      - type: volume
+        source: node_modules
+        target: /node/node_modules
+      - type: volume
+        source: dist
+        target: /node/dist
+      - type: tmpfs
+        target: /node/docs
+    tty: true
+volumes:
+  node_modules:
+  dist:
