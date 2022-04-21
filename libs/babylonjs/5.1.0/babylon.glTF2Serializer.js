@@ -288,212 +288,6 @@ function __classPrivateFieldSet(receiver, state, value, kind, f) {
 
 /***/ }),
 
-/***/ "../../../lts/serializers/dist/OBJ/index.js":
-/*!**************************************************!*\
-  !*** ../../../lts/serializers/dist/OBJ/index.js ***!
-  \**************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "OBJExport": () => (/* reexport safe */ _objSerializer__WEBPACK_IMPORTED_MODULE_0__.OBJExport)
-/* harmony export */ });
-/* harmony import */ var _objSerializer__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./objSerializer */ "../../../lts/serializers/dist/OBJ/objSerializer.js");
-
-
-
-/***/ }),
-
-/***/ "../../../lts/serializers/dist/OBJ/objSerializer.js":
-/*!**********************************************************!*\
-  !*** ../../../lts/serializers/dist/OBJ/objSerializer.js ***!
-  \**********************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "OBJExport": () => (/* binding */ OBJExport)
-/* harmony export */ });
-/* harmony import */ var core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core/Misc/tools */ "core/Maths/math.vector");
-/* harmony import */ var core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_0__);
-
-
-/**
- * Class for generating OBJ data from a Babylon scene.
- */
-var OBJExport = /** @class */ (function () {
-    function OBJExport() {
-    }
-    /**
-     * Exports the geometry of a Mesh array in .OBJ file format (text)
-     * @param mesh defines the list of meshes to serialize
-     * @param materials defines if materials should be exported
-     * @param matlibname defines the name of the associated mtl file
-     * @param globalposition defines if the exported positions are globals or local to the exported mesh
-     * @returns the OBJ content
-     */
-    OBJExport.OBJ = function (mesh, materials, matlibname, globalposition) {
-        var output = [];
-        var v = 1;
-        // keep track of uv index in case mixed meshes are passed in
-        var textureV = 1;
-        if (materials) {
-            if (!matlibname) {
-                matlibname = "mat";
-            }
-            output.push("mtllib " + matlibname + ".mtl");
-        }
-        for (var j = 0; j < mesh.length; j++) {
-            output.push("g object" + j);
-            output.push("o object_" + j);
-            //Uses the position of the item in the scene, to the file (this back to normal in the end)
-            var inverseTransform = null;
-            if (globalposition) {
-                var transform = mesh[j].computeWorldMatrix(true);
-                inverseTransform = new core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_0__.Matrix();
-                transform.invertToRef(inverseTransform);
-                mesh[j].bakeTransformIntoVertices(transform);
-            }
-            //TODO: submeshes (groups)
-            //TODO: smoothing groups (s 1, s off);
-            if (materials) {
-                var mat = mesh[j].material;
-                if (mat) {
-                    output.push("usemtl " + mat.id);
-                }
-            }
-            var g = mesh[j].geometry;
-            if (!g) {
-                core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_0__.Tools.Warn("No geometry is present on the mesh");
-                continue;
-            }
-            var trunkVerts = g.getVerticesData("position");
-            var trunkNormals = g.getVerticesData("normal");
-            var trunkUV = g.getVerticesData("uv");
-            var trunkFaces = g.getIndices();
-            var currentV = 0;
-            var currentTextureV = 0;
-            if (!trunkVerts || !trunkFaces) {
-                core_Maths_math_vector__WEBPACK_IMPORTED_MODULE_0__.Tools.Warn("There are no position vertices or indices on the mesh!");
-                continue;
-            }
-            for (var i = 0; i < trunkVerts.length; i += 3) {
-                // Babylon.js default is left handed, while OBJ default is right handed
-                // Need to invert Z vertices unless Babylon is set to use a right handed system
-                if (mesh[0].getScene().useRightHandedSystem) {
-                    output.push("v " + trunkVerts[i] + " " + trunkVerts[i + 1] + " " + trunkVerts[i + 2]);
-                }
-                else {
-                    output.push("v " + trunkVerts[i] + " " + trunkVerts[i + 1] + " " + -trunkVerts[i + 2]);
-                }
-                currentV++;
-            }
-            if (trunkNormals != null) {
-                for (var i = 0; i < trunkNormals.length; i += 3) {
-                    output.push("vn " + trunkNormals[i] + " " + trunkNormals[i + 1] + " " + trunkNormals[i + 2]);
-                }
-            }
-            if (trunkUV != null) {
-                for (var i = 0; i < trunkUV.length; i += 2) {
-                    output.push("vt " + trunkUV[i] + " " + trunkUV[i + 1]);
-                    currentTextureV++;
-                }
-            }
-            for (var i = 0; i < trunkFaces.length; i += 3) {
-                var indices = [String(trunkFaces[i + 2] + v), String(trunkFaces[i + 1] + v), String(trunkFaces[i] + v)];
-                var textureIndices = [String(trunkFaces[i + 2] + textureV), String(trunkFaces[i + 1] + textureV), String(trunkFaces[i] + textureV)];
-                var blanks = ["", "", ""];
-                var facePositions = indices;
-                var faceUVs = trunkUV != null ? textureIndices : blanks;
-                var faceNormals = trunkNormals != null ? indices : blanks;
-                output.push("f " +
-                    facePositions[0] +
-                    "/" +
-                    faceUVs[0] +
-                    "/" +
-                    faceNormals[0] +
-                    " " +
-                    facePositions[1] +
-                    "/" +
-                    faceUVs[1] +
-                    "/" +
-                    faceNormals[1] +
-                    " " +
-                    facePositions[2] +
-                    "/" +
-                    faceUVs[2] +
-                    "/" +
-                    faceNormals[2]);
-            }
-            //back de previous matrix, to not change the original mesh in the scene
-            if (globalposition && inverseTransform) {
-                mesh[j].bakeTransformIntoVertices(inverseTransform);
-            }
-            v += currentV;
-            textureV += currentTextureV;
-        }
-        var text = output.join("\n");
-        return text;
-    };
-    /**
-     * Exports the material(s) of a mesh in .MTL file format (text)
-     * @param mesh defines the mesh to extract the material from
-     * @returns the mtl content
-     */
-    //TODO: Export the materials of mesh array
-    OBJExport.MTL = function (mesh) {
-        var output = [];
-        var m = mesh.material;
-        output.push("newmtl mat1");
-        output.push("  Ns " + m.specularPower.toFixed(4));
-        output.push("  Ni 1.5000");
-        output.push("  d " + m.alpha.toFixed(4));
-        output.push("  Tr 0.0000");
-        output.push("  Tf 1.0000 1.0000 1.0000");
-        output.push("  illum 2");
-        output.push("  Ka " + m.ambientColor.r.toFixed(4) + " " + m.ambientColor.g.toFixed(4) + " " + m.ambientColor.b.toFixed(4));
-        output.push("  Kd " + m.diffuseColor.r.toFixed(4) + " " + m.diffuseColor.g.toFixed(4) + " " + m.diffuseColor.b.toFixed(4));
-        output.push("  Ks " + m.specularColor.r.toFixed(4) + " " + m.specularColor.g.toFixed(4) + " " + m.specularColor.b.toFixed(4));
-        output.push("  Ke " + m.emissiveColor.r.toFixed(4) + " " + m.emissiveColor.g.toFixed(4) + " " + m.emissiveColor.b.toFixed(4));
-        //TODO: uv scale, offset, wrap
-        //TODO: UV mirrored in Blender? second UV channel? lightMap? reflection textures?
-        var uvscale = "";
-        if (m.ambientTexture) {
-            output.push("  map_Ka " + uvscale + m.ambientTexture.name);
-        }
-        if (m.diffuseTexture) {
-            output.push("  map_Kd " + uvscale + m.diffuseTexture.name);
-            //TODO: alpha testing, opacity in diffuse texture alpha channel (diffuseTexture.hasAlpha -> map_d)
-        }
-        if (m.specularTexture) {
-            output.push("  map_Ks " + uvscale + m.specularTexture.name);
-            /* TODO: glossiness = specular highlight component is in alpha channel of specularTexture. (???)
-            if (m.useGlossinessFromSpecularMapAlpha)  {
-                output.push("  map_Ns "+uvscale + m.specularTexture.name);
-            }
-            */
-        }
-        /* TODO: emissive texture not in .MAT format (???)
-        if (m.emissiveTexture) {
-            output.push("  map_d "+uvscale+m.emissiveTexture.name);
-        }
-        */
-        if (m.bumpTexture) {
-            output.push("  map_bump -imfchan z " + uvscale + m.bumpTexture.name);
-        }
-        if (m.opacityTexture) {
-            output.push("  map_d " + uvscale + m.opacityTexture.name);
-        }
-        var text = output.join("\n");
-        return text;
-    };
-    return OBJExport;
-}());
-
-
-
-/***/ }),
-
 /***/ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_lights_punctual.js":
 /*!********************************************************************************!*\
   !*** ../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_lights_punctual.js ***!
@@ -808,97 +602,6 @@ _glTFExporter__WEBPACK_IMPORTED_MODULE_0__._Exporter.RegisterExtension(NAME, fun
 
 /***/ }),
 
-/***/ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_iridescence.js":
-/*!**************************************************************************************!*\
-  !*** ../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_iridescence.js ***!
-  \**************************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "KHR_materials_iridescence": () => (/* binding */ KHR_materials_iridescence)
-/* harmony export */ });
-/* harmony import */ var _glTFExporter__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../glTFExporter */ "../../../lts/serializers/dist/glTF/2.0/glTFExporter.js");
-/* harmony import */ var core_Materials_PBR_pbrBaseMaterial__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core/Materials/PBR/pbrBaseMaterial */ "core/Maths/math.vector");
-/* harmony import */ var core_Materials_PBR_pbrBaseMaterial__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(core_Materials_PBR_pbrBaseMaterial__WEBPACK_IMPORTED_MODULE_1__);
-
-
-var NAME = "KHR_materials_iridescence";
-/**
- * @hidden
- */
-// eslint-disable-next-line @typescript-eslint/naming-convention
-var KHR_materials_iridescence = /** @class */ (function () {
-    function KHR_materials_iridescence(exporter) {
-        /** Name of this extension */
-        this.name = NAME;
-        /** Defines whether this extension is enabled */
-        this.enabled = true;
-        /** Defines whether this extension is required */
-        this.required = false;
-        this._wasUsed = false;
-        this._exporter = exporter;
-    }
-    KHR_materials_iridescence.prototype.dispose = function () { };
-    Object.defineProperty(KHR_materials_iridescence.prototype, "wasUsed", {
-        /** @hidden */
-        get: function () {
-            return this._wasUsed;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    KHR_materials_iridescence.prototype.postExportMaterialAdditionalTextures = function (context, node, babylonMaterial) {
-        var additionalTextures = [];
-        if (babylonMaterial instanceof core_Materials_PBR_pbrBaseMaterial__WEBPACK_IMPORTED_MODULE_1__.PBRBaseMaterial) {
-            if (babylonMaterial.iridescence.isEnabled) {
-                if (babylonMaterial.iridescence.texture) {
-                    additionalTextures.push(babylonMaterial.iridescence.texture);
-                }
-                if (babylonMaterial.iridescence.thicknessTexture && babylonMaterial.iridescence.thicknessTexture !== babylonMaterial.iridescence.texture) {
-                    additionalTextures.push(babylonMaterial.iridescence.thicknessTexture);
-                }
-                return additionalTextures;
-            }
-        }
-        return [];
-    };
-    KHR_materials_iridescence.prototype.postExportMaterialAsync = function (context, node, babylonMaterial) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            if (babylonMaterial instanceof core_Materials_PBR_pbrBaseMaterial__WEBPACK_IMPORTED_MODULE_1__.PBRBaseMaterial) {
-                if (!babylonMaterial.iridescence.isEnabled) {
-                    resolve(node);
-                    return;
-                }
-                _this._wasUsed = true;
-                node.extensions = node.extensions || {};
-                var iridescenceTextureInfo = _this._exporter._glTFMaterialExporter._getTextureInfo(babylonMaterial.iridescence.texture);
-                var iridescenceThicknessTextureInfo = _this._exporter._glTFMaterialExporter._getTextureInfo(babylonMaterial.iridescence.thicknessTexture);
-                var iridescenceInfo_1 = {
-                    iridescenceFactor: babylonMaterial.iridescence.intensity,
-                    iridescenceIOR: babylonMaterial.iridescence.indexOfRefraction,
-                    iridescenceThicknessMinimum: babylonMaterial.iridescence.minimumThickness,
-                    iridescenceThicknessMaximum: babylonMaterial.iridescence.maximumThickness,
-                    iridescenceTexture: iridescenceTextureInfo !== null && iridescenceTextureInfo !== void 0 ? iridescenceTextureInfo : undefined,
-                    iridescenceThicknessTexture: iridescenceThicknessTextureInfo !== null && iridescenceThicknessTextureInfo !== void 0 ? iridescenceThicknessTextureInfo : undefined,
-                    hasTextures: function () {
-                        return iridescenceInfo_1.iridescenceTexture !== null || iridescenceInfo_1.iridescenceThicknessTexture !== null;
-                    },
-                };
-                node.extensions[NAME] = iridescenceInfo_1;
-            }
-            resolve(node);
-        });
-    };
-    return KHR_materials_iridescence;
-}());
-
-_glTFExporter__WEBPACK_IMPORTED_MODULE_0__._Exporter.RegisterExtension(NAME, function (exporter) { return new KHR_materials_iridescence(exporter); });
-
-
-/***/ }),
-
 /***/ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_sheen.js":
 /*!********************************************************************************!*\
   !*** ../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_sheen.js ***!
@@ -985,104 +688,6 @@ var KHR_materials_sheen = /** @class */ (function () {
 }());
 
 _glTFExporter__WEBPACK_IMPORTED_MODULE_0__._Exporter.RegisterExtension(NAME, function (exporter) { return new KHR_materials_sheen(exporter); });
-
-
-/***/ }),
-
-/***/ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_specular.js":
-/*!***********************************************************************************!*\
-  !*** ../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_specular.js ***!
-  \***********************************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "KHR_materials_specular": () => (/* binding */ KHR_materials_specular)
-/* harmony export */ });
-/* harmony import */ var _glTFExporter__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../glTFExporter */ "../../../lts/serializers/dist/glTF/2.0/glTFExporter.js");
-/* harmony import */ var core_Materials_PBR_pbrMaterial__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! core/Materials/PBR/pbrMaterial */ "core/Maths/math.vector");
-/* harmony import */ var core_Materials_PBR_pbrMaterial__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(core_Materials_PBR_pbrMaterial__WEBPACK_IMPORTED_MODULE_1__);
-
-
-var NAME = "KHR_materials_specular";
-/**
- * [Specification](https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_materials_specular/README.md)
- */
-// eslint-disable-next-line @typescript-eslint/naming-convention
-var KHR_materials_specular = /** @class */ (function () {
-    function KHR_materials_specular(exporter) {
-        /** Name of this extension */
-        this.name = NAME;
-        /** Defines whether this extension is enabled */
-        this.enabled = true;
-        /** Defines whether this extension is required */
-        this.required = false;
-        this._wasUsed = false;
-        this._exporter = exporter;
-    }
-    KHR_materials_specular.prototype.dispose = function () { };
-    Object.defineProperty(KHR_materials_specular.prototype, "wasUsed", {
-        /** @hidden */
-        get: function () {
-            return this._wasUsed;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    KHR_materials_specular.prototype.postExportMaterialAdditionalTextures = function (context, node, babylonMaterial) {
-        var additionalTextures = [];
-        if (babylonMaterial instanceof core_Materials_PBR_pbrMaterial__WEBPACK_IMPORTED_MODULE_1__.PBRMaterial) {
-            if (this._isExtensionEnabled(babylonMaterial)) {
-                if (babylonMaterial.metallicReflectanceTexture) {
-                    additionalTextures.push(babylonMaterial.metallicReflectanceTexture);
-                }
-                if (babylonMaterial.reflectanceTexture) {
-                    additionalTextures.push(babylonMaterial.reflectanceTexture);
-                }
-                return additionalTextures;
-            }
-        }
-        return additionalTextures;
-    };
-    KHR_materials_specular.prototype._isExtensionEnabled = function (mat) {
-        return ((mat.metallicF0Factor != undefined && mat.metallicF0Factor != 1.0) ||
-            (mat.metallicReflectanceColor != undefined && !mat.metallicReflectanceColor.equalsFloats(1.0, 1.0, 1.0)) ||
-            this._hasTexturesExtension(mat));
-    };
-    KHR_materials_specular.prototype._hasTexturesExtension = function (mat) {
-        return mat.metallicReflectanceTexture != null || mat.reflectanceTexture != null;
-    };
-    KHR_materials_specular.prototype.postExportMaterialAsync = function (context, node, babylonMaterial) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            var _a, _b;
-            if (babylonMaterial instanceof core_Materials_PBR_pbrMaterial__WEBPACK_IMPORTED_MODULE_1__.PBRMaterial && _this._isExtensionEnabled(babylonMaterial)) {
-                _this._wasUsed = true;
-                node.extensions = node.extensions || {};
-                var metallicReflectanceTexture = (_a = _this._exporter._glTFMaterialExporter._getTextureInfo(babylonMaterial.metallicReflectanceTexture)) !== null && _a !== void 0 ? _a : undefined;
-                var reflectanceTexture = (_b = _this._exporter._glTFMaterialExporter._getTextureInfo(babylonMaterial.reflectanceTexture)) !== null && _b !== void 0 ? _b : undefined;
-                var metallicF0Factor = babylonMaterial.metallicF0Factor == 1.0 ? undefined : babylonMaterial.metallicF0Factor;
-                var metallicReflectanceColor = babylonMaterial.metallicReflectanceColor.equalsFloats(1.0, 1.0, 1.0)
-                    ? undefined
-                    : babylonMaterial.metallicReflectanceColor.asArray();
-                var specularInfo = {
-                    specularFactor: metallicF0Factor,
-                    specularTexture: metallicReflectanceTexture,
-                    specularColorFactor: metallicReflectanceColor,
-                    specularColorTexture: reflectanceTexture,
-                    hasTextures: function () {
-                        return _this._hasTexturesExtension(babylonMaterial);
-                    },
-                };
-                node.extensions[NAME] = specularInfo;
-            }
-            resolve(node);
-        });
-    };
-    return KHR_materials_specular;
-}());
-
-_glTFExporter__WEBPACK_IMPORTED_MODULE_0__._Exporter.RegisterExtension(NAME, function (exporter) { return new KHR_materials_specular(exporter); });
 
 
 /***/ }),
@@ -1320,21 +925,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "KHR_lights_punctual": () => (/* reexport safe */ _KHR_lights_punctual__WEBPACK_IMPORTED_MODULE_1__.KHR_lights_punctual),
 /* harmony export */   "KHR_materials_clearcoat": () => (/* reexport safe */ _KHR_materials_clearcoat__WEBPACK_IMPORTED_MODULE_2__.KHR_materials_clearcoat),
-/* harmony export */   "KHR_materials_iridescence": () => (/* reexport safe */ _KHR_materials_iridescence__WEBPACK_IMPORTED_MODULE_3__.KHR_materials_iridescence),
-/* harmony export */   "KHR_materials_sheen": () => (/* reexport safe */ _KHR_materials_sheen__WEBPACK_IMPORTED_MODULE_4__.KHR_materials_sheen),
-/* harmony export */   "KHR_materials_specular": () => (/* reexport safe */ _KHR_materials_specular__WEBPACK_IMPORTED_MODULE_6__.KHR_materials_specular),
-/* harmony export */   "KHR_materials_unlit": () => (/* reexport safe */ _KHR_materials_unlit__WEBPACK_IMPORTED_MODULE_5__.KHR_materials_unlit),
+/* harmony export */   "KHR_materials_sheen": () => (/* reexport safe */ _KHR_materials_sheen__WEBPACK_IMPORTED_MODULE_3__.KHR_materials_sheen),
+/* harmony export */   "KHR_materials_unlit": () => (/* reexport safe */ _KHR_materials_unlit__WEBPACK_IMPORTED_MODULE_4__.KHR_materials_unlit),
 /* harmony export */   "KHR_texture_transform": () => (/* reexport safe */ _KHR_texture_transform__WEBPACK_IMPORTED_MODULE_0__.KHR_texture_transform)
 /* harmony export */ });
 /* harmony import */ var _KHR_texture_transform__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./KHR_texture_transform */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_texture_transform.js");
 /* harmony import */ var _KHR_lights_punctual__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./KHR_lights_punctual */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_lights_punctual.js");
 /* harmony import */ var _KHR_materials_clearcoat__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./KHR_materials_clearcoat */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_clearcoat.js");
-/* harmony import */ var _KHR_materials_iridescence__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./KHR_materials_iridescence */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_iridescence.js");
-/* harmony import */ var _KHR_materials_sheen__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./KHR_materials_sheen */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_sheen.js");
-/* harmony import */ var _KHR_materials_unlit__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./KHR_materials_unlit */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_unlit.js");
-/* harmony import */ var _KHR_materials_specular__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./KHR_materials_specular */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_specular.js");
-
-
+/* harmony import */ var _KHR_materials_sheen__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./KHR_materials_sheen */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_sheen.js");
+/* harmony import */ var _KHR_materials_unlit__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./KHR_materials_unlit */ "../../../lts/serializers/dist/glTF/2.0/Extensions/KHR_materials_unlit.js");
 
 
 
@@ -5725,9 +5324,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "GLTFData": () => (/* reexport safe */ _glTFData__WEBPACK_IMPORTED_MODULE_1__.GLTFData),
 /* harmony export */   "KHR_lights_punctual": () => (/* reexport safe */ _Extensions_index__WEBPACK_IMPORTED_MODULE_7__.KHR_lights_punctual),
 /* harmony export */   "KHR_materials_clearcoat": () => (/* reexport safe */ _Extensions_index__WEBPACK_IMPORTED_MODULE_7__.KHR_materials_clearcoat),
-/* harmony export */   "KHR_materials_iridescence": () => (/* reexport safe */ _Extensions_index__WEBPACK_IMPORTED_MODULE_7__.KHR_materials_iridescence),
 /* harmony export */   "KHR_materials_sheen": () => (/* reexport safe */ _Extensions_index__WEBPACK_IMPORTED_MODULE_7__.KHR_materials_sheen),
-/* harmony export */   "KHR_materials_specular": () => (/* reexport safe */ _Extensions_index__WEBPACK_IMPORTED_MODULE_7__.KHR_materials_specular),
 /* harmony export */   "KHR_materials_unlit": () => (/* reexport safe */ _Extensions_index__WEBPACK_IMPORTED_MODULE_7__.KHR_materials_unlit),
 /* harmony export */   "KHR_texture_transform": () => (/* reexport safe */ _Extensions_index__WEBPACK_IMPORTED_MODULE_7__.KHR_texture_transform),
 /* harmony export */   "_BinaryWriter": () => (/* reexport safe */ _glTFExporter__WEBPACK_IMPORTED_MODULE_2__._BinaryWriter),
@@ -5799,78 +5396,6 @@ var __IGLTFExporterExtension = 0; // I am here to allow dts to be created
 
 /***/ }),
 
-/***/ "../../../lts/serializers/dist/glTF/index.js":
-/*!***************************************************!*\
-  !*** ../../../lts/serializers/dist/glTF/index.js ***!
-  \***************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "GLTF2Export": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.GLTF2Export),
-/* harmony export */   "GLTFData": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.GLTFData),
-/* harmony export */   "KHR_lights_punctual": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.KHR_lights_punctual),
-/* harmony export */   "KHR_materials_clearcoat": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_clearcoat),
-/* harmony export */   "KHR_materials_iridescence": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_iridescence),
-/* harmony export */   "KHR_materials_sheen": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_sheen),
-/* harmony export */   "KHR_materials_specular": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_specular),
-/* harmony export */   "KHR_materials_unlit": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_unlit),
-/* harmony export */   "KHR_texture_transform": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.KHR_texture_transform),
-/* harmony export */   "_BinaryWriter": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__._BinaryWriter),
-/* harmony export */   "_Exporter": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__._Exporter),
-/* harmony export */   "_GLTFAnimation": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__._GLTFAnimation),
-/* harmony export */   "_GLTFMaterialExporter": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__._GLTFMaterialExporter),
-/* harmony export */   "_GLTFUtilities": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__._GLTFUtilities),
-/* harmony export */   "__IGLTFExporterExtension": () => (/* reexport safe */ _glTFFileExporter__WEBPACK_IMPORTED_MODULE_0__.__IGLTFExporterExtension),
-/* harmony export */   "__IGLTFExporterExtensionV2": () => (/* reexport safe */ _2_0_index__WEBPACK_IMPORTED_MODULE_1__.__IGLTFExporterExtensionV2)
-/* harmony export */ });
-/* harmony import */ var _glTFFileExporter__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./glTFFileExporter */ "../../../lts/serializers/dist/glTF/glTFFileExporter.js");
-/* harmony import */ var _2_0_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./2.0/index */ "../../../lts/serializers/dist/glTF/2.0/index.js");
-/* eslint-disable import/no-internal-modules */
-
-
-
-
-/***/ }),
-
-/***/ "../../../lts/serializers/dist/index.js":
-/*!**********************************************!*\
-  !*** ../../../lts/serializers/dist/index.js ***!
-  \**********************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "GLTF2Export": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.GLTF2Export),
-/* harmony export */   "GLTFData": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.GLTFData),
-/* harmony export */   "KHR_lights_punctual": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.KHR_lights_punctual),
-/* harmony export */   "KHR_materials_clearcoat": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_clearcoat),
-/* harmony export */   "KHR_materials_iridescence": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_iridescence),
-/* harmony export */   "KHR_materials_sheen": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_sheen),
-/* harmony export */   "KHR_materials_specular": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_specular),
-/* harmony export */   "KHR_materials_unlit": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_unlit),
-/* harmony export */   "KHR_texture_transform": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.KHR_texture_transform),
-/* harmony export */   "OBJExport": () => (/* reexport safe */ _OBJ_index__WEBPACK_IMPORTED_MODULE_0__.OBJExport),
-/* harmony export */   "STLExport": () => (/* reexport safe */ _stl_index__WEBPACK_IMPORTED_MODULE_2__.STLExport),
-/* harmony export */   "_BinaryWriter": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__._BinaryWriter),
-/* harmony export */   "_Exporter": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__._Exporter),
-/* harmony export */   "_GLTFAnimation": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__._GLTFAnimation),
-/* harmony export */   "_GLTFMaterialExporter": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__._GLTFMaterialExporter),
-/* harmony export */   "_GLTFUtilities": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__._GLTFUtilities),
-/* harmony export */   "__IGLTFExporterExtension": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.__IGLTFExporterExtension),
-/* harmony export */   "__IGLTFExporterExtensionV2": () => (/* reexport safe */ _glTF_index__WEBPACK_IMPORTED_MODULE_1__.__IGLTFExporterExtensionV2)
-/* harmony export */ });
-/* harmony import */ var _OBJ_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./OBJ/index */ "../../../lts/serializers/dist/OBJ/index.js");
-/* harmony import */ var _glTF_index__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./glTF/index */ "../../../lts/serializers/dist/glTF/index.js");
-/* harmony import */ var _stl_index__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./stl/index */ "../../../lts/serializers/dist/stl/index.js");
-/* eslint-disable import/no-internal-modules */
-
-
-
-
-
-/***/ }),
-
 /***/ "../../../lts/serializers/dist/legacy/legacy-glTF2Serializer.js":
 /*!**********************************************************************!*\
   !*** ../../../lts/serializers/dist/legacy/legacy-glTF2Serializer.js ***!
@@ -5883,9 +5408,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "GLTFData": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__.GLTFData),
 /* harmony export */   "KHR_lights_punctual": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__.KHR_lights_punctual),
 /* harmony export */   "KHR_materials_clearcoat": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__.KHR_materials_clearcoat),
-/* harmony export */   "KHR_materials_iridescence": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__.KHR_materials_iridescence),
 /* harmony export */   "KHR_materials_sheen": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__.KHR_materials_sheen),
-/* harmony export */   "KHR_materials_specular": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__.KHR_materials_specular),
 /* harmony export */   "KHR_materials_unlit": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__.KHR_materials_unlit),
 /* harmony export */   "KHR_texture_transform": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__.KHR_texture_transform),
 /* harmony export */   "_BinaryWriter": () => (/* reexport safe */ _glTF_2_0_index__WEBPACK_IMPORTED_MODULE_4__._BinaryWriter),
@@ -5944,242 +5467,6 @@ if (typeof globalObject !== "undefined") {
     }
 }
 
-
-
-
-/***/ }),
-
-/***/ "../../../lts/serializers/dist/legacy/legacy-objSerializer.js":
-/*!********************************************************************!*\
-  !*** ../../../lts/serializers/dist/legacy/legacy-objSerializer.js ***!
-  \********************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "OBJExport": () => (/* reexport safe */ _OBJ_index__WEBPACK_IMPORTED_MODULE_0__.OBJExport)
-/* harmony export */ });
-/* harmony import */ var _OBJ_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../OBJ/index */ "../../../lts/serializers/dist/OBJ/index.js");
-/* eslint-disable import/no-internal-modules */
-
-/**
- * This is the entry point for the UMD module.
- * The entry point for a future ESM package should be index.ts
- */
-var globalObject = typeof __webpack_require__.g !== "undefined" ? __webpack_require__.g : typeof window !== "undefined" ? window : undefined;
-if (typeof globalObject !== "undefined") {
-    for (var serializer in _OBJ_index__WEBPACK_IMPORTED_MODULE_0__) {
-        globalObject.BABYLON[serializer] = _OBJ_index__WEBPACK_IMPORTED_MODULE_0__[serializer];
-    }
-}
-
-
-
-/***/ }),
-
-/***/ "../../../lts/serializers/dist/legacy/legacy-stlSerializer.js":
-/*!********************************************************************!*\
-  !*** ../../../lts/serializers/dist/legacy/legacy-stlSerializer.js ***!
-  \********************************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "STLExport": () => (/* reexport safe */ _stl_index__WEBPACK_IMPORTED_MODULE_0__.STLExport)
-/* harmony export */ });
-/* harmony import */ var _stl_index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../stl/index */ "../../../lts/serializers/dist/stl/index.js");
-/* eslint-disable import/no-internal-modules */
-
-/**
- * This is the entry point for the UMD module.
- * The entry point for a future ESM package should be index.ts
- */
-var globalObject = typeof __webpack_require__.g !== "undefined" ? __webpack_require__.g : typeof window !== "undefined" ? window : undefined;
-if (typeof globalObject !== "undefined") {
-    for (var serializer in _stl_index__WEBPACK_IMPORTED_MODULE_0__) {
-        globalObject.BABYLON[serializer] = _stl_index__WEBPACK_IMPORTED_MODULE_0__[serializer];
-    }
-}
-
-
-
-/***/ }),
-
-/***/ "../../../lts/serializers/dist/legacy/legacy.js":
-/*!******************************************************!*\
-  !*** ../../../lts/serializers/dist/legacy/legacy.js ***!
-  \******************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "GLTF2Export": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.GLTF2Export),
-/* harmony export */   "GLTFData": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.GLTFData),
-/* harmony export */   "KHR_lights_punctual": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.KHR_lights_punctual),
-/* harmony export */   "KHR_materials_clearcoat": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_clearcoat),
-/* harmony export */   "KHR_materials_iridescence": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_iridescence),
-/* harmony export */   "KHR_materials_sheen": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_sheen),
-/* harmony export */   "KHR_materials_specular": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_specular),
-/* harmony export */   "KHR_materials_unlit": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.KHR_materials_unlit),
-/* harmony export */   "KHR_texture_transform": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.KHR_texture_transform),
-/* harmony export */   "OBJExport": () => (/* reexport safe */ _legacy_objSerializer__WEBPACK_IMPORTED_MODULE_2__.OBJExport),
-/* harmony export */   "STLExport": () => (/* reexport safe */ _legacy_stlSerializer__WEBPACK_IMPORTED_MODULE_3__.STLExport),
-/* harmony export */   "_BinaryWriter": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__._BinaryWriter),
-/* harmony export */   "_Exporter": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__._Exporter),
-/* harmony export */   "_GLTFAnimation": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__._GLTFAnimation),
-/* harmony export */   "_GLTFMaterialExporter": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__._GLTFMaterialExporter),
-/* harmony export */   "_GLTFUtilities": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__._GLTFUtilities),
-/* harmony export */   "__IGLTFExporterExtension": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.__IGLTFExporterExtension),
-/* harmony export */   "__IGLTFExporterExtensionV2": () => (/* reexport safe */ _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__.__IGLTFExporterExtensionV2)
-/* harmony export */ });
-/* harmony import */ var _index__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../index */ "../../../lts/serializers/dist/index.js");
-/* harmony import */ var _legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./legacy-glTF2Serializer */ "../../../lts/serializers/dist/legacy/legacy-glTF2Serializer.js");
-/* harmony import */ var _legacy_objSerializer__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./legacy-objSerializer */ "../../../lts/serializers/dist/legacy/legacy-objSerializer.js");
-/* harmony import */ var _legacy_stlSerializer__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./legacy-stlSerializer */ "../../../lts/serializers/dist/legacy/legacy-stlSerializer.js");
-/* eslint-disable import/export */
-/* eslint-disable import/no-internal-modules */
-
-
-
-
-
-
-/***/ }),
-
-/***/ "../../../lts/serializers/dist/stl/index.js":
-/*!**************************************************!*\
-  !*** ../../../lts/serializers/dist/stl/index.js ***!
-  \**************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "STLExport": () => (/* reexport safe */ _stlSerializer__WEBPACK_IMPORTED_MODULE_0__.STLExport)
-/* harmony export */ });
-/* harmony import */ var _stlSerializer__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./stlSerializer */ "../../../lts/serializers/dist/stl/stlSerializer.js");
-
-
-
-/***/ }),
-
-/***/ "../../../lts/serializers/dist/stl/stlSerializer.js":
-/*!**********************************************************!*\
-  !*** ../../../lts/serializers/dist/stl/stlSerializer.js ***!
-  \**********************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "STLExport": () => (/* binding */ STLExport)
-/* harmony export */ });
-/* harmony import */ var core_Buffers_buffer__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! core/Maths/math.vector */ "core/Maths/math.vector");
-/* harmony import */ var core_Buffers_buffer__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(core_Buffers_buffer__WEBPACK_IMPORTED_MODULE_0__);
-
-
-/**
- * Class for generating STL data from a Babylon scene.
- */
-var STLExport = /** @class */ (function () {
-    function STLExport() {
-    }
-    /**
-     * Exports the geometry of a Mesh array in .STL file format (ASCII)
-     * @param meshes list defines the mesh to serialize
-     * @param download triggers the automatic download of the file.
-     * @param fileName changes the downloads fileName.
-     * @param binary changes the STL to a binary type.
-     * @param isLittleEndian toggle for binary type exporter.
-     * @param doNotBakeTransform toggle if meshes transforms should be baked or not.
-     * @returns the STL as UTF8 string
-     */
-    STLExport.CreateSTL = function (meshes, download, fileName, binary, isLittleEndian, doNotBakeTransform) {
-        //Binary support adapted from https://gist.github.com/paulkaplan/6d5f0ab2c7e8fdc68a61
-        if (download === void 0) { download = true; }
-        if (fileName === void 0) { fileName = "stlmesh"; }
-        if (binary === void 0) { binary = false; }
-        if (isLittleEndian === void 0) { isLittleEndian = true; }
-        if (doNotBakeTransform === void 0) { doNotBakeTransform = false; }
-        var getFaceData = function (indices, vertices, i) {
-            var id = [indices[i] * 3, indices[i + 1] * 3, indices[i + 2] * 3];
-            var v = [
-                new core_Buffers_buffer__WEBPACK_IMPORTED_MODULE_0__.Vector3(vertices[id[0]], vertices[id[0] + 2], vertices[id[0] + 1]),
-                new core_Buffers_buffer__WEBPACK_IMPORTED_MODULE_0__.Vector3(vertices[id[1]], vertices[id[1] + 2], vertices[id[1] + 1]),
-                new core_Buffers_buffer__WEBPACK_IMPORTED_MODULE_0__.Vector3(vertices[id[2]], vertices[id[2] + 2], vertices[id[2] + 1]),
-            ];
-            var p1p2 = v[0].subtract(v[1]);
-            var p3p2 = v[2].subtract(v[1]);
-            var n = core_Buffers_buffer__WEBPACK_IMPORTED_MODULE_0__.Vector3.Cross(p3p2, p1p2).normalize();
-            return { v: v, n: n };
-        };
-        var writeVector = function (dataview, offset, vector, isLittleEndian) {
-            offset = writeFloat(dataview, offset, vector.x, isLittleEndian);
-            offset = writeFloat(dataview, offset, vector.y, isLittleEndian);
-            return writeFloat(dataview, offset, vector.z, isLittleEndian);
-        };
-        var writeFloat = function (dataview, offset, value, isLittleEndian) {
-            dataview.setFloat32(offset, value, isLittleEndian);
-            return offset + 4;
-        };
-        var data;
-        var faceCount = 0;
-        var offset = 0;
-        if (binary) {
-            for (var i = 0; i < meshes.length; i++) {
-                var mesh = meshes[i];
-                var indices = mesh.getIndices();
-                faceCount += indices ? indices.length / 3 : 0;
-            }
-            var bufferSize = 84 + 50 * faceCount;
-            var buffer = new ArrayBuffer(bufferSize);
-            data = new DataView(buffer);
-            offset += 80;
-            data.setUint32(offset, faceCount, isLittleEndian);
-            offset += 4;
-        }
-        else {
-            data = "solid stlmesh\r\n";
-        }
-        for (var i = 0; i < meshes.length; i++) {
-            var mesh = meshes[i];
-            if (!doNotBakeTransform) {
-                mesh.bakeCurrentTransformIntoVertices();
-            }
-            var vertices = mesh.getVerticesData(core_Buffers_buffer__WEBPACK_IMPORTED_MODULE_0__.VertexBuffer.PositionKind) || [];
-            var indices = mesh.getIndices() || [];
-            for (var i_1 = 0; i_1 < indices.length; i_1 += 3) {
-                var fd = getFaceData(indices, vertices, i_1);
-                if (binary) {
-                    offset = writeVector(data, offset, fd.n, isLittleEndian);
-                    offset = writeVector(data, offset, fd.v[0], isLittleEndian);
-                    offset = writeVector(data, offset, fd.v[1], isLittleEndian);
-                    offset = writeVector(data, offset, fd.v[2], isLittleEndian);
-                    offset += 2;
-                }
-                else {
-                    data += "facet normal " + fd.n.x + " " + fd.n.y + " " + fd.n.z + "\r\n";
-                    data += "\touter loop\r\n";
-                    data += "\t\tvertex " + fd.v[0].x + " " + fd.v[0].y + " " + fd.v[0].z + "\r\n";
-                    data += "\t\tvertex " + fd.v[1].x + " " + fd.v[1].y + " " + fd.v[1].z + "\r\n";
-                    data += "\t\tvertex " + fd.v[2].x + " " + fd.v[2].y + " " + fd.v[2].z + "\r\n";
-                    data += "\tendloop\r\n";
-                    data += "endfacet\r\n";
-                }
-            }
-        }
-        if (!binary) {
-            data += "endsolid stlmesh";
-        }
-        if (download) {
-            var a = document.createElement("a");
-            var blob = new Blob([data], { type: "application/octet-stream" });
-            a.href = window.URL.createObjectURL(blob);
-            a.download = fileName + ".stl";
-            a.click();
-        }
-        return data;
-    };
-    return STLExport;
-}());
 
 
 
@@ -6279,17 +5566,17 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 /*!**********************!*\
-  !*** ./src/index.ts ***!
+  !*** ./src/glTF2.ts ***!
   \**********************/
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (__WEBPACK_DEFAULT_EXPORT__),
-/* harmony export */   "serializers": () => (/* reexport module object */ serializers_legacy_legacy__WEBPACK_IMPORTED_MODULE_0__)
+/* harmony export */   "serializers": () => (/* reexport module object */ serializers_legacy_legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_0__)
 /* harmony export */ });
-/* harmony import */ var serializers_legacy_legacy__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! serializers/legacy/legacy */ "../../../lts/serializers/dist/legacy/legacy.js");
+/* harmony import */ var serializers_legacy_legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! serializers/legacy/legacy-glTF2Serializer */ "../../../lts/serializers/dist/legacy/legacy-glTF2Serializer.js");
 
 
-/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (serializers_legacy_legacy__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (serializers_legacy_legacy_glTF2Serializer__WEBPACK_IMPORTED_MODULE_0__);
 
 })();
 
@@ -6298,4 +5585,4 @@ __webpack_exports__ = __webpack_exports__["default"];
 /******/ })()
 ;
 });
-//# sourceMappingURL=babylonjs.serializers.js.map
+//# sourceMappingURL=babylon.glTF2Serializer.js.map
