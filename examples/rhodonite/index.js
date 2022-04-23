@@ -48,17 +48,18 @@ const load = async function () {
   Rn.Config.maxCameraNumber = 20;
   await Rn.ModuleManager.getInstance().loadModule('webgl');
   await Rn.ModuleManager.getInstance().loadModule('pbr');
-  const system = Rn.System.getInstance();
-  //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL1, canvas);
-  //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.FastestWebGL1, canvas);
-  //const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.UniformWebGL2, canvas);
-  const gl = system.setProcessApproachAndCanvas(Rn.ProcessApproach.FastestWebGL2, canvas);
+  await Rn.System.init({
+    //approach: Rn.ProcessApproach.UniformWebGL1,
+    //approach: Rn.ProcessApproach.FastestWebGL1,
+    //approach: Rn.ProcessApproach.UniformWebGL2,
+    approach: Rn.ProcessApproach.FastestWebGL2,
+    canvas: canvas,
+  });
   
   // expressions
   const expressions = [];
 
   // camera
-  const entityRepository = Rn.EntityRepository.getInstance();
   const cameraEntity = Rn.EntityHelper.createCameraControllerEntity();
   const cameraComponent = cameraEntity.getCamera();
   cameraComponent.zNear = 0.1;
@@ -94,8 +95,7 @@ const load = async function () {
   });
 
   // gltf
-  const gltfImporter = Rn.GltfImporter.getInstance();
-  const mainExpression = await gltfImporter.import(url, {
+  const mainExpression = await Rn.GltfImporter.import(url, {
       defaultMaterialHelperArgumentArray: [
         {
           makeOutputSrgb: false,
@@ -134,9 +134,8 @@ const load = async function () {
   expressionPostEffect.addRenderPasses([gammaRenderPass]);
   
   // cameraController
-  const componentRepository = Rn.ComponentRepository.getInstance();
   // Exclude a specific camera from the camera list
-  const cameraComponents = componentRepository.getComponentsWithType(Rn.CameraComponent).filter(camera => camera.uniqueName.substring(0,1) !== "-");
+  const cameraComponents = Rn.ComponentRepository.getComponentsWithType(Rn.CameraComponent).filter(camera => camera.uniqueName.substring(0,1) !== "-");
   
   if (cameraComponents.length > 1) {
     //let cameraNames = cameraComponents.map(camera => camera.uniqueName);
@@ -191,8 +190,7 @@ const load = async function () {
   setIBL('../../textures/papermill_hdr');
 
   guiIBL.onChange(function(value) {
-    const componentRepository = Rn.ComponentRepository.getInstance();
-    const meshRendererComponents = componentRepository.getComponentsWithType(Rn.MeshRendererComponent);
+    const meshRendererComponents = Rn.ComponentRepository.getComponentsWithType(Rn.MeshRendererComponent);
     for (let i = 0; i < meshRendererComponents.length; i++) {
       const meshRendererComponent = meshRendererComponents[i];
       meshRendererComponent.specularCubeMapContribution = value ? 1.0 : 0.0;
@@ -220,7 +218,7 @@ const load = async function () {
       controller.rotX = angle;
     }
 
-    system.process(expressions);
+    Rn.System.process(expressions);
     count++;
     requestAnimationFrame(draw);
   };
@@ -246,7 +244,6 @@ const load = async function () {
     const sphereMesh = new Rn.Mesh();
     sphereMesh.addPrimitive(spherePrimitive);
 
-    const entityRepository = Rn.EntityRepository.getInstance();
     const sphereEntity = Rn.EntityHelper.createMeshEntity();
     sphereEntity.getTransform().scale = Rn.Vector3.fromCopyArray([-1/scale, 1/scale, 1/scale]);
 
@@ -275,8 +272,7 @@ const load = async function () {
     diffuseCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
     diffuseCubeTexture.mipmapLevelNumber = 1;
 
-    const componentRepository = Rn.ComponentRepository.getInstance();
-    const meshRendererComponents = componentRepository.getComponentsWithType(Rn.MeshRendererComponent);
+    const meshRendererComponents = Rn.ComponentRepository.getComponentsWithType(Rn.MeshRendererComponent);
     for (let i = 0; i < meshRendererComponents.length; i++) {
       const meshRendererComponent = meshRendererComponents[i];
       meshRendererComponent.specularCubeMap = specularCubeTexture;
@@ -302,7 +298,6 @@ const load = async function () {
     const boardMeshComponent = boardEntity.getMesh();
     boardMeshComponent.setMesh(boardMesh);
 
-    const entityRepository = Rn.EntityRepository.getInstance();
     const cameraComponent = createCameraComponent();
     cameraComponent.zFarInner = 1.0;
     // Rename to exclude certain cameras from the list of cameras.
