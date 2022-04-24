@@ -143,6 +143,17 @@ let createScene = function(engine) {
             });
         }
 
+
+        if ( emissiveStrengthExtension != null ) {
+            var pipeline = new BABYLON.DefaultRenderingPipeline(
+                "defaultPipeline", // The name of the pipeline
+                true, // Do you want the pipeline to use HDR texture?
+                scene, // The scene instance
+                scene.cameras // The list of cameras to be attached to
+            );
+            pipeline.bloomEnabled = true;
+        }
+
         let light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
         let light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
         light1.setEnabled(LIGHTS);
@@ -184,16 +195,6 @@ let createScene = function(engine) {
             skybox.material = skyboxMaterial;
 */
             environmentTexture = cubeTexture;
-        }
-
-        if ( emissiveStrengthExtension != null ) {
-            var pipeline = new BABYLON.DefaultRenderingPipeline(
-                "defaultPipeline", // The name of the pipeline
-                true, // Do you want the pipeline to use HDR texture?
-                scene, // The scene instance
-                [camera] // The list of cameras to be attached to
-            );
-            pipeline.bloomEnabled = true;
         }
 
         guiBoundingBox.onChange(function (value) {
