@@ -235,7 +235,7 @@ const load = async function () {
 
     const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
     sphereMaterial.setTextureParameter(Rn.ShaderSemantics.ColorEnvTexture, environmentCubeTexture);
-    sphereMaterial.setParameter(Rn.EnvConstantSingleMaterialNode.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
+    sphereMaterial.setParameter(Rn.EnvConstantMaterialContent.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
     sphereMaterial.setParameter(Rn.ShaderSemantics.MakeOutputSrgb, false);
 
     const spherePrimitive = new Rn.Sphere();
