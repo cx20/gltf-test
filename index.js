@@ -127,8 +127,10 @@ function makeSampleModelLinks() {
             let td = document.createElement('td');
             td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF', scale));
             if (modelName != 'Box With Spaces') {
-                td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Embedded', scale));
+                if (modelName != 'Fox') {
+                    td.appendChild(document.createElement('br'));
+                    td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Embedded', scale));
+                }
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF-Binary', scale));
             }
