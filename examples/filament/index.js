@@ -112,18 +112,18 @@ Filament.init([mesh_url, ibl_url, sky_url], () => {
 
     guiIBL.onChange(function (value) {
         if ( value ) {
-            const indirectLight = app.ibl = app.engine.createIblFromKtx(ibl_url);
+            const indirectLight = app.ibl = app.engine.createIblFromKtx1(ibl_url);
             app.scene.setIndirectLight(indirectLight);
             indirectLight.setIntensity(50000);
         } else {
-            const indirectLight = app.ibl = app.engine.createIblFromKtx(ibl_url);
+            const indirectLight = app.ibl = app.engine.createIblFromKtx1(ibl_url);
             app.scene.setIndirectLight(null);
         }
     });
 
     guiSkybox.onChange(function (value) {
         if ( value ) {
-            const skybox = app.engine.createSkyFromKtx(sky_url);
+            const skybox = app.engine.createSkyFromKtx1(sky_url);
             app.scene.setSkybox(skybox);
         } else {
             app.scene.setSkybox(null);
@@ -159,11 +159,11 @@ class App {
             .toneMapping(ToneMapping.LINEAR)
             .build(engine);
  
-        const indirectLight = this.ibl = engine.createIblFromKtx(ibl_url);
+        const indirectLight = this.ibl = engine.createIblFromKtx1(ibl_url);
         this.scene.setIndirectLight(indirectLight);
         indirectLight.setIntensity(50000);
 
-        const skybox = engine.createSkyFromKtx(sky_url);
+        const skybox = engine.createSkyFromKtx1(sky_url);
         this.scene.setSkybox(skybox);
 
         const loader = engine.createAssetLoader();
