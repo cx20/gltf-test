@@ -406,6 +406,7 @@ function makeTutorialExtensionTestModelLinks() {
                      || modelName == 'DirectionalLight'
                      || modelName == 'GlamVelvetSofa'
                      || modelName == 'EmissiveStrengthTest'
+                     || modelName == 'IridescenceSuzanne'
                      || modelName == 'IridescentDishWithOlives'
                      || modelName == 'MaterialsVariantsChair'
                      || modelName == 'MaterialsVariantsShoe'
