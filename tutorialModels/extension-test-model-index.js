@@ -18,6 +18,7 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'IridescenceSuzanne', scale:1.0},
     {category:'tutorialModels', name:'IridescentDishWithOlives', scale:8.0},
     {category:'tutorialModels', name:'Lights', scale:1.0},
+    {category:'tutorialModels', name:'LightsPunctualLamp', scale:1.0},
     {category:'tutorialModels', name:'MaterialsVariantsChair', scale:0.7},
     {category:'tutorialModels', name:'MaterialsVariantsShoe', scale:10.0},
     {category:'tutorialModels', name:'MosquitoInAmber', scale:30.0},
