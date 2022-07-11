@@ -46,8 +46,8 @@ canvas.height = window.innerHeight;
 
 const load = async function () {
   Rn.Config.maxCameraNumber = 20;
-  await Rn.ModuleManager.getInstance().loadModule('webgl');
-  await Rn.ModuleManager.getInstance().loadModule('pbr');
+  //await Rn.ModuleManager.getInstance().loadModule('webgl');
+  //await Rn.ModuleManager.getInstance().loadModule('pbr');
   await Rn.System.init({
     //approach: Rn.ProcessApproach.UniformWebGL1,
     //approach: Rn.ProcessApproach.FastestWebGL1,
@@ -96,12 +96,12 @@ const load = async function () {
 
   // gltf
   const mainExpression = await Rn.GltfImporter.import(url, {
+      cameraComponent: cameraComponent,
       defaultMaterialHelperArgumentArray: [
         {
           makeOutputSrgb: false,
         },
-      ],
-      cameraComponent: cameraComponent
+      ]
   });
   const mainRenderPass = mainExpression.renderPasses[0];
   expressions.push(mainExpression);
@@ -121,8 +121,8 @@ const load = async function () {
   const gammaTargetFramebuffer = Rn.RenderableHelper.createTexturesForRenderTarget(2048, 2048, 1, {});
   for (let renderPass of mainExpression.renderPasses) {
     renderPass.setFramebuffer(gammaTargetFramebuffer);
-    renderPass.toClearColorBuffer = false;
-    renderPass.toClearDepthBuffer = false;
+    renderPass.toClearColorBuffer = true;
+    renderPass.toClearDepthBuffer = true;
   }
   mainExpression.renderPasses[0].toClearColorBuffer = true;
   mainExpression.renderPasses[0].toClearDepthBuffer = true;
@@ -229,14 +229,15 @@ const load = async function () {
     const environmentCubeTexture = new Rn.CubeTexture();
     environmentCubeTexture.baseUriToLoad = baseuri + '/environment/environment';
     environmentCubeTexture.isNamePosNeg = true;
-    environmentCubeTexture.hdriFormat = Rn.HdriFormat.LDR_LINEAR;
+    environmentCubeTexture.hdriFormat = Rn.HdriFormat.LDR_SRGB;
     environmentCubeTexture.mipmapLevelNumber = 1;
     environmentCubeTexture.loadTextureImagesAsync();
 
     const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
     sphereMaterial.setTextureParameter(Rn.ShaderSemantics.ColorEnvTexture, environmentCubeTexture);
-    sphereMaterial.setParameter(Rn.ShaderSemantics.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
-    sphereMaterial.setParameter(Rn.ShaderSemantics.MakeOutputSrgb, false);
+    //sphereMaterial.setParameter(Rn.ShaderSemantics.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
+    sphereMaterial.setParameter(Rn.EnvConstantMaterialContent.EnvHdriFormat, Rn.HdriFormat.LDR_SRGB.index);
+    //sphereMaterial.setParameter(Rn.ShaderSemantics.MakeOutputSrgb, false);
 
     const spherePrimitive = new Rn.Sphere();
     spherePrimitive.generate({ radius: 50, widthSegments: 40, heightSegments: 40, material: sphereMaterial });
@@ -263,13 +264,15 @@ const load = async function () {
     const specularCubeTexture = new Rn.CubeTexture();
     specularCubeTexture.baseUriToLoad = baseUri + '/specular/specular';
     specularCubeTexture.isNamePosNeg = true;
-    specularCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
+    //specularCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
+    specularCubeTexture.hdriFormat = Rn.HdriFormat.RGBE_PNG;
     specularCubeTexture.mipmapLevelNumber = 10;
 
     const diffuseCubeTexture = new Rn.CubeTexture();
     diffuseCubeTexture.baseUriToLoad = baseUri + '/diffuse/diffuse';
     diffuseCubeTexture.isNamePosNeg = true;
-    diffuseCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
+    //diffuseCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
+    diffuseCubeTexture.hdriFormat = Rn.HdriFormat.RGBE_PNG;
     diffuseCubeTexture.mipmapLevelNumber = 1;
 
     const meshRendererComponents = Rn.ComponentRepository.getComponentsWithType(Rn.MeshRendererComponent);
