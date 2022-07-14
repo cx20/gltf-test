@@ -49,10 +49,7 @@ const load = async function () {
   //await Rn.ModuleManager.getInstance().loadModule('webgl');
   //await Rn.ModuleManager.getInstance().loadModule('pbr');
   await Rn.System.init({
-    //approach: Rn.ProcessApproach.UniformWebGL1,
-    //approach: Rn.ProcessApproach.FastestWebGL1,
-    //approach: Rn.ProcessApproach.UniformWebGL2,
-    approach: Rn.ProcessApproach.FastestWebGL2,
+    approach: Rn.ProcessApproach.Uniform,
     canvas: canvas,
   });
   
