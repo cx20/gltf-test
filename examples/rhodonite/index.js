@@ -44,21 +44,24 @@ const canvas = document.getElementById('world');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const load = async function () {
-  Rn.Config.maxCameraNumber = 20;
-  //await Rn.ModuleManager.getInstance().loadModule('webgl');
-  //await Rn.ModuleManager.getInstance().loadModule('pbr');
+(async () => {
+  Rn.Config.isUboEnabled = false;
   await Rn.System.init({
-    approach: Rn.ProcessApproach.Uniform,
-    canvas: canvas,
+    approach: Rn.ProcessApproach.DataTexture,
+    canvas,
   });
-  
-  // expressions
-  const expressions = [];
+
+  Rn.MeshRendererComponent.isDepthMaskTrueForTransparencies = true;
+
+  // create ForwardRenderPipeline
+  const forwardRenderPipeline = new Rn.ForwardRenderPipeline();
+  forwardRenderPipeline.setup(canvas.width, canvas.height);
 
   // camera
+  //const {cameraComponent, cameraEntity} = createCamera();
   const cameraEntity = Rn.EntityHelper.createCameraControllerEntity();
   const cameraComponent = cameraEntity.getCamera();
+
   cameraComponent.zNear = 0.1;
   cameraComponent.zFar = 1000.0;
   cameraComponent.setFovyAndChangeFocalLength(75.0);
@@ -92,44 +95,55 @@ const load = async function () {
   });
 
   // gltf
-  const mainExpression = await Rn.GltfImporter.import(url, {
+  const mainExpression = await Rn.GltfImporter.import(
+    url,
+    {
       cameraComponent: cameraComponent,
       defaultMaterialHelperArgumentArray: [
         {
           makeOutputSrgb: false,
         },
-      ]
-  });
-  const mainRenderPass = mainExpression.renderPasses[0];
-  expressions.push(mainExpression);
-  
+      ],
+    }
+  );
+
   // env
-  const envExpression = createEnvCubeExpression('../../textures/papermill_hdr');
-  // TODO: VC.gltf has been removed from Cubemap due to inconsistencies with automatic camera calculations
+  const envExpression = createEnvCubeExpression(
+    '../../textures/papermill_hdr',
+    cameraEntity
+  );
+
+  const mainRenderPass = mainExpression.renderPasses[0];
+  // cameraController
+  const mainCameraControllerComponent = cameraEntity.getCameraController();
+/*
+  const controller = mainCameraControllerComponent.controller;
+  controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+  controller.dolly = 0.83;
+*/
+
   if (modelInfo.name != "VC") {
-    expressions.push(envExpression);
+    forwardRenderPipeline.setExpressions([envExpression, mainExpression]);
+  } else {
+    forwardRenderPipeline.setExpressions([mainExpression]);
   }
 
-  // post effects
-  const expressionPostEffect = new Rn.Expression();
-  expressions.push(expressionPostEffect);
+  // lighting
+  forwardRenderPipeline.setIBL({
+    diffuse: {
+      baseUri: '../../textures/papermill_hdr/diffuse/diffuse',
+      hdriFormat: Rn.HdriFormat.RGBE_PNG,
+      isNamePosNeg: true,
+      mipmapLevelNumber: 1,
+    },
+    specular: {
+      baseUri: '../../textures/papermill_hdr/specular/specular',
+      hdriFormat: Rn.HdriFormat.RGBE_PNG,
+      isNamePosNeg: true,
+      mipmapLevelNumber: 10,
+    },
+  });
 
-  // gamma correction
-  const gammaTargetFramebuffer = Rn.RenderableHelper.createTexturesForRenderTarget(2048, 2048, 1, {});
-  for (let renderPass of mainExpression.renderPasses) {
-    renderPass.setFramebuffer(gammaTargetFramebuffer);
-    renderPass.toClearColorBuffer = true;
-    renderPass.toClearDepthBuffer = true;
-  }
-  mainExpression.renderPasses[0].toClearColorBuffer = true;
-  mainExpression.renderPasses[0].toClearDepthBuffer = true;
-  mainExpression.renderPasses[0].clearColor = Rn.Vector4.fromCopyArray4([0, 0, 0, 0]);
-  
-  const gammaRenderPass = createPostEffectRenderPass('createGammaCorrectionMaterial');
-  setTextureParameterForMeshComponents(gammaRenderPass.meshComponents, Rn.ShaderSemantics.BaseColorTexture, gammaTargetFramebuffer.colorAttachments[0]);
-
-  expressionPostEffect.addRenderPasses([gammaRenderPass]);
-  
   // cameraController
   // Exclude a specific camera from the camera list
   const cameraComponents = Rn.ComponentRepository.getComponentsWithType(Rn.CameraComponent).filter(camera => camera.uniqueName.substring(0,1) !== "-");
@@ -183,9 +197,6 @@ const load = async function () {
     }
   }
 
-  // lighting
-  setIBL('../../textures/papermill_hdr');
-
   guiIBL.onChange(function(value) {
     const meshRendererComponents = Rn.ComponentRepository.getComponentsWithType(Rn.MeshRendererComponent);
     for (let i = 0; i < meshRendererComponents.length; i++) {
@@ -194,20 +205,21 @@ const load = async function () {
       meshRendererComponent.diffuseCubeMapContribution = value ? 1.0 : 0.0;
     }
   });
-  
-  let startTime = Date.now();
+
   let count = 0;
   let angle = 0;
+  let startTime = Date.now();
 
-  const draw = function () {
+  const draw = function (frame) {
     angle += 0.2;
-    const date = new Date();
-    const rotation = 0.001 * (date.getTime() - startTime);
-    const time = (date.getTime() - startTime) / 1000;
-    Rn.AnimationComponent.globalTime = time;
-    if (time > Rn.AnimationComponent.endInputValue) {
-      startTime = date.getTime();
-    }
+    //if (window.isAnimating) {
+      const date = new Date();
+      const time = (date.getTime() - startTime) / 1000;
+      Rn.AnimationComponent.globalTime = time;
+      if (time > Rn.AnimationComponent.endInputValue) {
+        startTime = date.getTime();
+      }
+    //}
 
     if ( ROTATE ) {
       const mainCameraControllerComponent = cameraEntity.getComponent(Rn.CameraControllerComponent);
@@ -215,127 +227,66 @@ const load = async function () {
       controller.rotX = angle;
     }
 
-    Rn.System.process(expressions);
+    Rn.System.process(frame);
+
     count++;
-    requestAnimationFrame(draw);
   };
 
-  draw();
+  forwardRenderPipeline.startRenderLoop(draw);
+})();
 
-  function createEnvCubeExpression(baseuri) {
-    const environmentCubeTexture = new Rn.CubeTexture();
-    environmentCubeTexture.baseUriToLoad = baseuri + '/environment/environment';
-    environmentCubeTexture.isNamePosNeg = true;
-    environmentCubeTexture.hdriFormat = Rn.HdriFormat.LDR_SRGB;
-    environmentCubeTexture.mipmapLevelNumber = 1;
-    environmentCubeTexture.loadTextureImagesAsync();
+function createCamera() {
+  const cameraEntity = Rn.EntityHelper.createCameraControllerEntity();
+  const cameraComponent = cameraEntity.getCamera();
+  cameraComponent.zNear = 0.1;
+  cameraComponent.zFar = 1000.0;
+  cameraComponent.setFovyAndChangeFocalLength(30.0);
+  cameraComponent.aspect = 1.0;
+  return {cameraComponent, cameraEntity};
+}
 
-    const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
-    sphereMaterial.setTextureParameter(Rn.ShaderSemantics.ColorEnvTexture, environmentCubeTexture);
-    //sphereMaterial.setParameter(Rn.ShaderSemantics.EnvHdriFormat, Rn.HdriFormat.LDR_LINEAR.index);
-    sphereMaterial.setParameter(Rn.EnvConstantMaterialContent.EnvHdriFormat, Rn.HdriFormat.LDR_SRGB.index);
-    //sphereMaterial.setParameter(Rn.ShaderSemantics.MakeOutputSrgb, false);
+function createEnvCubeExpression(baseuri, cameraEntity) {
+  const environmentCubeTexture = new Rn.CubeTexture();
+  environmentCubeTexture.baseUriToLoad = baseuri + '/environment/environment';
+  environmentCubeTexture.isNamePosNeg = true;
+  environmentCubeTexture.hdriFormat = Rn.HdriFormat.LDR_SRGB;
+  environmentCubeTexture.mipmapLevelNumber = 1;
+  environmentCubeTexture.loadTextureImagesAsync();
 
-    const spherePrimitive = new Rn.Sphere();
-    spherePrimitive.generate({ radius: 50, widthSegments: 40, heightSegments: 40, material: sphereMaterial });
+  const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
+  sphereMaterial.setTextureParameter(
+    Rn.ShaderSemantics.ColorEnvTexture,
+    environmentCubeTexture
+  );
+  sphereMaterial.setParameter(
+    Rn.EnvConstantMaterialContent.EnvHdriFormat,
+    Rn.HdriFormat.LDR_SRGB.index
+  );
 
-    const sphereMesh = new Rn.Mesh();
-    sphereMesh.addPrimitive(spherePrimitive);
+  const spherePrimitive = new Rn.Sphere();
+  spherePrimitive.generate({
+    radius: 20,
+    widthSegments: 40,
+    heightSegments: 40,
+    material: sphereMaterial,
+  });
 
-    const sphereEntity = Rn.EntityHelper.createMeshEntity();
-    sphereEntity.getTransform().scale = Rn.Vector3.fromCopyArray([-1/scale, 1/scale, 1/scale]);
+  const sphereMesh = new Rn.Mesh();
+  sphereMesh.addPrimitive(spherePrimitive);
 
-    const sphereMeshComponent = sphereEntity.getMesh();
-    sphereMeshComponent.setMesh(sphereMesh);
+  const sphereEntity = Rn.EntityHelper.createMeshEntity();
+  sphereEntity.getTransform().scale = Rn.Vector3.fromCopyArray([-1, 1, 1]);
+  sphereEntity.getTransform().translate = Rn.Vector3.fromCopyArray([0, 0, 0]);
 
-    const sphereRenderPass = new Rn.RenderPass();
-    sphereRenderPass.addEntities([sphereEntity]);
+  const sphereMeshComponent = sphereEntity.getMesh();
+  sphereMeshComponent.setMesh(sphereMesh);
 
-    const sphereExpression = new Rn.Expression();
-    sphereExpression.addRenderPasses([sphereRenderPass]);
+  const sphereRenderPass = new Rn.RenderPass();
+  sphereRenderPass.addEntities([sphereEntity]);
+  sphereRenderPass.cameraComponent = cameraEntity.getCamera();
 
-    return sphereExpression;
-  }
+  const sphereExpression = new Rn.Expression();
+  sphereExpression.addRenderPasses([sphereRenderPass]);
 
-  function setIBL(baseUri) {
-    const specularCubeTexture = new Rn.CubeTexture();
-    specularCubeTexture.baseUriToLoad = baseUri + '/specular/specular';
-    specularCubeTexture.isNamePosNeg = true;
-    //specularCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
-    specularCubeTexture.hdriFormat = Rn.HdriFormat.RGBE_PNG;
-    specularCubeTexture.mipmapLevelNumber = 10;
-
-    const diffuseCubeTexture = new Rn.CubeTexture();
-    diffuseCubeTexture.baseUriToLoad = baseUri + '/diffuse/diffuse';
-    diffuseCubeTexture.isNamePosNeg = true;
-    //diffuseCubeTexture.hdriFormat = Rn.HdriFormat.HDR_LINEAR;
-    diffuseCubeTexture.hdriFormat = Rn.HdriFormat.RGBE_PNG;
-    diffuseCubeTexture.mipmapLevelNumber = 1;
-
-    const meshRendererComponents = Rn.ComponentRepository.getComponentsWithType(Rn.MeshRendererComponent);
-    for (let i = 0; i < meshRendererComponents.length; i++) {
-      const meshRendererComponent = meshRendererComponents[i];
-      meshRendererComponent.specularCubeMap = specularCubeTexture;
-      meshRendererComponent.diffuseCubeMap = diffuseCubeTexture;
-    }
-  }
-
-  function createPostEffectRenderPass(materialHelperFunctionStr, arrayOfHelperFunctionArgument = []) {
-    const boardPrimitive = new Rn.Plane();
-    const material = Rn.MaterialHelper[materialHelperFunctionStr].apply(this, arrayOfHelperFunctionArgument);
-    material.alphaMode = Rn.AlphaMode.Translucent;
-    boardPrimitive.generate({
-      width: 1, height: 1, uSpan: 1, vSpan: 1, isUVRepeat: false,
-      material: material
-    });
-
-    const boardEntity = Rn.EntityHelper.createMeshEntity();
-    boardEntity.getTransform().rotate = Rn.Vector3.fromCopyArray([Math.PI / 2, 0.0, 0.0]);
-    boardEntity.getTransform().translate = Rn.Vector3.fromCopyArray([0.0, 0.0, -0.5]);
-
-    const boardMesh = new Rn.Mesh();
-    boardMesh.addPrimitive(boardPrimitive);
-    const boardMeshComponent = boardEntity.getMesh();
-    boardMeshComponent.setMesh(boardMesh);
-
-    const cameraComponent = createCameraComponent();
-    cameraComponent.zFarInner = 1.0;
-    // Rename to exclude certain cameras from the list of cameras.
-    cameraComponent.tryToSetUniqueName("-" + cameraComponent.uniqueName);
-    const cameraEntity = cameraComponent.entity;
-
-    const renderPass = new Rn.RenderPass();
-    renderPass.toClearColorBuffer = false;
-    renderPass.toClearDepthBuffer = false;
-    renderPass.cameraComponent = cameraComponent;
-    renderPass.addEntities([boardEntity]);
-
-    return renderPass;
-  }
-  
-  function setTextureParameterForMeshComponents(meshComponents, shaderSemantic, value) {
-    for (let i = 0; i < meshComponents.length; i++) {
-      const mesh = meshComponents[i].mesh;
-      if (!mesh) continue;
-
-      const primitiveNumber = mesh.getPrimitiveNumber();
-      for (let j = 0; j < primitiveNumber; j++) {
-        const primitive = mesh.getPrimitiveAt(j);
-        primitive.material.setTextureParameter(shaderSemantic, value);
-      }
-    }
-  }
-
-  function createCameraComponent() {
-    const cameraEntity = Rn.EntityHelper.createCameraEntity();
-    const cameraComponent = cameraEntity.getCamera();
-    return cameraComponent;
-  }
-};
-
-document.body.onload = load;
-
-function exportGltf2() {
-  const exporter = Rn.Gltf2Exporter.getInstance();
-  exporter.export('Rhodonite');
+  return sphereExpression;
 }
