@@ -22,10 +22,10 @@ if (!modelInfo) {
 let terrain = Cesium.createDefaultTerrainProviderViewModels();
 
 let viewer = new Cesium.Viewer('cesiumContainer', {
-    selectionIndicator : false,
-    terrainProviderViewModels: terrain,
-    selectedTerrainProviderViewModel: terrain[1],
-    shouldAnimate: true
+//    selectionIndicator : false,
+//    terrainProviderViewModels: terrain,
+//    selectedTerrainProviderViewModel: terrain[1],
+//    shouldAnimate: true
 });
 
 function createModel(url, height) {
