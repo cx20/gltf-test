@@ -1,6 +1,6 @@
 /**
  * @license
- * PlayCanvas Engine v1.55.0 revision 0cab2ed64
+ * PlayCanvas Engine v1.55.3 revision c1bb98550
  * Copyright 2011-2022 PlayCanvas Ltd. All rights reserved.
  */
 (function (global, factory) {
@@ -140,6 +140,12 @@
 	    configurable: true
 	  });
 	}
+
+	Object.values = Object.values || function (object) {
+	  return Object.keys(object).map(function (key) {
+	    return object[key];
+	  });
+	};
 
 	(function () {
 	  if (typeof navigator === 'undefined' || typeof document === 'undefined') {
@@ -598,8 +604,8 @@
 	var TRACEID_TEXTURE_ALLOC = 'TextureAlloc';
 	var TRACEID_SHADER_ALLOC = 'ShaderAlloc';
 
-	var version = '1.55.0';
-	var revision = '0cab2ed64';
+	var version = '1.55.3';
+	var revision = 'c1bb98550';
 	var config = {};
 	var common = {};
 	var apps = {};
@@ -5706,6 +5712,7 @@
 	var TEXTURETYPE_DEFAULT = 'default';
 	var TEXTURETYPE_RGBM = 'rgbm';
 	var TEXTURETYPE_RGBE = 'rgbe';
+	var TEXTURETYPE_RGBP = 'rgbp';
 	var TEXTURETYPE_SWIZZLEGGGR = 'swizzleGGGR';
 	var TEXHINT_NONE = 0;
 	var TEXHINT_SHADOWMAP = 1;
@@ -6149,8 +6156,9 @@
 	  drawQuadWithShader(device, target, shader, rect, scissorRect, useBlend);
 	}
 
-	var KEYWORD = /[ \t]*#(ifn?def|if|endif|else|elif|define|undef)/g;
+	var KEYWORD = /[ \t]*#(ifn?def|if|endif|else|elif|define|undef|extension)/g;
 	var DEFINE = /define[ \t]+([^\n]+)\r?(?:\n|$)/g;
+	var EXTENSION = /extension[ \t]+([\w-]+)[ \t]+:[ \t]+enable/g;
 	var UNDEF = /undef[ \t]+([^\n]+)\r?(?:\n|$)/g;
 	var IF = /(ifdef|ifndef|if)[ \t]*([^\r\n]+)\r?\n/g;
 	var ENDIF = /(endif|else|elif)([ \t]+[^\r\n]+)?\r?(?:\n|$)/g;
@@ -6225,6 +6233,25 @@
 	            }
 
 	            KEYWORD.lastIndex = undef.index + undef[0].length;
+	            break;
+	          }
+
+	        case 'extension':
+	          {
+	            EXTENSION.lastIndex = match.index;
+	            var extension = EXTENSION.exec(source);
+
+	            if (extension) {
+	              var _identifier2 = extension[1];
+
+	              var _keep3 = Preprocessor._keep(stack);
+
+	              if (_keep3) {
+	                defines.set(_identifier2, "true");
+	              }
+	            }
+
+	            KEYWORD.lastIndex = extension.index + extension[0].length;
 	            break;
 	          }
 
@@ -6444,13 +6471,13 @@
 
 	var cubeMapRotatePS = "\n#ifdef CUBEMAP_ROTATION\nuniform mat3 cubeMapRotationMatrix;\n#endif\n\nvec3 cubeMapRotate(vec3 refDir) {\n#ifdef CUBEMAP_ROTATION\n    return refDir * cubeMapRotationMatrix;\n#else\n    return refDir;\n#endif\n}\n";
 
-	var decodePS = "\nvec3 decodeLinear(vec4 raw) {\n    return raw.rgb;\n}\n\nfloat decodeGamma(float raw) {\n    return pow(raw, 2.2);\n}\n\nvec3 decodeGamma(vec3 raw) {\n    return pow(raw, vec3(2.2));\n}\n\nvec3 decodeGamma(vec4 raw) {\n    return pow(raw.xyz, vec3(2.2));\n}\n\nvec3 decodeRGBM(vec4 raw) {\n    vec3 color = (8.0 * raw.a) * raw.rgb;\n    return color * color;\n}\n\nvec3 decodeRGBE(vec4 raw) {\n    if (raw.a == 0.0) {\n        return vec3(0.0, 0.0, 0.0);\n    } else {\n        return raw.xyz * pow(2.0, raw.w * 255.0 - 128.0);\n    }\n}\n\nvec4 passThrough(vec4 raw) {\n    return raw;\n}\n";
+	var decodePS = "\nvec3 decodeLinear(vec4 raw) {\n    return raw.rgb;\n}\n\nfloat decodeGamma(float raw) {\n    return pow(raw, 2.2);\n}\n\nvec3 decodeGamma(vec3 raw) {\n    return pow(raw, vec3(2.2));\n}\n\nvec3 decodeGamma(vec4 raw) {\n    return pow(raw.xyz, vec3(2.2));\n}\n\nvec3 decodeRGBM(vec4 raw) {\n    vec3 color = (8.0 * raw.a) * raw.rgb;\n    return color * color;\n}\n\nvec3 decodeRGBP(vec4 raw) {\n    vec3 color = raw.rgb * (-raw.a * 7.0 + 8.0);\n    return color * color;\n}\n\nvec3 decodeRGBE(vec4 raw) {\n    if (raw.a == 0.0) {\n        return vec3(0.0, 0.0, 0.0);\n    } else {\n        return raw.xyz * pow(2.0, raw.w * 255.0 - 128.0);\n    }\n}\n\nvec4 passThrough(vec4 raw) {\n    return raw;\n}\n";
 
 	var detailModesPS = "\nvec3 detailMode_mul(vec3 c1, vec3 c2) {\n    return c1 * c2;\n}\n\nvec3 detailMode_add(vec3 c1, vec3 c2) {\n    return c1 + c2;\n}\n\n// https://en.wikipedia.org/wiki/Blend_modes#Screen\nvec3 detailMode_screen(vec3 c1, vec3 c2) {\n    return 1.0 - (1.0 - c1)*(1.0 - c2);\n}\n\n// https://en.wikipedia.org/wiki/Blend_modes#Overlay\nvec3 detailMode_overlay(vec3 c1, vec3 c2) {\n    return mix(1.0 - 2.0*(1.0 - c1)*(1.0 - c2), 2.0*c1*c2, step(c1, vec3(0.5)));\n}\n\nvec3 detailMode_min(vec3 c1, vec3 c2) {\n    return min(c1, c2);\n}\n\nvec3 detailMode_max(vec3 c1, vec3 c2) {\n    return max(c1, c2);\n}\n";
 
 	var diffusePS = "\n#ifdef MAPCOLOR\nuniform vec3 material_diffuse;\n#endif\n\n#ifdef MAPTEXTURE\nuniform sampler2D texture_diffuseMap;\n#endif\n\nvoid getAlbedo() {\n    dAlbedo = vec3(1.0);\n\n#ifdef MAPCOLOR\n    dAlbedo *= material_diffuse.rgb;\n#endif\n\n#ifdef MAPTEXTURE\n    vec3 albedoBase = gammaCorrectInput(texture2D(texture_diffuseMap, $UV, textureBias).$CH);\n    dAlbedo *= addAlbedoDetail(albedoBase);\n#endif\n\n#ifdef MAPVERTEX\n    dAlbedo *= gammaCorrectInput(saturate(vVertexColor.$VC));\n#endif\n}\n";
 
-	var diffuseDetailMapPS = "\n#ifdef MAPTEXTURE\nuniform sampler2D texture_diffuseDetailMap;\n#endif\n\nvec3 addAlbedoDetail(vec3 albedo) {\n#ifdef MAPTEXTURE\n    vec3 albedoDetail = gammaCorrectInput(texture2D(texture_diffuseDetailMap, $UV, textureBias).$CH));\n    return detailMode_$DETAILMODE(albedo, albedoDetail);\n#else\n    return albedo;\n#endif\n}\n";
+	var diffuseDetailMapPS = "\n#ifdef MAPTEXTURE\nuniform sampler2D texture_diffuseDetailMap;\n#endif\n\nvec3 addAlbedoDetail(vec3 albedo) {\n#ifdef MAPTEXTURE\n    vec3 albedoDetail = gammaCorrectInput(texture2D(texture_diffuseDetailMap, $UV, textureBias).$CH);\n    return detailMode_$DETAILMODE(albedo, albedoDetail);\n#else\n    return albedo;\n#endif\n}\n";
 
 	var dilatePS = "\n#define SHADER_NAME Dilate\n\nvarying vec2 vUv0;\n\nuniform sampler2D source;\nuniform vec2 pixelOffset;\n\nvoid main(void) {\n    vec4 c = texture2D(source, vUv0);\n    c = c.a>0.0? c : texture2D(source, vUv0 - pixelOffset);\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(0, -pixelOffset.y));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(pixelOffset.x, -pixelOffset.y));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(-pixelOffset.x, 0));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(pixelOffset.x, 0));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(-pixelOffset.x, pixelOffset.y));\n    c = c.a>0.0? c : texture2D(source, vUv0 + vec2(0, pixelOffset.y));\n    c = c.a>0.0? c : texture2D(source, vUv0 + pixelOffset);\n    gl_FragColor = c;\n}\n";
 
@@ -6458,7 +6485,7 @@
 
 	var emissivePS = "\n#ifdef MAPCOLOR\nuniform vec3 material_emissive;\n#endif\n\n#ifdef MAPFLOAT\nuniform float material_emissiveIntensity;\n#endif\n\n#ifdef MAPTEXTURE\nuniform sampler2D texture_emissiveMap;\n#endif\n\nvoid getEmission() {\n    dEmission = vec3(1.0);\n\n    #ifdef MAPFLOAT\n    dEmission *= material_emissiveIntensity;\n    #endif\n\n    #ifdef MAPCOLOR\n    dEmission *= material_emissive;\n    #endif\n\n    #ifdef MAPTEXTURE\n    dEmission *= $DECODE(texture2D(texture_emissiveMap, $UV, textureBias)).$CH;\n    #endif\n\n    #ifdef MAPVERTEX\n    dEmission *= gammaCorrectInput(saturate(vVertexColor.$VC));\n    #endif\n}\n";
 
-	var encodePS = "\nvec4 encodeLinear(vec3 source) {\n    return vec4(source, 1.0);\n}\n\nvec4 encodeGamma(vec3 source) {\n    return vec4(pow(source + 0.0000001, vec3(1.0 / 2.2)), 1.0);\n}\n\nvec4 encodeRGBM(vec3 source) { // modified RGBM\n    vec4 result;\n    result.rgb = pow(source.rgb, vec3(0.5));\n    result.rgb *= 1.0 / 8.0;\n\n    result.a = saturate( max( max( result.r, result.g ), max( result.b, 1.0 / 255.0 ) ) );\n    result.a = ceil(result.a * 255.0) / 255.0;\n\n    result.rgb /= result.a;\n    return result;\n}\n\nvec4 encodeRGBE(vec3 source) {\n    float maxVal = max(source.x, max(source.y, source.z));\n    if (maxVal < 1e-32) {\n        return vec4(0, 0, 0, 0);\n    } else {\n        float e = ceil(log2(maxVal));\n        return vec4(source / pow(2.0, e), (e + 128.0) / 255.0);\n    }\n}\n";
+	var encodePS = "\nvec4 encodeLinear(vec3 source) {\n    return vec4(source, 1.0);\n}\n\nvec4 encodeGamma(vec3 source) {\n    return vec4(pow(source + 0.0000001, vec3(1.0 / 2.2)), 1.0);\n}\n\nvec4 encodeRGBM(vec3 source) { // modified RGBM\n    vec4 result;\n    result.rgb = pow(source.rgb, vec3(0.5));\n    result.rgb *= 1.0 / 8.0;\n\n    result.a = saturate( max( max( result.r, result.g ), max( result.b, 1.0 / 255.0 ) ) );\n    result.a = ceil(result.a * 255.0) / 255.0;\n\n    result.rgb /= result.a;\n    return result;\n}\n\nvec4 encodeRGBP(vec3 source) {\n    // convert incoming linear to gamma(ish)\n    vec3 gamma = pow(source, vec3(0.5));\n\n    // calculate the maximum component clamped to 1..8\n    float maxVal = min(8.0, max(1.0, max(gamma.x, max(gamma.y, gamma.z))));\n\n    // calculate storage factor\n    float v = 1.0 - ((maxVal - 1.0) / 7.0);\n\n    // round the value for storage in 8bit channel\n    v = ceil(v * 255.0) / 255.0;\n\n    return vec4(gamma / (-v * 7.0 + 8.0), v);    \n}\n\nvec4 encodeRGBE(vec3 source) {\n    float maxVal = max(source.x, max(source.y, source.z));\n    if (maxVal < 1e-32) {\n        return vec4(0, 0, 0, 0);\n    } else {\n        float e = ceil(log2(maxVal));\n        return vec4(source / pow(2.0, e), (e + 128.0) / 255.0);\n    }\n}\n";
 
 	var endPS = "\n    #ifdef CLEARCOAT\n    gl_FragColor.rgb = combineColorCC();\n    #else\n    gl_FragColor.rgb = combineColor();\n    #endif \n\n    gl_FragColor.rgb += dEmission;\n    gl_FragColor.rgb = addFog(gl_FragColor.rgb);\n\n    #ifndef HDR\n    gl_FragColor.rgb = toneMap(gl_FragColor.rgb);\n    gl_FragColor.rgb = gammaCorrectOutput(gl_FragColor.rgb);\n    #endif\n";
 
@@ -7278,10 +7305,18 @@
 	}();
 
 	var decodeTable = {
-	  linear: 'decodeLinear',
-	  srgb: 'decodeGamma',
-	  rgbm: 'decodeRGBM',
-	  rgbe: 'decodeRGBE'
+	  'linear': 'decodeLinear',
+	  'srgb': 'decodeGamma',
+	  'rgbm': 'decodeRGBM',
+	  'rgbe': 'decodeRGBE',
+	  'rgbp': 'decodeRGBP'
+	};
+	var encodeTable = {
+	  'linear': 'encodeLinear',
+	  'srgb': 'encodeGamma',
+	  'rgbm': 'encodeRGBM',
+	  'rgbe': 'encodeRGBE',
+	  'rgbp': 'encodeRGBP'
 	};
 
 	var ChunkUtils = function () {
@@ -7289,6 +7324,10 @@
 
 	  ChunkUtils.decodeFunc = function decodeFunc(encoding) {
 	    return decodeTable[encoding] || 'decodeGamma';
+	  };
+
+	  ChunkUtils.encodeFunc = function encodeFunc(encoding) {
+	    return encodeTable[encoding] || 'encodeGamma';
 	  };
 
 	  return ChunkUtils;
@@ -8015,19 +8054,19 @@
 	  }, {
 	    key: "encoding",
 	    get: function get() {
-	      if (this.type === TEXTURETYPE_RGBM) {
-	        return 'rgbm';
-	      }
+	      switch (this.type) {
+	        case TEXTURETYPE_RGBM:
+	          return 'rgbm';
 
-	      if (this.type === TEXTURETYPE_RGBE) {
-	        return 'rgbe';
-	      }
+	        case TEXTURETYPE_RGBE:
+	          return 'rgbe';
 
-	      if (this.format === PIXELFORMAT_RGBA16F || this.format === PIXELFORMAT_RGBA32F) {
-	        return 'linear';
-	      }
+	        case TEXTURETYPE_RGBP:
+	          return 'rgbp';
 
-	      return 'srgb';
+	        default:
+	          return this.format === PIXELFORMAT_RGB16F || this.format === PIXELFORMAT_RGB32F || this.format === PIXELFORMAT_RGBA16F || this.format === PIXELFORMAT_RGBA32F ? 'linear' : 'srgb';
+	      }
 	    }
 	  }]);
 
@@ -11329,7 +11368,12 @@
 	    var code = new ChunkBuilder();
 	    var func = new ChunkBuilder();
 	    var lightingUv = "";
-	    decl.append("uniform float textureBias;");
+
+	    if (options.nineSlicedMode === SPRITE_RENDERMODE_TILED) {
+	      decl.append("const float textureBias = -1000.0;");
+	    } else {
+	      decl.append("uniform float textureBias;");
+	    }
 
 	    if (ShaderPass.isForward(options.pass)) {
 	      if (options.heightMap) {
@@ -11507,29 +11551,6 @@
 	    bits = ((bits & 0x0F0F0F0F) << 4 | (bits & 0xF0F0F0F0) >>> 4) >>> 0;
 	    bits = ((bits & 0x00FF00FF) << 8 | (bits & 0xFF00FF00) >>> 8) >>> 0;
 	    return bits * 2.3283064365386963e-10;
-	  }
-	};
-
-	var getCoding = function getCoding(texture) {
-	  switch (texture.type) {
-	    case TEXTURETYPE_RGBM:
-	      return "RGBM";
-
-	    case TEXTURETYPE_RGBE:
-	      return "RGBE";
-
-	    default:
-	      switch (texture.format) {
-	        case PIXELFORMAT_RGB16F:
-	        case PIXELFORMAT_RGB32F:
-	        case PIXELFORMAT_RGBA16F:
-	        case PIXELFORMAT_RGBA32F:
-	          return "Linear";
-
-	        default:
-	          return "Gamma";
-	      }
-
 	  }
 	};
 
@@ -11825,8 +11846,8 @@
 	  var face = options.hasOwnProperty('face') ? options.face : null;
 	  var distribution = options.hasOwnProperty('distribution') ? options.distribution : specularPower === 1 ? 'none' : 'phong';
 	  var processFunc = funcNames[distribution] || 'reproject';
-	  var decodeFunc = "decode" + getCoding(source);
-	  var encodeFunc = "encode" + getCoding(target);
+	  var decodeFunc = ChunkUtils.decodeFunc(source.encoding);
+	  var encodeFunc = ChunkUtils.encodeFunc(target.encoding);
 	  var sourceFunc = "sample" + getProjectionName(source.projection);
 	  var targetFunc = "getDirection" + getProjectionName(target.projection);
 	  var numSamples = options.hasOwnProperty('numSamples') ? options.numSamples : 1024;
@@ -11895,6 +11916,7 @@
 	}
 
 	var fixCubemapSeams = true;
+	var RGBA8_TYPE = TEXTURETYPE_RGBM;
 
 	var calcLevels = function calcLevels(width, height) {
 	  if (height === void 0) {
@@ -11927,7 +11949,7 @@
 	    width: size,
 	    height: size,
 	    format: format,
-	    type: format === PIXELFORMAT_R8_G8_B8_A8 ? TEXTURETYPE_RGBM : TEXTURETYPE_DEFAULT,
+	    type: format === PIXELFORMAT_R8_G8_B8_A8 ? RGBA8_TYPE : TEXTURETYPE_DEFAULT,
 	    addressU: ADDRESS_CLAMP_TO_EDGE,
 	    addressV: ADDRESS_CLAMP_TO_EDGE,
 	    fixCubemapSeams: fixCubemapSeams,
@@ -11956,7 +11978,7 @@
 	      width: (options == null ? void 0 : options.size) || 128,
 	      height: (options == null ? void 0 : options.size) || 128,
 	      format: format,
-	      type: format === PIXELFORMAT_R8_G8_B8_A8 ? TEXTURETYPE_RGBM : TEXTURETYPE_DEFAULT,
+	      type: format === PIXELFORMAT_R8_G8_B8_A8 ? RGBA8_TYPE : TEXTURETYPE_DEFAULT,
 	      addressU: ADDRESS_CLAMP_TO_EDGE,
 	      addressV: ADDRESS_CLAMP_TO_EDGE,
 	      fixCubemapSeams: false,
@@ -11976,7 +11998,7 @@
 	      width: (options == null ? void 0 : options.size) || 512,
 	      height: (options == null ? void 0 : options.size) || 512,
 	      format: format,
-	      type: TEXTURETYPE_RGBM ,
+	      type: RGBA8_TYPE ,
 	      projection: TEXTUREPROJECTION_EQUIRECT,
 	      addressU: ADDRESS_CLAMP_TO_EDGE,
 	      addressV: ADDRESS_CLAMP_TO_EDGE,
@@ -12031,7 +12053,7 @@
 	      width: (options == null ? void 0 : options.size) || 512,
 	      height: (options == null ? void 0 : options.size) || 512,
 	      format: format,
-	      type: TEXTURETYPE_RGBM ,
+	      type: RGBA8_TYPE ,
 	      projection: TEXTUREPROJECTION_EQUIRECT,
 	      addressU: ADDRESS_CLAMP_TO_EDGE,
 	      addressV: ADDRESS_CLAMP_TO_EDGE,
@@ -12330,7 +12352,7 @@
 
 	  _proto.destroy = function destroy() {
 	    this.variants = {};
-	    this.shader = null;
+	    this._shader = null;
 
 	    for (var i = 0; i < this.meshInstances.length; i++) {
 	      var meshInstance = this.meshInstances[i];
@@ -12677,7 +12699,6 @@
 	    options.fog = stdMat.useFog ? scene.fog : 'none';
 	    options.gamma = stdMat.useGammaTonemap ? scene.gammaCorrection : GAMMA_NONE;
 	    options.toneMap = stdMat.useGammaTonemap ? scene.toneMapping : -1;
-	    options.useRgbm = stdMat.emissiveMap && stdMat.emissiveMap.type === TEXTURETYPE_RGBM || stdMat.lightMap && stdMat.lightMap.type === TEXTURETYPE_RGBM;
 	    options.fixSeams = stdMat.cubeMap ? stdMat.cubeMap.fixCubemapSeams : false;
 	    var isPhong = stdMat.shadingModel === SPECULAR_PHONG;
 	    var usingSceneEnv = false;
@@ -12741,7 +12762,6 @@
 	        options.lightMapUv = 1;
 	        options.lightMapTransform = 0;
 	        options.lightMapWithoutAmbient = !stdMat.lightMap;
-	        options.useRgbm = true;
 
 	        if ((objDefs & SHADERDEF_DIRLM) !== 0) {
 	          options.dirLightMap = true;
@@ -13059,6 +13079,10 @@
 	  }
 	}
 
+	var standardMaterialRemovedParameters = {
+	  specularAntialias: 'boolean'
+	};
+
 	var _props = {};
 	var _uniforms = {};
 
@@ -13200,12 +13224,13 @@
 	        this._setParameter('material_specularityFactor', this.specularityFactor);
 	      }
 
-	      if (this.refractionIndex !== 1.5) {
-	        var f0 = (this.refractionIndex - 1) / (this.refractionIndex + 1);
+	      if (this.refractionIndex > 0.0) {
+	        var oneOverRefractionIndex = 1.0 / this.refractionIndex;
+	        var f0 = (oneOverRefractionIndex - 1) / (oneOverRefractionIndex + 1);
 
 	        this._setParameter('material_f0', f0 * f0);
 	      } else {
-	        this._setParameter('material_f0', 0.04);
+	        this._setParameter('material_f0', 1.0);
 	      }
 	    }
 
@@ -27781,7 +27806,7 @@
 	    _this._ambientBakeSpherePart = 0.4;
 	    _this._lightmapFilterRange = 10;
 	    _this._lightmapFilterSmoothness = 0.2;
-	    _this._clusteredLightingEnabled = true;
+	    _this._clusteredLightingEnabled = false;
 	    _this._lightingParams = new LightingParams(_this.device.supportsAreaLights, _this.device.maxTextureSize, function () {
 	      _this._layers._dirtyLights = true;
 	    });
@@ -27959,8 +27984,8 @@
 	      return this._clusteredLightingEnabled;
 	    },
 	    set: function set(value) {
-	      if (!this._clusteredLightingEnabled && value) {
-	        console.error('Turning on disabled clustered lighting is not currently supported');
+	      if (this._clusteredLightingEnabled && !value) {
+	        console.error('Turning off enabled clustered lighting is not currently supported');
 	        return;
 	      }
 
@@ -44101,6 +44126,10 @@
 
 	var dracoDecoderInstance = null;
 
+	var getGlobalDracoDecoderModule = function getGlobalDracoDecoderModule() {
+	  return typeof window !== 'undefined' && window.DracoDecoderModule;
+	};
+
 	var GlbResources = function () {
 	  function GlbResources(gltf) {
 	    this.gltf = gltf;
@@ -44851,7 +44880,7 @@
 	      var extensions = primitive.extensions;
 
 	      if (extensions.hasOwnProperty('KHR_draco_mesh_compression')) {
-	        var decoderModule = dracoDecoderInstance || window.DracoDecoderModule;
+	        var decoderModule = dracoDecoderInstance || getGlobalDracoDecoderModule();
 
 	        if (decoderModule) {
 	          var extDraco = extensions.KHR_draco_mesh_compression;
@@ -45164,7 +45193,7 @@
 
 	var extensionIor = function extensionIor(data, material, textures) {
 	  if (data.hasOwnProperty('ior')) {
-	    material.refractionIndex = data.ior;
+	    material.refractionIndex = 1.0 / data.ior;
 	  }
 	};
 
@@ -45404,6 +45433,10 @@
 	  };
 
 	  var createMorphTargetCurves = function createMorphTargetCurves(curve, node, entityPath) {
+	    if (!outputMap[curve.output]) {
+	      return;
+	    }
+
 	    var morphTargetCount = outputMap[curve.output].data.length / inputMap[curve.input].data.length;
 	    var keyframeCount = outputMap[curve.output].data.length / morphTargetCount;
 
@@ -46189,7 +46222,7 @@
 
 	  var extensionsRequired = (gltf == null ? void 0 : gltf.extensionsRequired) || [];
 
-	  if (!dracoDecoderInstance && extensionsRequired.indexOf('KHR_draco_mesh_compression') !== -1) {
+	  if (!dracoDecoderInstance && !getGlobalDracoDecoderModule() && extensionsRequired.indexOf('KHR_draco_mesh_compression') !== -1) {
 	    WasmModule.getInstance('DracoDecoderModule', function (instance) {
 	      dracoDecoderInstance = instance;
 	      callback(null, gltf);
@@ -47661,13 +47694,19 @@
 
 	  _proto.validate = function validate(data) {
 	    var TYPES = standardMaterialParameterTypes;
+	    var REMOVED = standardMaterialRemovedParameters;
 	    var pathMapping = data.mappingFormat === 'path';
 
 	    for (var key in data) {
 	      var type = TYPES[key];
 
 	      if (!type) {
-	        this.valid = false;
+	        if (REMOVED[key]) {
+	          delete data[key];
+	        } else {
+	          this.valid = false;
+	        }
+
 	        continue;
 	      }
 
@@ -50260,6 +50299,7 @@
 	  'default': TEXTURETYPE_DEFAULT,
 	  'rgbm': TEXTURETYPE_RGBM,
 	  'rgbe': TEXTURETYPE_RGBE,
+	  'rgbp': TEXTURETYPE_RGBP,
 	  'swizzleGGGR': TEXTURETYPE_SWIZZLEGGGR
 	};
 
@@ -53283,17 +53323,14 @@
 	    }
 
 	    this._element = element;
-	    var opts = platform.passiveEvents ? {
-	      passive: true
-	    } : false;
 
-	    this._element.addEventListener('touchstart', this._startHandler, opts);
+	    this._element.addEventListener('touchstart', this._startHandler, false);
 
-	    this._element.addEventListener('touchend', this._endHandler, opts);
+	    this._element.addEventListener('touchend', this._endHandler, false);
 
-	    this._element.addEventListener('touchmove', this._moveHandler, opts);
+	    this._element.addEventListener('touchmove', this._moveHandler, false);
 
-	    this._element.addEventListener('touchcancel', this._cancelHandler, opts);
+	    this._element.addEventListener('touchcancel', this._cancelHandler, false);
 	  };
 
 	  _proto.detach = function detach() {
@@ -78079,6 +78116,10 @@
 	  }
 	});
 
+	Scene.prototype._updateSkybox = function (device) {
+	  this._updateSky(device);
+	};
+
 	Scene.prototype.addModel = function (model) {
 	  if (this.containsModel(model)) return;
 	  var layer = this.layers.getLayerById(LAYERID_WORLD);
@@ -79398,6 +79439,7 @@
 	exports.TEXTURETYPE_DEFAULT = TEXTURETYPE_DEFAULT;
 	exports.TEXTURETYPE_RGBE = TEXTURETYPE_RGBE;
 	exports.TEXTURETYPE_RGBM = TEXTURETYPE_RGBM;
+	exports.TEXTURETYPE_RGBP = TEXTURETYPE_RGBP;
 	exports.TEXTURETYPE_SWIZZLEGGGR = TEXTURETYPE_SWIZZLEGGGR;
 	exports.TONEMAP_ACES = TONEMAP_ACES;
 	exports.TONEMAP_ACES2 = TONEMAP_ACES2;
