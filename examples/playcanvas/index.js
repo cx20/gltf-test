@@ -22,6 +22,8 @@ if (!modelInfo) {
 
 const pcRoot = '../../libs/playcanvas/v1.56.0';
 
+const DEFAULT_NAME = "[default]";
+
 // GUI
 let gui = new dat.GUI();
 
@@ -29,9 +31,11 @@ var ROTATE = false;
 var CAMERA = "";
 var LIGHTS = false;
 var IBL = true;
+var VARIANT = "";
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 let guiLights = gui.add(window, 'LIGHTS').name('Lights');
 let guiIBL    = gui.add(window, 'IBL').name('IBL');
+let guiVariants = DEFAULT_NAME;
 let guiCameras = null;
 
 let decoderModule;
@@ -172,6 +176,7 @@ let Viewer = function (canvas) {
     this.camera = camera;
     this.light = light;
     this.entity = null;
+    this.entities = [];
 
     let url = "../../" + modelInfo.category + "/" + modelInfo.path;
     url = getAbsolutePathFromRelativePath(url);
@@ -287,6 +292,7 @@ Object.assign(Viewer.prototype, {
             const lightsEntity = resource.instantiateRenderEntity();
             // TODO: If the following comments are removed, the T pose and the animated model will be displayed at the same time, which needs to be investigated.
             //this.app.root.addChild(lightsEntity);
+            this.entities.push(lightsEntity);
 
             // create entity and add model
             let entity = new pc.Entity();
@@ -373,6 +379,31 @@ Object.assign(Viewer.prototype, {
             this.app.root.addChild(entity);
             this.entity = entity;
             this.asset = asset;
+            
+            let variants;
+
+            // update mesh stats
+            variants = variants || (asset.resource.getMaterialVariants && asset.resource.getMaterialVariants());
+            let variantNames = variants.reduce(function (allNames, name) { 
+                allNames[name] = name;
+                return allNames
+            }, {});
+
+            if (variants.length > 0 ) {
+                variantNames[DEFAULT_NAME] = DEFAULT_NAME;
+                guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
+                let that = this;
+                guiVariants.onChange(function (variantName) {
+                    if (value == DEFAULT_NAME) {
+                        // TODO: reset
+                    } else {
+                        // TODO: change variant
+                        that.entities.forEach((entity) => {
+                            that.asset.resource.applyMaterialVariant(entity, variantName);
+                        });
+                    }
+                });
+            }
 
             this.focusCamera();
             if (resource.model.name == "Fox.gltf/model/0" || resource.model.name == "Fox.glb/model/0") {
