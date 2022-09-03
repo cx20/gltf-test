@@ -103,12 +103,20 @@ let Viewer = function (canvas) {
         }
     });
 
+    // Depth layer is where the framebuffer is copied to a texture to be used in the following layers.
+    // Move the depth layer to take place after World and Skydome layers, to capture both of them.
+    const depthLayer = app.scene.layers.getLayerById(pc.LAYERID_DEPTH);
+    app.scene.layers.remove(depthLayer);
+    app.scene.layers.insertOpaque(depthLayer, 2);
+
     // create the orbit camera
     let camera = new pc.Entity("Camera");
     camera.addComponent("camera", {
         fov: 60,
-        clearColor: new pc.Color(0.4, 0.45, 0.5)
+        clearColor: new pc.Color(0.4, 0.45, 0.5),
+        frustumCulling: true	
     });
+    camera.camera.requestSceneColorMap(true);
 
     // load orbit script
     app.assets.loadFromUrl(
