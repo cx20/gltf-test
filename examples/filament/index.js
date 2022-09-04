@@ -167,11 +167,7 @@ class App {
         this.scene.setSkybox(skybox);
 
         const loader = engine.createAssetLoader();
-        if (mesh_url.split('.').pop() == 'glb') {
-            this.asset= loader.createAssetFromBinary(mesh_url);
-        } else {
-            this.asset= loader.createAssetFromJson(mesh_url);
-        }
+        this.asset= loader.createAsset(mesh_url);
         const asset = this.asset;
         const messages = document.getElementById('messages');
 
