@@ -287,20 +287,21 @@ Object.assign(Viewer.prototype, {
             this.resetScene();
 
             let resource = asset.resource;
-
-            // add glTF's embedded lights
-            const lightsEntity = resource.instantiateRenderEntity();
-            // TODO: If the following comments are removed, the T pose and the animated model will be displayed at the same time, which needs to be investigated.
-            //this.app.root.addChild(lightsEntity);
-            this.entities.push(lightsEntity);
-
             // create entity and add model
-            let entity = new pc.Entity();
-            entity.addComponent("model", {
-                type: "asset",
-                asset: resource.model,
+            let entity = resource.instantiateRenderEntity({
                 castShadows: true
             });
+            
+            // TODO: Investigate how to adjust the size
+            const scale = modelInfo.scale / 2;
+            const currentScale = entity.getLocalScale();
+            entity.setLocalScale(
+                new pc.Vec3(
+                    currentScale.x * scale,
+                    currentScale.y * scale,
+                    currentScale.z * scale
+                )
+            );
 
             // create animations
             if (resource.animations && resource.animations.length > 0) {
@@ -377,13 +378,14 @@ Object.assign(Viewer.prototype, {
             }
 
             this.app.root.addChild(entity);
+            this.entities.push(entity);
             this.entity = entity;
             this.asset = asset;
             
             let variants;
 
             // update mesh stats
-            variants = variants || (asset.resource.getMaterialVariants && asset.resource.getMaterialVariants());
+            variants = variants || (resource.getMaterialVariants && resource.getMaterialVariants());
             let variantNames = variants.reduce(function (allNames, name) { 
                 allNames[name] = name;
                 return allNames
@@ -394,10 +396,10 @@ Object.assign(Viewer.prototype, {
                 guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
                 let that = this;
                 guiVariants.onChange(function (variantName) {
-                    if (value == DEFAULT_NAME) {
+                    if (variantName == DEFAULT_NAME) {
                         // TODO: reset
                     } else {
-                        // TODO: change variant
+                        // change variant
                         that.entities.forEach((entity) => {
                             that.asset.resource.applyMaterialVariant(entity, variantName);
                         });
