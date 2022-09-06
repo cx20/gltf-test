@@ -52,6 +52,9 @@ let Viewer = function (canvas) {
 
     // create the application
     let app = new pc.Application(canvas, {
+        graphicsDeviceOptions: {
+            alpha: true
+        },
         mouse: new pc.Mouse(canvas),
         touch: new pc.TouchDevice(canvas)
     });
