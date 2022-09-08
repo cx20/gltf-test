@@ -225,6 +225,10 @@ Object.assign(Viewer.prototype, {
                 let orbitCamera = camera.script.orbitCamera;
                 orbitCamera.focus(entity);
 
+                // Adjust the camera distance according to the scale parameter
+                const scale = modelInfo.scale;
+                orbitCamera.distance = 1 / scale * 5; 
+
                 let distance = orbitCamera.distance;
                 camera.camera.nearClip = distance / 10;
                 camera.camera.farClip = distance * 10;
@@ -295,17 +299,6 @@ Object.assign(Viewer.prototype, {
                 castShadows: true
             });
             
-            // TODO: Investigate how to adjust the size
-            const scale = modelInfo.scale / 2;
-            const currentScale = entity.getLocalScale();
-            entity.setLocalScale(
-                new pc.Vec3(
-                    currentScale.x * scale,
-                    currentScale.y * scale,
-                    currentScale.z * scale
-                )
-            );
-
             // create animations
             if (resource.animations && resource.animations.length > 0) {
 
