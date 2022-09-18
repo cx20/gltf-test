@@ -100,10 +100,10 @@ function init() {
     const loader = new GLTFLoader();
     loader.setCrossOrigin( 'anonymous' );
 
-    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r143/examples/js/libs/draco/gltf/' );
+    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r144/examples/js/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
-    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r143/examples/js/libs/basis/' );
+    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r144/examples/js/libs/basis/' );
     ktx2Loader.detectSupport( renderer );
     loader.setKTX2Loader( ktx2Loader );
 
