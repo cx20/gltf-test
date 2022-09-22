@@ -27,6 +27,22 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { HDRCubeTextureLoader } from 'three/addons/loaders/HDRCubeTextureLoader.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
 
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const params = {
+    exposure: 1,
+    bloomStrength: 0.5,
+    bloomThreshold: 0.9,
+    bloomRadius: 0.5
+/*
+    bloomStrength: 1.0,
+    bloomThreshold: 0.6,
+    bloomRadius: 0.5
+*/
+};
+
 let gltf = null;
 let mixer = null;
 let clock = new THREE.Clock();
@@ -56,6 +72,8 @@ let cubeMap;
 let width;
 let height;
 
+let composer;
+
 init();
 animate();
 
@@ -68,6 +86,7 @@ function resize() {
     camera.updateProjectionMatrix();
 
     renderer.setSize( width, height );
+    composer.setSize( width, height );
 }
 
 function init() {
@@ -78,6 +97,15 @@ function init() {
     renderer.setClearColor( 0xaaaaaa );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
+    
+    renderer.toneMapping = THREE.NoToneMapping;
+    //renderer.toneMapping = THREE.LinearToneMapping;
+    //renderer.toneMapping = THREE.ReinhardToneMapping;
+    //renderer.toneMapping = THREE.CineonToneMapping;
+    //renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    //renderer.toneMapping = THREE.CustomToneMapping;
+    
+    renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
 
     hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 3.0 );
     hemispheric.visible = state.LIGHTS; // The default is to use IBL instead of lights
@@ -87,6 +115,17 @@ function init() {
     camera.position.set(0, 2, 3);
     camera.name = DEFAULT_NAME;
     scene.add( camera );
+
+    const renderScene = new RenderPass( scene, camera );
+
+    const bloomPass = new UnrealBloomPass( new THREE.Vector2( width, height ), 1.0, 0.0, 0.0 );
+    bloomPass.threshold = params.bloomThreshold;
+    bloomPass.strength = params.bloomStrength;
+    bloomPass.radius = params.bloomRadius;
+
+    composer = new EffectComposer( renderer );
+    composer.addPass( renderScene );
+    composer.addPass( bloomPass );
 
     let manager = new THREE.LoadingManager();
     manager.onProgress = function ( item, loaded, total ) {
@@ -336,4 +375,5 @@ function animate() {
 
 function render() {
     renderer.render( scene, camera );
+    composer.render();
 }
