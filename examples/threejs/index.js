@@ -33,14 +33,14 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 const params = {
     exposure: 1,
+/*
     bloomStrength: 0.5,
     bloomThreshold: 0.9,
     bloomRadius: 0.5
-/*
+*/
     bloomStrength: 1.0,
     bloomThreshold: 0.6,
     bloomRadius: 0.5
-*/
 };
 
 let gltf = null;
@@ -57,6 +57,7 @@ let state = {
     CUBEMAP: true,
     IBL: true,
     LIGHTS: false, // The default is to use IBL instead of lights
+    BLOOM: true,
     CAMERA: DEFAULT_NAME,
     VARIANT: DEFAULT_NAME
 }
@@ -98,9 +99,9 @@ function init() {
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
     
-    renderer.toneMapping = THREE.NoToneMapping;
+    //renderer.toneMapping = THREE.NoToneMapping;
     //renderer.toneMapping = THREE.LinearToneMapping;
-    //renderer.toneMapping = THREE.ReinhardToneMapping;
+    renderer.toneMapping = THREE.ReinhardToneMapping;
     //renderer.toneMapping = THREE.CineonToneMapping;
     //renderer.toneMapping = THREE.ACESFilmicToneMapping;
     //renderer.toneMapping = THREE.CustomToneMapping;
@@ -265,6 +266,7 @@ function init() {
     let guiCubeMap = gui.add(state, 'CUBEMAP').name('CubeMap');
     let guiIbl = gui.add(state, 'IBL').name('IBL');
     let guiLights = gui.add(state, 'LIGHTS').name('Lights');
+    let guiBloom = gui.add(state, 'BLOOM').name('Bloom');
 
     guiRotate.onChange(function (value) {
         controls.autoRotate = value;
@@ -283,6 +285,19 @@ function init() {
     guiLights.onChange(function (value) {
         // TODO: Improvement is needed when displaying KHR_lights_punctual samples.
         hemispheric.visible = value;
+    });
+    guiBloom.onChange(function (value) {
+        if (value ) {
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
+            composer.addPass( renderScene );
+            composer.addPass( bloomPass );
+        } else {
+            renderer.toneMapping = THREE.NoToneMapping;
+            renderer.toneMappingExposure = 1.0;
+            composer.removePass( renderScene );
+            composer.removePass( bloomPass );
+        }
     });
 
     document.body.appendChild( renderer.domElement );
