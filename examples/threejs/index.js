@@ -98,15 +98,6 @@ function init() {
     renderer.setClearColor( 0xaaaaaa );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.physicallyCorrectLights = true; // This will be required for matching the glTF spec.
-    
-    //renderer.toneMapping = THREE.NoToneMapping;
-    //renderer.toneMapping = THREE.LinearToneMapping;
-    renderer.toneMapping = THREE.ReinhardToneMapping;
-    //renderer.toneMapping = THREE.CineonToneMapping;
-    //renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    //renderer.toneMapping = THREE.CustomToneMapping;
-    
-    renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
 
     hemispheric = new THREE.HemisphereLight( 0xffffff, 0x222222, 3.0 );
     hemispheric.visible = state.LIGHTS; // The default is to use IBL instead of lights
@@ -125,19 +116,13 @@ function init() {
     bloomPass.radius = params.bloomRadius;
 
     composer = new EffectComposer( renderer );
-    composer.addPass( renderScene );
-    composer.addPass( bloomPass );
 
     let manager = new THREE.LoadingManager();
     manager.onProgress = function ( item, loaded, total ) {
         console.log( item, loaded, total );
     };
 
-    // monkeypatch
-    // https://github.com/mrdoob/three.js/pull/11498#issuecomment-308136310
-    THREE.PropertyBinding.sanitizeNodeName = (n) => n;
-
-    const loader = new GLTFLoader();
+    const loader = new GLTFLoader(manager);
     loader.setCrossOrigin( 'anonymous' );
 
     const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r144/examples/js/libs/draco/gltf/' );
@@ -228,10 +213,14 @@ function init() {
                 applyEnvMap(object, newEnvMap);
 
                 scene.background = cubeMap;
+
+                renderer.toneMapping = THREE.ReinhardToneMapping;
+                renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
+                composer.addPass( renderScene );
+                composer.addPass( bloomPass );
             } );
 
         scene.add(object);
-        //window.scene = scene; // for Three.js Inspector
         
         // Details of the KHR_materials_variants extension used here can be found below
         // https://github.com/KhronosGroup/glTF/tree/master/extensions/2.0/Khronos/KHR_materials_variants
