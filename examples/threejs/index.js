@@ -34,13 +34,21 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 const params = {
     exposure: 1,
 /*
+    // for THREE.NoToneMapping
     bloomStrength: 0.5,
     bloomThreshold: 0.9,
     bloomRadius: 0.5
 */
+/*
+    // for THREE.ReinhardToneMapping
     bloomStrength: 1.0,
     bloomThreshold: 0.6,
     bloomRadius: 0.5
+*/
+    // for THREE.ACESFilmicToneMapping
+    bloomStrength: 0.6,
+    bloomThreshold: 0.9,
+    bloomRadius: 0.0
 };
 
 let gltf = null;
@@ -214,7 +222,8 @@ function init() {
 
                 scene.background = cubeMap;
 
-                renderer.toneMapping = THREE.ReinhardToneMapping;
+                //renderer.toneMapping = THREE.ReinhardToneMapping;
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
                 renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
                 composer.addPass( renderScene );
                 composer.addPass( bloomPass );
@@ -277,7 +286,8 @@ function init() {
     });
     guiBloom.onChange(function (value) {
         if (value ) {
-            renderer.toneMapping = THREE.ReinhardToneMapping;
+            //renderer.toneMapping = THREE.ReinhardToneMapping;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
             composer.addPass( renderScene );
             composer.addPass( bloomPass );
