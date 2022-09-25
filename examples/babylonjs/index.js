@@ -26,9 +26,11 @@ var BOUNDING_BOX = false;
 var CUBEMAP = true;
 var IBL = true;
 var LIGHTS = false; // The default is to use IBL instead of lights
+var BLOOM = true;
 var DEBUG = false;
 var VARIANT = DEFAULT_NAME;
 var CAMERA = DEFAULT_NAME;
+var TONEMAP = "None"
 
 let createScene = function(engine) {
 
@@ -52,6 +54,9 @@ let createScene = function(engine) {
     let guiCubeMap = gui.add(window, 'CUBEMAP').name('CubeMap');
     let guiIbl = gui.add(window, 'IBL').name('IBL');
     let guiLights = gui.add(window, 'LIGHTS').name('Lights');
+    let guiBloom = gui.add(window, 'BLOOM').name('Bloom');
+    const tonemaps = ["None", "Standard", "ACES"];
+    let guiTonemap = gui.add(window, 'TONEMAP', tonemaps).name('Tonemap');
     let guiDebug = gui.add(window, 'DEBUG').name('Debug');
     let guiVariants = null;
     let guiCameras = null;
@@ -214,8 +219,24 @@ let createScene = function(engine) {
             light2.setEnabled(value);
         });
 
+        guiBloom.onChange(function (value) {
+            pipeline.bloomEnabled = value;
+        });
+
+        guiTonemap.onChange(function (value) {
+          if (value == "None") {
+            scene.imageProcessingConfiguration.toneMappingEnabled = false;
+          } else if (value == "Standard") {
+            scene.imageProcessingConfiguration.toneMappingEnabled = true;
+            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_STANDARDSearch ;
+          } else if (value == "ACES") {
+            scene.imageProcessingConfiguration.toneMappingEnabled = true;
+            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
+          }
+        });
+
         guiDebug.onChange(function (value) {
-            scene.debugLayer.show({popup: value});
+            scene.debugLayer.show({embedMode: value});
         });
 
         engine.runRenderLoop(function() {
