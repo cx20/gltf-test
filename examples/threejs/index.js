@@ -66,6 +66,7 @@ let state = {
     IBL: true,
     LIGHTS: false, // The default is to use IBL instead of lights
     BLOOM: true,
+    TONEMAP: "ACESFilmicToneMapping",
     CAMERA: DEFAULT_NAME,
     VARIANT: DEFAULT_NAME
 }
@@ -166,7 +167,6 @@ function init() {
                 camera_.aspect = width / height;
             }
             let cameraNames = gltf.cameras.map(camera => camera.name);
-            cameraNames.push(DEFAULT_NAME);
             let guiCameras = gui.add(state, 'CAMERA', cameraNames).name("Camera");
 
             guiCameras.onChange(function (value) {
@@ -175,6 +175,7 @@ function init() {
                 });
                 camera = camera_;
                 camera.updateProjectionMatrix();
+                renderScene.camera = camera;
             });
         }
 
@@ -265,6 +266,8 @@ function init() {
     let guiIbl = gui.add(state, 'IBL').name('IBL');
     let guiLights = gui.add(state, 'LIGHTS').name('Lights');
     let guiBloom = gui.add(state, 'BLOOM').name('Bloom');
+    const tonemaps = ["NoToneMapping", "ReinhardToneMapping", "ACESFilmicToneMapping"];
+    let guiTonemap = gui.add(state, 'TONEMAP', tonemaps).name('Tonemap');
 
     guiRotate.onChange(function (value) {
         controls.autoRotate = value;
@@ -285,20 +288,28 @@ function init() {
         hemispheric.visible = value;
     });
     guiBloom.onChange(function (value) {
-        if (value ) {
-            //renderer.toneMapping = THREE.ReinhardToneMapping;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
-            composer.addPass( renderScene );
-            composer.addPass( bloomPass );
-        } else {
+    });
+    guiTonemap.onChange(function(value) {
+        if (value == "NoToneMapping") {
             renderer.toneMapping = THREE.NoToneMapping;
             renderer.toneMappingExposure = 1.0;
-            composer.removePass( renderScene );
-            composer.removePass( bloomPass );
+            bloomPass.strength = 0.5;
+            bloomPass.threshold = 0.9;
+            bloomPass.radius = 0.5;
+        } else if (value == "ReinhardToneMapping") {
+            renderer.toneMapping = THREE.ReinhardToneMapping;
+            renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
+            bloomPass.strength = 1.0;
+            bloomPass.threshold = 0.6;
+            bloomPass.radius = 0.5;
+        } else if (value == "ACESFilmicToneMapping") {
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
+            bloomPass.strength = 0.6;
+            bloomPass.threshold = 0.9;
+            bloomPass.radius = 0.0;
         }
     });
-
     document.body.appendChild( renderer.domElement );
 
     resize();
@@ -389,5 +400,7 @@ function animate() {
 
 function render() {
     renderer.render( scene, camera );
-    composer.render();
+    if (state.BLOOM) {
+        composer.render();
+    }
 }
