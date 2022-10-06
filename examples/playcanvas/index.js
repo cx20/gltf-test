@@ -299,6 +299,12 @@ Object.assign(Viewer.prototype, {
                 castShadows: true
             });
             
+            // enable all lights from the glb
+            const lightComponents = entity.findComponents("light");
+            lightComponents.forEach((component) => {
+                component.enabled = true;
+            });
+
             // create animations
             if (resource.animations && resource.animations.length > 0) {
 
