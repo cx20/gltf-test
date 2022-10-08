@@ -4,6 +4,7 @@ var TutorialExtensionTestModelIndex = {};
 
 TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'ABeautifulGame', scale:8.0},
+    {category:'tutorialModels', name:'AudioSimple', scale:1.0},
     {category:'tutorialModels', name:'AttenuationTest', scale:0.2},
     {category:'tutorialModels', name:'ClearCoatTest', scale:0.3},
     {category:'tutorialModels', name:'ClearcoatRing', scale:5.0},
