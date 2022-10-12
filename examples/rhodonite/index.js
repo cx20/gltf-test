@@ -95,7 +95,7 @@ canvas.height = window.innerHeight;
   });
 
   // gltf
-  const mainExpression = await Rn.GltfImporter.import(
+  const mainExpression = (await Rn.GltfImporter.importFromUri(
     url,
     {
       cameraComponent: cameraComponent,
@@ -105,7 +105,7 @@ canvas.height = window.innerHeight;
         },
       ],
     }
-  );
+  )).unwrapForce();
 
   // env
   const envExpression = createEnvCubeExpression(
