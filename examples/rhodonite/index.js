@@ -146,7 +146,8 @@ canvas.height = window.innerHeight;
 
   // cameraController
   // Exclude a specific camera from the camera list
-  const cameraComponents = Rn.ComponentRepository.getComponentsWithType(Rn.CameraComponent).filter(camera => camera.uniqueName.substring(0,1) !== "-");
+  const cameraComponents = Rn.ComponentRepository.getComponentsWithType(Rn.CameraComponent).filter(
+      camera => camera.entity.getTagValue("type") !== "background-assets");
   
   if (cameraComponents.length > 1) {
     //let cameraNames = cameraComponents.map(camera => camera.uniqueName);
