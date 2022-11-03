@@ -169,6 +169,8 @@ class App {
         const loader = engine.createAssetLoader();
         this.asset= loader.createAsset(mesh_url);
         const asset = this.asset;
+        this.instance = this.asset.getInstance();
+        const instance = this.instance;
         const messages = document.getElementById('messages');
 
         // Crudely indicate progress by printing the URI of each resource as it is loaded.
@@ -210,13 +212,13 @@ class App {
                 });
             }
 
-            const variantNames = asset.getMaterialVariantNames();
+            const variantNames = instance.getMaterialVariantNames();
             if (variantNames.length > 0) {
                 variantNames.push(DEFAULT_STRING);
                 guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variants");
                 guiVariants.onChange(function(value) {
                     const selectedIndex = value == DEFAULT_STRING ? 0 : variantNames.indexOf(value);
-                    asset.applyMaterialVariant(selectedIndex);
+                    instance.applyMaterialVariant(selectedIndex);
                 });
             }
 
@@ -226,7 +228,7 @@ class App {
             }
 
             messages.remove();
-            this.animator = asset.getAnimator();
+            this.animator = instance.getAnimator();
             this.animationStartTime = Date.now();
         };
         asset.loadResources(onDone, onFetched, basePath);
@@ -269,7 +271,7 @@ class App {
 
         if (this.animator) {
             const ms = Date.now() - this.animationStartTime;
-            for (let i = 0; i < this.asset.getAnimator().getAnimationCount(); i++ ) {
+            for (let i = 0; i < this.instance.getAnimator().getAnimationCount(); i++ ) {
                 this.animator.applyAnimation(i, ms / 1000);
                 this.animator.updateBoneMatrices();
             }
