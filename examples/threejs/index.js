@@ -26,6 +26,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { HDRCubeTextureLoader } from 'three/addons/loaders/HDRCubeTextureLoader.js';
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -33,18 +34,6 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 const params = {
     exposure: 1,
-/*
-    // for THREE.NoToneMapping
-    bloomStrength: 0.5,
-    bloomThreshold: 0.9,
-    bloomRadius: 0.5
-*/
-/*
-    // for THREE.ReinhardToneMapping
-    bloomStrength: 1.0,
-    bloomThreshold: 0.6,
-    bloomRadius: 0.5
-*/
     // for THREE.ACESFilmicToneMapping
     bloomStrength: 0.6,
     bloomThreshold: 0.9,
@@ -66,7 +55,7 @@ let state = {
     IBL: true,
     LIGHTS: false, // The default is to use IBL instead of lights
     BLOOM: true,
-    TONEMAP: "ACESFilmicToneMapping",
+    TONEMAP: "NoToneMapping",
     CAMERA: DEFAULT_NAME,
     VARIANT: DEFAULT_NAME
 }
@@ -140,6 +129,7 @@ function init() {
     const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r146/examples/js/libs/basis/' );
     ktx2Loader.detectSupport( renderer );
     loader.setKTX2Loader( ktx2Loader );
+    loader.setMeshoptDecoder( MeshoptDecoder );
 
     const scale = modelInfo.scale;
     let url = "../../" + modelInfo.category + "/" + modelInfo.path;
@@ -223,8 +213,9 @@ function init() {
 
                 scene.background = cubeMap;
 
+                renderer.toneMapping = THREE.NoToneMapping;
                 //renderer.toneMapping = THREE.ReinhardToneMapping;
-                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                //renderer.toneMapping = THREE.ACESFilmicToneMapping;
                 renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
                 composer.addPass( renderScene );
                 composer.addPass( bloomPass );
