@@ -147,6 +147,10 @@ function makeSampleModelLinks() {
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Quantized', scale));
             }
+            if (modelName == 'BrainStem') {
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Compressed', scale));
+            }
             tr.appendChild(td);
         }
         tableBody.appendChild(tr);
@@ -421,6 +425,10 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-JPG-PNG', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX-BasisU', scale));
+            } else if (modelName == 'DragonAttenuation') {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Compressed', scale));
             } else {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             }
@@ -442,7 +450,8 @@ function replaceContentName(type) {
         "glTF-IBL": "[glTF-IBL]",
         "glTF-BasisU": "[BasisU]",
         "glTF-JPG-PNG": "[JPG/PNG]",
-        "glTF-KTX-BasisU": "[KTX/BasisU]"
+        "glTF-KTX-BasisU": "[KTX/BasisU]",
+        "glTF-Compressed": "[Compressed]"
     }
     return hashMap[type] ? hashMap[type] : type;
 }
