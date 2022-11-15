@@ -14,6 +14,9 @@ if (!modelInfo) {
 if (!modelInfo) {
     modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
 }
+if (!modelInfo) {
+    modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
+}
 
 let scale = modelInfo.scale;
 
