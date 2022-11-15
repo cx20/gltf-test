@@ -15,6 +15,9 @@ if (!modelInfo) {
   modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
+  modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
   document.getElementById("messagepanel").style.display = "block";
   document.getElementById("messagepanel").innerHTML =
     "Model not specified or not found in list.";

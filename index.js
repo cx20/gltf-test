@@ -402,6 +402,49 @@ function makeTutorialExtensionTestModelLinks() {
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
             td.setAttribute('width', '100');
+
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            td.appendChild(document.createElement('br'));
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+
+            tr.appendChild(td);
+        }
+        tableBody.appendChild(tr);
+    }
+}
+
+function makeTutorialWipExtensionTestModelLinks() {
+    let modelList = TutorialWipExtensionTestModelIndex.List;
+    let numModels = modelList.length;
+    let numEngines = engines.length;
+
+    let tableHead = document.querySelector('#tutorialWipExtensionTestModelTable thead tr');
+    let tableBody = document.querySelector('#tutorialWipExtensionTestModelTable tbody');
+
+    let i, j;
+    for (i = 0; i < numEngines; ++i) {
+        let th = document.createElement('th');
+        th.textContent = engines[i].name;
+        tableHead.appendChild(th);
+    }
+
+    for (j = 0; j < numModels; ++j) {
+        let modelName = modelList[j].name;
+        let scale = modelList[j].scale;
+        let tr = document.createElement('tr');
+        let tdName = document.createElement('td');
+        tdName.textContent = modelName;
+        tr.appendChild(tdName);
+        let tdPic = document.createElement('td');
+        let img = document.createElement('img');
+        img.setAttribute('src', 'tutorialModels/' + TutorialWipExtensionTestModelIndex.getScreenshot(modelName));
+        img.setAttribute('width', 170);
+        img.setAttribute('height', 128);
+        tdPic.appendChild(img);
+        tr.appendChild(tdPic);
+        for (i = 0; i < numEngines; ++i) {
+            let td = document.createElement('td');
+            td.setAttribute('width', '100');
             if ( modelName == 'EnvironmentTest' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
@@ -479,4 +522,5 @@ makeTutorialPbrModelLinks();
 makeTutorialFurtherPbrModelLinks();
 makeTutorialFeatureTestModelLinks();
 makeTutorialExtensionTestModelLinks();
+makeTutorialWipExtensionTestModelLinks();
 makeSampleModelLinks();
