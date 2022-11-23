@@ -30,10 +30,12 @@ var ROTATE = false;
 var CAMERA = "";
 var LIGHTS = false;
 var IBL = true;
+var VARIANT = "";
 let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 let guiLights = gui.add(window, 'LIGHTS').name('Lights');
 let guiIBL    = gui.add(window, 'IBL').name('IBL');
 let guiCameras = null;
+let guiVariantNames = null;
 
 let url = "../../" + modelInfo.category + "/" + modelInfo.path;
 if(modelInfo.url) {
@@ -125,6 +127,26 @@ canvas.height = window.innerHeight;
   controller.dolly = 0.83;
 */
 
+  // TODO: KHR_materials_variants support
+  for (let i = 0; i < mainRenderPass.entities.length; i++) {
+    let entity = mainRenderPass.entities[i];
+    let meshEntity = entity.tryToGetMesh();
+    if (meshEntity != undefined) {
+      let mesh = meshEntity.mesh;
+      let primitive = mesh.primitives[0];
+      if (primitive != undefined) {
+        let variantNames = primitive.getVariantNames();
+        if (variantNames.length > 0) {
+          guiVariantNames = gui.add(window, 'VARIANT', variantNames).name("Variant");
+          guiVariantNames.onChange(function(value) {
+            primitive.applyMaterialVariant(value);
+          });
+          break;
+        }
+      }
+    }
+  }
+  
   if (modelInfo.name != "VC") {
     forwardRenderPipeline.setExpressions([envExpression, mainExpression]);
   } else {
