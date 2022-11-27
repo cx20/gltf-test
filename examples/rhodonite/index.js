@@ -128,6 +128,7 @@ canvas.height = window.innerHeight;
 */
 
   // TODO: KHR_materials_variants support
+  let variantNames = [];
   for (let i = 0; i < mainRenderPass.entities.length; i++) {
     let entity = mainRenderPass.entities[i];
     let meshEntity = entity.tryToGetMesh();
@@ -138,14 +139,24 @@ canvas.height = window.innerHeight;
         let variantNames = primitive.getVariantNames();
         if (variantNames.length > 0) {
           guiVariantNames = gui.add(window, 'VARIANT', variantNames).name("Variant");
-          guiVariantNames.onChange(function(value) {
-            primitive.applyMaterialVariant(value);
-          });
           break;
         }
       }
     }
   }
+
+  guiVariantNames.onChange(function(value) {
+    for (let i = 0; i < mainRenderPass.entities.length; i++) {
+      let entity = mainRenderPass.entities[i];
+      let meshEntity = entity.tryToGetMesh();
+      if (meshEntity != undefined) {
+        let mesh = meshEntity.mesh;
+        mesh.applyMaterialVariant(value);
+      }
+    }
+  });
+
+
   
   if (modelInfo.name != "VC") {
     forwardRenderPipeline.setExpressions([envExpression, mainExpression]);
