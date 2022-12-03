@@ -144,17 +144,19 @@ canvas.height = window.innerHeight;
       }
     }
   }
-
-  guiVariantNames.onChange(function(value) {
-    for (let i = 0; i < mainRenderPass.entities.length; i++) {
-      let entity = mainRenderPass.entities[i];
-      let meshEntity = entity.tryToGetMesh();
-      if (meshEntity != undefined) {
-        let mesh = meshEntity.mesh;
-        mesh.applyMaterialVariant(value);
+  
+  if (guiVariantNames != null) {
+    guiVariantNames.onChange(function(value) {
+      for (let i = 0; i < mainRenderPass.entities.length; i++) {
+        let entity = mainRenderPass.entities[i];
+        let meshEntity = entity.tryToGetMesh();
+        if (meshEntity != undefined) {
+          let mesh = meshEntity.mesh;
+          mesh.applyMaterialVariant(value);
+        }
       }
-    }
-  });
+    });
+  }
 
 
   
