@@ -76,18 +76,18 @@ canvas.height = window.innerHeight;
   const lightEntity1 = Rn.EntityHelper.createLightEntity();
   const lightComponent1 = lightEntity1.getLight();
   lightComponent1.type = Rn.LightType.Directional;
-  lightEntity1.getTransform().translate = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
+  lightEntity1.getTransform().localPosition = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
   lightEntity1.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
   lightEntity1.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
-  lightEntity1.getTransform().rotate = Rn.Vector3.fromCopyArray([-Math.PI / 2, -Math.PI / 4, Math.PI / 4]);
+  lightEntity1.getTransform().localEulerAngles = Rn.Vector3.fromCopyArray([-Math.PI / 2, -Math.PI / 4, Math.PI / 4]);
 
   const lightEntity2 = Rn.EntityHelper.createLightEntity();
   const lightComponent2 = lightEntity2.getLight();
   lightComponent1.type = Rn.LightType.Directional;
-  lightEntity2.getTransform().translate = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
+  lightEntity2.getTransform().localPosition = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
   lightEntity2.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
   lightEntity2.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
-  lightEntity2.getTransform().rotate = Rn.Vector3.fromCopyArray([Math.PI / 2, Math.PI / 4, -Math.PI / 4]);
+  lightEntity2.getTransform().localEulerAngles = Rn.Vector3.fromCopyArray([Math.PI / 2, Math.PI / 4, -Math.PI / 4]);
 
   guiLights.onChange(function(value) {
     if (value) {
@@ -304,7 +304,7 @@ function createEnvCubeExpression(baseuri, cameraEntity) {
 
   const spherePrimitive = new Rn.Sphere();
   spherePrimitive.generate({
-    radius: 20,
+    radius: 100,
     widthSegments: 40,
     heightSegments: 40,
     material: sphereMaterial,
@@ -314,8 +314,8 @@ function createEnvCubeExpression(baseuri, cameraEntity) {
   sphereMesh.addPrimitive(spherePrimitive);
 
   const sphereEntity = Rn.EntityHelper.createMeshEntity();
-  sphereEntity.getTransform().scale = Rn.Vector3.fromCopyArray([-1, 1, 1]);
-  sphereEntity.getTransform().translate = Rn.Vector3.fromCopyArray([0, 0, 0]);
+  sphereEntity.getTransform().localScale = Rn.Vector3.fromCopyArray([-1, 1, 1]);
+  sphereEntity.getTransform().localPosition = Rn.Vector3.fromCopyArray([0, 0, 0]);
 
   const sphereMeshComponent = sphereEntity.getMesh();
   sphereMeshComponent.setMesh(sphereMesh);
