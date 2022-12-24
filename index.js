@@ -402,11 +402,36 @@ function makeTutorialExtensionTestModelLinks() {
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
             td.setAttribute('width', '100');
-
-            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
-            td.appendChild(document.createElement('br'));
-            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
-
+            if ( modelName == 'EnvironmentTest' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-IBL', scale));
+            } else if ( modelName == 'ClearCoatTest'
+                     || modelName == 'DirectionalLight'
+                     || modelName == 'GlamVelvetSofa'
+                     || modelName == 'EmissiveStrengthTest'
+                     || modelName == 'IridescenceLamp'
+                     || modelName == 'IridescenceSuzanne'
+                     || modelName == 'IridescentDishWithOlives'
+                     || modelName == 'MaterialsVariantsChair'
+                     || modelName == 'MaterialsVariantsShoe'
+                     || modelName == 'SpecGlossVsMetalRough' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+            } else if ( modelName == 'StainedGlassLamp' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-JPG-PNG', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX-BasisU', scale));
+            } else if (modelName == 'DragonAttenuation') {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Compressed', scale));
+            } else {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            }
             tr.appendChild(td);
         }
         tableBody.appendChild(tr);
@@ -445,36 +470,11 @@ function makeTutorialWipExtensionTestModelLinks() {
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
             td.setAttribute('width', '100');
-            if ( modelName == 'EnvironmentTest' ) {
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
-                td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-IBL', scale));
-            } else if ( modelName == 'ClearCoatTest'
-                     || modelName == 'DirectionalLight'
-                     || modelName == 'GlamVelvetSofa'
-                     || modelName == 'EmissiveStrengthTest'
-                     || modelName == 'IridescenceLamp'
-                     || modelName == 'IridescenceSuzanne'
-                     || modelName == 'IridescentDishWithOlives'
-                     || modelName == 'MaterialsVariantsChair'
-                     || modelName == 'MaterialsVariantsShoe'
-                     || modelName == 'SpecGlossVsMetalRough' ) {
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
-                td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
-            } else if ( modelName == 'StainedGlassLamp' ) {
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
-                td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-JPG-PNG', scale));
-                td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX-BasisU', scale));
-            } else if (modelName == 'DragonAttenuation') {
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
-                td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Compressed', scale));
-            } else {
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
-            }
+
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            td.appendChild(document.createElement('br'));
+            td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+
             tr.appendChild(td);
         }
         tableBody.appendChild(tr);
