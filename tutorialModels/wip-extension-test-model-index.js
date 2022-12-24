@@ -5,6 +5,7 @@ var TutorialWipExtensionTestModelIndex = {};
 TutorialWipExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'AnimateAllTheThings', scale:0.5},
     {category:'tutorialModels', name:'AnimatedWaterfall', scale:0.5},
+    {category:'tutorialModels', name:'AnisotropyBarnLamp', scale:10.0},
     {category:'tutorialModels', name:'DragonAttenuation-MaterialAnimation', scale:1.0},
     {category:'tutorialModels', name:'EmissiveFireflies', scale:1.0},
 ];
@@ -12,6 +13,7 @@ TutorialWipExtensionTestModelIndex.List = [
 TutorialWipExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'AnimateAllTheThings',
     'AnimatedWaterfall',
+    'AnisotropyBarnLamp',
     'DragonAttenuation-MaterialAnimation',
     'EmissiveFireflies',
 ];
