@@ -6,6 +6,7 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'ABeautifulGame', scale:8.0},
     {category:'tutorialModels', name:'AudioSimple', scale:1.0},
     {category:'tutorialModels', name:'AttenuationTest', scale:0.2},
+    {category:'tutorialModels', name:'CarbonFrameBike', scale:1.0},
     {category:'tutorialModels', name:'ClearCoatTest', scale:0.3},
     {category:'tutorialModels', name:'ClearcoatRing', scale:5.0},
     {category:'tutorialModels', name:'ClearcoatSphere', scale:1.0},
@@ -135,7 +136,13 @@ TutorialExtensionTestModelIndex.getCurrentModel = function() {
         if (options.variant !== undefined) {
             modelInfoCollection[options.model].variant = options.variant;
         }
-        if (options.type == 'glTF-Binary' || options.type == 'glTF-Draco' && options.model == 'MorphPrimitivesTest') {
+        if (options.type == 'glTF-Binary' 
+         || options.type == 'glTF-Draco'        && options.model == 'MorphPrimitivesTest'
+         || options.type == 'glTF-Draco'        && options.model == 'CarbonFrameBike'
+         || options.type == 'glTF-Draco-KTX2'   && options.model == 'CarbonFrameBike'
+         || options.type == 'glTF-KTX2'         && options.model == 'CarbonFrameBike'
+         || options.type == 'glTF-Meshopt'      && options.model == 'CarbonFrameBike'
+         || options.type == 'glTF-Meshopt-KTX2' && options.model == 'CarbonFrameBike') {
             modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.glb';
         } else {
             modelInfoCollection[options.model].path = modelInfoCollection[options.model].name + '/' + options.type + '/' + modelInfoCollection[options.model].name + '.gltf';

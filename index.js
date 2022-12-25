@@ -406,7 +406,8 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-IBL', scale));
-            } else if ( modelName == 'ClearCoatTest'
+            } else if ( modelName == 'AttenuationTest'
+                     || modelName == 'ClearCoatTest'
                      || modelName == 'DirectionalLight'
                      || modelName == 'GlamVelvetSofa'
                      || modelName == 'EmissiveStrengthTest'
@@ -429,6 +430,20 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Compressed', scale));
+            } else if (modelName == 'CarbonFrameBike') {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco-KTX2', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX2', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Meshopt', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Meshopt-KTX2', scale));
             } else {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             }
@@ -494,7 +509,11 @@ function replaceContentName(type) {
         "glTF-BasisU": "[BasisU]",
         "glTF-JPG-PNG": "[JPG/PNG]",
         "glTF-KTX-BasisU": "[KTX/BasisU]",
-        "glTF-Compressed": "[Compressed]"
+        "glTF-Compressed": "[Compressed]",
+        "glTF-Draco-KTX2": "[Draco-KTX2]",
+        "glTF-KTX2": "[KTX2]",
+        "glTF-Meshopt": "[Meshopt]",
+        "glTF-Meshopt-KTX2": "[Meshopt-KTX2]",
     }
     return hashMap[type] ? hashMap[type] : type;
 }
