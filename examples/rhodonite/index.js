@@ -22,18 +22,22 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
+import Rn from 'rhodonite';
+import * as dat from 'dat.gui';
 
 // GUI
 let gui = new dat.GUI();
 
-var ROTATE = false;
-var CAMERA = "";
-var LIGHTS = false;
-var IBL = true;
-var VARIANT = "";
-let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
-let guiLights = gui.add(window, 'LIGHTS').name('Lights');
-let guiIBL    = gui.add(window, 'IBL').name('IBL');
+var obj = {
+	ROTATE: false,
+	CAMERA: "",
+	LIGHTS: false,
+	IBL: true,
+	VARIANT: ""
+}
+let guiRotate = gui.add(obj, 'ROTATE').name('Rotate');
+let guiLights = gui.add(obj, 'LIGHTS').name('Lights');
+let guiIBL    = gui.add(obj, 'IBL').name('IBL');
 let guiCameras = null;
 let guiVariantNames = null;
 
@@ -139,7 +143,7 @@ canvas.height = window.innerHeight;
       if (primitive != undefined) {
         let variantNames = primitive.getVariantNames();
         if (variantNames.length > 0) {
-          guiVariantNames = gui.add(window, 'VARIANT', variantNames).name("Variant");
+          guiVariantNames = gui.add(obj, 'VARIANT', variantNames).name("Variant");
           break;
         }
       }
@@ -192,8 +196,8 @@ canvas.height = window.innerHeight;
     //let cameraNames = cameraComponents.map(camera => camera.uniqueName);
     let cameraNames = cameraComponents.map((value, index) => "camera" + index); // TODO: Set to [default] for default
     const defaultIndex = Math.floor(Math.random() * cameraNames.length); // Randomly switch if there are multiple cameras
-    CAMERA = cameraNames[defaultIndex];
-    guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
+    obj.CAMERA = cameraNames[defaultIndex];
+    guiCameras = gui.add(obj, 'CAMERA', cameraNames).name("Camera");
     guiCameras.onChange(function(value) {
       const selectedIndex = cameraNames.indexOf(value);
       selectCameraByIndex(selectedIndex);
@@ -261,7 +265,7 @@ canvas.height = window.innerHeight;
       }
     //}
 
-    if ( ROTATE ) {
+    if ( obj.ROTATE ) {
       const mainCameraControllerComponent = cameraEntity.getComponent(Rn.CameraControllerComponent);
       const controller = mainCameraControllerComponent.controller;
       controller.rotX = angle;
