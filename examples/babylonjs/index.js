@@ -24,16 +24,18 @@ if (!modelInfo) {
 
 const DEFAULT_NAME = "[default]";
 
-var ROTATE = false;
-var BOUNDING_BOX = false;
-var CUBEMAP = true;
-var IBL = true;
-var LIGHTS = false; // The default is to use IBL instead of lights
-var BLOOM = true;
-var DEBUG = false;
-var VARIANT = DEFAULT_NAME;
-var CAMERA = DEFAULT_NAME;
-var TONEMAP = "None"
+let params = {
+    ROTATE: false,
+    BOUNDING_BOX: false,
+    CUBEMAP: true,
+    IBL: true,
+    LIGHTS: false, // The default is to use IBL instead of lights
+    BLOOM: true,
+    DEBUG: false,
+    VARIANT: DEFAULT_NAME,
+    CAMERA: DEFAULT_NAME,
+    TONEMAP: "None"
+}
 
 let createScene = function(engine) {
 
@@ -52,15 +54,15 @@ let createScene = function(engine) {
 
     // GUI
     let gui = new dat.GUI();
-    let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
-    let guiBoundingBox = gui.add(window, 'BOUNDING_BOX').name('Bounding Box');
-    let guiCubeMap = gui.add(window, 'CUBEMAP').name('CubeMap');
-    let guiIbl = gui.add(window, 'IBL').name('IBL');
-    let guiLights = gui.add(window, 'LIGHTS').name('Lights');
-    let guiBloom = gui.add(window, 'BLOOM').name('Bloom');
+    let guiRotate = gui.add(params, 'ROTATE').name('Rotate');
+    let guiBoundingBox = gui.add(params, 'BOUNDING_BOX').name('Bounding Box');
+    let guiCubeMap = gui.add(params, 'CUBEMAP').name('CubeMap');
+    let guiIbl = gui.add(params, 'IBL').name('IBL');
+    let guiLights = gui.add(params, 'LIGHTS').name('Lights');
+    let guiBloom = gui.add(params, 'BLOOM').name('Bloom');
     const tonemaps = ["None", "Standard", "ACES"];
-    let guiTonemap = gui.add(window, 'TONEMAP', tonemaps).name('Tonemap');
-    let guiDebug = gui.add(window, 'DEBUG').name('Debug');
+    let guiTonemap = gui.add(params, 'TONEMAP', tonemaps).name('Tonemap');
+    let guiDebug = gui.add(params, 'DEBUG').name('Debug');
     let guiVariants = null;
     let guiCameras = null;
 
@@ -95,7 +97,7 @@ let createScene = function(engine) {
                     return allNames
                 }, {});
                 variantNames[DEFAULT_NAME] = DEFAULT_NAME;
-                guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
+                guiVariants = gui.add(params, 'VARIANT', variantNames).name("Variant");
                 variantsExtension.selectVariant(parentMesh, VARIANT)
 
                 guiVariants.onChange(function (value) {
@@ -121,12 +123,8 @@ let createScene = function(engine) {
         let modelScaling = parentMesh.scaling;
         let camera = new BABYLON.ArcRotateCamera(DEFAULT_NAME, 0, 1, 5, BABYLON.Vector3.Zero(), scene);
         
-        // TODO: Need to consider whether to adjust the scale in camera or mesh
-        //parentMesh.scaling = new BABYLON.Vector3(modelScaling.x * scale, modelScaling.y * scale, modelScaling.z * scale);
-        //camera.setPosition( new BABYLON.Vector3(0, 3, -5) );
-
         camera.minZ /= 100; // TODO: If near is 1, the model is missing, so adjusted
-        camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, -5 / scale));
+        camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, 5 / scale));
         
         camera.attachControl(canvas, false, false);
         camera.wheelDeltaPercentage = 0.005;
@@ -140,7 +138,7 @@ let createScene = function(engine) {
             // TODO: Some models feel that the camera is not in ascending order, so you need to investigate
             //let cameraNames = scene.cameras.map(camera => camera.name).reverse();
             let cameraNames = scene.cameras.map(camera => camera.name);
-            guiCameras = gui.add(window, 'CAMERA', cameraNames).name("Camera");
+            guiCameras = gui.add(params, 'CAMERA', cameraNames).name("Camera");
 
             guiCameras.onChange(function (value) {
                 var camera = scene.cameras.find(function(camera) {
@@ -150,7 +148,6 @@ let createScene = function(engine) {
                 scene.activeCamera = camera;
             });
         }
-
 
         if ( emissiveStrengthExtension != null ) {
             var pipeline = new BABYLON.DefaultRenderingPipeline(
@@ -164,8 +161,8 @@ let createScene = function(engine) {
 
         let light1 = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0.0, -1.0, 0.5), scene);
         let light2 = new BABYLON.DirectionalLight("dir02", new BABYLON.Vector3(-0.5, -0.5, -0.5), scene);
-        light1.setEnabled(LIGHTS);
-        light2.setEnabled(LIGHTS);
+        light1.setEnabled(params.LIGHTS);
+        light2.setEnabled(params.LIGHTS);
 
         let environmentTexture;
         let skybox;
@@ -243,7 +240,7 @@ let createScene = function(engine) {
         });
 
         engine.runRenderLoop(function() {
-            scene.activeCamera.alpha += ROTATE ? 0.005 : 0;
+            scene.activeCamera.alpha += params.ROTATE ? 0.005 : 0;
             scene.render();
         });
     });
