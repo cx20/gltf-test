@@ -149,7 +149,7 @@ function makeSampleModelLinks() {
             }
             if (modelName == 'BrainStem') {
                 td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Compressed', scale));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Meshopt', scale));
             }
             tr.appendChild(td);
         }
@@ -429,7 +429,7 @@ function makeTutorialExtensionTestModelLinks() {
             } else if (modelName == 'DragonAttenuation') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Compressed', scale));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Meshopt', scale));
             } else if (modelName == 'CarbonFrameBike') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
@@ -509,7 +509,6 @@ function replaceContentName(type) {
         "glTF-BasisU": "[BasisU]",
         "glTF-JPG-PNG": "[JPG/PNG]",
         "glTF-KTX-BasisU": "[KTX/BasisU]",
-        "glTF-Compressed": "[Compressed]",
         "glTF-Draco-KTX2": "[Draco-KTX2]",
         "glTF-KTX2": "[KTX2]",
         "glTF-Meshopt": "[Meshopt]",
