@@ -7,6 +7,8 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'AudioSimple', scale:1.0},
     {category:'tutorialModels', name:'AttenuationTest', scale:0.2},
     {category:'tutorialModels', name:'CarbonFrameBike', scale:1.0},
+    {category:'tutorialModels', name:'ClearCoatCarbonFibre', scale:2.0},
+    {category:'tutorialModels', name:'ClearCoatCarPaint', scale:2.0},
     {category:'tutorialModels', name:'ClearCoatTest', scale:0.3},
     {category:'tutorialModels', name:'ClearcoatRing', scale:5.0},
     {category:'tutorialModels', name:'ClearcoatSphere', scale:1.0},
@@ -38,6 +40,7 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'ToyCar', scale:100.0},
     {category:'tutorialModels', name:'ToyCarSpecular', scale:10.0},
     {category:'tutorialModels', name:'TransmissionRoughnessTest', scale:3.0},
+    {category:'tutorialModels', name:'TransmissionSphere', scale:2.0},
     {category:'tutorialModels', name:'TransmissionSuzanne', scale:1.0},
     {category:'tutorialModels', name:'TransmissionTest', scale:3.0},
     {category:'tutorialModels', name:'UnlitTest', scale:1.0}
@@ -46,6 +49,8 @@ TutorialExtensionTestModelIndex.List = [
 TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
     'ABeautifulGame',
     'AttenuationTest',
+    'ClearCoatCarbonFibre',
+    'ClearCoatCarPaint',
     'ClearCoatTest',
     'ClearcoatRing',
     'ClearcoatSphere',
@@ -74,6 +79,7 @@ TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that
     'ToyCar',
     'ToyCarSpecular',
     'TransmissionRoughnessTest',
+    'TransmissionSphere',
     'TransmissionSuzanne',
     'TransmissionTest'
 ];
