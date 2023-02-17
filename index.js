@@ -410,6 +410,7 @@ function makeTutorialExtensionTestModelLinks() {
                      || modelName == 'ClearCoatCarbonFibre'
                      || modelName == 'ClearCoatCarPaint'
                      || modelName == 'ClearCoatTest'
+                     || modelName == 'ClearcoatWicker'
                      || modelName == 'DirectionalLight'
                      || modelName == 'GlamVelvetSofa'
                      || modelName == 'EmissiveStrengthTest'
