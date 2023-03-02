@@ -10,6 +10,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'MorphPrimitivesTest', scale:2.0},
     {category:'tutorialModels', name:'MorphStressTest', scale:1.0},
     {category:'tutorialModels', name:'MultiUVTest', scale:1.0},
+    {category:'tutorialModels', name:'NegativeScaleTest', scale:0.5},
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
     {category:'tutorialModels', name:'OrientationTest', scale:0.2},
@@ -28,6 +29,7 @@ TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that h
     'MultiUVTest',
     'MorphPrimitivesTest',
     'MorphStressTest',
+    'NegativeScaleTest',
     'RecursiveSkeletons'
 ];
 
