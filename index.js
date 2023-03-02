@@ -346,6 +346,7 @@ function makeTutorialFeatureTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
             } else if ( modelName == 'MetalRoughSpheresNoTextures' 
                      || modelName == 'MorphStressTest' 
+                     || modelName == 'NegativeScaleTest' 
                      || modelName == 'SuzanneMorphSparse' 
                      || modelName == 'TextureEncodingTest' 
                      || modelName == 'TextureLinearInterpolationTest' ) {
