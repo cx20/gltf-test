@@ -23,7 +23,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-const pcRoot = '../../libs/playcanvas/v1.61.0';
+const pcRoot = '../../libs/playcanvas/v1.62.0';
 
 const DEFAULT_NAME = "[default]";
 
@@ -87,7 +87,8 @@ let Viewer = function (canvas) {
 
     // set a prefiltered cubemap as the skybox
     let envAsset = new pc.Asset('papermill', 'texture', {
-        url: '../../textures/hdr/papermill.hdr'
+        //url: '../../textures/hdr/papermill.hdr'
+        url: '../../textures/hdr/papermill_playcanvas_texture-tool.hdr'	// Notes: For v1.62, it seems that HDR reconverted with the following tools is required. https://playcanvas.com/texture-tool
     });
     envAsset.ready(() => {
         const env = envAsset.resource;
