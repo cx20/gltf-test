@@ -87,7 +87,8 @@ let Viewer = function (canvas) {
 
     // set a prefiltered cubemap as the skybox
     let envAsset = new pc.Asset('papermill', 'texture', {
-        url: '../../textures/hdr/papermill.hdr'
+        //url: '../../textures/hdr/papermill.hdr'
+        url: '../../textures/hdr/papermill_playcanvas_texture-tool.hdr'	// Notes: For v1.62, it seems that HDR reconverted with the following tools is required. https://playcanvas.com/texture-tool
     });
     envAsset.ready(() => {
         const env = envAsset.resource;
