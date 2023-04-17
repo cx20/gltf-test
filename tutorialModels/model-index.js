@@ -11,6 +11,7 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'SimpleMaterial', scale:1.0},
     {category:'tutorialModels', name:'SimpleMeshes', scale:1.0},
     {category:'tutorialModels', name:'SimpleTexture', scale:1.0},
+    {category:'tutorialModels', name:'SimpleInstancing', scale:0.1},
     {category:'tutorialModels', name:'MultipleScenes', scale:1.0},
     {category:'tutorialModels', name:'SimpleMorph', scale:1.0},
     {category:'tutorialModels', name:'SimpleSparseAccessor', scale:1.0},
@@ -42,6 +43,7 @@ TutorialModelIndex.getEmbeddedFolderName = function(name) {
         'SimpleOpacity': '-Embedded-buffer',
         'SimpleTexture': '-Embedded-buffer',
         //'SimpleSkin': '-Embedded-buffers'
+        'SimpleInstancing': '-Binary',
         'InterpolationTest':  '-Binary',
         'Unicode❤♻Test': '-Binary',
     };
