@@ -12,7 +12,7 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'SimpleMeshes', scale:1.0},
     {category:'tutorialModels', name:'SimpleTexture', scale:1.0},
     {category:'tutorialModels', name:'SimpleInstancing', scale:0.1},
-    {category:'tutorialModels', name:'MeshPrimitiveModes', scale:1.0},
+    {category:'tutorialModels', name:'MeshPrimitiveModes', scale:0.5},
     {category:'tutorialModels', name:'MultipleScenes', scale:1.0},
     {category:'tutorialModels', name:'SimpleMorph', scale:1.0},
     {category:'tutorialModels', name:'SimpleSparseAccessor', scale:1.0},
