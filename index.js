@@ -237,7 +237,7 @@ function makeTutorialPbrModelLinks() {
             } else if (modelName == 'FlightHelmet') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
-                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-BasisU', scale));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX-BasisU', scale));
             } else if (modelName == 'DamagedHelmet') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
