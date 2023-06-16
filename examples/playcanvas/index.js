@@ -23,7 +23,8 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-const pcRoot = '../../libs/playcanvas/v1.63.0';
+//const pcRoot = '../../libs/playcanvas/v1.63.0'; // TODO: Relative path specification does not work and needs to be investigated
+const pcRoot = '/libs/playcanvas/v1.63.0';
 
 const DEFAULT_NAME = "[default]";
 
@@ -450,11 +451,13 @@ function startViewer() {
 }
 
 function main(){
-    if (wasmSupported()) {
-        loadWasmModuleAsync('DracoDecoderModule', pcRoot + '/draco/draco.wasm.js', pcRoot + '/draco/draco.wasm.wasm', startViewer);
-    } else {
-        loadWasmModuleAsync('DracoDecoderModule', pcRoot + '/draco/draco.js', '', startViewer);
-    }
+    pc.WasmModule.setConfig("DracoDecoderModule", {
+        glueUrl: pcRoot + "/draco/draco.wasm.js",
+        wasmUrl: pcRoot + "/draco/draco.wasm.wasm",
+        fallbackUrl: pcRoot + "/draco/draco.js",
+    });
+    
+    pc.WasmModule.getInstance("DracoDecoderModule", startViewer);
 }
 
 main();
