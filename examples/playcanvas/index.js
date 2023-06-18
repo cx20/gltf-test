@@ -24,7 +24,7 @@ if (!modelInfo) {
 }
 
 //const pcRoot = '../../libs/playcanvas/v1.64.0'; // TODO: Relative path specification does not work and needs to be investigated
-const pcRoot = '/libs/playcanvas/v1.64.0';
+const pcRoot = '/gltf-test/libs/playcanvas/v1.64.0';
 
 const DEFAULT_NAME = "[default]";
 
