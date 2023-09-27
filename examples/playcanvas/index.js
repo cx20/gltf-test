@@ -23,8 +23,8 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-//const pcRoot = '../../libs/playcanvas/v1.65.0'; // TODO: Relative path specification does not work and needs to be investigated
-const pcRoot = '/gltf-test/libs/playcanvas/v1.65.0';
+//const pcRoot = '../../libs/playcanvas/v1.65.5'; // TODO: Relative path specification does not work and needs to be investigated
+const pcRoot = '/gltf-test/libs/playcanvas/v1.65.5';
 
 const DEFAULT_NAME = "[default]";
 
