@@ -23,8 +23,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-//const pcRoot = '../../libs/playcanvas/v1.65.5'; // TODO: Relative path specification does not work and needs to be investigated
-const pcRoot = '/gltf-test/libs/playcanvas/v1.65.5';
+const pcRoot = '../../libs/playcanvas/v1.66.1';
 
 const DEFAULT_NAME = "[default]";
 
@@ -82,9 +81,11 @@ let Viewer = function (canvas) {
         app.resizeCanvas(canvasSize.width, canvasSize.height);
     });
 
-    pc.basisSetDownloadConfig(pcRoot + '/basis/basis.wasm.js',
-                              pcRoot + '/basis/basis.wasm.wasm',
-                              pcRoot + '/basis/basis.js');
+    pc.basisInitialize({
+        glueUrl:     pcRoot + '/basis/basis.wasm.js',
+        wasmUrl:     pcRoot + '/basis/basis.wasm.wasm',
+        fallbackUrl: pcRoot + '/basis/basis.js'
+    });
 
     // set a prefiltered cubemap as the skybox
     let envAsset = new pc.Asset('papermill', 'texture', {
@@ -452,8 +453,8 @@ function startViewer() {
 
 function main(){
     pc.WasmModule.setConfig("DracoDecoderModule", {
-        glueUrl: pcRoot + "/draco/draco.wasm.js",
-        wasmUrl: pcRoot + "/draco/draco.wasm.wasm",
+        glueUrl:     pcRoot + "/draco/draco.wasm.js",
+        wasmUrl:     pcRoot + "/draco/draco.wasm.wasm",
         fallbackUrl: pcRoot + "/draco/draco.js",
     });
     
