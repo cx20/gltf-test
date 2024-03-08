@@ -14,7 +14,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
     {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
     {category:'tutorialModels', name:'OrientationTest', scale:0.2},
-    {category:'tutorialModels', name:'PointsLinesTrianglesTest', scale:0.2},
+    {category:'tutorialModels', name:'PrimitiveModeNormalsTest', scale:0.2},
     {category:'tutorialModels', name:'RecursiveSkeletons', scale:0.01},
     {category:'tutorialModels', name:'SuzanneMorphSparse', scale:1.0},
     {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
