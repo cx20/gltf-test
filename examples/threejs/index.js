@@ -260,7 +260,7 @@ function init() {
     let guiIbl = gui.add(state, 'IBL').name('IBL');
     let guiLights = gui.add(state, 'LIGHTS').name('Lights');
     let guiBloom = gui.add(state, 'BLOOM').name('Bloom');
-    const tonemaps = ["NoToneMapping", "ReinhardToneMapping", "ACESFilmicToneMapping"];
+    const tonemaps = ["NoToneMapping", "ReinhardToneMapping", "ACESFilmicToneMapping", "NeutralToneMapping"];
     let guiTonemap = gui.add(state, 'TONEMAP', tonemaps).name('Tonemap');
 
     guiRotate.onChange(function (value) {
@@ -298,6 +298,12 @@ function init() {
             bloomPass.radius = 0.5;
         } else if (value == "ACESFilmicToneMapping") {
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
+            bloomPass.strength = 0.6;
+            bloomPass.threshold = 0.9;
+            bloomPass.radius = 0.0;
+        } else if (value == "NeutralToneMapping") {
+            renderer.toneMapping = THREE.NeutralToneMapping;
             renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
             bloomPass.strength = 0.6;
             bloomPass.threshold = 0.9;
