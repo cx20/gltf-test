@@ -60,7 +60,7 @@ let createScene = function(engine) {
     let guiIbl = gui.add(params, 'IBL').name('IBL');
     let guiLights = gui.add(params, 'LIGHTS').name('Lights');
     let guiBloom = gui.add(params, 'BLOOM').name('Bloom');
-    const tonemaps = ["None", "Standard", "ACES"];
+    const tonemaps = ["None", "Standard", "ACES", "PBR Neutral"];
     let guiTonemap = gui.add(params, 'TONEMAP', tonemaps).name('Tonemap');
     let guiDebug = gui.add(params, 'DEBUG').name('Debug');
     let guiVariants = null;
@@ -228,10 +228,13 @@ let createScene = function(engine) {
             scene.imageProcessingConfiguration.toneMappingEnabled = false;
           } else if (value == "Standard") {
             scene.imageProcessingConfiguration.toneMappingEnabled = true;
-            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_STANDARDSearch ;
+            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_STANDARD;
           } else if (value == "ACES") {
             scene.imageProcessingConfiguration.toneMappingEnabled = true;
             scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
+          } else if (value == "PBR Neutral") {
+            scene.imageProcessingConfiguration.toneMappingEnabled = true;
+            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_KHR_PBR_NEUTRAL;
           }
         });
 
