@@ -38,9 +38,9 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 const params = {
     exposure: 1,
     // for THREE.ACESFilmicToneMapping
-    bloomStrength: 0.6,
-    bloomThreshold: 0.9,
-    bloomRadius: 0.0
+    bloomStrength: 0.15,
+    bloomThreshold: 0.1,
+    bloomRadius: 0.05
 };
 
 let gltf = null;
@@ -126,10 +126,10 @@ function init() {
     const loader = new GLTFLoader(manager);
     loader.setCrossOrigin( 'anonymous' );
 
-    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r164/examples/jsm/libs/draco/gltf/' );
+    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r165/examples/jsm/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
-    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r164/examples/jsm/libs/basis/' );
+    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r165/examples/jsm/libs/basis/' );
     ktx2Loader.detectSupport( renderer );
     loader.setKTX2Loader( ktx2Loader );
     loader.setMeshoptDecoder( MeshoptDecoder );
@@ -287,27 +287,27 @@ function init() {
         if (value == "NoToneMapping") {
             renderer.toneMapping = THREE.NoToneMapping;
             renderer.toneMappingExposure = 1.0;
-            bloomPass.strength = 0.5;
-            bloomPass.threshold = 0.9;
-            bloomPass.radius = 0.5;
+            bloomPass.strength = 0.15;
+            bloomPass.threshold = 0.1;
+            bloomPass.radius = 0.05;
         } else if (value == "ReinhardToneMapping") {
             renderer.toneMapping = THREE.ReinhardToneMapping;
             renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
-            bloomPass.strength = 1.0;
-            bloomPass.threshold = 0.6;
-            bloomPass.radius = 0.5;
+            bloomPass.strength = 0.15;
+            bloomPass.threshold = 0.1;
+            bloomPass.radius = 0.05;
         } else if (value == "ACESFilmicToneMapping") {
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
-            bloomPass.strength = 0.6;
-            bloomPass.threshold = 0.9;
-            bloomPass.radius = 0.0;
+            bloomPass.strength = 0.15;
+            bloomPass.threshold = 0.1;
+            bloomPass.radius = 0.05;
         } else if (value == "NeutralToneMapping") {
             renderer.toneMapping = THREE.NeutralToneMapping;
             renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
-            bloomPass.strength = 0.6;
-            bloomPass.threshold = 0.9;
-            bloomPass.radius = 0.0;
+            bloomPass.strength = 0.15;
+            bloomPass.threshold = 0.1;
+            bloomPass.radius = 0.05;
         }
     });
     document.body.appendChild( renderer.domElement );
