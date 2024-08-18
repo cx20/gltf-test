@@ -65,8 +65,11 @@ canvas.height = window.innerHeight;
 
   // create ForwardRenderPipeline
   const forwardRenderPipeline = new Rn.ForwardRenderPipeline();
-  forwardRenderPipeline.setup(canvas.width, canvas.height);
-
+  forwardRenderPipeline.setup(canvas.width, canvas.height, {
+    isBloom: true,
+    isShadow: false,
+  });
+  
   // camera
   //const {cameraComponent, cameraEntity} = createCamera();
   const cameraEntity = Rn.EntityHelper.createCameraControllerEntity();
@@ -163,29 +166,25 @@ canvas.height = window.innerHeight;
     });
   }
 
-
-  
   if (modelInfo.name != "VC") {
-    forwardRenderPipeline.setExpressions([envExpression, mainExpression]);
+    await forwardRenderPipeline.setExpressions([envExpression, mainExpression]);
   } else {
-    forwardRenderPipeline.setExpressions([mainExpression]);
+    await forwardRenderPipeline.setExpressions([mainExpression]);
   }
 
-  // lighting
-  forwardRenderPipeline.setIBL({
-    diffuse: {
-      baseUri: '../../textures/papermill_hdr/diffuse/diffuse',
-      hdriFormat: Rn.HdriFormat.RGBE_PNG,
-      isNamePosNeg: true,
-      mipmapLevelNumber: 1,
-    },
-    specular: {
-      baseUri: '../../textures/papermill_hdr/specular/specular',
-      hdriFormat: Rn.HdriFormat.RGBE_PNG,
-      isNamePosNeg: true,
-      mipmapLevelNumber: 10,
-    },
-  });
+  const diffuseCubeTexture = new Rn.CubeTexture();
+  diffuseCubeTexture.baseUriToLoad = "../../textures/papermill_hdr/diffuse/diffuse";
+  diffuseCubeTexture.isNamePosNeg = true;
+  diffuseCubeTexture.hdriFormat = Rn.HdriFormat.RGBE_PNG;
+  diffuseCubeTexture.mipmapLevelNumber = 1;
+  
+  const specularCubeTexture = new Rn.CubeTexture();
+  specularCubeTexture.baseUriToLoad = "../../textures/papermill_hdr/specular/specular";
+  specularCubeTexture.isNamePosNeg = true;
+  specularCubeTexture.hdriFormat = Rn.HdriFormat.RGBE_PNG;
+  specularCubeTexture.mipmapLevelNumber = 10;
+
+  await forwardRenderPipeline.setIBLTextures(diffuseCubeTexture, specularCubeTexture);
 
   // cameraController
   // Exclude a specific camera from the camera list
