@@ -183,7 +183,8 @@ function makeTutorialModelLinks() {
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 128);
-        img.setAttribute('height', 128);
+        //img.setAttribute('height', 128);
+        img.setAttribute('height', '100%');
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
@@ -227,7 +228,8 @@ function makeTutorialPbrModelLinks() {
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialPbrModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 128);
-        img.setAttribute('height', 128);
+        //img.setAttribute('height', 128);
+        img.setAttribute('height', '100%');
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
@@ -289,7 +291,8 @@ function makeTutorialFurtherPbrModelLinks() {
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialFurtherPbrModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
-        img.setAttribute('height', 128);
+        //img.setAttribute('height', 128);
+        img.setAttribute('height', '100%');
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
@@ -332,7 +335,8 @@ function makeTutorialFeatureTestModelLinks() {
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialFeatureTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
-        img.setAttribute('height', 128);
+        //img.setAttribute('height', 128);
+        img.setAttribute('height', '100%');
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
@@ -397,7 +401,8 @@ function makeTutorialExtensionTestModelLinks() {
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialExtensionTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
-        img.setAttribute('height', 128);
+        //img.setAttribute('height', 128);
+        img.setAttribute('height', '100%');
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
@@ -412,16 +417,56 @@ function makeTutorialExtensionTestModelLinks() {
                      || modelName == 'ClearCoatCarPaint'
                      || modelName == 'ClearCoatTest'
                      || modelName == 'ClearcoatWicker'
+                     || modelName == 'CompareAlphaCoverage'
+                     || modelName == 'CompareAmbientOcclusion'
+                     || modelName == 'CompareAnisotropy'
+                     || modelName == 'CompareBaseColor'
+                     || modelName == 'CompareClearcoat'
+                     || modelName == 'CompareDispersion'
+                     || modelName == 'CompareEmissiveStrength'
+                     || modelName == 'CompareIor'
+                     || modelName == 'CompareIridescence'
+                     || modelName == 'CompareMetallic'
+                     || modelName == 'CompareNormal'
+                     || modelName == 'CompareRoughness'
+                     || modelName == 'CompareSheen'
+                     || modelName == 'CompareSpecular'
+                     || modelName == 'CompareTransmission'
+                     || modelName == 'CompareVolume'
+                     || modelName == 'DiffuseTransmissionPlant'
+                     || modelName == 'DiffuseTransmissionTeacup'
                      || modelName == 'DirectionalLight'
-                     || modelName == 'GlamVelvetSofa'
+                     || modelName == 'DispersionTest'
+                     || modelName == 'DragonDispersion'
                      || modelName == 'EmissiveStrengthTest'
+                     || modelName == 'GlamVelvetSofa'
+                     || modelName == 'GlassBrokenWindow'
+                     || modelName == 'GlassHurricaneCandleHolder'
+                     || modelName == 'GlassVaseFlowers'
+                     || modelName == 'IORTestGrid'
+                     || modelName == 'IridescenceAbalone'
                      || modelName == 'IridescenceLamp'
                      || modelName == 'IridescenceSuzanne'
                      || modelName == 'IridescentDishWithOlives'
+                     || modelName == 'Lights'
+                     || modelName == 'LightsPunctualLamp'
                      || modelName == 'MaterialsVariantsChair'
                      || modelName == 'MaterialsVariantsShoe'
+                     || modelName == 'MosquitoInAmber'
+                     || modelName == 'PotOfCoals'
+                     || modelName == 'SheenChair'
+                     || modelName == 'SheenTestGrid'
                      || modelName == 'SpecGlossVsMetalRough'
-                     || modelName == 'TransmissionSphere' ) {
+                     || modelName == 'SpecularSilkPouf'
+                     || modelName == 'SpecularTest'
+                     || modelName == 'TextureTransformMultiTest'
+                     || modelName == 'ToyCar'
+                     || modelName == 'TransmissionRoughnessTest'
+                     || modelName == 'TransmissionSphere'
+                     || modelName == 'TransmissionTest'
+                     || modelName == 'TransmissionThinwallTestGrid'
+                     || modelName == 'UnlitTest'
+                     || modelName == 'XmpMetadataRoundedCube' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
@@ -484,7 +529,8 @@ function makeTutorialWipExtensionTestModelLinks() {
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialWipExtensionTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
-        img.setAttribute('height', 128);
+        //img.setAttribute('height', 128);
+        img.setAttribute('height', '100%');
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
