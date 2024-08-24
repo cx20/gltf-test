@@ -304,7 +304,7 @@ function createEnvCubeExpression(baseuri, cameraEntity) {
     magFilter: Rn.TextureParameter.Linear,
   });
   sphereMaterial.setTextureParameter(
-    Rn.ShaderSemantics.ColorEnvTexture,
+    "colorEnvTexture",
     environmentCubeTexture,
     sampler
   );
