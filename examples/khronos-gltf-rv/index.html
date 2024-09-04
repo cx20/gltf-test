@@ -14,15 +14,20 @@
 
 <link rel="stylesheet" href="styles.css">
 
-<script src="https://rawcdn.githack.com/KhronosGroup/glTF-Sample-Viewer/4ba26a4a985bdcc7bf6ec2ef81ceaa11de43812d/libs/dat.gui.min.js"></script>
-<script src="https://rawcdn.githack.com/KhronosGroup/glTF-Sample-Viewer/4ba26a4a985bdcc7bf6ec2ef81ceaa11de43812d/libs/stats.min.js"></script>
-<script src="../../libs/khronos-gltf-rv/1.0.0/gltf-reference-viewer.umd.js"></script>
+<script src="https://www.gstatic.com/draco/v1/decoders/draco_decoder_gltf.js"></script>
+<script src="https://github.khronos.org/glTF-Sample-Viewer-Release/libs/libktx.js"></script>
+<script type="importmap">
+{
+    "imports": {
+        "gltf-viewer": "https://unpkg.com/@khronosgroup/gltf-viewer@1.0.10/dist/gltf-viewer.module.js"
+    }
+}
+</script>
 </head>
 
 <body>
-<div id="gltf-rv-model-spinner"> </div>
-<canvas id="canvas">No Canvas!</canvas>
-<script src="index.js"></script>
+<canvas id="canvas" width="768" height="768">No Canvas!</canvas>
+<script type="module" src="index.js"></script>
 </body>
 
 </html>
