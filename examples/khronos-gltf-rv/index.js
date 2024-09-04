@@ -27,8 +27,65 @@ if(modelInfo.url) {
     url = modelInfo.url;
 }
 
-var viewer = gltf_rv.gltf_rv("canvas");
-viewer.basePath = "https://github.khronos.org/glTF-Sample-Viewer/";
-viewer.renderingParameters.usePunctual = true;
-viewer.renderingParameters.environmentName = "Papermill Ruins E";
-viewer.loadFromPath(url);
+import { GltfView } from "gltf-viewer";
+
+const canvas = document.getElementById('canvas');
+const context = canvas.getContext('webgl2', {
+    alpha: false,
+    antialias: true
+});
+
+const view = new GltfView(context);
+const resourceLoader = view.createResourceLoader();
+const state = view.createState();
+
+const hdrFile = 'https://cx20.github.io/gltf-test/textures/hdr/papermill.hdr';
+const lurFile = {lut_sheen_E_file: 'https://github.khronos.org/glTF-Sample-Viewer-Release/assets/images/lut_sheen_E.png'};
+await resourceLoader
+    .loadEnvironment(hdrFile, lurFile)
+    .then((environment) => {
+        console.log('environment loaded');
+        state.environment = environment;
+    });
+
+await resourceLoader
+    .loadGltf(
+        //'https://cx20.github.io/gltf-test/sampleModels/Duck/glTF/Duck.gltf'
+        url
+    )
+    .then((gltf) => {
+
+        console.log('model loaded');
+        state.gltf = gltf;
+        const defaultScene = state.gltf.scene;
+        state.sceneIndex = defaultScene === undefined ? 0 : defaultScene;
+        state.cameraIndex = undefined;
+        if (state.gltf.scenes.length != 0) {
+            if (state.sceneIndex > state.gltf.scenes.length - 1) {
+                state.sceneIndex = 0;
+            }
+            const scene = state.gltf.scenes[state.sceneIndex];
+            scene.applyTransformHierarchy(state.gltf);
+            state.userCamera.aspectRatio = canvas.width / canvas.height;
+            state.userCamera.fitViewToScene(state.gltf, state.sceneIndex);
+
+            state.animationIndices = [];
+            for (let i = 0; i < gltf.animations.length; i++) {
+                if (
+                    !gltf
+                        .nonDisjointAnimations(state.animationIndices)
+                        .includes(i)
+                ) {
+                    state.animationIndices.push(i);
+                }
+            }
+            state.animationTimer.start();
+        }
+    });
+
+const update = () => {
+    view.renderFrame(state, canvas.clientWidth, canvas.clientHeight);
+    window.requestAnimationFrame(update);
+};
+window.requestAnimationFrame(update);
+
