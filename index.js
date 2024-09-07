@@ -67,7 +67,7 @@ let engines = [{
 }];
 
 function queryEngines(){
-    let res = location.search.match(/engines=([\w\.,]+)/);
+    let res = decodeURIComponent(location.search).match(/engines=([\w\.\s,]+)/);
     if(res && res[1]){
         let engineDict = {};
         engines.forEach(function(engine){
