@@ -52,6 +52,7 @@ await resourceLoader
     .then((environment) => {
         console.log('environment loaded');
         state.environment = environment;
+        state.renderingParameters.blurEnvironmentMap = false;
     });
 
 await resourceLoader
