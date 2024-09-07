@@ -117,14 +117,17 @@ function makeSampleModelLinks() {
         let tr = document.createElement('tr');
         let tdName = document.createElement('td');
         tdName.textContent = modelName;
+        tdName.setAttribute('width', '100');
         tr.appendChild(tdName);
         let tdPic = document.createElement('td');
+        tdPic.setAttribute('width', '100');
         let img = document.createElement('img');
         img.setAttribute('src', 'sampleModels/' + ModelIndex.getScreenshot(modelName));
         tdPic.appendChild(img);
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
+            td.setAttribute('width', '100');
             td.appendChild(createlink(engines[i].name, 'sampleModels', modelName, 'glTF', scale));
             if (modelName != 'Box With Spaces') {
                 if (modelName != 'Fox') {
@@ -177,9 +180,11 @@ function makeTutorialModelLinks() {
         let scale = modelList[j].scale;
         let tr = document.createElement('tr');
         let tdName = document.createElement('td');
+        tdName.setAttribute('width', '100');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
         let tdPic = document.createElement('td');
+        tdPic.setAttribute('width', '100');
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 128);
@@ -189,6 +194,7 @@ function makeTutorialModelLinks() {
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
+            td.setAttribute('width', '100');
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             td.appendChild(document.createElement('br'));
             td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, TutorialModelIndex.getEmbeddedFolderName(modelName), scale));
@@ -222,9 +228,11 @@ function makeTutorialPbrModelLinks() {
         let scale = modelList[j].scale;
         let tr = document.createElement('tr');
         let tdName = document.createElement('td');
+        tdName.setAttribute('width', '100');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
         let tdPic = document.createElement('td');
+        tdPic.setAttribute('width', '100');
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialPbrModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 128);
@@ -234,6 +242,7 @@ function makeTutorialPbrModelLinks() {
         tr.appendChild(tdPic);
         for (i = 0; i < numEngines; ++i) {
             let td = document.createElement('td');
+            td.setAttribute('width', '100');
             if (modelName == 'Sponza') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
             } else if (modelName == 'FlightHelmet') {
@@ -285,9 +294,11 @@ function makeTutorialFurtherPbrModelLinks() {
         let scale = modelList[j].scale;
         let tr = document.createElement('tr');
         let tdName = document.createElement('td');
+        tdName.setAttribute('width', '100');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
         let tdPic = document.createElement('td');
+        tdPic.setAttribute('width', '100');
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialFurtherPbrModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
@@ -329,9 +340,11 @@ function makeTutorialFeatureTestModelLinks() {
         let scale = modelList[j].scale;
         let tr = document.createElement('tr');
         let tdName = document.createElement('td');
+        tdName.setAttribute('width', '100');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
         let tdPic = document.createElement('td');
+        tdPic.setAttribute('width', '100');
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialFeatureTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
@@ -395,9 +408,11 @@ function makeTutorialExtensionTestModelLinks() {
         let scale = modelList[j].scale;
         let tr = document.createElement('tr');
         let tdName = document.createElement('td');
+        tdName.setAttribute('width', '100');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
         let tdPic = document.createElement('td');
+        tdPic.setAttribute('width', '100');
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialExtensionTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
@@ -523,9 +538,11 @@ function makeTutorialWipExtensionTestModelLinks() {
         let scale = modelList[j].scale;
         let tr = document.createElement('tr');
         let tdName = document.createElement('td');
+        tdName.setAttribute('width', '100');
         tdName.textContent = modelName;
         tr.appendChild(tdName);
         let tdPic = document.createElement('td');
+        tdPic.setAttribute('width', '100');
         let img = document.createElement('img');
         img.setAttribute('src', 'tutorialModels/' + TutorialWipExtensionTestModelIndex.getScreenshot(modelName));
         img.setAttribute('width', 170);
