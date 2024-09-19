@@ -1,6 +1,6 @@
 /**
  * Bundle of @khronosgroup/gltf-viewer
- * Generated: 2024-09-15
+ * Generated: 2024-09-20
  * Version: 1.0.11
  * License: Apache-2.0
  * Dependencies:
@@ -4820,8 +4820,8 @@ class gltfBuffer extends GltfObject
         {
             return false;
         }
-
-        fetch(getContainingFolder(gltf.path) + this.uri)
+        const parentPath = this.uri.startsWith("data:") ? "" : getContainingFolder(gltf.path);
+        fetch(parentPath + this.uri)
             .then(response => response.arrayBuffer())
             .then(buffer => {
                 this.buffer = buffer;
@@ -14788,6 +14788,9 @@ class gltfImage extends GltfObject
     resolveRelativePath(basePath)
     {
         if (typeof this.uri === 'string' || this.uri instanceof String) {
+            if (this.uri.startsWith('data:')) {
+                return;
+            }
             if (this.uri.startsWith('./')) {
                 this.uri = this.uri.substring(2);
             }
@@ -14808,7 +14811,8 @@ class gltfImage extends GltfObject
 
         if (!await this.setImageFromBufferView(gltf) &&
             !await this.setImageFromFiles(gltf, additionalFiles) &&
-            !await this.setImageFromUri(gltf))
+            !await this.setImageFromUri(gltf) &&
+            !await this.setImageFromBase64(gltf))
         {
             return;
         }
@@ -14856,9 +14860,79 @@ class gltfImage extends GltfObject
 
     }
 
+    async setImageFromBytes(gltf, array)
+    {
+        if (this.mimeType === ImageMimeType.KTX2)
+        {
+            if (gltf.ktxDecoder !== undefined)
+            {
+                this.image = await gltf.ktxDecoder.loadKtxFromBuffer(array);
+            }
+            else
+            {
+                console.warn('Loading of ktx images failed: KtxDecoder not initalized');
+            }
+        }
+        else if(typeof(Image) !== 'undefined' && (this.mimeType === ImageMimeType.JPEG || this.mimeType === ImageMimeType.PNG || this.mimeType === ImageMimeType.WEBP))
+        {
+            const blob = new Blob([array], { "type": this.mimeType });
+            const objectURL = URL.createObjectURL(blob);
+            this.image = await gltfImage.loadHTMLImage(objectURL).catch( () => {
+                console.error("Could not load image from buffer view");
+            });
+        }
+        else if(this.mimeType === ImageMimeType.JPEG)
+        {
+            this.image = jpegJs.decode(array, {useTArray: true});
+        }
+        else if(this.mimeType === ImageMimeType.PNG)
+        {
+            this.image = decodePng(array);
+        }
+        else
+        {
+            console.error("Unsupported image type " + this.mimeType);
+            return false;
+        }
+
+        return true;
+    }
+
+    async setImageFromBase64(gltf)
+    {
+        if (this.uri === undefined || !this.uri.startsWith('data:'))
+        {
+            return false;
+        }
+        const parts = this.uri.split(",");
+        if (this.mimeType === undefined)
+        {
+            switch (parts[0]) {
+            case "data:image/jpeg;base64":
+                this.mimeType = ImageMimeType.JPEG;
+                break;
+            case "data:image/png;base64":
+                this.mimeType = ImageMimeType.PNG;
+                break;
+            case "data:image/webp;base64":
+                this.mimeType = ImageMimeType.WEBP;
+                break;
+            case "data:image/ktx2;base64":
+                this.mimeType = ImageMimeType.KTX2;
+                break;
+            default:
+                console.warn(`Data URI ${parts[0]} not supported`);
+                return false;
+            }
+        }
+        const res = await fetch(this.uri);
+        const buffer = await res.arrayBuffer();
+        return await this.setImageFromBytes(gltf, new Uint8Array(buffer));
+    }
+
     async setImageFromUri(gltf)
     {
-        if (this.uri === undefined)
+        if (this.uri === undefined || this.uri.startsWith('data:'))
         {
             return false;
         }
@@ -14911,40 +14985,7 @@ class gltfImage extends GltfObject
 
         const buffer = gltf.buffers[view.buffer].buffer;
         const array = new Uint8Array(buffer, view.byteOffset, view.byteLength);
-        if (this.mimeType === ImageMimeType.KTX2)
-        {
-            if (gltf.ktxDecoder !== undefined)
-            {
-                this.image = await gltf.ktxDecoder.loadKtxFromBuffer(array);
-            }
-            else
-            {
-                console.warn('Loading of ktx images failed: KtxDecoder not initalized');
-            }
-        }
-        else if(typeof(Image) !== 'undefined' && (this.mimeType === ImageMimeType.JPEG || this.mimeType === ImageMimeType.PNG || this.mimeType === ImageMimeType.WEBP))
-        {
-            const blob = new Blob([array], { "type": this.mimeType });
-            const objectURL = URL.createObjectURL(blob);
-            this.image = await gltfImage.loadHTMLImage(objectURL).catch( () => {
-                console.error("Could not load image from buffer view");
-            });
-        }
-        else if(this.mimeType === ImageMimeType.JPEG)
-        {
-            this.image = jpegJs.decode(array, {useTArray: true});
-        }
-        else if(this.mimeType === ImageMimeType.PNG)
-        {
-            this.image = decodePng(array);
-        }
-        else
-        {
-            console.error("Unsupported image type " + this.mimeType);
-            return false;
-        }
-
-        return true;
+        return await this.setImageFromBytes(gltf, array);
     }
 
     async setImageFromFiles(gltf, files)
@@ -19179,7 +19220,7 @@ class gltfLoader
     }
 }
 
-var iblFiltering = "precision mediump float;\n#define GLSLIFY 1\n#define MATH_PI 3.1415926535897932384626433832795\nuniform samplerCube uCubeMap;const int cLambertian=0;const int cGGX=1;const int cCharlie=2;uniform float u_roughness;uniform int u_sampleCount;uniform int u_width;uniform float u_lodBias;uniform int u_distribution;uniform int u_currentFace;uniform int u_isGeneratingLUT;uniform int u_floatTexture;uniform float u_intensityScale;in vec2 texCoord;out vec4 fragmentColor;vec3 uvToXYZ(int face,vec2 uv){if(face==0)return vec3(1.f,uv.y,-uv.x);else if(face==1)return vec3(-1.f,uv.y,uv.x);else if(face==2)return vec3(+uv.x,-1.f,+uv.y);else if(face==3)return vec3(+uv.x,1.f,-uv.y);else if(face==4)return vec3(+uv.x,uv.y,1.f);else{return vec3(-uv.x,+uv.y,-1.f);}}vec2 dirToUV(vec3 dir){return vec2(0.5f+0.5f*atan(dir.z,dir.x)/MATH_PI,1.f-acos(dir.y)/MATH_PI);}float saturate(float v){return clamp(v,0.0f,1.0f);}float radicalInverse_VdC(uint bits){bits=(bits<<16u)|(bits>>16u);bits=((bits&0x55555555u)<<1u)|((bits&0xAAAAAAAAu)>>1u);bits=((bits&0x33333333u)<<2u)|((bits&0xCCCCCCCCu)>>2u);bits=((bits&0x0F0F0F0Fu)<<4u)|((bits&0xF0F0F0F0u)>>4u);bits=((bits&0x00FF00FFu)<<8u)|((bits&0xFF00FF00u)>>8u);return float(bits)*2.3283064365386963e-10;}vec2 hammersley2d(int i,int N){return vec2(float(i)/float(N),radicalInverse_VdC(uint(i)));}mat3 generateTBN(vec3 normal){vec3 bitangent=vec3(0.0,1.0,0.0);float NdotUp=dot(normal,vec3(0.0,1.0,0.0));float epsilon=0.0000001;if(1.0-abs(NdotUp)<=epsilon){if(NdotUp>0.0){bitangent=vec3(0.0,0.0,1.0);}else{bitangent=vec3(0.0,0.0,-1.0);}}vec3 tangent=normalize(cross(bitangent,normal));bitangent=cross(normal,tangent);return mat3(tangent,bitangent,normal);}struct MicrofacetDistributionSample{float pdf;float cosTheta;float sinTheta;float phi;};float D_GGX(float NdotH,float roughness){float a=NdotH*roughness;float k=roughness/(1.0-NdotH*NdotH+a*a);return k*k*(1.0/MATH_PI);}MicrofacetDistributionSample GGX(vec2 xi,float roughness){MicrofacetDistributionSample ggx;float alpha=roughness*roughness;ggx.cosTheta=saturate(sqrt((1.0-xi.y)/(1.0+(alpha*alpha-1.0)*xi.y)));ggx.sinTheta=sqrt(1.0-ggx.cosTheta*ggx.cosTheta);ggx.phi=2.0*MATH_PI*xi.x;ggx.pdf=D_GGX(ggx.cosTheta,alpha);ggx.pdf/=4.0;return ggx;}float D_Ashikhmin(float NdotH,float roughness){float alpha=roughness*roughness;float a2=alpha*alpha;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;float sin4h=sin2h*sin2h;float cot2=-cos2h/(a2*sin2h);return 1.0/(MATH_PI*(4.0*a2+1.0)*sin4h)*(4.0*exp(cot2)+sin4h);}float D_Charlie(float sheenRoughness,float NdotH){sheenRoughness=max(sheenRoughness,0.000001);float invR=1.0/sheenRoughness;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;return(2.0+invR)*pow(sin2h,invR*0.5)/(2.0*MATH_PI);}MicrofacetDistributionSample Charlie(vec2 xi,float roughness){MicrofacetDistributionSample charlie;float alpha=roughness*roughness;charlie.sinTheta=pow(xi.y,alpha/(2.0*alpha+1.0));charlie.cosTheta=sqrt(1.0-charlie.sinTheta*charlie.sinTheta);charlie.phi=2.0*MATH_PI*xi.x;charlie.pdf=D_Charlie(alpha,charlie.cosTheta);charlie.pdf/=4.0;return charlie;}MicrofacetDistributionSample Lambertian(vec2 xi,float roughness){MicrofacetDistributionSample lambertian;lambertian.cosTheta=sqrt(1.0-xi.y);lambertian.sinTheta=sqrt(xi.y);lambertian.phi=2.0*MATH_PI*xi.x;lambertian.pdf=lambertian.cosTheta/MATH_PI;return lambertian;}vec4 getImportanceSample(int sampleIndex,vec3 N,float roughness){vec2 xi=hammersley2d(sampleIndex,u_sampleCount);MicrofacetDistributionSample importanceSample;if(u_distribution==cLambertian){importanceSample=Lambertian(xi,roughness);}else if(u_distribution==cGGX){importanceSample=GGX(xi,roughness);}else if(u_distribution==cCharlie){importanceSample=Charlie(xi,roughness);}vec3 localSpaceDirection=normalize(vec3(importanceSample.sinTheta*cos(importanceSample.phi),importanceSample.sinTheta*sin(importanceSample.phi),importanceSample.cosTheta));mat3 TBN=generateTBN(N);vec3 direction=TBN*localSpaceDirection;return vec4(direction,importanceSample.pdf);}float computeLod(float pdf){float lod=0.5*log2(6.0*float(u_width)*float(u_width)/(float(u_sampleCount)*pdf));return lod;}vec3 filterColor(vec3 N){vec3 color=vec3(0.f);float weight=0.0f;for(int i=0;i<u_sampleCount;++i){vec4 importanceSample=getImportanceSample(i,N,u_roughness);vec3 H=vec3(importanceSample.xyz);float pdf=importanceSample.w;float lod=computeLod(pdf);lod+=u_lodBias;if(u_distribution==cLambertian){vec3 lambertian=textureLod(uCubeMap,H,lod).rgb*u_intensityScale;color+=lambertian;}else if(u_distribution==cGGX||u_distribution==cCharlie){vec3 V=N;vec3 L=normalize(reflect(-V,H));float NdotL=dot(N,L);if(NdotL>0.0){if(u_roughness==0.0){lod=u_lodBias;}vec3 sampleColor=textureLod(uCubeMap,L,lod).rgb*u_intensityScale;color+=sampleColor*NdotL;weight+=NdotL;}}}if(weight!=0.0f){color/=weight;}else{color/=float(u_sampleCount);}return color.rgb;}float V_SmithGGXCorrelated(float NoV,float NoL,float roughness){float a2=pow(roughness,4.0);float GGXV=NoL*sqrt(NoV*NoV*(1.0-a2)+a2);float GGXL=NoV*sqrt(NoL*NoL*(1.0-a2)+a2);return 0.5/(GGXV+GGXL);}float V_Ashikhmin(float NdotL,float NdotV){return clamp(1.0/(4.0*(NdotL+NdotV-NdotL*NdotV)),0.0,1.0);}vec3 LUT(float NdotV,float roughness){vec3 V=vec3(sqrt(1.0-NdotV*NdotV),0.0,NdotV);vec3 N=vec3(0.0,0.0,1.0);float A=0.0;float B=0.0;float C=0.0;for(int i=0;i<u_sampleCount;++i){vec4 importanceSample=getImportanceSample(i,N,roughness);vec3 H=importanceSample.xyz;vec3 L=normalize(reflect(-V,H));float NdotL=saturate(L.z);float NdotH=saturate(H.z);float VdotH=saturate(dot(V,H));if(NdotL>0.0){if(u_distribution==cGGX){float V_pdf=V_SmithGGXCorrelated(NdotV,NdotL,roughness)*VdotH*NdotL/NdotH;float Fc=pow(1.0-VdotH,5.0);A+=(1.0-Fc)*V_pdf;B+=Fc*V_pdf;C+=0.0;}if(u_distribution==cCharlie){float sheenDistribution=D_Charlie(roughness,NdotH);float sheenVisibility=V_Ashikhmin(NdotL,NdotV);A+=0.0;B+=0.0;C+=sheenVisibility*sheenDistribution*NdotL*VdotH;}}}return vec3(4.0*A,4.0*B,4.0*2.0*MATH_PI*C)/float(u_sampleCount);}void main(){vec3 color=vec3(0);if(u_isGeneratingLUT==0){vec2 newUV=texCoord;newUV=newUV*2.0-1.0;vec3 scan=uvToXYZ(u_currentFace,newUV);vec3 direction=normalize(scan);direction.y=-direction.y;color=filterColor(direction);}else{color=LUT(texCoord.x,texCoord.y);fragmentColor.rgb=color;fragmentColor.a=1.0;return;}fragmentColor.a=1.0;if(u_floatTexture==0){float maxV=max(max(color.r,color.g),color.b);color/=u_intensityScale;color=clamp(color,0.0f,1.0f);}fragmentColor.rgb=color;}"; // eslint-disable-line
+var iblFiltering = "precision highp float;\n#define GLSLIFY 1\n#define MATH_PI 3.1415926535897932384626433832795\nuniform samplerCube uCubeMap;const int cLambertian=0;const int cGGX=1;const int cCharlie=2;uniform float u_roughness;uniform int u_sampleCount;uniform int u_width;uniform float u_lodBias;uniform int u_distribution;uniform int u_currentFace;uniform int u_isGeneratingLUT;uniform int u_floatTexture;uniform float u_intensityScale;in vec2 texCoord;out vec4 fragmentColor;vec3 uvToXYZ(int face,vec2 uv){if(face==0)return vec3(1.f,uv.y,-uv.x);else if(face==1)return vec3(-1.f,uv.y,uv.x);else if(face==2)return vec3(+uv.x,-1.f,+uv.y);else if(face==3)return vec3(+uv.x,1.f,-uv.y);else if(face==4)return vec3(+uv.x,uv.y,1.f);else{return vec3(-uv.x,+uv.y,-1.f);}}vec2 dirToUV(vec3 dir){return vec2(0.5f+0.5f*atan(dir.z,dir.x)/MATH_PI,1.f-acos(dir.y)/MATH_PI);}float saturate(float v){return clamp(v,0.0f,1.0f);}float radicalInverse_VdC(uint bits){bits=(bits<<16u)|(bits>>16u);bits=((bits&0x55555555u)<<1u)|((bits&0xAAAAAAAAu)>>1u);bits=((bits&0x33333333u)<<2u)|((bits&0xCCCCCCCCu)>>2u);bits=((bits&0x0F0F0F0Fu)<<4u)|((bits&0xF0F0F0F0u)>>4u);bits=((bits&0x00FF00FFu)<<8u)|((bits&0xFF00FF00u)>>8u);return float(bits)*2.3283064365386963e-10;}vec2 hammersley2d(int i,int N){return vec2(float(i)/float(N),radicalInverse_VdC(uint(i)));}mat3 generateTBN(vec3 normal){vec3 bitangent=vec3(0.0,1.0,0.0);float NdotUp=dot(normal,vec3(0.0,1.0,0.0));float epsilon=0.0000001;if(1.0-abs(NdotUp)<=epsilon){if(NdotUp>0.0){bitangent=vec3(0.0,0.0,1.0);}else{bitangent=vec3(0.0,0.0,-1.0);}}vec3 tangent=normalize(cross(bitangent,normal));bitangent=cross(normal,tangent);return mat3(tangent,bitangent,normal);}struct MicrofacetDistributionSample{float pdf;float cosTheta;float sinTheta;float phi;};float D_GGX(float NdotH,float roughness){float a=NdotH*roughness;float k=roughness/(1.0-NdotH*NdotH+a*a);return k*k*(1.0/MATH_PI);}MicrofacetDistributionSample GGX(vec2 xi,float roughness){MicrofacetDistributionSample ggx;float alpha=roughness*roughness;ggx.cosTheta=saturate(sqrt((1.0-xi.y)/(1.0+(alpha*alpha-1.0)*xi.y)));ggx.sinTheta=sqrt(1.0-ggx.cosTheta*ggx.cosTheta);ggx.phi=2.0*MATH_PI*xi.x;ggx.pdf=D_GGX(ggx.cosTheta,alpha);ggx.pdf/=4.0;return ggx;}float D_Ashikhmin(float NdotH,float roughness){float alpha=roughness*roughness;float a2=alpha*alpha;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;float sin4h=sin2h*sin2h;float cot2=-cos2h/(a2*sin2h);return 1.0/(MATH_PI*(4.0*a2+1.0)*sin4h)*(4.0*exp(cot2)+sin4h);}float D_Charlie(float sheenRoughness,float NdotH){sheenRoughness=max(sheenRoughness,0.000001);float invR=1.0/sheenRoughness;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;return(2.0+invR)*pow(sin2h,invR*0.5)/(2.0*MATH_PI);}MicrofacetDistributionSample Charlie(vec2 xi,float roughness){MicrofacetDistributionSample charlie;float alpha=roughness*roughness;charlie.sinTheta=pow(xi.y,alpha/(2.0*alpha+1.0));charlie.cosTheta=sqrt(1.0-charlie.sinTheta*charlie.sinTheta);charlie.phi=2.0*MATH_PI*xi.x;charlie.pdf=D_Charlie(alpha,charlie.cosTheta);charlie.pdf/=4.0;return charlie;}MicrofacetDistributionSample Lambertian(vec2 xi,float roughness){MicrofacetDistributionSample lambertian;lambertian.cosTheta=sqrt(1.0-xi.y);lambertian.sinTheta=sqrt(xi.y);lambertian.phi=2.0*MATH_PI*xi.x;lambertian.pdf=lambertian.cosTheta/MATH_PI;return lambertian;}vec4 getImportanceSample(int sampleIndex,vec3 N,float roughness){vec2 xi=hammersley2d(sampleIndex,u_sampleCount);MicrofacetDistributionSample importanceSample;if(u_distribution==cLambertian){importanceSample=Lambertian(xi,roughness);}else if(u_distribution==cGGX){importanceSample=GGX(xi,roughness);}else if(u_distribution==cCharlie){importanceSample=Charlie(xi,roughness);}vec3 localSpaceDirection=normalize(vec3(importanceSample.sinTheta*cos(importanceSample.phi),importanceSample.sinTheta*sin(importanceSample.phi),importanceSample.cosTheta));mat3 TBN=generateTBN(N);vec3 direction=TBN*localSpaceDirection;return vec4(direction,importanceSample.pdf);}float computeLod(float pdf){float lod=0.5*log2(6.0*float(u_width)*float(u_width)/(float(u_sampleCount)*pdf));return lod;}vec3 filterColor(vec3 N){vec3 color=vec3(0.f);float weight=0.0f;for(int i=0;i<u_sampleCount;++i){vec4 importanceSample=getImportanceSample(i,N,u_roughness);vec3 H=vec3(importanceSample.xyz);float pdf=importanceSample.w;float lod=computeLod(pdf);lod+=u_lodBias;if(u_distribution==cLambertian){vec3 lambertian=textureLod(uCubeMap,H,lod).rgb*u_intensityScale;color+=lambertian;}else if(u_distribution==cGGX||u_distribution==cCharlie){vec3 V=N;vec3 L=normalize(reflect(-V,H));float NdotL=dot(N,L);if(NdotL>0.0){if(u_roughness==0.0){lod=u_lodBias;}vec3 sampleColor=textureLod(uCubeMap,L,lod).rgb*u_intensityScale;color+=sampleColor*NdotL;weight+=NdotL;}}}if(weight!=0.0f){color/=weight;}else{color/=float(u_sampleCount);}return color.rgb;}float V_SmithGGXCorrelated(float NoV,float NoL,float roughness){float a2=pow(roughness,4.0);float GGXV=NoL*sqrt(NoV*NoV*(1.0-a2)+a2);float GGXL=NoV*sqrt(NoL*NoL*(1.0-a2)+a2);return 0.5/(GGXV+GGXL);}float V_Ashikhmin(float NdotL,float NdotV){return clamp(1.0/(4.0*(NdotL+NdotV-NdotL*NdotV)),0.0,1.0);}vec3 LUT(float NdotV,float roughness){vec3 V=vec3(sqrt(1.0-NdotV*NdotV),0.0,NdotV);vec3 N=vec3(0.0,0.0,1.0);float A=0.0;float B=0.0;float C=0.0;for(int i=0;i<u_sampleCount;++i){vec4 importanceSample=getImportanceSample(i,N,roughness);vec3 H=importanceSample.xyz;vec3 L=normalize(reflect(-V,H));float NdotL=saturate(L.z);float NdotH=saturate(H.z);float VdotH=saturate(dot(V,H));if(NdotL>0.0){if(u_distribution==cGGX){float V_pdf=V_SmithGGXCorrelated(NdotV,NdotL,roughness)*VdotH*NdotL/NdotH;float Fc=pow(1.0-VdotH,5.0);A+=(1.0-Fc)*V_pdf;B+=Fc*V_pdf;C+=0.0;}if(u_distribution==cCharlie){float sheenDistribution=D_Charlie(roughness,NdotH);float sheenVisibility=V_Ashikhmin(NdotL,NdotV);A+=0.0;B+=0.0;C+=sheenVisibility*sheenDistribution*NdotL*VdotH;}}}return vec3(4.0*A,4.0*B,4.0*2.0*MATH_PI*C)/float(u_sampleCount);}void main(){vec3 color=vec3(0);if(u_isGeneratingLUT==0){vec2 newUV=texCoord;newUV=newUV*2.0-1.0;vec3 scan=uvToXYZ(u_currentFace,newUV);vec3 direction=normalize(scan);direction.y=-direction.y;color=filterColor(direction);}else{color=LUT(texCoord.x,texCoord.y);fragmentColor.rgb=color;fragmentColor.a=1.0;return;}fragmentColor.a=1.0;if(u_floatTexture==0){float maxV=max(max(color.r,color.g),color.b);color/=u_intensityScale;color=clamp(color,0.0f,1.0f);}fragmentColor.rgb=color;}"; // eslint-disable-line
 
 var panoramaToCubeMap = "#define MATH_PI 3.1415926535897932384626433832795\n#define MATH_INV_PI (1.0 / MATH_PI)\nprecision highp float;\n#define GLSLIFY 1\nin vec2 texCoord;out vec4 fragmentColor;uniform int u_currentFace;uniform sampler2D u_inputTexture;uniform sampler2D u_panorama;vec3 uvToXYZ(int face,vec2 uv){if(face==0)return vec3(1.f,uv.y,-uv.x);else if(face==1)return vec3(-1.f,uv.y,uv.x);else if(face==2)return vec3(+uv.x,-1.f,+uv.y);else if(face==3)return vec3(+uv.x,1.f,-uv.y);else if(face==4)return vec3(+uv.x,uv.y,1.f);else{return vec3(-uv.x,+uv.y,-1.f);}}vec2 dirToUV(vec3 dir){return vec2(0.5f+0.5f*atan(dir.z,dir.x)/MATH_PI,1.f-acos(dir.y)/MATH_PI);}vec3 panoramaToCubeMap(int face,vec2 texCoord){vec2 texCoordNew=texCoord*2.0-1.0;vec3 scan=uvToXYZ(face,texCoordNew);vec3 direction=normalize(scan);vec2 src=dirToUV(direction);return texture(u_panorama,src).rgb;}void main(void){fragmentColor=vec4(0.0,0.0,0.0,1.0);fragmentColor.rgb=panoramaToCubeMap(u_currentFace,texCoord);}"; // eslint-disable-line
 
@@ -19228,7 +19269,6 @@ class iblSampler
         this.shaderCache = new ShaderCache(shaderSources, view.renderer.webGl);
     }
 
-    
     prepareTextureData(image)
     {
         let texture =  {
@@ -19245,7 +19285,7 @@ class iblSampler
         {
             texture.internalFormat = this.internalFormat();
             texture.format = this.gl.RGBA;
-            texture.type = this.type();
+            texture.type = this.gl.UNSIGNED_BYTE;
 
             const numPixels = image.dataFloat.length / 3;
 
@@ -19281,12 +19321,32 @@ class iblSampler
                 texture.data[dst+0] = Math.min((image.dataFloat[src+0])*255, 255);
                 texture.data[dst+1] = Math.min((image.dataFloat[src+1])*255, 255);
                 texture.data[dst+2] = Math.min((image.dataFloat[src+2])*255, 255);
-                texture.data[dst+3] = 0;
+                texture.data[dst+3] = 255;  // unused
             }
 
             this.scaleValue =  scaleFactor;
             return texture;
         }
+
+        if(this.supportedFormat == "HALF_FLOAT")
+        {
+            texture.internalFormat = this.internalFormat();
+            texture.format = this.gl.RGBA;
+            texture.type = this.gl.FLOAT;
+
+            const numPixels = image.dataFloat.length / 3;
+            texture.data = new Float32Array(numPixels * 4);
+            for(let i = 0, src = 0, dst = 0; i < numPixels; ++i, src += 3, dst += 4)
+            {
+                // pad the alpha channel
+                texture.data[dst] =  image.dataFloat[src];
+                texture.data[dst+1] = image.dataFloat[src+1];
+                texture.data[dst+2] = image.dataFloat[src+2];
+                texture.data[dst+3] = 1.0; // unused
+            }
+            return texture;
+        }
+        
 
         if (image.dataFloat instanceof Float32Array && typeof(this.gl.RGB32F) !== 'undefined')
         {
@@ -19312,14 +19372,14 @@ class iblSampler
                 texture.data[dst] = image.dataFloat[src];
                 texture.data[dst+1] = image.dataFloat[src+1];
                 texture.data[dst+2] = image.dataFloat[src+2];
-                texture.data[dst+3] = 0;
+                texture.data[dst+3] = 1.0; // unused
             }
             return texture;
         }
 
         if (typeof(Image) !== 'undefined' && image instanceof Image)
         {
-            texture.internalFormat = this.gl.RGBA;
+            texture.internalFormat = this.gl.RGBA8;
             texture.format = this.gl.RGBA;
             texture.type = this.gl.UNSIGNED_BYTE;
             texture.data = image;
@@ -19327,7 +19387,6 @@ class iblSampler
         }
 
         console.error("loadTextureHDR failed, unsupported HDR image");
-
 
     }
 
@@ -19339,14 +19398,14 @@ class iblSampler
         this.gl.bindTexture(this.gl.TEXTURE_2D, textureID);      
 
         this.gl.texImage2D(
-            this.gl.TEXTURE_2D,
-            0,
-            texture.internalFormat,
+            this.gl.TEXTURE_2D, // target
+            0, // level
+            texture.internalFormat, 
             image.width,
             image.height,
-            0,
-            texture.format,
-            texture.type,
+            0, // border
+            texture.format, // format of the pixel data
+            texture.type, // type of the pixel data
             texture.data
         );
 
@@ -19366,7 +19425,7 @@ class iblSampler
         return this.gl.RGBA8; // Fallback
     }
 
-    type()
+    textureTargetType()
     {
         if(this.supportedFormat == "FLOAT") return  this.gl.FLOAT;
         if(this.supportedFormat == "HALF_FLOAT") return  this.gl.HALF_FLOAT;
@@ -19389,7 +19448,7 @@ class iblSampler
                 this.textureSize,
                 0,
                 this.gl.RGBA,
-                this.type(),
+                this.textureTargetType(),
                 null
             );
         }
@@ -19423,7 +19482,7 @@ class iblSampler
             this.lutResolution,
             0,
             this.gl.RGBA,
-            this.type(),
+            this.textureTargetType(),
             null
         );
 
@@ -19437,14 +19496,20 @@ class iblSampler
 
     init(panoramaImage)
     {
+
         if (this.gl.getExtension("EXT_color_buffer_float") && this.gl.getExtension("OES_texture_float_linear"))
         {
             this.supportedFormat = "FLOAT";  
         } 
+        else if (this.gl.getExtension("EXT_color_buffer_float") || this.gl.getExtension("EXT_color_buffer_half_float"))
+        {
+            console.warn("Using 16-bit floats for IBL filtering");
+            this.supportedFormat = "HALF_FLOAT";
+        }
         else
         {
-            console.warn("Floating point textures are not supported");
-            this.supportedFormat = "BYTE";
+            console.warn("Using 8-bit floats for IBL filtering");
+            this.supportedFormat = "BYTE";  
         }
 
         this.inputTextureID = this.loadTextureHDR(panoramaImage);
