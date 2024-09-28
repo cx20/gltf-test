@@ -28,6 +28,26 @@ if(modelInfo.url) {
 }
 
 import { GltfView } from "gltf-viewer";
+import * as dat from 'dat.gui';
+
+// GUI
+let gui = new dat.GUI();
+
+var obj = {
+	ROTATE: false,
+	CAMERA: "",
+	IBL: true,
+	VARIANT: ""
+}
+let guiRotate = gui.add(obj, 'ROTATE').name('Rotate');
+let guiIBL    = gui.add(obj, 'IBL').name('IBL');
+let guiCameras = null;
+let guiVariantNames = null;
+
+let isRotating = false;
+guiRotate.onChange(function (value) {
+    isRotating = value;
+});
 
 const canvas = document.getElementById('canvas');
 const context = canvas.getContext('webgl2', {
@@ -60,6 +80,10 @@ await resourceLoader
         console.log('environment loaded');
         state.environment = environment;
         state.renderingParameters.blurEnvironmentMap = false;
+
+        guiIBL.onChange(function(value) {
+            state.environment = value ? environment : undefined;
+        });
     });
 
 await resourceLoader
@@ -75,6 +99,20 @@ await resourceLoader
         const defaultScene = state.gltf.scene;
         state.sceneIndex = defaultScene === undefined ? 0 : defaultScene;
         state.cameraIndex = undefined;
+
+        if (state.gltf.cameras.length > 0) {
+            let cameraNames = state.gltf.cameras.map((value, index) => "camera" + index);
+            const defaultIndex = Math.floor(Math.random() * cameraNames.length); // Randomly switch if there are multiple cameras
+            obj.CAMERA = cameraNames[defaultIndex];
+            guiCameras = gui.add(obj, 'CAMERA', cameraNames).name("Camera");
+            guiCameras.onChange(function(value) {
+              const selectedIndex = cameraNames.indexOf(value);
+              state.cameraIndex = selectedIndex;
+            });
+            state.cameraIndex = defaultIndex;
+        } else {
+            state.cameraIndex = undefined;
+        }
         
         if (state.gltf.scenes.length != 0) {
             if (state.sceneIndex > state.gltf.scenes.length - 1) {
@@ -99,8 +137,15 @@ await resourceLoader
         }
     });
 
+let angle = 0;
 const update = () => {
     view.renderFrame(state, canvas.clientWidth, canvas.clientHeight);
+
+    if (isRotating) {
+        const rotationSpeed = 2;
+        state.userCamera.orbit(rotationSpeed, 0);
+    }
+    
     window.requestAnimationFrame(update);
 };
 
