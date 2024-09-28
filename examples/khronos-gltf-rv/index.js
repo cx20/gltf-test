@@ -101,15 +101,21 @@ await resourceLoader
         state.cameraIndex = undefined;
 
         if (state.gltf.cameras.length > 0) {
-            let cameraNames = state.gltf.cameras.map((value, index) => "camera" + index);
+            let cameraNames = ["User Camera"].concat(state.gltf.cameras.map((value, index) => "camera" + index));
             const defaultIndex = Math.floor(Math.random() * cameraNames.length); // Randomly switch if there are multiple cameras
             obj.CAMERA = cameraNames[defaultIndex];
             guiCameras = gui.add(obj, 'CAMERA', cameraNames).name("Camera");
+
             guiCameras.onChange(function(value) {
-              const selectedIndex = cameraNames.indexOf(value);
-              state.cameraIndex = selectedIndex;
+                if (value === "User Camera") {
+                    state.cameraIndex = undefined;
+                } else {
+                    const selectedIndex = cameraNames.indexOf(value) - 1;
+                    state.cameraIndex = selectedIndex;
+                }
             });
-            state.cameraIndex = defaultIndex;
+
+            state.cameraIndex = defaultIndex - 1;
         } else {
             state.cameraIndex = undefined;
         }
