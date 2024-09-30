@@ -1,6 +1,6 @@
 # gltf-test
 
-Status of [glTF loader](https://github.com/KhronosGroup/glTF#webgl-engines) in some WebGL libraries.
+The status of loading and viewing various glTF models using different [WebGL](https://www.khronos.org/webgl/) libraries.
 
 ## All Tests
 
