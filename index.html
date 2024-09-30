@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8" />
     <title>Test of glTF 2.0 loader in some WebGL libraries.</title>
-    
+
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-    
+
     <script src="sampleModels/model-index.js"></script>
     <script src="tutorialModels/model-index.js"></script>
     <script src="tutorialModels/pbr-model-index.js"></script>
@@ -17,98 +17,212 @@
     <script src="tutorialModels/extension-test-model-index.js"></script>
     <script src="tutorialModels/wip-extension-test-model-index.js"></script>
 
-<style>
-table {
-    border-collapse: collapse;
-}
-</style>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .table-container {
+            max-height: 300px;
+            overflow: auto;
+            width: 100%;
+        }
+        table {
+            border-spacing: 0;
+        }
+
+        th {
+            border-left: none;
+            border-right: 1px solid #bbbbbb;
+            padding: 5px;
+            width: 80px;
+            min-width: 80px;
+            position: sticky;
+            top: 0;
+            background: #727272;
+            color: #e0e0e0;
+            font-weight: normal;
+        }
+
+        td {
+            border-left: none;
+            border-right: 1px solid #bbbbbb;
+            border-bottom: 1px solid #bbbbbb;
+            padding: 5px;
+            width: 80px;
+            min-width: 80px;
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            position: sticky;
+            left: 0;
+            width: 150px;
+            min-width: 150px;
+        }
+
+        th:nth-child(2),
+        td:nth-child(2) {
+            position: sticky;
+            /* 1st cell left/right padding + 1st cell width + 1st cell left/right border width */
+            /* 0 + 5 + 150 + 5 + 1 */
+            left: 161px;
+            width: 50px;
+            min-width: 50px;
+        }
+
+        td:nth-child(1),
+        td:nth-child(2) {
+            background: #efebf5;
+        }
+
+        th:nth-child(1),
+        th:nth-child(2) {
+            z-index: 2;
+        }
+    </style>
 </head>
 <body>
 
-<p>Test of Simple models for glTF 2.0 </p>
-<table class="table table-bordered table-sm table-striped" id="tutorialModelTable">
-    <thead>
-        <tr>
-            <th>Model</th>
-            <th>Screenshot</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+<div class="container-fluid	 mt-4">
+    <h2>glTF 2.0 Model Tests</h2>
 
-<p>Test of More complex models for glTF 2.0</p>
-<table class="table table-bordered table-sm table-striped" id="modelTable">
-    <thead>
-        <tr>
-            <th>Model</th>
-            <th>Screenshot</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+    <!-- Tabs -->
+    <ul class="nav nav-tabs" id="modelTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="tutorial-tab" data-toggle="tab" href="#tutorial" role="tab" aria-controls="tutorial" aria-selected="true">Tutorial Models</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="complex-tab" data-toggle="tab" href="#complex" role="tab" aria-controls="complex" aria-selected="false">Complex Models</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="pbr-tab" data-toggle="tab" href="#pbr" role="tab" aria-controls="pbr" aria-selected="false">PBR Models</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="further-pbr-tab" data-toggle="tab" href="#further-pbr" role="tab" aria-controls="further-pbr" aria-selected="false">Further PBR Models</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="feature-test-tab" data-toggle="tab" href="#feature-test" role="tab" aria-controls="feature-test" aria-selected="false">Feature Test Models</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="extension-test-tab" data-toggle="tab" href="#extension-test" role="tab" aria-controls="extension-test" aria-selected="false">Extension Test Models</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="wip-extension-test-tab" data-toggle="tab" href="#wip-extension-test" role="tab" aria-controls="wip-extension-test" aria-selected="false">WIP Extension Test Models</a>
+        </li>
+    </ul>
 
-<p>Test of PBR models for glTF 2.0 </p>
-<table class="table table-bordered table-sm table-striped" id="tutorialPbrModelTable">
-    <thead>
-        <tr>
-            <th>Model</th>
-            <th>Screenshot</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+    <!-- Tab Content -->
+    <div class="tab-content" id="modelTabContent">
+        <!-- Tutorial Models -->
+        <div class="tab-pane fade show active" id="tutorial" role="tabpanel" aria-labelledby="tutorial-tab">
+            <p>Test of Simple models for glTF 2.0 </p>
+            <table class="table table-bordered table-sm table-striped" id="tutorialModelTable">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Screenshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
 
-<p>Test of Further PBR models for glTF 2.0 </p>
-<table class="table table-bordered table-sm table-striped" id="tutorialFurtherPbrModelTable">
-    <thead>
-        <tr>
-            <th>Model</th>
-            <th>Screenshot</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+        <!-- Complex Models -->
+        <div class="tab-pane fade" id="complex" role="tabpanel" aria-labelledby="complex-tab">
+            <p>Test of More complex models for glTF 2.0</p>
+            <table class="table table-bordered table-sm table-striped" id="modelTable">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Screenshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
 
-<p>Test of Feature Test models for glTF 2.0 </p>
-<table class="table table-bordered table-sm table-striped" id="tutorialFeatureTestModelTable">
-    <thead>
-        <tr>
-            <th>Model</th>
-            <th>Screenshot</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+        <!-- PBR Models -->
+        <div class="tab-pane fade" id="pbr" role="tabpanel" aria-labelledby="pbr-tab">
+            <p>Test of PBR models for glTF 2.0</p>
+            <table class="table table-bordered table-sm table-striped" id="tutorialPbrModelTable">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Screenshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
 
-<p>Test of Extension Test models for glTF 2.0 </p>
-<table class="table table-bordered table-sm table-striped" id="tutorialExtensionTestModelTable">
-    <thead>
-        <tr>
-            <th>Model</th>
-            <th>Screenshot</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+        <!-- Further PBR Models -->
+        <div class="tab-pane fade" id="further-pbr" role="tabpanel" aria-labelledby="further-pbr-tab">
+            <p>Test of Further PBR models for glTF 2.0</p>
+            <table class="table table-bordered table-sm table-striped" id="tutorialFurtherPbrModelTable">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Screenshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
 
-<p>Test of WIP Extension Test models for glTF 2.0 </p>
-<table class="table table-bordered table-sm table-striped" id="tutorialWipExtensionTestModelTable">
-    <thead>
-        <tr>
-            <th>Model</th>
-            <th>Screenshot</th>
-        </tr>
-    </thead>
-    <tbody>
-    </tbody>
-</table>
+        <!-- Feature Test Models -->
+        <div class="tab-pane fade" id="feature-test" role="tabpanel" aria-labelledby="feature-test-tab">
+            <p>Test of Feature Test models for glTF 2.0</p>
+            <table class="table table-bordered table-sm table-striped" id="tutorialFeatureTestModelTable">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Screenshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Extension Test Models -->
+        <div class="tab-pane fade" id="extension-test" role="tabpanel" aria-labelledby="extension-test-tab">
+            <p>Test of Extension Test models for glTF 2.0</p>
+            <table class="table table-bordered table-sm table-striped" id="tutorialExtensionTestModelTable">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Screenshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- WIP Extension Test Models -->
+        <div class="tab-pane fade" id="wip-extension-test" role="tabpanel" aria-labelledby="wip-extension-test-tab">
+            <p>Test of WIP Extension Test models for glTF 2.0</p>
+            <table class="table table-bordered table-sm table-striped" id="tutorialWipExtensionTestModelTable">
+                <thead>
+                    <tr>
+                        <th>Model</th>
+                        <th>Screenshot</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <script src="index.js"></script>
+
 </body>
 </html>
