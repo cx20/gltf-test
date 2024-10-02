@@ -81,13 +81,40 @@
         th:nth-child(2) {
             z-index: 2;
         }
+
+        /* GitHub */
+        .github-link {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+
+        .github-link a {
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .github-link a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
 
+
 <div class="container-fluid	 mt-4">
     <h2>glTF 2.0 Model Tests</h2>
 
+    <!-- Link to GitHub Repository -->
+    <div class="github-link">
+        <a href="https://github.com/cx20/gltf-test" target="_blank">View on GitHub</a>
+    </div>
+    
     <!-- Tabs -->
     <ul class="nav nav-tabs" id="modelTab" role="tablist">
         <li class="nav-item">
