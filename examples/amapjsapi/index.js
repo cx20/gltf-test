@@ -12,6 +12,9 @@ if (!modelInfo) {
     modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
+    modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
+}
+if (!modelInfo) {
     modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
 }
 if (!modelInfo) {
