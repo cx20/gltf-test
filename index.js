@@ -388,6 +388,69 @@ function makeTutorialFeatureTestModelLinks() {
     }
 }
 
+function makeTutorialComparePbrModelLinks() {
+    let modelList = TutorialComparePbrModelIndex.List;
+    let numModels = modelList.length;
+    let numEngines = engines.length;
+
+    let tableHead = document.querySelector('#tutorialComparePbrModelTable thead tr');
+    let tableBody = document.querySelector('#tutorialComparePbrModelTable tbody');
+
+    let i, j;
+    for (i = 0; i < numEngines; ++i) {
+        let th = document.createElement('th');
+        th.textContent = engines[i].name;
+        tableHead.appendChild(th);
+    }
+
+    for (j = 0; j < numModels; ++j) {
+        let modelName = modelList[j].name;
+        let scale = modelList[j].scale;
+        let tr = document.createElement('tr');
+        let tdName = document.createElement('td');
+        tdName.setAttribute('width', '100');
+        tdName.textContent = modelName;
+        tr.appendChild(tdName);
+        let tdPic = document.createElement('td');
+        tdPic.setAttribute('width', '100');
+        let img = document.createElement('img');
+        img.setAttribute('src', 'tutorialModels/' + TutorialComparePbrModelIndex.getScreenshot(modelName));
+        img.setAttribute('width', 170);
+        //img.setAttribute('height', 128);
+        img.setAttribute('height', '100%');
+        tdPic.appendChild(img);
+        tr.appendChild(tdPic);
+        for (i = 0; i < numEngines; ++i) {
+            let td = document.createElement('td');
+            td.setAttribute('width', '100');
+if ( modelName == 'CompareAlphaCoverage'
+                     || modelName == 'CompareAmbientOcclusion'
+                     || modelName == 'CompareAnisotropy'
+                     || modelName == 'CompareBaseColor'
+                     || modelName == 'CompareClearcoat'
+                     || modelName == 'CompareDispersion'
+                     || modelName == 'CompareEmissiveStrength'
+                     || modelName == 'CompareIor'
+                     || modelName == 'CompareIridescence'
+                     || modelName == 'CompareMetallic'
+                     || modelName == 'CompareNormal'
+                     || modelName == 'CompareRoughness'
+                     || modelName == 'CompareSheen'
+                     || modelName == 'CompareSpecular'
+                     || modelName == 'CompareTransmission'
+                     || modelName == 'CompareVolume' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+            } else {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            }
+            tr.appendChild(td);
+        }
+        tableBody.appendChild(tr);
+    }
+}
+
 function makeTutorialExtensionTestModelLinks() {
     let modelList = TutorialExtensionTestModelIndex.List;
     let numModels = modelList.length;
@@ -432,22 +495,6 @@ function makeTutorialExtensionTestModelLinks() {
                      || modelName == 'ClearCoatCarPaint'
                      || modelName == 'ClearCoatTest'
                      || modelName == 'ClearcoatWicker'
-                     || modelName == 'CompareAlphaCoverage'
-                     || modelName == 'CompareAmbientOcclusion'
-                     || modelName == 'CompareAnisotropy'
-                     || modelName == 'CompareBaseColor'
-                     || modelName == 'CompareClearcoat'
-                     || modelName == 'CompareDispersion'
-                     || modelName == 'CompareEmissiveStrength'
-                     || modelName == 'CompareIor'
-                     || modelName == 'CompareIridescence'
-                     || modelName == 'CompareMetallic'
-                     || modelName == 'CompareNormal'
-                     || modelName == 'CompareRoughness'
-                     || modelName == 'CompareSheen'
-                     || modelName == 'CompareSpecular'
-                     || modelName == 'CompareTransmission'
-                     || modelName == 'CompareVolume'
                      || modelName == 'DiffuseTransmissionPlant'
                      || modelName == 'DiffuseTransmissionTeacup'
                      || modelName == 'DirectionalLight'
@@ -607,6 +654,7 @@ makeTutorialModelLinks();
 makeTutorialPbrModelLinks();
 makeTutorialFurtherPbrModelLinks();
 makeTutorialFeatureTestModelLinks();
+makeTutorialComparePbrModelLinks();
 makeTutorialExtensionTestModelLinks();
 makeTutorialWipExtensionTestModelLinks();
 makeSampleModelLinks();
