@@ -75,7 +75,7 @@ canvas.height = window.innerHeight;
   
   // camera
   //const {cameraComponent, cameraEntity} = createCamera();
-  const cameraEntity = Rn.EntityHelper.createCameraControllerEntity();
+  const cameraEntity = Rn.createCameraControllerEntity();
   const cameraComponent = cameraEntity.getCamera();
 
   cameraComponent.zNear = 0.1;
@@ -84,7 +84,7 @@ canvas.height = window.innerHeight;
   cameraComponent.aspect = canvas.width / canvas.height;
 
   // Lights
-  const lightEntity1 = Rn.EntityHelper.createLightEntity();
+  const lightEntity1 = Rn.createLightEntity();
   const lightComponent1 = lightEntity1.getLight();
   lightComponent1.type = Rn.LightType.Directional;
   lightEntity1.getTransform().localPosition = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
@@ -92,7 +92,7 @@ canvas.height = window.innerHeight;
   lightEntity1.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity1.getTransform().localEulerAngles = Rn.Vector3.fromCopyArray([-Math.PI / 2, -Math.PI / 4, Math.PI / 4]);
 
-  const lightEntity2 = Rn.EntityHelper.createLightEntity();
+  const lightEntity2 = Rn.createLightEntity();
   const lightComponent2 = lightEntity2.getLight();
   lightComponent1.type = Rn.LightType.Directional;
   lightEntity2.getTransform().localPosition = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
@@ -224,7 +224,7 @@ canvas.height = window.innerHeight;
     boardPrimitive.generate({width: 3 / scale, height: 3 / scale, uSpan: 1, vSpan: 1, isUVRepeat: false});
     const boardMesh = new Rn.Mesh();
     boardMesh.addPrimitive(boardPrimitive);
-    const boardEntity = Rn.EntityHelper.createMeshEntity();
+    const boardEntity = Rn.createMeshEntity();
     const boardMeshComponent = boardEntity.getMesh();
     boardMeshComponent.setMesh(boardMesh);
 
@@ -282,7 +282,7 @@ canvas.height = window.innerHeight;
 })();
 
 function createCamera() {
-  const cameraEntity = Rn.EntityHelper.createCameraControllerEntity();
+  const cameraEntity = Rn.createCameraControllerEntity();
   const cameraComponent = cameraEntity.getCamera();
   cameraComponent.zNear = 0.1;
   cameraComponent.zFar = 1000.0;
@@ -324,7 +324,7 @@ function createEnvCubeExpression(baseuri, cameraEntity) {
   const sphereMesh = new Rn.Mesh();
   sphereMesh.addPrimitive(spherePrimitive);
 
-  const sphereEntity = Rn.EntityHelper.createMeshEntity();
+  const sphereEntity = Rn.createMeshEntity();
   sphereEntity.getTransform().localScale = Rn.Vector3.fromCopyArray([-1, 1, 1]);
   sphereEntity.getTransform().localPosition = Rn.Vector3.fromCopyArray([0, 0, 0]);
 
