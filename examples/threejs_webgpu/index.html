@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" type="text/css" media="screen,print" href="style.css" />
+<link rel="stylesheet" type="text/css" media="screen,print" href="../../libs/common/lil-gui.css" />
+<title>[WebGPU] Three.js + glTFLoader</title>
+<script src="../../sampleModels/model-index.js"></script>
+<script src="../../tutorialModels/model-index.js"></script>
+<script src="../../tutorialModels/pbr-model-index.js"></script>
+<script src="../../tutorialModels/further-pbr-model-index.js"></script>
+<script src="../../tutorialModels/feature-test-model-index.js"></script>
+<script src="../../tutorialModels/compare-pbr-model-index.js"></script>
+<script src="../../tutorialModels/extension-test-model-index.js"></script>
+<script src="../../tutorialModels/wip-extension-test-model-index.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script type="importmap">
+{
+    "imports": {
+        "three": "../../libs/three.js/r170/build/three.webgpu.js",
+        "three/tsl": "../../libs/three.js/r170/build/three.webgpu.js",
+        "three/addons/": "../../libs/three.js/r170/examples/jsm/"
+    }
+}
+</script>
+<script type="module" src="index.js"></script>
+</body>
+</html>
