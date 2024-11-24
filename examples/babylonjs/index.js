@@ -44,6 +44,7 @@ let createScene = function(engine) {
 
     let scene = new BABYLON.Scene(engine);
     let mesh;
+    let cubeTexture;
     scene.clearColor = new BABYLON.Color3(1, 1, 1);
 
     let scale = modelInfo.scale;
