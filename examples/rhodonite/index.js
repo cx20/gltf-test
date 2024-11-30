@@ -32,15 +32,17 @@ import * as dat from 'dat.gui';
 let gui = new dat.GUI();
 
 var obj = {
-	ROTATE: false,
-	CAMERA: "",
-	LIGHTS: false,
-	IBL: true,
-	VARIANT: ""
+    ROTATE: false,
+    CAMERA: "",
+    IBL: true,
+    LIGHTS: false,
+    //BLOOM: true, // TODO:
+    VARIANT: ""
 }
 let guiRotate = gui.add(obj, 'ROTATE').name('Rotate');
-let guiLights = gui.add(obj, 'LIGHTS').name('Lights');
 let guiIBL    = gui.add(obj, 'IBL').name('IBL');
+let guiLights = gui.add(obj, 'LIGHTS').name('Lights');
+//let guiBloom = gui.add(obj, 'BLOOM').name('Bloom'); // TODO:
 let guiCameras = null;
 let guiVariantNames = null;
 
@@ -110,6 +112,16 @@ canvas.height = window.innerHeight;
     }
   });
 
+  // TODO:
+/*
+  guiBloom.onChange(function(value) {
+    forwardRenderPipeline.setup(canvas.width, canvas.height, {
+      isBloom: value,
+      isShadow: false,
+    });
+  });
+*/
+
   // gltf
   const mainExpression = (await Rn.GltfImporter.importFromUri(
     url,
@@ -124,19 +136,14 @@ canvas.height = window.innerHeight;
   )).unwrapForce();
 
   // env
-  const envExpression = createEnvCubeExpression(
-    '../../textures/papermill_hdr',
-    cameraEntity
-  );
+  const envExpression = createEnvCubeExpression('../../textures/papermill_hdr', cameraEntity);
 
   const mainRenderPass = mainExpression.renderPasses[0];
   // cameraController
   const mainCameraControllerComponent = cameraEntity.getCameraController();
-/*
   const controller = mainCameraControllerComponent.controller;
   controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
   controller.dolly = 0.83;
-*/
 
   // TODO: KHR_materials_variants support
   let variantNames = [];
@@ -306,12 +313,8 @@ function createEnvCubeExpression(baseuri, cameraEntity) {
     minFilter: Rn.TextureParameter.Linear,
     magFilter: Rn.TextureParameter.Linear,
   });
-  sphereMaterial.setTextureParameter(
-    "colorEnvTexture",
-    environmentCubeTexture,
-    sampler
-  );
-  sphereMaterial.setParameter(Rn.ShaderSemantics.EnvHdriFormat, Rn.HdriFormat.LDR_SRGB.index);
+  sphereMaterial.setTextureParameter("colorEnvTexture", environmentCubeTexture, sampler);
+  sphereMaterial.setParameter("envHdriFormat", Rn.HdriFormat.LDR_SRGB.index);
   
   const spherePrimitive = new Rn.Sphere();
   spherePrimitive.generate({
