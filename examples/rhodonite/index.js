@@ -315,6 +315,7 @@ function createEnvCubeExpression(baseuri, cameraEntity) {
   });
   sphereMaterial.setTextureParameter("colorEnvTexture", environmentCubeTexture, sampler);
   sphereMaterial.setParameter("envHdriFormat", Rn.HdriFormat.LDR_SRGB.index);
+  sphereMaterial.setParameter("makeOutputSrgb", 0);
   
   const spherePrimitive = new Rn.Sphere();
   spherePrimitive.generate({
