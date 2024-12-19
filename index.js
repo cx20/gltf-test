@@ -516,6 +516,7 @@ function makeTutorialExtensionTestModelLinks() {
                      || modelName == 'MaterialsVariantsShoe'
                      || modelName == 'MosquitoInAmber'
                      || modelName == 'PotOfCoals'
+                     || modelName == 'PotOfCoalsAnimationPointer'
                      || modelName == 'SheenChair'
                      || modelName == 'SheenTestGrid'
                      || modelName == 'SpecGlossVsMetalRough'
@@ -532,12 +533,26 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+            } else if ( modelName == 'SunglassesKhronos' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Draco', scale));
             } else if ( modelName == 'StainedGlassLamp' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-JPG-PNG', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX-BasisU', scale));
+            } else if ( modelName == 'CarConcept' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-JPG', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX-BasisU-Draco', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-WEBP', scale));
             } else if (modelName == 'DragonAttenuation') {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
@@ -622,10 +637,13 @@ function replaceContentName(type) {
         "glTF-Quantized": "[Quantized]",
         "glTF-IBL": "[glTF-IBL]",
         "glTF-BasisU": "[BasisU]",
+        "glTF-JPG": "[JPG]",
         "glTF-JPG-PNG": "[JPG/PNG]",
         "glTF-KTX-BasisU": "[KTX/BasisU]",
+        "glTF-KTX-BasisU-Draco": "[KTX/BasisU/Draco]",
         "glTF-Draco-KTX2": "[Draco-KTX2]",
         "glTF-KTX2": "[KTX2]",
+        "glTF-WEBP": "[WEBP]",
         "glTF-Meshopt": "[Meshopt]",
         "glTF-Meshopt-KTX2": "[Meshopt-KTX2]",
     }
