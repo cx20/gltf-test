@@ -95,14 +95,14 @@ let createScene = async function(engine) {
         if ( variantsExtension != null ) {
             variants = variantsExtension.getAvailableVariants(parentMesh);
             if (variants.length > 0 ) {
-                VARIANT = modelInfo.variant == undefined ? DEFAULT_NAME : modelInfo.variant;
+                params.VARIANT = modelInfo.variant == undefined ? DEFAULT_NAME : modelInfo.variant;
                 let variantNames = variants.reduce(function (allNames, name) { 
                     allNames[name] = name;
                     return allNames
                 }, {});
                 variantNames[DEFAULT_NAME] = DEFAULT_NAME;
                 guiVariants = gui.add(params, 'VARIANT', variantNames).name("Variant");
-                variantsExtension.selectVariant(parentMesh, VARIANT)
+                variantsExtension.selectVariant(parentMesh, params.VARIANT)
 
                 guiVariants.onChange(function (value) {
                     if (value == DEFAULT_NAME) {
