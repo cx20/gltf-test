@@ -3,27 +3,32 @@
 var TutorialFurtherPbrModelIndex = {};
 
 TutorialFurtherPbrModelIndex.List = [
-    {category:'tutorialModels', name:'TwoSidedPlane', scale:1.0},
-    {category:'tutorialModels', name:'Cube', scale:1.0},
-    {category:'tutorialModels', name:'AnimatedCube', scale:1.0},
-    {category:'tutorialModels', name:'Suzanne', scale:1.0},
-    {category:'tutorialModels', name:'SciFiHelmet', scale:1.0},
-    {category:'tutorialModels', name:'AntiqueCamera', scale:0.3},
+    {category:'tutorialModels', name:'TwoSidedPlane', screenshot:'screenshot/screenshot.jpg', scale:1},
+    {category:'tutorialModels', name:'Cube', screenshot:'screenshot/screenshot.jpg', scale:1},
+    {category:'tutorialModels', name:'AnimatedCube', screenshot:'screenshot/screenshot.gif', scale:1},
+    {category:'tutorialModels', name:'Suzanne', screenshot:'screenshot/screenshot.jpg', scale:1},
+    {category:'tutorialModels', name:'SciFiHelmet', screenshot:'screenshot/screenshot.jpg', scale:1},
+    {category:'tutorialModels', name:'AntiqueCamera', screenshot:'screenshot/screenshot.png', scale:0.3},
 ];
 
-TutorialFurtherPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
-    'AnimatedCube',
-];
+//TutorialFurtherPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
+//    'AnimatedCube',
+//];
 
-TutorialFurtherPbrModelIndex.HasPngScreenshot = [ // List of only models that have *.png screenshots
-    'AntiqueCamera',
-];
+//TutorialFurtherPbrModelIndex.HasPngScreenshot = [ // List of only models that have *.png screenshots
+//    'AntiqueCamera',
+//];
 
+//TutorialFurtherPbrModelIndex.getScreenshot = function(name) {
+//    let extension = ((TutorialFurtherPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
+//    extension = ((TutorialFurtherPbrModelIndex.HasPngScreenshot.indexOf(name) < 0) ? extension : 'png');
+//    return name + '/screenshot/screenshot.' + extension;
+//};
 
 TutorialFurtherPbrModelIndex.getScreenshot = function(name) {
-    let extension = ((TutorialFurtherPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
-    extension = ((TutorialFurtherPbrModelIndex.HasPngScreenshot.indexOf(name) < 0) ? extension : 'png');
-    return name + '/screenshot/screenshot.' + extension;
+    const model = this.List.find(model => model.name === name);
+    const defaultScreenshot = 'screenshot/screenshot.png';
+    return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
 
 //TutorialFurtherPbrModelIndex.getEmbeddedFolderName = function(name) {

@@ -3,30 +3,35 @@
 var TutorialPbrModelIndex = {};
 
 TutorialPbrModelIndex.List = [
-    {category:'tutorialModels', name:'Avocado', scale:30.0},	// copied from sampleModels
-    {category:'tutorialModels', name:'BarramundiFish', scale:5.0},	// copied from sampleModels
-    {category:'tutorialModels', name:'BoomBox', scale:100.0},
-    {category:'tutorialModels', name:'Corset', scale:30.0},
-    {category:'tutorialModels', name:'DamagedHelmet', scale:1.0},
-    {category:'tutorialModels', name:'FlightHelmet', scale:3.0},
-    {category:'tutorialModels', name:'Lantern', scale:0.06},
-    {category:'tutorialModels', name:'WaterBottle', scale:10.0},
-    {category:'tutorialModels', name:'Sponza', scale:1.0}
+    {category:'tutorialModels', name:'Avocado', screenshot:'screenshot/screenshot.jpg', scale:30},
+    {category:'tutorialModels', name:'BarramundiFish', screenshot:'screenshot/screenshot.jpg', scale:5},
+    {category:'tutorialModels', name:'BoomBox', screenshot:'screenshot/screenshot.jpg', scale:100},
+    {category:'tutorialModels', name:'Corset', screenshot:'screenshot/screenshot.jpg', scale:30},
+    {category:'tutorialModels', name:'DamagedHelmet', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'FlightHelmet', screenshot:'screenshot/screenshot.jpg', scale:3},
+    {category:'tutorialModels', name:'Lantern', screenshot:'screenshot/screenshot.jpg', scale:0.06},
+    {category:'tutorialModels', name:'WaterBottle', screenshot:'screenshot/screenshot.jpg', scale:10},
+    {category:'tutorialModels', name:'Sponza', screenshot:'screenshot/screenshot.jpg', scale:1},
 ];
 
-TutorialPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
-];
+//TutorialPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
+//];
 
-TutorialPbrModelIndex.HasPngScreenshot = [ // List of only models that have *.png screenshots
-    'DamagedHelmet',
-];
+//TutorialPbrModelIndex.HasPngScreenshot = [ // List of only models that have *.png screenshots
+//    'DamagedHelmet',
+//];
 
+//TutorialPbrModelIndex.getScreenshot = function(name) {
+//    //let extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
+//    let extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
+//    extension = ((TutorialPbrModelIndex.HasPngScreenshot.indexOf(name) < 0) ? extension : 'png');
+//    return name + '/screenshot/screenshot.' + extension;
+//};
 
 TutorialPbrModelIndex.getScreenshot = function(name) {
-    //let extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
-    let extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
-    extension = ((TutorialPbrModelIndex.HasPngScreenshot.indexOf(name) < 0) ? extension : 'png');
-    return name + '/screenshot/screenshot.' + extension;
+    const model = this.List.find(model => model.name === name);
+    const defaultScreenshot = 'screenshot/screenshot.png';
+    return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
 
 //TutorialPbrModelIndex.getEmbeddedFolderName = function(name) {

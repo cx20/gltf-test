@@ -3,36 +3,42 @@
 var TutorialModelIndex = {};
 
 TutorialModelIndex.List = [
-    {category:'tutorialModels', name:'TriangleWithoutIndices', scale:1.0},
-    {category:'tutorialModels', name:'Triangle', scale:1.0},
-    {category:'tutorialModels', name:'AnimatedTriangle', scale:1.0},
-    {category:'tutorialModels', name:'AnimatedMorphCube', scale:1.0},
-    {category:'tutorialModels', name:'AnimatedMorphSphere', scale:1.0},
-    {category:'tutorialModels', name:'SimpleMaterial', scale:1.0},
-    {category:'tutorialModels', name:'SimpleMeshes', scale:1.0},
-    {category:'tutorialModels', name:'SimpleTexture', scale:1.0},
-    {category:'tutorialModels', name:'SimpleInstancing', scale:0.1},
-    {category:'tutorialModels', name:'MeshPrimitiveModes', scale:0.5},
-    {category:'tutorialModels', name:'MultipleScenes', scale:1.0},
-    {category:'tutorialModels', name:'SimpleMorph', scale:1.0},
-    {category:'tutorialModels', name:'SimpleSparseAccessor', scale:1.0},
-    {category:'tutorialModels', name:'SimpleSkin', scale:1.0},
-    {category:'tutorialModels', name:'Cameras', scale:1.0},
-    {category:'tutorialModels', name:'InterpolationTest', scale:0.2, allAnimations:true},  // Play all model animations at the same time
-    {category:'tutorialModels', name:'Unicode❤♻Test', scale:1.0},
+    {category:'tutorialModels', name:'TriangleWithoutIndices', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'Triangle', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'AnimatedTriangle', screenshot:'screenshot/screenshot.gif', scale:1},
+    {category:'tutorialModels', name:'AnimatedMorphCube', screenshot:'screenshot/screenshot.gif', scale:1},
+    {category:'tutorialModels', name:'AnimatedMorphSphere', screenshot:'screenshot/screenshot.gif', scale:1},
+    {category:'tutorialModels', name:'SimpleMaterial', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'SimpleMeshes', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'SimpleTexture', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'SimpleInstancing', screenshot:'screenshot/screenshot.png', scale:0.1},
+    {category:'tutorialModels', name:'MeshPrimitiveModes', screenshot:'screenshot/screenshot.png', scale:0.5},
+    {category:'tutorialModels', name:'MultipleScenes', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'SimpleMorph', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'SimpleSparseAccessor', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'SimpleSkin', screenshot:'screenshot/screenshot.gif', scale:1},
+    {category:'tutorialModels', name:'Cameras', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'InterpolationTest', screenshot:'screenshot/screenshot.gif', scale:0.2, allAnimations:true},  // Play all model animations at the same time
+    {category:'tutorialModels', name:'Unicode❤♻Test', screenshot:'screenshot/screenshot.png', scale:1},
 ];
 
-TutorialModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
-    'AnimatedTriangle',
-    'AnimatedMorphCube',
-    'AnimatedMorphSphere',
-    'SimpleSkin',
-    'InterpolationTest'
-];
+//TutorialModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
+//    'AnimatedTriangle',
+//    'AnimatedMorphCube',
+//    'AnimatedMorphSphere',
+//    'SimpleSkin',
+//    'InterpolationTest'
+//];
+
+//TutorialModelIndex.getScreenshot = function(name) {
+//    let extension = ((TutorialModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
+//    return name + '/screenshot/screenshot.' + extension;
+//};
 
 TutorialModelIndex.getScreenshot = function(name) {
-    let extension = ((TutorialModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
-    return name + '/screenshot/screenshot.' + extension;
+    const model = this.List.find(model => model.name === name);
+    const defaultScreenshot = 'screenshot/screenshot.png';
+    return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
 
 TutorialModelIndex.getEmbeddedFolderName = function(name) {
