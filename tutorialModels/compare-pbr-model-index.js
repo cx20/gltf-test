@@ -3,46 +3,52 @@
 var TutorialComparePbrModelIndex = {};
 
 TutorialComparePbrModelIndex.List = [
-    {category:'tutorialModels', name:'CompareAlphaCoverage', scale:2.0},
-    {category:'tutorialModels', name:'CompareAmbientOcclusion', scale:5.0},
-    {category:'tutorialModels', name:'CompareAnisotropy', scale:2.0},
-    {category:'tutorialModels', name:'CompareBaseColor', scale:2.0},
-    {category:'tutorialModels', name:'CompareClearcoat', scale:2.0},
-    {category:'tutorialModels', name:'CompareDispersion', scale:2.0},
-    {category:'tutorialModels', name:'CompareEmissiveStrength', scale:2.0},
-    {category:'tutorialModels', name:'CompareIor', scale:2.0},
-    {category:'tutorialModels', name:'CompareIridescence', scale:2.0},
-    {category:'tutorialModels', name:'CompareMetallic', scale:2.0},
-    {category:'tutorialModels', name:'CompareNormal', scale:2.0},
-    {category:'tutorialModels', name:'CompareRoughness', scale:2.0},
-    {category:'tutorialModels', name:'CompareSheen', scale:2.0},
-    {category:'tutorialModels', name:'CompareSpecular', scale:2.0},
-    {category:'tutorialModels', name:'CompareTransmission', scale:2.0},
-    {category:'tutorialModels', name:'CompareVolume', scale:2.0},
+    {category:'tutorialModels', name:'CompareAlphaCoverage', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareAmbientOcclusion', screenshot:'screenshot/screenshot.jpg', scale:5},
+    {category:'tutorialModels', name:'CompareAnisotropy', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareBaseColor', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareClearcoat', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareDispersion', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareEmissiveStrength', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareIor', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareIridescence', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareMetallic', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareNormal', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareRoughness', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareSheen', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareSpecular', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareTransmission', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'CompareVolume', screenshot:'screenshot/screenshot.jpg', scale:2},
 ];
 
-TutorialComparePbrModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-    'CompareAlphaCoverage',
-    'CompareAmbientOcclusion',
-    'CompareAnisotropy',
-    'CompareBaseColor',
-    'CompareClearcoat',
-    'CompareDispersion',
-    'CompareEmissiveStrength',
-    'CompareIor',
-    'CompareIridescence',
-    'CompareMetallic',
-    'CompareNormal',
-    'CompareRoughness',
-    'CompareSheen',
-    'CompareSpecular',
-    'CompareTransmission',
-    'CompareVolume',
-];
+//TutorialComparePbrModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
+//    'CompareAlphaCoverage',
+//    'CompareAmbientOcclusion',
+//    'CompareAnisotropy',
+//    'CompareBaseColor',
+//    'CompareClearcoat',
+//    'CompareDispersion',
+//    'CompareEmissiveStrength',
+//    'CompareIor',
+//    'CompareIridescence',
+//    'CompareMetallic',
+//    'CompareNormal',
+//    'CompareRoughness',
+//    'CompareSheen',
+//    'CompareSpecular',
+//    'CompareTransmission',
+//    'CompareVolume',
+//];
+
+//TutorialComparePbrModelIndex.getScreenshot = function(name) {
+//    let extension = ((TutorialComparePbrModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
+//    return name + '/screenshot/screenshot.' + extension;
+//};
 
 TutorialComparePbrModelIndex.getScreenshot = function(name) {
-    let extension = ((TutorialComparePbrModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
-    return name + '/screenshot/screenshot.' + extension;
+    const model = this.List.find(model => model.name === name);
+    const defaultScreenshot = 'screenshot/screenshot.png';
+    return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
 
 //TutorialComparePbrModelIndex.getEmbeddedFolderName = function(name) {

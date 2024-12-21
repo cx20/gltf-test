@@ -3,24 +3,30 @@
 var TutorialWipExtensionTestModelIndex = {};
 
 TutorialWipExtensionTestModelIndex.List = [
-    {category:'tutorialModels', name:'AnimateAllTheThings', scale:0.5},
-    {category:'tutorialModels', name:'AnimatedWaterfall', scale:0.5},
-    {category:'tutorialModels', name:'AnisotropyBarnLamp', scale:10.0},
-    {category:'tutorialModels', name:'DragonAttenuation-MaterialAnimation', scale:1.0},
-    {category:'tutorialModels', name:'EmissiveFireflies', scale:1.0},
+    {category:'tutorialModels', name:'AnimateAllTheThings', screenshot:'screenshot/screenshot.jpg', scale:0.5},
+    {category:'tutorialModels', name:'AnimatedWaterfall', screenshot:'screenshot/screenshot.jpg', scale:0.5},
+    {category:'tutorialModels', name:'AnisotropyBarnLamp', screenshot:'screenshot/screenshot.jpg', scale:10},
+    {category:'tutorialModels', name:'DragonAttenuation-MaterialAnimation', screenshot:'screenshot/screenshot.jpg', scale:1},
+    {category:'tutorialModels', name:'EmissiveFireflies', screenshot:'screenshot/screenshot.jpg', scale:1},
 ];
 
-TutorialWipExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-    'AnimateAllTheThings',
-    'AnimatedWaterfall',
-    'AnisotropyBarnLamp',
-    'DragonAttenuation-MaterialAnimation',
-    'EmissiveFireflies',
-];
+//TutorialWipExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
+//    'AnimateAllTheThings',
+//    'AnimatedWaterfall',
+//    'AnisotropyBarnLamp',
+//    'DragonAttenuation-MaterialAnimation',
+//    'EmissiveFireflies',
+//];
+
+//TutorialWipExtensionTestModelIndex.getScreenshot = function(name) {
+//    let extension = ((TutorialWipExtensionTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
+//    return name + '/screenshot/screenshot.' + extension;
+//};
 
 TutorialWipExtensionTestModelIndex.getScreenshot = function(name) {
-    let extension = ((TutorialWipExtensionTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
-    return name + '/screenshot/screenshot.' + extension;
+    const model = this.List.find(model => model.name === name);
+    const defaultScreenshot = 'screenshot/screenshot.png';
+    return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
 
 //TutorialWipExtensionTestModelIndex.getEmbeddedFolderName = function(name) {

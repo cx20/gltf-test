@@ -3,44 +3,50 @@
 var TutorialFeatureTestModelIndex = {};
 
 TutorialFeatureTestModelIndex.List = [
-    {category:'tutorialModels', name:'AlphaBlendModeTest', scale:0.5},
-    {category:'tutorialModels', name:'BoomBoxWithAxes', scale:80.0},
-    {category:'tutorialModels', name:'MetalRoughSpheres', scale:0.2},
-    {category:'tutorialModels', name:'MetalRoughSpheresNoTextures', scale:200},
-    {category:'tutorialModels', name:'MorphPrimitivesTest', scale:2.0},
-    {category:'tutorialModels', name:'MorphStressTest', scale:1.0},
-    {category:'tutorialModels', name:'MultiUVTest', scale:1.0},
-    {category:'tutorialModels', name:'NegativeScaleTest', scale:0.5},
-    {category:'tutorialModels', name:'NormalTangentTest', scale:1.0},
-    {category:'tutorialModels', name:'NormalTangentMirrorTest', scale:1.0},
-    {category:'tutorialModels', name:'OrientationTest', scale:0.2},
-    {category:'tutorialModels', name:'PrimitiveModeNormalsTest', scale:0.2},
-    {category:'tutorialModels', name:'RecursiveSkeletons', scale:0.01},
-    {category:'tutorialModels', name:'SuzanneMorphSparse', scale:1.0},
-    {category:'tutorialModels', name:'TextureCoordinateTest', scale:1.0},
-    {category:'tutorialModels', name:'TextureEncodingTest', scale:0.3},
-    {category:'tutorialModels', name:'TextureLinearInterpolationTest', scale:0.5},
-    {category:'tutorialModels', name:'TextureSettingsTest', scale:0.2},
-    {category:'tutorialModels', name:'VertexColorTest', scale:1.0},
+    {category:'tutorialModels', name:'AlphaBlendModeTest', screenshot:'screenshot/screenshot.png', scale:0.5},
+    {category:'tutorialModels', name:'BoomBoxWithAxes', screenshot:'screenshot/screenshot.jpg', scale:80},
+    {category:'tutorialModels', name:'MetalRoughSpheres', screenshot:'screenshot/screenshot.png', scale:0.2},
+    {category:'tutorialModels', name:'MetalRoughSpheresNoTextures', screenshot:'screenshot/screenshot.png', scale:200},
+    {category:'tutorialModels', name:'MorphPrimitivesTest', screenshot:'screenshot/screenshot.jpg', scale:2},
+    {category:'tutorialModels', name:'MorphStressTest', screenshot:'screenshot/screenshot.jpg', scale:1},
+    {category:'tutorialModels', name:'MultiUVTest', screenshot:'screenshot/screenshot.jpg', scale:1},
+    {category:'tutorialModels', name:'NegativeScaleTest', screenshot:'screenshot/screenshot.jpg', scale:0.5},
+    {category:'tutorialModels', name:'NormalTangentTest', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'NormalTangentMirrorTest', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'OrientationTest', screenshot:'screenshot/screenshot.png', scale:0.2},
+    {category:'tutorialModels', name:'PrimitiveModeNormalsTest', screenshot:'screenshot/screenshot.png', scale:0.2},
+    {category:'tutorialModels', name:'RecursiveSkeletons', screenshot:'screenshot/screenshot.jpg', scale:0.01},
+    {category:'tutorialModels', name:'SuzanneMorphSparse', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'TextureCoordinateTest', screenshot:'screenshot/screenshot.png', scale:1},
+    {category:'tutorialModels', name:'TextureEncodingTest', screenshot:'screenshot/screenshot.png', scale:0.3},
+    {category:'tutorialModels', name:'TextureLinearInterpolationTest', screenshot:'screenshot/screenshot.png', scale:0.5},
+    {category:'tutorialModels', name:'TextureSettingsTest', screenshot:'screenshot/screenshot.png', scale:0.2},
+    {category:'tutorialModels', name:'VertexColorTest', screenshot:'screenshot/screenshot.png', scale:1},
 ];
 
-TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-    'BoomBoxWithAxes',
-    'MultiUVTest',
-    'MorphPrimitivesTest',
-    'MorphStressTest',
-    'NegativeScaleTest',
-    'RecursiveSkeletons'
-];
+//TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
+//    'BoomBoxWithAxes',
+//    'MultiUVTest',
+//    'MorphPrimitivesTest',
+//    'MorphStressTest',
+//    'NegativeScaleTest',
+//    'RecursiveSkeletons'
+//];
 
-TutorialFeatureTestModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots
-    'SuzanneMorphSparse'
-];
+//TutorialFeatureTestModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots
+//    'SuzanneMorphSparse'
+//];
+
+//TutorialFeatureTestModelIndex.getScreenshot = function(name) {
+//    let extension = ((TutorialFeatureTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
+//    extension = ((TutorialFeatureTestModelIndex.HasGifScreenshot.indexOf(name) < 0) ? extension : 'gif');
+//    return name + '/screenshot/screenshot.' + extension;
+//};
 
 TutorialFeatureTestModelIndex.getScreenshot = function(name) {
-    let extension = ((TutorialFeatureTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
-    extension = ((TutorialFeatureTestModelIndex.HasGifScreenshot.indexOf(name) < 0) ? extension : 'gif');
-    return name + '/screenshot/screenshot.' + extension;
+    const model = this.List.find(model => model.name === name);
+    const defaultScreenshot = 'screenshot/screenshot.png';
+    return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
 
 //TutorialFeatureTestModelIndex.getEmbeddedFolderName = function(name) {
