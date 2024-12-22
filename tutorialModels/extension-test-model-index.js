@@ -7,6 +7,7 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'AnimateAllTheThings', screenshot:'screenshot/screenshot.jpg', scale:0.5},
     {category:'tutorialModels', name:'AnimatedColorsCube', screenshot:'screenshot/screenshot.gif', scale:0.5},
     {category:'tutorialModels', name:'AnimatedWaterfall', screenshot:'screenshot/screenshot.jpg', scale:0.5},
+    {category:'tutorialModels', name:'AnimationPointerUVs', screenshot:'screenshot/screenshot.jpg', scale:0.3},
     {category:'tutorialModels', name:'AnisotropyBarnLamp', screenshot:'screenshot/screenshot.jpg', scale:10},
     {category:'tutorialModels', name:'AnisotropyDiscTest', screenshot:'screenshot/screenshot.jpg', scale:0.5},
     {category:'tutorialModels', name:'AnisotropyRotationTest', screenshot:'screenshot/screenshot.png', scale:0.5},
