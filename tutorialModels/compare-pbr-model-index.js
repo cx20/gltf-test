@@ -21,47 +21,11 @@ TutorialComparePbrModelIndex.List = [
     {category:'tutorialModels', name:'CompareVolume', screenshot:'screenshot/screenshot.jpg', scale:2},
 ];
 
-//TutorialComparePbrModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-//    'CompareAlphaCoverage',
-//    'CompareAmbientOcclusion',
-//    'CompareAnisotropy',
-//    'CompareBaseColor',
-//    'CompareClearcoat',
-//    'CompareDispersion',
-//    'CompareEmissiveStrength',
-//    'CompareIor',
-//    'CompareIridescence',
-//    'CompareMetallic',
-//    'CompareNormal',
-//    'CompareRoughness',
-//    'CompareSheen',
-//    'CompareSpecular',
-//    'CompareTransmission',
-//    'CompareVolume',
-//];
-
-//TutorialComparePbrModelIndex.getScreenshot = function(name) {
-//    let extension = ((TutorialComparePbrModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
-//    return name + '/screenshot/screenshot.' + extension;
-//};
-
 TutorialComparePbrModelIndex.getScreenshot = function(name) {
     const model = this.List.find(model => model.name === name);
     const defaultScreenshot = 'screenshot/screenshot.png';
     return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
-
-//TutorialComparePbrModelIndex.getEmbeddedFolderName = function(name) {
-//    let suffixHash = {
-//        'SimpleMaterial': '-buffer',
-//        'AdvancedMaterial': '-buffer',
-//        'SimpleOpacity': '-buffer',
-//        'SimpleTexture': '-buffer',
-//        'SimpleSkin': '-buffers'
-//    };
-//    let suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
-//    return 'glTF-Embedded' + suffix;
-//};
 
 TutorialComparePbrModelIndex.getModelInfoCollection = function() {
     let numModels = TutorialComparePbrModelIndex.List.length;

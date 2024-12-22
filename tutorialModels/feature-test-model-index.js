@@ -24,42 +24,11 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'VertexColorTest', screenshot:'screenshot/screenshot.png', scale:1},
 ];
 
-//TutorialFeatureTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-//    'BoomBoxWithAxes',
-//    'MultiUVTest',
-//    'MorphPrimitivesTest',
-//    'MorphStressTest',
-//    'NegativeScaleTest',
-//    'RecursiveSkeletons'
-//];
-
-//TutorialFeatureTestModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots
-//    'SuzanneMorphSparse'
-//];
-
-//TutorialFeatureTestModelIndex.getScreenshot = function(name) {
-//    let extension = ((TutorialFeatureTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
-//    extension = ((TutorialFeatureTestModelIndex.HasGifScreenshot.indexOf(name) < 0) ? extension : 'gif');
-//    return name + '/screenshot/screenshot.' + extension;
-//};
-
 TutorialFeatureTestModelIndex.getScreenshot = function(name) {
     const model = this.List.find(model => model.name === name);
     const defaultScreenshot = 'screenshot/screenshot.png';
     return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
-
-//TutorialFeatureTestModelIndex.getEmbeddedFolderName = function(name) {
-//    let suffixHash = {
-//        'SimpleMaterial': '-buffer',
-//        'AdvancedMaterial': '-buffer',
-//        'SimpleOpacity': '-buffer',
-//        'SimpleTexture': '-buffer',
-//        'SimpleSkin': '-buffers'
-//    };
-//    let suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
-//    return 'glTF-Embedded' + suffix;
-//};
 
 TutorialFeatureTestModelIndex.getModelInfoCollection = function() {
     let numModels = TutorialFeatureTestModelIndex.List.length;

@@ -4,19 +4,19 @@ var TutorialExtensionTestModelIndex = {};
 
 TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'ABeautifulGame', screenshot:'screenshot/screenshot.jpg', scale:8},
+    {category:'tutorialModels', name:'AnimateAllTheThings', screenshot:'screenshot/screenshot.jpg', scale:0.5},
     {category:'tutorialModels', name:'AnimatedColorsCube', screenshot:'screenshot/screenshot.gif', scale:0.5},
+    {category:'tutorialModels', name:'AnimatedWaterfall', screenshot:'screenshot/screenshot.jpg', scale:0.5},
+    {category:'tutorialModels', name:'AnisotropyBarnLamp', screenshot:'screenshot/screenshot.jpg', scale:10},
     {category:'tutorialModels', name:'AnisotropyDiscTest', screenshot:'screenshot/screenshot.jpg', scale:0.5},
     {category:'tutorialModels', name:'AnisotropyRotationTest', screenshot:'screenshot/screenshot.png', scale:0.5},
     {category:'tutorialModels', name:'AnisotropyStrengthTest', screenshot:'screenshot/screenshot.png', scale:0.3},
     {category:'tutorialModels', name:'AttenuationTest', screenshot:'screenshot/screenshot.jpg', scale:0.2},
-    {category:'tutorialModels', name:'AudioSimple', screenshot:'screenshot/screenshot.png', scale:1},
     {category:'tutorialModels', name:'CarbonFibre', screenshot:'screenshot/screenshot.jpg', scale:2},
     {category:'tutorialModels', name:'CarbonFrameBike', screenshot:'screenshot/screenshot.png', scale:1},
     {category:'tutorialModels', name:'CarConcept', screenshot:'screenshot/screenshot.jpg', scale:1},
     {category:'tutorialModels', name:'ChairDamaskPurplegold', screenshot:'screenshot/screenshot.jpg', scale:3},
     {category:'tutorialModels', name:'ClearCoatCarPaint', screenshot:'screenshot/screenshot.jpg', scale:2},
-    {category:'tutorialModels', name:'ClearcoatRing', screenshot:'screenshot/screenshot.jpg', scale:5},
-    {category:'tutorialModels', name:'ClearcoatSphere', screenshot:'screenshot/screenshot.png', scale:1},
     {category:'tutorialModels', name:'ClearCoatTest', screenshot:'screenshot/screenshot.jpg', scale:0.3},
     {category:'tutorialModels', name:'ClearcoatWicker', screenshot:'screenshot/screenshot.jpg', scale:2},
     {category:'tutorialModels', name:'DiffuseTransmissionPlant', screenshot:'screenshot/screenshot.jpg', scale:3},
@@ -24,8 +24,10 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'DirectionalLight', screenshot:'screenshot/screenshot.png', scale:5},
     {category:'tutorialModels', name:'DispersionTest', screenshot:'screenshot/screenshot.png', scale:20},
     {category:'tutorialModels', name:'DragonAttenuation', screenshot:'screenshot/screenshot.jpg', scale:1},
+    {category:'tutorialModels', name:'DragonAttenuation-MaterialAnimation', screenshot:'screenshot/screenshot.jpg', scale:1},
     {category:'tutorialModels', name:'DragonDispersion', screenshot:'screenshot/screenshot.jpg', scale:1},
     {category:'tutorialModels', name:'EmissiveStrengthTest', screenshot:'screenshot/screenshot.jpg', scale:0.3},
+    {category:'tutorialModels', name:'EmissiveFireflies', screenshot:'screenshot/screenshot.jpg', scale:1},
     {category:'tutorialModels', name:'EnvironmentTest', screenshot:'screenshot/screenshot.jpg', scale:0.3},
     {category:'tutorialModels', name:'GlamVelvetSofa', screenshot:'screenshot/screenshot.jpg', scale:2},
     {category:'tutorialModels', name:'GlassBrokenWindow', screenshot:'screenshot/screenshot.jpg', scale:4},
@@ -48,8 +50,6 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'PotOfCoalsAnimationPointer', screenshot:'screenshot/screenshot.jpg', scale:30},
     {category:'tutorialModels', name:'SheenChair', screenshot:'screenshot/screenshot.jpg', scale:3},
     {category:'tutorialModels', name:'SheenCloth', screenshot:'screenshot/screenshot.jpg', scale:50},
-    {category:'tutorialModels', name:'SheenDamask', screenshot:'screenshot/screenshot.jpg', scale:0.1},
-    {category:'tutorialModels', name:'SheenHighHeel', screenshot:'screenshot/screenshot.jpg', scale:0.1},
     {category:'tutorialModels', name:'SheenTestGrid', screenshot:'screenshot/screenshot.jpg', scale:5},
     {category:'tutorialModels', name:'SpecGlossVsMetalRough', screenshot:'screenshot/screenshot.jpg', scale:10},
     {category:'tutorialModels', name:'SpecularSilkPouf', screenshot:'screenshot/screenshot.jpg', scale:5},
@@ -62,92 +62,17 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'ToyCar', screenshot:'screenshot/screenshot.jpg', scale:100},
     {category:'tutorialModels', name:'ToyCarSpecular', screenshot:'screenshot/screenshot.jpg', scale:10},
     {category:'tutorialModels', name:'TransmissionRoughnessTest', screenshot:'screenshot/screenshot.jpg', scale:3},
-    {category:'tutorialModels', name:'TransmissionSphere', screenshot:'screenshot/screenshot.jpg', scale:2},
-    {category:'tutorialModels', name:'TransmissionSuzanne', screenshot:'screenshot/screenshot.png', scale:1},
     {category:'tutorialModels', name:'TransmissionTest', screenshot:'screenshot/screenshot.jpg', scale:3},
     {category:'tutorialModels', name:'TransmissionThinwallTestGrid', screenshot:'screenshot/screenshot.jpg', scale:0.2},
     {category:'tutorialModels', name:'UnlitTest', screenshot:'screenshot/screenshot.png', scale:1},
     {category:'tutorialModels', name:'XmpMetadataRoundedCube', screenshot:'screenshot/screenshot.jpg', scale:0.1},
 ];
 
-//TutorialExtensionTestModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-//    'ABeautifulGame',
-//    'AnisotropyDiscTest',
-//    'AttenuationTest',
-//    'CarbonFibre',
-//    'CarConcept',
-//    'ChairDamaskPurplegold',
-//    'ClearCoatCarPaint',
-//    'ClearcoatRing',
-//    'ClearCoatTest',
-//    'ClearcoatWicker',
-//    'DiffuseTransmissionPlant',
-//    'DiffuseTransmissionTeacup',
-//    'DragonAttenuation',
-//    'DragonDispersion',
-//    'GlamVelvetSofa',
-//    'GlassBrokenWindow',
-//    'GlassHurricaneCandleHolder',
-//    'GlassVaseFlowers',
-//    'EmissiveStrengthTest',
-//    'EnvironmentTest',
-//    'IORTestGrid',
-//    'IridescenceAbalone',
-//    'IridescenceDielectricSpheres',
-//    'IridescenceLamp',
-//    'IridescenceMetallicSpheres',
-//    'IridescenceSuzanne',
-//    'IridescentDishWithOlives',
-//    'MandarinOrange',
-//    'MaterialsVariantsChair',
-//    'MaterialsVariantsShoe',
-//    'MosquitoInAmber',
-//    'PotOfCoals',
-//    'PotOfCoalsAnimationPointer',
-//    'SheenChair',
-//    'SheenCloth',
-//    'SheenDamask',
-//    'SheenHighHeel',
-//    'SheenTestGrid',
-//    'SpecGlossVsMetalRough',
-//    'SpecularSilkPouf',
-//    'SpecularTest',
-//    'StainedGlassLamp',
-//    'SunglassesKhronos',
-//    'TeapotsGalore',
-//    'TextureTransformTest',
-//    'TextureTransformMultiTest',
-//    'ToyCar',
-//    'ToyCarSpecular',
-//    'TransmissionRoughnessTest',
-//    'TransmissionSphere',
-//    'TransmissionTest',
-//    'TransmissionThinwallTestGrid',
-//    'XmpMetadataRoundedCube'
-//];
-
-//TutorialExtensionTestModelIndex.getScreenshot = function(name) {
-//    let extension = ((TutorialExtensionTestModelIndex.HasJpgScreenshot.indexOf(name) < 0) ? 'png' : 'jpg');
-//    return name + '/screenshot/screenshot.' + extension;
-//};
-
 TutorialExtensionTestModelIndex.getScreenshot = function(name) {
     const model = this.List.find(model => model.name === name);
     const defaultScreenshot = 'screenshot/screenshot.png';
     return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
-
-//TutorialExtensionTestModelIndex.getEmbeddedFolderName = function(name) {
-//    let suffixHash = {
-//        'SimpleMaterial': '-buffer',
-//        'AdvancedMaterial': '-buffer',
-//        'SimpleOpacity': '-buffer',
-//        'SimpleTexture': '-buffer',
-//        'SimpleSkin': '-buffers'
-//    };
-//    let suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
-//    return 'glTF-Embedded' + suffix;
-//};
 
 TutorialExtensionTestModelIndex.getModelInfoCollection = function() {
     let numModels = TutorialExtensionTestModelIndex.List.length;

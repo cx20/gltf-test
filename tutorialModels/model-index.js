@@ -22,18 +22,6 @@ TutorialModelIndex.List = [
     {category:'tutorialModels', name:'Unicode❤♻Test', screenshot:'screenshot/screenshot.png', scale:1},
 ];
 
-//TutorialModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
-//    'AnimatedTriangle',
-//    'AnimatedMorphCube',
-//    'AnimatedMorphSphere',
-//    'SimpleSkin',
-//    'InterpolationTest'
-//];
-
-//TutorialModelIndex.getScreenshot = function(name) {
-//    let extension = ((TutorialModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
-//    return name + '/screenshot/screenshot.' + extension;
-//};
 
 TutorialModelIndex.getScreenshot = function(name) {
     const model = this.List.find(model => model.name === name);

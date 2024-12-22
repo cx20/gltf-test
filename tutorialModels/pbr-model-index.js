@@ -14,37 +14,11 @@ TutorialPbrModelIndex.List = [
     {category:'tutorialModels', name:'Sponza', screenshot:'screenshot/screenshot.jpg', scale:1},
 ];
 
-//TutorialPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
-//];
-
-//TutorialPbrModelIndex.HasPngScreenshot = [ // List of only models that have *.png screenshots
-//    'DamagedHelmet',
-//];
-
-//TutorialPbrModelIndex.getScreenshot = function(name) {
-//    //let extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
-//    let extension = ((TutorialPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
-//    extension = ((TutorialPbrModelIndex.HasPngScreenshot.indexOf(name) < 0) ? extension : 'png');
-//    return name + '/screenshot/screenshot.' + extension;
-//};
-
 TutorialPbrModelIndex.getScreenshot = function(name) {
     const model = this.List.find(model => model.name === name);
     const defaultScreenshot = 'screenshot/screenshot.png';
     return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
-
-//TutorialPbrModelIndex.getEmbeddedFolderName = function(name) {
-//    let suffixHash = {
-//        'SimpleMaterial': '-buffer',
-//        'AdvancedMaterial': '-buffer',
-//        'SimpleOpacity': '-buffer',
-//        'SimpleTexture': '-buffer',
-//        'SimpleSkin': '-buffers'
-//    };
-//    let suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
-//    return 'glTF-Embedded' + suffix;
-//};
 
 TutorialPbrModelIndex.getModelInfoCollection = function() {
     let numModels = TutorialPbrModelIndex.List.length;

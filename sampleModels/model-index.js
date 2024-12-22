@@ -24,26 +24,6 @@ ModelIndex.List = [
     {category:'sampleModels', name:'VirtualCity', screenshot:'screenshot/screenshot.gif', scale:0.2},
 ];
 
-//ModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
-//    'BoxAnimated',
-//    'BrainStem',
-//    'CesiumMan',
-//    'CesiumMilkTruck',
-//    'RiggedFigure',
-//    'RiggedSimple',
-//    'VirtualCity'
-//];
-
-//ModelIndex.HasJpgScreenshot = [ // List of only models that have *.jpg screenshots
-//    'Fox'
-//];
-
-//ModelIndex.getScreenshot = function(name) {
-//    let extension = ((ModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'png' : 'gif');
-//    if (ModelIndex.HasJpgScreenshot.indexOf(name) >= 0) extension = 'jpg';
-//    return name + '/screenshot/screenshot.' + extension;
-//};
-
 ModelIndex.getScreenshot = function(name) {
     const model = this.List.find(model => model.name === name);
     const defaultScreenshot = 'screenshot/screenshot.png';

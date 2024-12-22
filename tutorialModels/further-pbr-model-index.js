@@ -11,37 +11,11 @@ TutorialFurtherPbrModelIndex.List = [
     {category:'tutorialModels', name:'AntiqueCamera', screenshot:'screenshot/screenshot.png', scale:0.3},
 ];
 
-//TutorialFurtherPbrModelIndex.HasGifScreenshot = [ // List of only models that have *.gif screenshots (as opposed to *.png)
-//    'AnimatedCube',
-//];
-
-//TutorialFurtherPbrModelIndex.HasPngScreenshot = [ // List of only models that have *.png screenshots
-//    'AntiqueCamera',
-//];
-
-//TutorialFurtherPbrModelIndex.getScreenshot = function(name) {
-//    let extension = ((TutorialFurtherPbrModelIndex.HasGifScreenshot.indexOf(name) < 0) ? 'jpg' : 'gif');
-//    extension = ((TutorialFurtherPbrModelIndex.HasPngScreenshot.indexOf(name) < 0) ? extension : 'png');
-//    return name + '/screenshot/screenshot.' + extension;
-//};
-
 TutorialFurtherPbrModelIndex.getScreenshot = function(name) {
     const model = this.List.find(model => model.name === name);
     const defaultScreenshot = 'screenshot/screenshot.png';
     return model ? `${name}/${model.screenshot || defaultScreenshot}` : `${name}/${defaultScreenshot}`;
 };
-
-//TutorialFurtherPbrModelIndex.getEmbeddedFolderName = function(name) {
-//    let suffixHash = {
-//        'SimpleMaterial': '-buffer',
-//        'AdvancedMaterial': '-buffer',
-//        'SimpleOpacity': '-buffer',
-//        'SimpleTexture': '-buffer',
-//        'SimpleSkin': '-buffers'
-//    };
-//    let suffix = suffixHash[name] === undefined ? '' : suffixHash[name];
-//    return 'glTF-Embedded' + suffix;
-//};
 
 TutorialFurtherPbrModelIndex.getModelInfoCollection = function() {
     let numModels = TutorialFurtherPbrModelIndex.List.length;
