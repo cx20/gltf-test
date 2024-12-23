@@ -16,7 +16,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'OrientationTest', screenshot:'screenshot/screenshot.png', scale:0.2},
     {category:'tutorialModels', name:'PrimitiveModeNormalsTest', screenshot:'screenshot/screenshot.png', scale:0.2},
     {category:'tutorialModels', name:'RecursiveSkeletons', screenshot:'screenshot/screenshot.jpg', scale:0.01},
-    {category:'tutorialModels', name:'SuzanneMorphSparse', screenshot:'screenshot/screenshot.png', scale:1},
+    //{category:'tutorialModels', name:'SuzanneMorphSparse', screenshot:'screenshot/screenshot.gif', scale:1},
     {category:'tutorialModels', name:'TextureCoordinateTest', screenshot:'screenshot/screenshot.png', scale:1},
     {category:'tutorialModels', name:'TextureEncodingTest', screenshot:'screenshot/screenshot.png', scale:0.3},
     {category:'tutorialModels', name:'TextureLinearInterpolationTest', screenshot:'screenshot/screenshot.png', scale:0.5},
