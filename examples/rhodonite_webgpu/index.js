@@ -178,7 +178,7 @@ canvas.height = window.innerHeight;
     });
   }
 
-  if (modelInfo.name != "VC") {
+  if (modelInfo.name != "VirtualCity") {
     await forwardRenderPipeline.setExpressions([envExpression, mainExpression]);
   } else {
     await forwardRenderPipeline.setExpressions([mainExpression]);
