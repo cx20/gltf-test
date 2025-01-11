@@ -5,6 +5,7 @@ var TutorialFeatureTestModelIndex = {};
 TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'AlphaBlendModeTest', screenshot:'screenshot/screenshot.png', scale:0.5},
     {category:'tutorialModels', name:'BoomBoxWithAxes', screenshot:'screenshot/screenshot.jpg', scale:80},
+    {category:'tutorialModels', name:'Knight', screenshot:'screenshot/screenshot.jpg', scale:0.3},
     {category:'tutorialModels', name:'MetalRoughSpheres', screenshot:'screenshot/screenshot.png', scale:0.2},
     {category:'tutorialModels', name:'MetalRoughSpheresNoTextures', screenshot:'screenshot/screenshot.png', scale:200},
     {category:'tutorialModels', name:'MorphPrimitivesTest', screenshot:'screenshot/screenshot.jpg', scale:2},
