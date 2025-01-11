@@ -366,7 +366,8 @@ function makeTutorialFeatureTestModelLinks() {
                      || modelName == 'NegativeScaleTest' 
                      || modelName == 'SuzanneMorphSparse' 
                      || modelName == 'TextureEncodingTest' 
-                     || modelName == 'TextureLinearInterpolationTest' ) {
+                     || modelName == 'TextureLinearInterpolationTest' 
+                     || modelName == 'VertexColorAlphaClipTest' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
