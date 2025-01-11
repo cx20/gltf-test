@@ -47,6 +47,7 @@ TutorialExtensionTestModelIndex.List = [
     {category:'tutorialModels', name:'MaterialsVariantsChair', screenshot:'screenshot/screenshot.jpg', scale:0.7},
     {category:'tutorialModels', name:'MaterialsVariantsShoe', screenshot:'screenshot/screenshot.jpg', scale:10},
     {category:'tutorialModels', name:'MosquitoInAmber', screenshot:'screenshot/screenshot.jpg', scale:30},
+    {category:'tutorialModels', name:'PointLightIntensityTest', screenshot:'screenshot/screenshot.jpg', scale:0.5},
     {category:'tutorialModels', name:'PotOfCoals', screenshot:'screenshot/screenshot.jpg', scale:30},
     {category:'tutorialModels', name:'PotOfCoalsAnimationPointer', screenshot:'screenshot/screenshot.jpg', scale:30},
     {category:'tutorialModels', name:'SheenChair', screenshot:'screenshot/screenshot.jpg', scale:3},

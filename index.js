@@ -515,6 +515,7 @@ function makeTutorialExtensionTestModelLinks() {
                      || modelName == 'MaterialsVariantsChair'
                      || modelName == 'MaterialsVariantsShoe'
                      || modelName == 'MosquitoInAmber'
+                     || modelName == 'PointLightIntensityTest'
                      || modelName == 'PotOfCoals'
                      || modelName == 'PotOfCoalsAnimationPointer'
                      || modelName == 'SheenChair'
