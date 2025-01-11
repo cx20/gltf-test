@@ -22,6 +22,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'TextureEncodingTest', screenshot:'screenshot/screenshot.png', scale:0.3},
     {category:'tutorialModels', name:'TextureLinearInterpolationTest', screenshot:'screenshot/screenshot.png', scale:0.5},
     {category:'tutorialModels', name:'TextureSettingsTest', screenshot:'screenshot/screenshot.png', scale:0.2},
+    {category:'tutorialModels', name:'VertexColorAlphaClipTest', screenshot:'screenshot/screenshot.jpg', scale:0.4},
     {category:'tutorialModels', name:'VertexColorTest', screenshot:'screenshot/screenshot.png', scale:1},
 ];
 
