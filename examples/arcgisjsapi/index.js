@@ -34,7 +34,7 @@ require([
   "esri/layers/GraphicsLayer",
   "esri/Graphic",
   "esri/core/scheduling",
-  "esri/core/watchUtils",
+  "esri/core/reactiveUtils",
   "esri/widgets/DirectLineMeasurement3D",
   "esri/widgets/AreaMeasurement3D",
   "esri/widgets/Slice",
@@ -48,7 +48,7 @@ require([
   GraphicsLayer,
   Graphic,
   scheduling,
-  watchUtils,
+  reactiveUtils,
   DirectLineMeasurement3D,
   AreaMeasurement3D,
   Slice,
@@ -179,10 +179,12 @@ require([
       });
 
       // Disable the loading overlay as soon the GLTF model is loaded
-      watchUtils.whenFalseOnce(layerView, "updating", function() {
-        document.getElementById("loadingOverlay").style.display = "none";
-        rotatetoggle.checked = true;
-      });
+      reactiveUtils.whenOnce(
+        () => !layerView.updating)
+        .then(() => {
+          document.getElementById("loadingOverlay").style.display = "none";
+          rotatetoggle.checked = true;
+        });
 
       // Zoom to the GTLF model
       view.goTo(
