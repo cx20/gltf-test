@@ -257,7 +257,7 @@ require([
         activeWidget = new DirectLineMeasurement3D({
           view: view
         });
-        activeWidget.viewModel.newMeasurement();
+        activeWidget.viewModel.start();
         view.ui.add(activeWidget, "top-right");
         setActiveButton(document.getElementById("distanceButton"));
         break;
@@ -265,7 +265,7 @@ require([
         activeWidget = new AreaMeasurement3D({
           view: view
         });
-        activeWidget.viewModel.newMeasurement();
+        activeWidget.viewModel.start();
         view.ui.add(activeWidget, "top-right");
         setActiveButton(document.getElementById("areaButton"));
         break;
