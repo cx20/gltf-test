@@ -129,10 +129,10 @@ function init() {
     const loader = new GLTFLoader(manager);
     loader.setCrossOrigin( 'anonymous' );
 
-    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r172/examples/jsm/libs/draco/gltf/' );
+    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r173/examples/jsm/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
-    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r172/examples/jsm/libs/basis/' );
+    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r173/examples/jsm/libs/basis/' );
     ktx2Loader.detectSupport( renderer );
     loader.setKTX2Loader( ktx2Loader );
     loader.setMeshoptDecoder( MeshoptDecoder );
