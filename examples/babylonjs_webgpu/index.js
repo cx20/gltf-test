@@ -135,7 +135,7 @@ let createScene = async function(engine) {
         scene.activeCamera = camera;
 
         if ( scene.cameras.length > 1 ) {
-            if ( modelInfo.name == "VC" ) {
+            if ( modelInfo.name == "VC" || modelInfo.name == "VirtualCity" ) {
                 scene.cameras.forEach(camera => camera.name == DEFAULT_NAME ? camera.minZ : camera.minZ /= 100); // TODO: If near is 1, the model is missing, so adjusted
             }
             
