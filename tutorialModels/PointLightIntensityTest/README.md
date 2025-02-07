@@ -1,3 +1,24 @@
+# Point Light Intensity Test
+
+## Tags
+
+[extension](../../Models-extension.md), [testing](../../Models-testing.md)
+
+## Extensions Used
+
+* KHR_lights_punctual
+* KHR_materials_unlit
+
+## Summary
+
+This model tests KHR_lights_punctual intensity vs lamp color.
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/PointLightIntensityTest/glTF-Binary/PointLightIntensityTest.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/PointLightIntensityTest/glTF-Binary/PointLightIntensityTest.glb)
+* [Model Directory](./)
+
 ## Screenshot
 
 ![screenshot](screenshot/screenshot-large.jpg)
@@ -30,3 +51,12 @@ The test material in each case is (0.8, 0.8, 0.8).  The lights are as follows:
 | Red + Green + Blue | Three co-located lights, matching the above |
 | White              | (1.0, 1.0, 1.0) |
 | Gray               | (0.5, 0.5, 0.5) |
+
+
+## Legal
+
+&copy; 2025, Public. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
+
+ - Ed Mackey for Everything
+
+#### Assembled by modelmetadata

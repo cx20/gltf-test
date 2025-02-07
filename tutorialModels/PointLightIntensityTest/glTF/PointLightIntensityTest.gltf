@@ -5,7 +5,8 @@
 		"version":"2.0"
 	},
 	"extensionsUsed":[
-		"KHR_lights_punctual"
+		"KHR_lights_punctual",
+		"KHR_materials_unlit"
 	],
 	"extensions":{
 		"KHR_lights_punctual":{
@@ -17,6 +18,7 @@
 						1
 					],
 					"intensity":1.0,
+					"range": 1.125,
 					"type":"point",
 					"name":"Light White"
 				},
@@ -27,6 +29,7 @@
 						0
 					],
 					"intensity":1.0,
+					"range": 1.125,
 					"type":"point",
 					"name":"Light Red"
 				},
@@ -37,6 +40,7 @@
 						1
 					],
 					"intensity":1.0,
+					"range": 1.125,
 					"type":"point",
 					"name":"Light Blue"
 				},
@@ -47,6 +51,7 @@
 						0
 					],
 					"intensity":1.0,
+					"range": 1.125,
 					"type":"point",
 					"name":"Light Green"
 				},
@@ -57,6 +62,7 @@
 						0.5
 					],
 					"intensity":1.0,
+					"range": 1.125,
 					"type":"point",
 					"name":"Light Gray"
 				},
@@ -67,6 +73,7 @@
 						1
 					],
 					"intensity":1.0,
+					"range": 1.125,
 					"type":"point",
 					"name":"Light RGB - B"
 				},
@@ -77,6 +84,7 @@
 						0
 					],
 					"intensity":1.0,
+					"range": 1.125,
 					"type":"point",
 					"name":"Light RGB - G"
 				},
@@ -87,6 +95,7 @@
 						0
 					],
 					"intensity":1.0,
+					"range": 1.125,
 					"type":"point",
 					"name":"Light RGB - R"
 				}
@@ -376,6 +385,9 @@
 					"index":0
 				},
 				"metallicFactor":0
+			},
+			"extensions": {
+				"KHR_materials_unlit": {}
 			}
 		}
 	],
