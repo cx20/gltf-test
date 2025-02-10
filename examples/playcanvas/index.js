@@ -1,4 +1,6 @@
-'use strict';
+import * as pc from 'playcanvas';
+import { CameraControls } from 'camera-controls';
+import * as dat from 'dat.gui';
 
 let modelInfo = ModelIndex.getCurrentModel();
 if (!modelInfo) {
@@ -26,21 +28,24 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-const pcRoot = '../../libs/playcanvas/v2.3.0';
+const pcRoot = '../../libs/playcanvas/v2.5.0';
 
 const DEFAULT_NAME = "[default]";
 
 // GUI
 let gui = new dat.GUI();
 
-var ROTATE = false;
-var CAMERA = "";
-var LIGHTS = false;
-var IBL = true;
-var VARIANT = "";
-let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
-let guiLights = gui.add(window, 'LIGHTS').name('Lights');
-let guiIBL    = gui.add(window, 'IBL').name('IBL');
+var obj = {
+//    ROTATE: false, // TODO:
+    CAMERA: "",
+    LIGHTS: false,
+    IBL: true,
+    VARIANT: "",
+}
+
+//let guiRotate = gui.add(obj, 'ROTATE').name('Rotate');
+let guiLights = gui.add(obj, 'LIGHTS').name('Lights');
+let guiIBL    = gui.add(obj, 'IBL').name('IBL');
 let guiVariants = DEFAULT_NAME;
 let guiCameras = null;
 
@@ -124,41 +129,22 @@ let Viewer = function (canvas) {
     const depthLayer = app.scene.layers.getLayerById(pc.LAYERID_DEPTH);
     app.scene.layers.remove(depthLayer);
     app.scene.layers.insertOpaque(depthLayer, 2);
+    
+    let scale = modelInfo.scale;
 
-    // create the orbit camera
-    let camera = new pc.Entity("Camera");
-    camera.addComponent("camera", {
-        fov: 60,
-        clearColor: new pc.Color(0.4, 0.45, 0.5),
-        frustumCulling: true	
+    const start = new pc.Vec3(0, 0, 5 / scale);
+    const camera = new pc.Entity();
+    camera.addComponent('camera');
+    camera.addComponent('script');
+    camera.setPosition(start);
+    app.root.addChild(camera);
+
+    const script = camera.script.create(CameraControls, {
+        properties: {
+            enableFly: false
+        }
     });
-    camera.camera.requestSceneColorMap(true);
-
-    // load orbit script
-    app.assets.loadFromUrl(
-        pcRoot + "/orbit-camera.js",
-        "script",
-        function (err, asset) {
-            // setup orbit script component
-            camera.addComponent("script");
-            camera.script.create("orbitCamera", {
-                attributes: {
-                    inertiaFactor: 0.1
-                }
-            });
-            camera.script.create("orbitCameraInputMouse");
-            camera.script.create("orbitCameraInputTouch");
-            app.root.addChild(camera);
-
-            let timer = 0;
-            app.on("update", function (deltaTime) {
-                if ( ROTATE ) {
-                    timer += deltaTime * 20;
-                    viewer.camera.camera.entity.script.orbitCamera.yaw = timer;
-                }
-            });
-        });
-
+    
     // create the light
     let light = new pc.Entity();
     light.addComponent("light", {
@@ -174,7 +160,7 @@ let Viewer = function (canvas) {
     light.setLocalEulerAngles(45, 30, 0);
     app.root.addChild(light);
 
-    light.enabled = LIGHTS;
+    light.enabled = obj.LIGHTS;
     guiLights.onChange(function(value) {
         if ( value ) {
             viewer.light.enabled = true;
@@ -404,7 +390,7 @@ Object.assign(Viewer.prototype, {
 
             if (variants.length > 0 ) {
                 variantNames[DEFAULT_NAME] = DEFAULT_NAME;
-                guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variant");
+                guiVariants = gui.add(obj, 'VARIANT', variantNames).name("Variant");
                 let that = this;
                 guiVariants.onChange(function (variantName) {
                     if (variantName == DEFAULT_NAME) {
