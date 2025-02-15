@@ -678,3 +678,30 @@ makeTutorialComparePbrModelLinks();
 makeTutorialExtensionTestModelLinks();
 makeTutorialWipExtensionTestModelLinks();
 makeSampleModelLinks();
+
+$(document).ready(function () {
+    function activateTabFromHash() {
+        var hash = window.location.hash; // Get the hash part of the URL
+        if (hash) {
+            var tabSelector = 'a[href="' + hash + '"]'; // Find the corresponding tab selector
+            var tabElement = $(tabSelector);
+            if (tabElement.length) {
+                tabElement.tab('show'); // Show the Bootstrap tab
+            }
+        }
+    }
+
+    // Activate the corresponding tab on page load if a hash exists
+    activateTabFromHash();
+
+    // Switch the tab when the hash changes
+    $(window).on('hashchange', function () {
+        activateTabFromHash();
+    });
+
+    // Update the URL hash when a tab is clicked
+    $('.nav-tabs a').on('click', function (e) {
+        var newHash = $(this).attr('href');
+        history.pushState(null, null, newHash);
+    });
+});
