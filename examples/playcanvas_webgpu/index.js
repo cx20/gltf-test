@@ -28,7 +28,7 @@ if (!modelInfo) {
     throw new Error('Model not specified or not found in list.');
 }
 
-const pcRoot = '../../libs/playcanvas/v2.5.0';
+const pcRoot = '../../libs/playcanvas/v2.5.1';
 const DEFAULT_NAME = "[default]";
 
 // GUI
