@@ -12,6 +12,7 @@ TutorialFeatureTestModelIndex.List = [
     {category:'tutorialModels', name:'MorphStressTest', screenshot:'screenshot/screenshot.jpg', scale:1},
     {category:'tutorialModels', name:'MultiUVTest', screenshot:'screenshot/screenshot.jpg', scale:1},
     {category:'tutorialModels', name:'NegativeScaleTest', screenshot:'screenshot/screenshot.jpg', scale:0.5},
+    {category:'tutorialModels', name:'NodePerformanceTest', screenshot:'screenshot/screenshot.jpg', scale:0.01},
     {category:'tutorialModels', name:'NormalTangentTest', screenshot:'screenshot/screenshot.png', scale:1},
     {category:'tutorialModels', name:'NormalTangentMirrorTest', screenshot:'screenshot/screenshot.png', scale:1},
     {category:'tutorialModels', name:'OrientationTest', screenshot:'screenshot/screenshot.png', scale:0.2},

@@ -374,6 +374,8 @@ function makeTutorialFeatureTestModelLinks() {
             } else if ( modelName == 'RecursiveSkeletons' 
                      || modelName == 'PrimitiveModeNormalsTest' ) {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+            } else if ( modelName == 'NodePerformanceTest') {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
             } else {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
                 td.appendChild(document.createElement('br'));
