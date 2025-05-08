@@ -530,6 +530,7 @@ function makeTutorialExtensionTestModelLinks() {
                      || modelName == 'SpecularTest'
                      || modelName == 'TextureTransformMultiTest'
                      || modelName == 'ToyCar'
+                     || modelName == 'TransmissionOrderTest'
                      || modelName == 'TransmissionRoughnessTest'
                      || modelName == 'TransmissionSphere'
                      || modelName == 'TransmissionTest'
@@ -557,6 +558,14 @@ function makeTutorialExtensionTestModelLinks() {
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-JPG', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX-BasisU-Draco', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-WEBP', scale));
+            } else if ( modelName == 'ChronographWatch' ) {
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-Binary', scale));
+                td.appendChild(document.createElement('br'));
+                td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-KTX', scale));
                 td.appendChild(document.createElement('br'));
                 td.appendChild(createlink(engines[i].name, 'tutorialModels', modelName, 'glTF-WEBP', scale));
             } else if (modelName == 'DragonAttenuation') {
@@ -648,6 +657,7 @@ function replaceContentName(type) {
         "glTF-KTX-BasisU": "[KTX/BasisU]",
         "glTF-KTX-BasisU-Draco": "[KTX/BasisU/Draco]",
         "glTF-Draco-KTX2": "[Draco-KTX2]",
+        "glTF-KTX": "[KTX]",
         "glTF-KTX2": "[KTX2]",
         "glTF-WEBP": "[WEBP]",
         "glTF-Meshopt": "[Meshopt]",
