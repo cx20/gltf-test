@@ -63,6 +63,7 @@ canvas.height = window.innerHeight;
   
   Rn.Config.isUboEnabled = false;
   Rn.Config.maxMorphTargetNumber = 8;
+  Rn.Config.maxLightNumberInShader = 8;
   await Rn.System.init({
     approach: Rn.ProcessApproach.WebGPU,
     canvas,

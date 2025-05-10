@@ -60,6 +60,7 @@ canvas.height = window.innerHeight;
 
 (async () => {
   Rn.Config.isUboEnabled = false;
+  Rn.Config.maxLightNumberInShader = 8;
   Rn.Config.maxMorphTargetNumber = 8;
   await Rn.System.init({
     approach: Rn.ProcessApproach.DataTexture,
