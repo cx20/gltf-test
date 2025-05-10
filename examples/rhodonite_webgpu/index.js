@@ -73,7 +73,8 @@ canvas.height = window.innerHeight;
   // create ForwardRenderPipeline
   const forwardRenderPipeline = new Rn.ForwardRenderPipeline();
   forwardRenderPipeline.setup(canvas.width, canvas.height, {
-    isBloom: true,
+    //isBloom: true,
+    isBloom: false, // TODO: Set to true to enable Bloom. This is a heavy process, so it is turned off in this sample.
     isShadow: false,
   });
   
@@ -92,7 +93,7 @@ canvas.height = window.innerHeight;
   const lightComponent1 = lightEntity1.getLight();
   lightComponent1.type = Rn.LightType.Directional;
   lightEntity1.getTransform().localPosition = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
-  lightEntity1.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
+  lightEntity1.getComponent(Rn.LightComponent).intensity = 0;
   lightEntity1.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity1.getTransform().localEulerAngles = Rn.Vector3.fromCopyArray([-Math.PI / 2, -Math.PI / 4, Math.PI / 4]);
 
@@ -100,17 +101,17 @@ canvas.height = window.innerHeight;
   const lightComponent2 = lightEntity2.getLight();
   lightComponent1.type = Rn.LightType.Directional;
   lightEntity2.getTransform().localPosition = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
-  lightEntity2.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
+  lightEntity2.getComponent(Rn.LightComponent).intensity = 0;
   lightEntity2.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity2.getTransform().localEulerAngles = Rn.Vector3.fromCopyArray([Math.PI / 2, Math.PI / 4, -Math.PI / 4]);
 
   guiLights.onChange(function(value) {
     if (value) {
-      lightEntity1.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([1, 1, 1]);
-      lightEntity2.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([1, 1, 1]);
+      lightEntity1.getComponent(Rn.LightComponent).intensity = 1;
+      lightEntity2.getComponent(Rn.LightComponent).intensity = 1;
     } else {
-      lightEntity1.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
-      lightEntity2.getComponent(Rn.LightComponent).intensity = Rn.Vector3.fromCopyArray([0, 0, 0]);
+      lightEntity1.getComponent(Rn.LightComponent).intensity = 0;
+      lightEntity2.getComponent(Rn.LightComponent).intensity = 0;
     }
   });
 
