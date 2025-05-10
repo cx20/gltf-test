@@ -62,6 +62,8 @@ canvas.height = window.innerHeight;
   Rn.Config.isUboEnabled = false;
   Rn.Config.maxLightNumberInShader = 8;
   Rn.Config.maxMorphTargetNumber = 8;
+  Rn.Config.maxSkeletalBoneNumber = 400
+  Rn.Config.maxSkeletonNumber = 84;
   await Rn.System.init({
     approach: Rn.ProcessApproach.DataTexture,
     canvas,
@@ -127,7 +129,6 @@ canvas.height = window.innerHeight;
   const mainExpression = (await Rn.GltfImporter.importFromUri(
     url,
     {
-      cameraComponent: cameraComponent,
       defaultMaterialHelperArgumentArray: [
         {
           makeOutputSrgb: false,
@@ -143,7 +144,8 @@ canvas.height = window.innerHeight;
   // cameraController
   const mainCameraControllerComponent = cameraEntity.getCameraController();
   const controller = mainCameraControllerComponent.controller;
-  controller.setTarget(mainRenderPass.sceneTopLevelGraphComponents[0].entity);
+  const entities = mainRenderPass.entities;
+  controller.setTargets(entities);
   controller.dolly = 0.83;
 
   // TODO: KHR_materials_variants support
@@ -242,12 +244,13 @@ canvas.height = window.innerHeight;
       if (selectedCameraComponent.type === Rn.CameraType.Perspective) {
         selectedCameraComponent.aspect = canvas.width / canvas.height; // Apply the aspect of the actual window instead of the glTF aspect information
       }
-      mainRenderPass.cameraComponent = selectedCameraComponent;
-      controller.setTarget(boardEntity);
-      // If cameraIndex is 0, the default camera is used
+      Rn.CameraComponent.current = selectedCameraComponent.componentSID;
+      const zFar = selectedCameraComponent.zFar * 0.95;
+      envExpression.renderPasses[0].entities[0].getTransform().localScale = Rn.Vector3.fromCopy3(-zFar, zFar, zFar)
     } else {
-      mainRenderPass.cameraComponent = cameraComponent;
-      controller.setTarget(boardEntity);
+      Rn.CameraComponent.current = cameraComponent.componentSID;
+      const zFar = cameraComponent.zFar * 0.95;
+      envExpression.renderPasses[0].entities[0].getTransform().localScale = Rn.Vector3.fromCopy3(-zFar, zFar, zFar)
     }
   }
 
@@ -320,7 +323,7 @@ function createEnvCubeExpression(baseuri, cameraEntity) {
   
   const spherePrimitive = new Rn.Sphere();
   spherePrimitive.generate({
-    radius: 100,
+    radius: 1,
     widthSegments: 40,
     heightSegments: 40,
     material: sphereMaterial,
@@ -338,7 +341,6 @@ function createEnvCubeExpression(baseuri, cameraEntity) {
 
   const sphereRenderPass = new Rn.RenderPass();
   sphereRenderPass.addEntities([sphereEntity]);
-  sphereRenderPass.cameraComponent = cameraEntity.getCamera();
 
   const sphereExpression = new Rn.Expression();
   sphereExpression.addRenderPasses([sphereRenderPass]);
