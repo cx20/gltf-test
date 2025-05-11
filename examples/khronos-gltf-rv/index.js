@@ -60,7 +60,7 @@ const context = canvas.getContext('webgl2', {
 
 const dracoLib = undefined;
 const ktxLib = undefined;
-const libPath = "../../libs/khronos-gltf-rv/1.0.11dev/libs/";
+const libPath = "../../libs/khronos-gltf-rv/1.0.11/libs/";
 
 const view = new GltfView(context);
 //const resourceLoader = view.createResourceLoader();
@@ -75,7 +75,7 @@ const resizeCanvas = () => {
 
 const hdrFile = 'https://cx20.github.io/gltf-test/textures/hdr/papermill.hdr';
 //const lurFile = {lut_sheen_E_file: 'https://github.khronos.org/glTF-Sample-Viewer-Release/assets/images/lut_sheen_E.png'};
-const lurFile = {lut_sheen_E_file: '../../libs/khronos-gltf-rv/1.0.11dev/assets/lut_sheen_E.png'};
+const lurFile = {lut_sheen_E_file: '../../libs/khronos-gltf-rv/1.0.11/assets/lut_sheen_E.png'};
 
 await resourceLoader
     .loadEnvironment(hdrFile, lurFile)
