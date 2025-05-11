@@ -1,7 +1,7 @@
 /**
  * Bundle of @khronosgroup/gltf-viewer
- * Generated: 2024-09-20
- * Version: 1.0.11
+ * Generated: 2025-05-11
+ * Version: 1.1.0
  * License: Apache-2.0
  * Dependencies:
  * 
@@ -2197,7 +2197,7 @@ class gltfWebGl
                 image.mimeType === ImageMimeType.HDR)
             {
                 // the check `GL.SRGB8_ALPHA8 === undefined` is needed as at the moment node-gles does not define the full format enum
-                const internalformat = (textureInfo.linear || GL.SRGB8_ALPHA8 === undefined) ? GL.RGBA : GL.SRGB8_ALPHA8;
+                const internalformat = (gltfTex.linear || GL.SRGB8_ALPHA8 === undefined) ? GL.RGBA : GL.SRGB8_ALPHA8;
                 this.context.texImage2D(image.type, image.miplevel, internalformat, GL.RGBA, GL.UNSIGNED_BYTE, image.image);
             }
 
@@ -2518,14 +2518,14 @@ class gltfAccessor extends GltfObject
         {
             const bufferView = gltf.bufferViews[this.bufferView];
             const buffer = gltf.buffers[bufferView.buffer];
-            const byteOffset = this.byteOffset + bufferView.byteOffset;
 
-            const componentSize = this.getComponentSize(this.componentType);
-            const componentCount = this.getComponentCount(this.type);
+            const componentSize = this.getComponentSize(this.componentType); // E.g. GL.FLOAT -> 4
+            const componentCount = this.getComponentCount(this.type); // E.g. Vec3 -> 3
             const arrayLength = this.count * componentCount;
 
             let stride = bufferView.byteStride !== 0 ? bufferView.byteStride : componentCount * componentSize;
-            let dv = new DataView(buffer.buffer, byteOffset, this.count * stride);
+
+            let bufferViewData = new DataView(buffer.buffer, bufferView.byteOffset, bufferView.byteLength);
 
             let func = 'getFloat32';
             switch (this.componentType)
@@ -2558,9 +2558,12 @@ class gltfAccessor extends GltfObject
 
             for(let i = 0; i < arrayLength; ++i)
             {
-                let offset = Math.floor(i/componentCount) * stride + (i % componentCount) * componentSize;
-                this.filteredView[i] = dv[func](offset, true);
+                const vertexIndex = Math.floor(i/componentCount);
+                const componentIndex = (i % componentCount) * componentSize;
+                const offset = vertexIndex * stride + componentIndex + this.byteOffset; // Add Accessor byte offset
+                this.filteredView[i] = bufferViewData[func](offset, true);
             }
+              
         }
         else
         {
@@ -3800,19 +3803,19 @@ class EnvironmentRenderer
     }
 }
 
-var pbrShader = "precision highp float;\n#define GLSLIFY 1\n#include <tonemapping.glsl>\n#include <textures.glsl>\n#include <functions.glsl>\n#include <brdf.glsl>\n#include <punctual.glsl>\n#include <ibl.glsl>\n#include <material_info.glsl>\n#ifdef MATERIAL_IRIDESCENCE\n#include <iridescence.glsl>\n#endif\nout vec4 g_finalColor;void main(){vec4 baseColor=getBaseColor();\n#if ALPHAMODE == ALPHAMODE_OPAQUE\nbaseColor.a=1.0;\n#endif\nvec3 color=vec3(0);vec3 v=normalize(u_Camera-v_Position);NormalInfo normalInfo=getNormalInfo(v);vec3 n=normalInfo.n;vec3 t=normalInfo.t;vec3 b=normalInfo.b;float NdotV=clampedDot(n,v);float TdotV=clampedDot(t,v);float BdotV=clampedDot(b,v);MaterialInfo materialInfo;materialInfo.baseColor=baseColor.rgb;materialInfo.ior=1.5;materialInfo.f0_dielectric=vec3(0.04);materialInfo.specularWeight=1.0;materialInfo.f90=vec3(1.0);materialInfo.f90_dielectric=materialInfo.f90;\n#if DEBUG == DEBUG_METALLIC_ROUGHNESS\n#undef MATERIAL_IRIDESCENCE\n#endif\n#ifdef MATERIAL_IOR\nmaterialInfo=getIorInfo(materialInfo);\n#endif\n#ifdef MATERIAL_SPECULARGLOSSINESS\nmaterialInfo=getSpecularGlossinessInfo(materialInfo);\n#endif\n#ifdef MATERIAL_METALLICROUGHNESS\nmaterialInfo=getMetallicRoughnessInfo(materialInfo);\n#endif\n#ifdef MATERIAL_SHEEN\nmaterialInfo=getSheenInfo(materialInfo);\n#endif\n#ifdef MATERIAL_CLEARCOAT\nmaterialInfo=getClearCoatInfo(materialInfo,normalInfo);\n#endif\n#ifdef MATERIAL_SPECULAR\nmaterialInfo=getSpecularInfo(materialInfo);\n#endif\n#ifdef MATERIAL_TRANSMISSION\nmaterialInfo=getTransmissionInfo(materialInfo);\n#endif\n#ifdef MATERIAL_VOLUME\nmaterialInfo=getVolumeInfo(materialInfo);\n#endif\n#ifdef MATERIAL_IRIDESCENCE\nmaterialInfo=getIridescenceInfo(materialInfo);\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nmaterialInfo=getDiffuseTransmissionInfo(materialInfo);\n#endif\n#ifdef MATERIAL_ANISOTROPY\nmaterialInfo=getAnisotropyInfo(materialInfo,normalInfo);\n#endif\nmaterialInfo.perceptualRoughness=clamp(materialInfo.perceptualRoughness,0.0,1.0);materialInfo.metallic=clamp(materialInfo.metallic,0.0,1.0);materialInfo.alphaRoughness=materialInfo.perceptualRoughness*materialInfo.perceptualRoughness;vec3 f_specular_dielectric=vec3(0.0);vec3 f_specular_metal=vec3(0.0);vec3 f_diffuse=vec3(0.0);vec3 f_dielectric_brdf_ibl=vec3(0.0);vec3 f_metal_brdf_ibl=vec3(0.0);vec3 f_emissive=vec3(0.0);vec3 clearcoat_brdf=vec3(0.0);vec3 f_sheen=vec3(0.0);vec3 f_specular_transmission=vec3(0.0);vec3 f_diffuse_transmission=vec3(0.0);float clearcoatFactor=0.0;vec3 clearcoatFresnel=vec3(0);float albedoSheenScaling=1.0;float diffuseTransmissionThickness=1.0;\n#ifdef MATERIAL_IRIDESCENCE\nvec3 iridescenceFresnel_dielectric=evalIridescence(1.0,materialInfo.iridescenceIor,NdotV,materialInfo.iridescenceThickness,materialInfo.f0_dielectric);vec3 iridescenceFresnel_metallic=evalIridescence(1.0,materialInfo.iridescenceIor,NdotV,materialInfo.iridescenceThickness,baseColor.rgb);if(materialInfo.iridescenceThickness==0.0){materialInfo.iridescenceFactor=0.0;}\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\n#ifdef MATERIAL_VOLUME\ndiffuseTransmissionThickness=materialInfo.thickness*(length(vec3(u_ModelMatrix[0].xyz))+length(vec3(u_ModelMatrix[1].xyz))+length(vec3(u_ModelMatrix[2].xyz)))/3.0;\n#endif\n#endif\n#ifdef MATERIAL_CLEARCOAT\nclearcoatFactor=materialInfo.clearcoatFactor;clearcoatFresnel=F_Schlick(materialInfo.clearcoatF0,materialInfo.clearcoatF90,clampedDot(materialInfo.clearcoatNormal,v));\n#endif\n#ifdef USE_IBL\nf_diffuse=getDiffuseLight(n)*baseColor.rgb;\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nvec3 diffuseTransmissionIBL=getDiffuseLight(-n)*materialInfo.diffuseTransmissionColorFactor;\n#ifdef MATERIAL_VOLUME\ndiffuseTransmissionIBL=applyVolumeAttenuation(diffuseTransmissionIBL,diffuseTransmissionThickness,materialInfo.attenuationColor,materialInfo.attenuationDistance);\n#endif\nf_diffuse=mix(f_diffuse,diffuseTransmissionIBL,materialInfo.diffuseTransmissionFactor);\n#endif\n#if defined(MATERIAL_TRANSMISSION)\nf_specular_transmission=getIBLVolumeRefraction(n,v,materialInfo.perceptualRoughness,baseColor.rgb,materialInfo.f0_dielectric,materialInfo.f90,v_Position,u_ModelMatrix,u_ViewMatrix,u_ProjectionMatrix,materialInfo.ior,materialInfo.thickness,materialInfo.attenuationColor,materialInfo.attenuationDistance,materialInfo.dispersion);f_diffuse=mix(f_diffuse,f_specular_transmission,materialInfo.transmissionFactor);\n#endif\n#ifdef MATERIAL_ANISOTROPY\nf_specular_metal=getIBLRadianceAnisotropy(n,v,materialInfo.perceptualRoughness,materialInfo.anisotropyStrength,materialInfo.anisotropicB);f_specular_dielectric=f_specular_metal;\n#else\nf_specular_metal=getIBLRadianceGGX(n,v,materialInfo.perceptualRoughness);f_specular_dielectric=f_specular_metal;\n#endif\nvec3 f_metal_fresnel_ibl=getIBLGGXFresnel(n,v,materialInfo.perceptualRoughness,baseColor.rgb,1.0);f_metal_brdf_ibl=f_metal_fresnel_ibl*f_specular_metal;vec3 f_dielectric_fresnel_ibl=getIBLGGXFresnel(n,v,materialInfo.perceptualRoughness,materialInfo.f0_dielectric,materialInfo.specularWeight);f_dielectric_brdf_ibl=mix(f_diffuse,f_specular_dielectric,f_dielectric_fresnel_ibl);\n#ifdef MATERIAL_IRIDESCENCE\nf_metal_brdf_ibl=mix(f_metal_brdf_ibl,f_specular_metal*iridescenceFresnel_metallic,materialInfo.iridescenceFactor);f_dielectric_brdf_ibl=mix(f_dielectric_brdf_ibl,rgb_mix(f_diffuse,f_specular_dielectric,iridescenceFresnel_dielectric),materialInfo.iridescenceFactor);\n#endif\n#ifdef MATERIAL_CLEARCOAT\nclearcoat_brdf=getIBLRadianceGGX(materialInfo.clearcoatNormal,v,materialInfo.clearcoatRoughness);\n#endif\n#ifdef MATERIAL_SHEEN\nf_sheen=getIBLRadianceCharlie(n,v,materialInfo.sheenRoughnessFactor,materialInfo.sheenColorFactor);albedoSheenScaling=1.0-max3(materialInfo.sheenColorFactor)*albedoSheenScalingLUT(NdotV,materialInfo.sheenRoughnessFactor);\n#endif\ncolor=mix(f_dielectric_brdf_ibl,f_metal_brdf_ibl,materialInfo.metallic);color=f_sheen+color*albedoSheenScaling;color=mix(color,clearcoat_brdf,clearcoatFactor*clearcoatFresnel);\n#ifdef HAS_OCCLUSION_MAP\nfloat ao=1.0;ao=texture(u_OcclusionSampler,getOcclusionUV()).r;color=color*(1.0+u_OcclusionStrength*(ao-1.0));\n#endif\n#endif\nf_diffuse=vec3(0.0);f_specular_dielectric=vec3(0.0);f_specular_metal=vec3(0.0);vec3 f_dielectric_brdf=vec3(0.0);vec3 f_metal_brdf=vec3(0.0);\n#ifdef USE_PUNCTUAL\nfor(int i=0;i<LIGHT_COUNT;++i){Light light=u_Lights[i];vec3 pointToLight;if(light.type!=LightType_Directional){pointToLight=light.position-v_Position;}else{pointToLight=-light.direction;}vec3 l=normalize(pointToLight);vec3 h=normalize(l+v);float NdotL=clampedDot(n,l);float NdotV=clampedDot(n,v);float NdotH=clampedDot(n,h);float LdotH=clampedDot(l,h);float VdotH=clampedDot(v,h);vec3 dielectric_fresnel=F_Schlick(materialInfo.f0_dielectric*materialInfo.specularWeight,materialInfo.f90_dielectric,abs(VdotH));vec3 metal_fresnel=F_Schlick(baseColor.rgb,vec3(1.0),abs(VdotH));vec3 lightIntensity=getLighIntensity(light,pointToLight);vec3 l_diffuse=lightIntensity*NdotL*BRDF_lambertian(baseColor.rgb);vec3 l_specular_dielectric=vec3(0.0);vec3 l_specular_metal=vec3(0.0);vec3 l_dielectric_brdf=vec3(0.0);vec3 l_metal_brdf=vec3(0.0);vec3 l_clearcoat_brdf=vec3(0.0);vec3 l_sheen=vec3(0.0);float l_albedoSheenScaling=1.0;\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nvec3 diffuse_btdf=lightIntensity*clampedDot(-n,l)*BRDF_lambertian(materialInfo.diffuseTransmissionColorFactor);\n#ifdef MATERIAL_VOLUME\ndiffuse_btdf=applyVolumeAttenuation(diffuse_btdf,diffuseTransmissionThickness,materialInfo.attenuationColor,materialInfo.attenuationDistance);\n#endif\nl_diffuse=mix(l_diffuse,diffuse_btdf,materialInfo.diffuseTransmissionFactor);\n#endif\n#ifdef MATERIAL_TRANSMISSION\nvec3 transmissionRay=getVolumeTransmissionRay(n,v,materialInfo.thickness,materialInfo.ior,u_ModelMatrix);pointToLight-=transmissionRay;l=normalize(pointToLight);vec3 transmittedLight=lightIntensity*getPunctualRadianceTransmission(n,v,l,materialInfo.alphaRoughness,materialInfo.f0_dielectric,materialInfo.f90,baseColor.rgb,materialInfo.ior);\n#ifdef MATERIAL_VOLUME\ntransmittedLight=applyVolumeAttenuation(transmittedLight,length(transmissionRay),materialInfo.attenuationColor,materialInfo.attenuationDistance);\n#endif\nl_diffuse=mix(l_diffuse,transmittedLight,materialInfo.transmissionFactor);\n#endif\nvec3 intensity=getLighIntensity(light,pointToLight);\n#ifdef MATERIAL_ANISOTROPY\nl_specular_metal=intensity*NdotL*BRDF_specularGGXAnisotropy(materialInfo.alphaRoughness,materialInfo.anisotropyStrength,n,v,l,h,materialInfo.anisotropicT,materialInfo.anisotropicB);l_specular_dielectric=l_specular_metal;\n#else\nl_specular_metal=intensity*NdotL*BRDF_specularGGX(materialInfo.alphaRoughness,NdotL,NdotV,NdotH);l_specular_dielectric=l_specular_metal;\n#endif\nl_metal_brdf=metal_fresnel*l_specular_metal;l_dielectric_brdf=mix(l_diffuse,l_specular_dielectric,dielectric_fresnel);\n#ifdef MATERIAL_IRIDESCENCE\nl_metal_brdf=mix(l_metal_brdf,l_specular_metal*iridescenceFresnel_metallic,materialInfo.iridescenceFactor);l_dielectric_brdf=mix(l_dielectric_brdf,rgb_mix(l_diffuse,l_specular_dielectric,iridescenceFresnel_dielectric),materialInfo.iridescenceFactor);\n#endif\n#ifdef MATERIAL_CLEARCOAT\nl_clearcoat_brdf=intensity*getPunctualRadianceClearCoat(materialInfo.clearcoatNormal,v,l,h,VdotH,materialInfo.clearcoatF0,materialInfo.clearcoatF90,materialInfo.clearcoatRoughness);\n#endif\n#ifdef MATERIAL_SHEEN\nl_sheen=intensity*getPunctualRadianceSheen(materialInfo.sheenColorFactor,materialInfo.sheenRoughnessFactor,NdotL,NdotV,NdotH);l_albedoSheenScaling=min(1.0-max3(materialInfo.sheenColorFactor)*albedoSheenScalingLUT(NdotV,materialInfo.sheenRoughnessFactor),1.0-max3(materialInfo.sheenColorFactor)*albedoSheenScalingLUT(NdotL,materialInfo.sheenRoughnessFactor));\n#endif\nvec3 l_color=mix(l_dielectric_brdf,l_metal_brdf,materialInfo.metallic);l_color=l_sheen+l_color*l_albedoSheenScaling;l_color=mix(l_color,l_clearcoat_brdf,clearcoatFactor*clearcoatFresnel);color+=l_color;}\n#endif\nf_emissive=u_EmissiveFactor;\n#ifdef MATERIAL_EMISSIVE_STRENGTH\nf_emissive*=u_EmissiveStrength;\n#endif\n#ifdef HAS_EMISSIVE_MAP\nf_emissive*=texture(u_EmissiveSampler,getEmissiveUV()).rgb;\n#endif\n#ifdef MATERIAL_UNLIT\ncolor=baseColor.rgb;\n#elif defined(NOT_TRIANGLE) && !defined(HAS_NORMAL_VEC3)\ncolor=f_emissive+baseColor.rgb;\n#else\ncolor=f_emissive*(1.0-clearcoatFactor*clearcoatFresnel)+color;\n#endif\n#if DEBUG == DEBUG_NONE\n#if ALPHAMODE == ALPHAMODE_MASK\nif(baseColor.a<u_AlphaCutoff){discard;}baseColor.a=1.0;\n#endif\n#ifdef LINEAR_OUTPUT\ng_finalColor=vec4(color.rgb,baseColor.a);\n#else\ng_finalColor=vec4(toneMap(color),baseColor.a);\n#endif\n#else\ng_finalColor=vec4(1.0);{float frequency=0.02;float gray=0.9;vec2 v1=step(0.5,fract(frequency*gl_FragCoord.xy));vec2 v2=step(0.5,vec2(1.0)-fract(frequency*gl_FragCoord.xy));g_finalColor.rgb*=gray+v1.x*v1.y+v2.x*v2.y;}\n#endif\n#if DEBUG == DEBUG_UV_0 && defined(HAS_TEXCOORD_0_VEC2)\ng_finalColor.rgb=vec3(v_texcoord_0,0);\n#endif\n#if DEBUG == DEBUG_UV_1 && defined(HAS_TEXCOORD_1_VEC2)\ng_finalColor.rgb=vec3(v_texcoord_1,0);\n#endif\n#if DEBUG == DEBUG_NORMAL_TEXTURE && defined(HAS_NORMAL_MAP)\ng_finalColor.rgb=(normalInfo.ntex+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_NORMAL_SHADING\ng_finalColor.rgb=(n+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_NORMAL_GEOMETRY\ng_finalColor.rgb=(normalInfo.ng+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_TANGENT\ng_finalColor.rgb=(normalInfo.t+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_BITANGENT\ng_finalColor.rgb=(normalInfo.b+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_ALPHA\ng_finalColor.rgb=vec3(baseColor.a);\n#endif\n#if DEBUG == DEBUG_OCCLUSION && defined(HAS_OCCLUSION_MAP)\ng_finalColor.rgb=vec3(ao);\n#endif\n#if DEBUG == DEBUG_EMISSIVE\ng_finalColor.rgb=linearTosRGB(f_emissive);\n#endif\n#ifdef MATERIAL_METALLICROUGHNESS\n#if DEBUG == DEBUG_METALLIC\ng_finalColor.rgb=vec3(materialInfo.metallic);\n#endif\n#if DEBUG == DEBUG_ROUGHNESS\ng_finalColor.rgb=vec3(materialInfo.perceptualRoughness);\n#endif\n#if DEBUG == DEBUG_BASE_COLOR\ng_finalColor.rgb=linearTosRGB(materialInfo.baseColor);\n#endif\n#endif\n#ifdef MATERIAL_CLEARCOAT\n#if DEBUG == DEBUG_CLEARCOAT_FACTOR\ng_finalColor.rgb=vec3(materialInfo.clearcoatFactor);\n#endif\n#if DEBUG == DEBUG_CLEARCOAT_ROUGHNESS\ng_finalColor.rgb=vec3(materialInfo.clearcoatRoughness);\n#endif\n#if DEBUG == DEBUG_CLEARCOAT_NORMAL\ng_finalColor.rgb=(materialInfo.clearcoatNormal+vec3(1))/2.0;\n#endif\n#endif\n#ifdef MATERIAL_SHEEN\n#if DEBUG == DEBUG_SHEEN_COLOR\ng_finalColor.rgb=materialInfo.sheenColorFactor;\n#endif\n#if DEBUG == DEBUG_SHEEN_ROUGHNESS\ng_finalColor.rgb=vec3(materialInfo.sheenRoughnessFactor);\n#endif\n#endif\n#ifdef MATERIAL_SPECULAR\n#if DEBUG == DEBUG_SPECULAR_FACTOR\ng_finalColor.rgb=vec3(materialInfo.specularWeight);\n#endif\n#if DEBUG == DEBUG_SPECULAR_COLOR\nvec3 specularTexture=vec3(1.0);\n#ifdef HAS_SPECULAR_COLOR_MAP\nspecularTexture.rgb=texture(u_SpecularColorSampler,getSpecularColorUV()).rgb;\n#endif\ng_finalColor.rgb=u_KHR_materials_specular_specularColorFactor*specularTexture.rgb;\n#endif\n#endif\n#ifdef MATERIAL_TRANSMISSION\n#if DEBUG == DEBUG_TRANSMISSION_FACTOR\ng_finalColor.rgb=vec3(materialInfo.transmissionFactor);\n#endif\n#endif\n#ifdef MATERIAL_VOLUME\n#if DEBUG == DEBUG_VOLUME_THICKNESS\ng_finalColor.rgb=vec3(materialInfo.thickness/u_ThicknessFactor);\n#endif\n#endif\n#ifdef MATERIAL_IRIDESCENCE\n#if DEBUG == DEBUG_IRIDESCENCE_FACTOR\ng_finalColor.rgb=vec3(materialInfo.iridescenceFactor);\n#endif\n#if DEBUG == DEBUG_IRIDESCENCE_THICKNESS\ng_finalColor.rgb=vec3(materialInfo.iridescenceThickness/1200.0);\n#endif\n#endif\n#ifdef MATERIAL_ANISOTROPY\n#if DEBUG == DEBUG_ANISOTROPIC_STRENGTH\ng_finalColor.rgb=vec3(materialInfo.anisotropyStrength);\n#endif\n#if DEBUG == DEBUG_ANISOTROPIC_DIRECTION\nvec2 direction=vec2(1.0,0.0);\n#ifdef HAS_ANISOTROPY_MAP\ndirection=texture(u_AnisotropySampler,getAnisotropyUV()).xy;direction=direction*2.0-vec2(1.0);\n#endif\nvec2 directionRotation=u_Anisotropy.xy;mat2 rotationMatrix=mat2(directionRotation.x,directionRotation.y,-directionRotation.y,directionRotation.x);direction=(direction+vec2(1.0))*0.5;g_finalColor.rgb=vec3(direction,0.0);\n#endif\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\n#if DEBUG == DEBUG_DIFFUSE_TRANSMISSION_FACTOR\ng_finalColor.rgb=linearTosRGB(vec3(materialInfo.diffuseTransmissionFactor));\n#endif\n#if DEBUG == DEBUG_DIFFUSE_TRANSMISSION_COLOR_FACTOR\ng_finalColor.rgb=linearTosRGB(materialInfo.diffuseTransmissionColorFactor);\n#endif\n#endif\n}"; // eslint-disable-line
+var pbrShader = "precision highp float;\n#define GLSLIFY 1\n#include <tonemapping.glsl>\n#include <textures.glsl>\n#include <functions.glsl>\n#include <brdf.glsl>\n#include <punctual.glsl>\n#include <ibl.glsl>\n#include <material_info.glsl>\n#ifdef MATERIAL_IRIDESCENCE\n#include <iridescence.glsl>\n#endif\nout vec4 g_finalColor;void main(){vec4 baseColor=getBaseColor();\n#if ALPHAMODE == ALPHAMODE_OPAQUE\nbaseColor.a=1.0;\n#endif\nvec3 color=vec3(0);vec3 v=normalize(u_Camera-v_Position);NormalInfo normalInfo=getNormalInfo(v);vec3 n=normalInfo.n;vec3 t=normalInfo.t;vec3 b=normalInfo.b;float NdotV=clampedDot(n,v);float TdotV=clampedDot(t,v);float BdotV=clampedDot(b,v);MaterialInfo materialInfo;materialInfo.baseColor=baseColor.rgb;materialInfo.ior=1.5;materialInfo.f0_dielectric=vec3(0.04);materialInfo.specularWeight=1.0;materialInfo.f90=vec3(1.0);materialInfo.f90_dielectric=materialInfo.f90;\n#ifdef MATERIAL_IOR\nmaterialInfo=getIorInfo(materialInfo);\n#endif\n#ifdef MATERIAL_METALLICROUGHNESS\nmaterialInfo=getMetallicRoughnessInfo(materialInfo);\n#endif\n#ifdef MATERIAL_SHEEN\nmaterialInfo=getSheenInfo(materialInfo);\n#endif\n#ifdef MATERIAL_CLEARCOAT\nmaterialInfo=getClearCoatInfo(materialInfo,normalInfo);\n#endif\n#ifdef MATERIAL_SPECULAR\nmaterialInfo=getSpecularInfo(materialInfo);\n#endif\n#ifdef MATERIAL_TRANSMISSION\nmaterialInfo=getTransmissionInfo(materialInfo);\n#endif\n#ifdef MATERIAL_VOLUME\nmaterialInfo=getVolumeInfo(materialInfo);\n#endif\n#ifdef MATERIAL_IRIDESCENCE\nmaterialInfo=getIridescenceInfo(materialInfo);\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nmaterialInfo=getDiffuseTransmissionInfo(materialInfo);\n#endif\n#ifdef MATERIAL_ANISOTROPY\nmaterialInfo=getAnisotropyInfo(materialInfo,normalInfo);\n#endif\nmaterialInfo.perceptualRoughness=clamp(materialInfo.perceptualRoughness,0.0,1.0);materialInfo.metallic=clamp(materialInfo.metallic,0.0,1.0);materialInfo.alphaRoughness=materialInfo.perceptualRoughness*materialInfo.perceptualRoughness;vec3 f_specular_dielectric=vec3(0.0);vec3 f_specular_metal=vec3(0.0);vec3 f_diffuse=vec3(0.0);vec3 f_dielectric_brdf_ibl=vec3(0.0);vec3 f_metal_brdf_ibl=vec3(0.0);vec3 f_emissive=vec3(0.0);vec3 clearcoat_brdf=vec3(0.0);vec3 f_sheen=vec3(0.0);vec3 f_specular_transmission=vec3(0.0);vec3 f_diffuse_transmission=vec3(0.0);float clearcoatFactor=0.0;vec3 clearcoatFresnel=vec3(0);float albedoSheenScaling=1.0;float diffuseTransmissionThickness=1.0;\n#ifdef MATERIAL_IRIDESCENCE\nvec3 iridescenceFresnel_dielectric=evalIridescence(1.0,materialInfo.iridescenceIor,NdotV,materialInfo.iridescenceThickness,materialInfo.f0_dielectric);vec3 iridescenceFresnel_metallic=evalIridescence(1.0,materialInfo.iridescenceIor,NdotV,materialInfo.iridescenceThickness,baseColor.rgb);if(materialInfo.iridescenceThickness==0.0){materialInfo.iridescenceFactor=0.0;}\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\n#ifdef MATERIAL_VOLUME\ndiffuseTransmissionThickness=materialInfo.thickness*(length(vec3(u_ModelMatrix[0].xyz))+length(vec3(u_ModelMatrix[1].xyz))+length(vec3(u_ModelMatrix[2].xyz)))/3.0;\n#endif\n#endif\n#ifdef MATERIAL_CLEARCOAT\nclearcoatFactor=materialInfo.clearcoatFactor;clearcoatFresnel=F_Schlick(materialInfo.clearcoatF0,materialInfo.clearcoatF90,clampedDot(materialInfo.clearcoatNormal,v));\n#endif\n#if defined(USE_IBL) || defined(MATERIAL_TRANSMISSION)\nf_diffuse=getDiffuseLight(n)*baseColor.rgb;\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nvec3 diffuseTransmissionIBL=getDiffuseLight(-n)*materialInfo.diffuseTransmissionColorFactor;\n#ifdef MATERIAL_VOLUME\ndiffuseTransmissionIBL=applyVolumeAttenuation(diffuseTransmissionIBL,diffuseTransmissionThickness,materialInfo.attenuationColor,materialInfo.attenuationDistance);\n#endif\nf_diffuse=mix(f_diffuse,diffuseTransmissionIBL,materialInfo.diffuseTransmissionFactor);\n#endif\n#if defined(MATERIAL_TRANSMISSION)\nf_specular_transmission=getIBLVolumeRefraction(n,v,materialInfo.perceptualRoughness,baseColor.rgb,v_Position,u_ModelMatrix,u_ViewMatrix,u_ProjectionMatrix,materialInfo.ior,materialInfo.thickness,materialInfo.attenuationColor,materialInfo.attenuationDistance,materialInfo.dispersion);f_diffuse=mix(f_diffuse,f_specular_transmission,materialInfo.transmissionFactor);\n#endif\n#ifdef MATERIAL_ANISOTROPY\nf_specular_metal=getIBLRadianceAnisotropy(n,v,materialInfo.perceptualRoughness,materialInfo.anisotropyStrength,materialInfo.anisotropicB);f_specular_dielectric=f_specular_metal;\n#else\nf_specular_metal=getIBLRadianceGGX(n,v,materialInfo.perceptualRoughness);f_specular_dielectric=f_specular_metal;\n#endif\nvec3 f_metal_fresnel_ibl=getIBLGGXFresnel(n,v,materialInfo.perceptualRoughness,baseColor.rgb,1.0);f_metal_brdf_ibl=f_metal_fresnel_ibl*f_specular_metal;vec3 f_dielectric_fresnel_ibl=getIBLGGXFresnel(n,v,materialInfo.perceptualRoughness,materialInfo.f0_dielectric,materialInfo.specularWeight);f_dielectric_brdf_ibl=mix(f_diffuse,f_specular_dielectric,f_dielectric_fresnel_ibl);\n#ifdef MATERIAL_IRIDESCENCE\nf_metal_brdf_ibl=mix(f_metal_brdf_ibl,f_specular_metal*iridescenceFresnel_metallic,materialInfo.iridescenceFactor);f_dielectric_brdf_ibl=mix(f_dielectric_brdf_ibl,rgb_mix(f_diffuse,f_specular_dielectric,iridescenceFresnel_dielectric),materialInfo.iridescenceFactor);\n#endif\n#ifdef MATERIAL_CLEARCOAT\nclearcoat_brdf=getIBLRadianceGGX(materialInfo.clearcoatNormal,v,materialInfo.clearcoatRoughness);\n#endif\n#ifdef MATERIAL_SHEEN\nf_sheen=getIBLRadianceCharlie(n,v,materialInfo.sheenRoughnessFactor,materialInfo.sheenColorFactor);albedoSheenScaling=1.0-max3(materialInfo.sheenColorFactor)*albedoSheenScalingLUT(NdotV,materialInfo.sheenRoughnessFactor);\n#endif\ncolor=mix(f_dielectric_brdf_ibl,f_metal_brdf_ibl,materialInfo.metallic);color=f_sheen+color*albedoSheenScaling;color=mix(color,clearcoat_brdf,clearcoatFactor*clearcoatFresnel);\n#ifdef HAS_OCCLUSION_MAP\nfloat ao=1.0;ao=texture(u_OcclusionSampler,getOcclusionUV()).r;color=color*(1.0+u_OcclusionStrength*(ao-1.0));\n#endif\n#endif\nf_diffuse=vec3(0.0);f_specular_dielectric=vec3(0.0);f_specular_metal=vec3(0.0);vec3 f_dielectric_brdf=vec3(0.0);vec3 f_metal_brdf=vec3(0.0);\n#ifdef USE_PUNCTUAL\nfor(int i=0;i<LIGHT_COUNT;++i){Light light=u_Lights[i];vec3 pointToLight;if(light.type!=LightType_Directional){pointToLight=light.position-v_Position;}else{pointToLight=-light.direction;}vec3 l=normalize(pointToLight);vec3 h=normalize(l+v);float NdotL=clampedDot(n,l);float NdotV=clampedDot(n,v);float NdotH=clampedDot(n,h);float LdotH=clampedDot(l,h);float VdotH=clampedDot(v,h);vec3 dielectric_fresnel=F_Schlick(materialInfo.f0_dielectric*materialInfo.specularWeight,materialInfo.f90_dielectric,abs(VdotH));vec3 metal_fresnel=F_Schlick(baseColor.rgb,vec3(1.0),abs(VdotH));vec3 lightIntensity=getLighIntensity(light,pointToLight);vec3 l_diffuse=lightIntensity*NdotL*BRDF_lambertian(baseColor.rgb);vec3 l_specular_dielectric=vec3(0.0);vec3 l_specular_metal=vec3(0.0);vec3 l_dielectric_brdf=vec3(0.0);vec3 l_metal_brdf=vec3(0.0);vec3 l_clearcoat_brdf=vec3(0.0);vec3 l_sheen=vec3(0.0);float l_albedoSheenScaling=1.0;\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nl_diffuse=l_diffuse*(1.0-materialInfo.diffuseTransmissionFactor);if(dot(n,l)<0.0){float diffuseNdotL=clampedDot(-n,l);vec3 diffuse_btdf=lightIntensity*diffuseNdotL*BRDF_lambertian(materialInfo.diffuseTransmissionColorFactor);vec3 l_mirror=normalize(l+2.0*n*dot(-l,n));float diffuseVdotH=clampedDot(v,normalize(l_mirror+v));dielectric_fresnel=F_Schlick(materialInfo.f0_dielectric*materialInfo.specularWeight,materialInfo.f90_dielectric,abs(diffuseVdotH));\n#ifdef MATERIAL_VOLUME\ndiffuse_btdf=applyVolumeAttenuation(diffuse_btdf,diffuseTransmissionThickness,materialInfo.attenuationColor,materialInfo.attenuationDistance);\n#endif\nl_diffuse+=diffuse_btdf*materialInfo.diffuseTransmissionFactor;}\n#endif\n#ifdef MATERIAL_TRANSMISSION\nvec3 transmissionRay=getVolumeTransmissionRay(n,v,materialInfo.thickness,materialInfo.ior,u_ModelMatrix);pointToLight-=transmissionRay;l=normalize(pointToLight);vec3 transmittedLight=lightIntensity*getPunctualRadianceTransmission(n,v,l,materialInfo.alphaRoughness,baseColor.rgb,materialInfo.ior);\n#ifdef MATERIAL_VOLUME\ntransmittedLight=applyVolumeAttenuation(transmittedLight,length(transmissionRay),materialInfo.attenuationColor,materialInfo.attenuationDistance);\n#endif\nl_diffuse=mix(l_diffuse,transmittedLight,materialInfo.transmissionFactor);\n#endif\nvec3 intensity=getLighIntensity(light,pointToLight);\n#ifdef MATERIAL_ANISOTROPY\nl_specular_metal=intensity*NdotL*BRDF_specularGGXAnisotropy(materialInfo.alphaRoughness,materialInfo.anisotropyStrength,n,v,l,h,materialInfo.anisotropicT,materialInfo.anisotropicB);l_specular_dielectric=l_specular_metal;\n#else\nl_specular_metal=intensity*NdotL*BRDF_specularGGX(materialInfo.alphaRoughness,NdotL,NdotV,NdotH);l_specular_dielectric=l_specular_metal;\n#endif\nl_metal_brdf=metal_fresnel*l_specular_metal;l_dielectric_brdf=mix(l_diffuse,l_specular_dielectric,dielectric_fresnel);\n#ifdef MATERIAL_IRIDESCENCE\nl_metal_brdf=mix(l_metal_brdf,l_specular_metal*iridescenceFresnel_metallic,materialInfo.iridescenceFactor);l_dielectric_brdf=mix(l_dielectric_brdf,rgb_mix(l_diffuse,l_specular_dielectric,iridescenceFresnel_dielectric),materialInfo.iridescenceFactor);\n#endif\n#ifdef MATERIAL_CLEARCOAT\nl_clearcoat_brdf=intensity*getPunctualRadianceClearCoat(materialInfo.clearcoatNormal,v,l,h,VdotH,materialInfo.clearcoatF0,materialInfo.clearcoatF90,materialInfo.clearcoatRoughness);\n#endif\n#ifdef MATERIAL_SHEEN\nl_sheen=intensity*getPunctualRadianceSheen(materialInfo.sheenColorFactor,materialInfo.sheenRoughnessFactor,NdotL,NdotV,NdotH);l_albedoSheenScaling=min(1.0-max3(materialInfo.sheenColorFactor)*albedoSheenScalingLUT(NdotV,materialInfo.sheenRoughnessFactor),1.0-max3(materialInfo.sheenColorFactor)*albedoSheenScalingLUT(NdotL,materialInfo.sheenRoughnessFactor));\n#endif\nvec3 l_color=mix(l_dielectric_brdf,l_metal_brdf,materialInfo.metallic);l_color=l_sheen+l_color*l_albedoSheenScaling;l_color=mix(l_color,l_clearcoat_brdf,clearcoatFactor*clearcoatFresnel);color+=l_color;}\n#endif\nf_emissive=u_EmissiveFactor;\n#ifdef MATERIAL_EMISSIVE_STRENGTH\nf_emissive*=u_EmissiveStrength;\n#endif\n#ifdef HAS_EMISSIVE_MAP\nf_emissive*=texture(u_EmissiveSampler,getEmissiveUV()).rgb;\n#endif\n#ifdef MATERIAL_UNLIT\ncolor=baseColor.rgb;\n#elif defined(NOT_TRIANGLE) && !defined(HAS_NORMAL_VEC3)\ncolor=f_emissive+baseColor.rgb;\n#else\ncolor=f_emissive*(1.0-clearcoatFactor*clearcoatFresnel)+color;\n#endif\n#if DEBUG == DEBUG_NONE\n#if ALPHAMODE == ALPHAMODE_MASK\nif(baseColor.a<u_AlphaCutoff){discard;}baseColor.a=1.0;\n#endif\n#ifdef LINEAR_OUTPUT\ng_finalColor=vec4(color.rgb,baseColor.a);\n#else\ng_finalColor=vec4(toneMap(color),baseColor.a);\n#endif\n#else\ng_finalColor=vec4(1.0);{float frequency=0.02;float gray=0.9;vec2 v1=step(0.5,fract(frequency*gl_FragCoord.xy));vec2 v2=step(0.5,vec2(1.0)-fract(frequency*gl_FragCoord.xy));g_finalColor.rgb*=gray+v1.x*v1.y+v2.x*v2.y;}\n#endif\n#if DEBUG == DEBUG_UV_0 && defined(HAS_TEXCOORD_0_VEC2)\ng_finalColor.rgb=vec3(v_texcoord_0,0);\n#endif\n#if DEBUG == DEBUG_UV_1 && defined(HAS_TEXCOORD_1_VEC2)\ng_finalColor.rgb=vec3(v_texcoord_1,0);\n#endif\n#if DEBUG == DEBUG_NORMAL_TEXTURE && defined(HAS_NORMAL_MAP)\ng_finalColor.rgb=(normalInfo.ntex+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_NORMAL_SHADING\ng_finalColor.rgb=(n+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_NORMAL_GEOMETRY\ng_finalColor.rgb=(normalInfo.ng+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_TANGENT\ng_finalColor.rgb=(normalInfo.t+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_BITANGENT\ng_finalColor.rgb=(normalInfo.b+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_ALPHA\ng_finalColor.rgb=vec3(baseColor.a);\n#endif\n#if DEBUG == DEBUG_OCCLUSION && defined(HAS_OCCLUSION_MAP)\ng_finalColor.rgb=vec3(ao);\n#endif\n#if DEBUG == DEBUG_EMISSIVE\ng_finalColor.rgb=linearTosRGB(f_emissive);\n#endif\n#if DEBUG == DEBUG_METALLIC\ng_finalColor.rgb=vec3(materialInfo.metallic);\n#endif\n#if DEBUG == DEBUG_ROUGHNESS\ng_finalColor.rgb=vec3(materialInfo.perceptualRoughness);\n#endif\n#if DEBUG == DEBUG_BASE_COLOR\ng_finalColor.rgb=linearTosRGB(materialInfo.baseColor);\n#endif\n#ifdef MATERIAL_CLEARCOAT\n#if DEBUG == DEBUG_CLEARCOAT_FACTOR\ng_finalColor.rgb=vec3(materialInfo.clearcoatFactor);\n#endif\n#if DEBUG == DEBUG_CLEARCOAT_ROUGHNESS\ng_finalColor.rgb=vec3(materialInfo.clearcoatRoughness);\n#endif\n#if DEBUG == DEBUG_CLEARCOAT_NORMAL\ng_finalColor.rgb=(materialInfo.clearcoatNormal+vec3(1))/2.0;\n#endif\n#endif\n#ifdef MATERIAL_SHEEN\n#if DEBUG == DEBUG_SHEEN_COLOR\ng_finalColor.rgb=materialInfo.sheenColorFactor;\n#endif\n#if DEBUG == DEBUG_SHEEN_ROUGHNESS\ng_finalColor.rgb=vec3(materialInfo.sheenRoughnessFactor);\n#endif\n#endif\n#ifdef MATERIAL_SPECULAR\n#if DEBUG == DEBUG_SPECULAR_FACTOR\ng_finalColor.rgb=vec3(materialInfo.specularWeight);\n#endif\n#if DEBUG == DEBUG_SPECULAR_COLOR\nvec3 specularTexture=vec3(1.0);\n#ifdef HAS_SPECULAR_COLOR_MAP\nspecularTexture.rgb=texture(u_SpecularColorSampler,getSpecularColorUV()).rgb;\n#endif\ng_finalColor.rgb=u_KHR_materials_specular_specularColorFactor*specularTexture.rgb;\n#endif\n#endif\n#ifdef MATERIAL_TRANSMISSION\n#if DEBUG == DEBUG_TRANSMISSION_FACTOR\ng_finalColor.rgb=vec3(materialInfo.transmissionFactor);\n#endif\n#endif\n#ifdef MATERIAL_VOLUME\n#if DEBUG == DEBUG_VOLUME_THICKNESS\ng_finalColor.rgb=vec3(materialInfo.thickness/u_ThicknessFactor);\n#endif\n#endif\n#ifdef MATERIAL_IRIDESCENCE\n#if DEBUG == DEBUG_IRIDESCENCE_FACTOR\ng_finalColor.rgb=vec3(materialInfo.iridescenceFactor);\n#endif\n#if DEBUG == DEBUG_IRIDESCENCE_THICKNESS\ng_finalColor.rgb=vec3(materialInfo.iridescenceThickness/1200.0);\n#endif\n#endif\n#ifdef MATERIAL_ANISOTROPY\n#if DEBUG == DEBUG_ANISOTROPIC_STRENGTH\ng_finalColor.rgb=vec3(materialInfo.anisotropyStrength);\n#endif\n#if DEBUG == DEBUG_ANISOTROPIC_DIRECTION\nvec2 direction=vec2(1.0,0.0);\n#ifdef HAS_ANISOTROPY_MAP\ndirection=texture(u_AnisotropySampler,getAnisotropyUV()).xy;direction=direction*2.0-vec2(1.0);\n#endif\nvec2 directionRotation=u_Anisotropy.xy;mat2 rotationMatrix=mat2(directionRotation.x,directionRotation.y,-directionRotation.y,directionRotation.x);direction=(direction+vec2(1.0))*0.5;g_finalColor.rgb=vec3(direction,0.0);\n#endif\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\n#if DEBUG == DEBUG_DIFFUSE_TRANSMISSION_FACTOR\ng_finalColor.rgb=linearTosRGB(vec3(materialInfo.diffuseTransmissionFactor));\n#endif\n#if DEBUG == DEBUG_DIFFUSE_TRANSMISSION_COLOR_FACTOR\ng_finalColor.rgb=linearTosRGB(materialInfo.diffuseTransmissionColorFactor);\n#endif\n#endif\n}"; // eslint-disable-line
 
 var brdfShader = "#define GLSLIFY 1\nvec3 F_Schlick(vec3 f0,vec3 f90,float VdotH){return f0+(f90-f0)*pow(clamp(1.0-VdotH,0.0,1.0),5.0);}float F_Schlick(float f0,float f90,float VdotH){float x=clamp(1.0-VdotH,0.0,1.0);float x2=x*x;float x5=x*x2*x2;return f0+(f90-f0)*x5;}float F_Schlick(float f0,float VdotH){float f90=1.0;return F_Schlick(f0,f90,VdotH);}vec3 F_Schlick(vec3 f0,float f90,float VdotH){float x=clamp(1.0-VdotH,0.0,1.0);float x2=x*x;float x5=x*x2*x2;return f0+(f90-f0)*x5;}vec3 F_Schlick(vec3 f0,float VdotH){float f90=1.0;return F_Schlick(f0,f90,VdotH);}vec3 Schlick_to_F0(vec3 f,vec3 f90,float VdotH){float x=clamp(1.0-VdotH,0.0,1.0);float x2=x*x;float x5=clamp(x*x2*x2,0.0,0.9999);return(f-f90*x5)/(1.0-x5);}float Schlick_to_F0(float f,float f90,float VdotH){float x=clamp(1.0-VdotH,0.0,1.0);float x2=x*x;float x5=clamp(x*x2*x2,0.0,0.9999);return(f-f90*x5)/(1.0-x5);}vec3 Schlick_to_F0(vec3 f,float VdotH){return Schlick_to_F0(f,vec3(1.0),VdotH);}float Schlick_to_F0(float f,float VdotH){return Schlick_to_F0(f,1.0,VdotH);}float V_GGX(float NdotL,float NdotV,float alphaRoughness){float alphaRoughnessSq=alphaRoughness*alphaRoughness;float GGXV=NdotL*sqrt(NdotV*NdotV*(1.0-alphaRoughnessSq)+alphaRoughnessSq);float GGXL=NdotV*sqrt(NdotL*NdotL*(1.0-alphaRoughnessSq)+alphaRoughnessSq);float GGX=GGXV+GGXL;if(GGX>0.0){return 0.5/GGX;}return 0.0;}float D_GGX(float NdotH,float alphaRoughness){float alphaRoughnessSq=alphaRoughness*alphaRoughness;float f=(NdotH*NdotH)*(alphaRoughnessSq-1.0)+1.0;return alphaRoughnessSq/(M_PI*f*f);}float lambdaSheenNumericHelper(float x,float alphaG){float oneMinusAlphaSq=(1.0-alphaG)*(1.0-alphaG);float a=mix(21.5473,25.3245,oneMinusAlphaSq);float b=mix(3.82987,3.32435,oneMinusAlphaSq);float c=mix(0.19823,0.16801,oneMinusAlphaSq);float d=mix(-1.97760,-1.27393,oneMinusAlphaSq);float e=mix(-4.32054,-4.85967,oneMinusAlphaSq);return a/(1.0+b*pow(x,c))+d*x+e;}float lambdaSheen(float cosTheta,float alphaG){if(abs(cosTheta)<0.5){return exp(lambdaSheenNumericHelper(cosTheta,alphaG));}else{return exp(2.0*lambdaSheenNumericHelper(0.5,alphaG)-lambdaSheenNumericHelper(1.0-cosTheta,alphaG));}}float V_Sheen(float NdotL,float NdotV,float sheenRoughness){sheenRoughness=max(sheenRoughness,0.000001);float alphaG=sheenRoughness*sheenRoughness;return clamp(1.0/((1.0+lambdaSheen(NdotV,alphaG)+lambdaSheen(NdotL,alphaG))*(4.0*NdotV*NdotL)),0.0,1.0);}float D_Charlie(float sheenRoughness,float NdotH){sheenRoughness=max(sheenRoughness,0.000001);float alphaG=sheenRoughness*sheenRoughness;float invR=1.0/alphaG;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;return(2.0+invR)*pow(sin2h,invR*0.5)/(2.0*M_PI);}vec3 BRDF_lambertian(vec3 diffuseColor){return(diffuseColor/M_PI);}vec3 BRDF_specularGGX(float alphaRoughness,float NdotL,float NdotV,float NdotH){float Vis=V_GGX(NdotL,NdotV,alphaRoughness);float D=D_GGX(NdotH,alphaRoughness);return vec3(Vis*D);}\n#ifdef MATERIAL_ANISOTROPY\nfloat D_GGX_anisotropic(float NdotH,float TdotH,float BdotH,float anisotropy,float at,float ab){float a2=at*ab;vec3 f=vec3(ab*TdotH,at*BdotH,a2*NdotH);float w2=a2/dot(f,f);return a2*w2*w2/M_PI;}float V_GGX_anisotropic(float NdotL,float NdotV,float BdotV,float TdotV,float TdotL,float BdotL,float at,float ab){float GGXV=NdotL*length(vec3(at*TdotV,ab*BdotV,NdotV));float GGXL=NdotV*length(vec3(at*TdotL,ab*BdotL,NdotL));float v=0.5/(GGXV+GGXL);return clamp(v,0.0,1.0);}vec3 BRDF_specularGGXAnisotropy(float alphaRoughness,float anisotropy,vec3 n,vec3 v,vec3 l,vec3 h,vec3 t,vec3 b){float at=mix(alphaRoughness,1.0,anisotropy*anisotropy);float ab=clamp(alphaRoughness,0.001,1.0);float NdotL=clamp(dot(n,l),0.0,1.0);float NdotH=clamp(dot(n,h),0.001,1.0);float NdotV=dot(n,v);float V=V_GGX_anisotropic(NdotL,NdotV,dot(b,v),dot(t,v),dot(t,l),dot(b,l),at,ab);float D=D_GGX_anisotropic(NdotH,dot(t,h),dot(b,h),anisotropy,at,ab);return vec3(V*D);}\n#endif\nvec3 BRDF_specularSheen(vec3 sheenColor,float sheenRoughness,float NdotL,float NdotV,float NdotH){float sheenDistribution=D_Charlie(sheenRoughness,NdotH);float sheenVisibility=V_Sheen(NdotL,NdotV,sheenRoughness);return sheenColor*sheenDistribution*sheenVisibility;}"; // eslint-disable-line
 
 var iridescenceShader = "#define GLSLIFY 1\nconst mat3 XYZ_TO_REC709=mat3(3.2404542,-0.9692660,0.0556434,-1.5371385,1.8760108,-0.2040259,-0.4985314,0.0415560,1.0572252);vec3 Fresnel0ToIor(vec3 fresnel0){vec3 sqrtF0=sqrt(fresnel0);return(vec3(1.0)+sqrtF0)/(vec3(1.0)-sqrtF0);}vec3 IorToFresnel0(vec3 transmittedIor,float incidentIor){return sq((transmittedIor-vec3(incidentIor))/(transmittedIor+vec3(incidentIor)));}float IorToFresnel0(float transmittedIor,float incidentIor){return sq((transmittedIor-incidentIor)/(transmittedIor+incidentIor));}vec3 evalSensitivity(float OPD,vec3 shift){float phase=2.0*M_PI*OPD*1.0e-9;vec3 val=vec3(5.4856e-13,4.4201e-13,5.2481e-13);vec3 pos=vec3(1.6810e+06,1.7953e+06,2.2084e+06);vec3 var=vec3(4.3278e+09,9.3046e+09,6.6121e+09);vec3 xyz=val*sqrt(2.0*M_PI*var)*cos(pos*phase+shift)*exp(-sq(phase)*var);xyz.x+=9.7470e-14*sqrt(2.0*M_PI*4.5282e+09)*cos(2.2399e+06*phase+shift[0])*exp(-4.5282e+09*sq(phase));xyz/=1.0685e-7;vec3 srgb=XYZ_TO_REC709*xyz;return srgb;}vec3 evalIridescence(float outsideIOR,float eta2,float cosTheta1,float thinFilmThickness,vec3 baseF0){vec3 I;float iridescenceIor=mix(outsideIOR,eta2,smoothstep(0.0,0.03,thinFilmThickness));float sinTheta2Sq=sq(outsideIOR/iridescenceIor)*(1.0-sq(cosTheta1));float cosTheta2Sq=1.0-sinTheta2Sq;if(cosTheta2Sq<0.0){return vec3(1.0);}float cosTheta2=sqrt(cosTheta2Sq);float R0=IorToFresnel0(iridescenceIor,outsideIOR);float R12=F_Schlick(R0,cosTheta1);float R21=R12;float T121=1.0-R12;float phi12=0.0;if(iridescenceIor<outsideIOR)phi12=M_PI;float phi21=M_PI-phi12;vec3 baseIOR=Fresnel0ToIor(clamp(baseF0,0.0,0.9999));vec3 R1=IorToFresnel0(baseIOR,iridescenceIor);vec3 R23=F_Schlick(R1,cosTheta2);vec3 phi23=vec3(0.0);if(baseIOR[0]<iridescenceIor)phi23[0]=M_PI;if(baseIOR[1]<iridescenceIor)phi23[1]=M_PI;if(baseIOR[2]<iridescenceIor)phi23[2]=M_PI;float OPD=2.0*iridescenceIor*thinFilmThickness*cosTheta2;vec3 phi=vec3(phi21)+phi23;vec3 R123=clamp(R12*R23,1e-5,0.9999);vec3 r123=sqrt(R123);vec3 Rs=sq(T121)*R23/(vec3(1.0)-R123);vec3 C0=R12+Rs;I=C0;vec3 Cm=Rs-T121;for(int m=1;m<=2;++m){Cm*=r123;vec3 Sm=2.0*evalSensitivity(float(m)*OPD,float(m)*phi);I+=Cm*Sm;}return max(I,vec3(0.0));}"; // eslint-disable-line
 
-var materialInfoShader = "#define GLSLIFY 1\nuniform float u_MetallicFactor;uniform float u_RoughnessFactor;uniform vec4 u_BaseColorFactor;uniform vec3 u_SpecularFactor;uniform vec4 u_DiffuseFactor;uniform float u_GlossinessFactor;uniform float u_SheenRoughnessFactor;uniform vec3 u_SheenColorFactor;uniform float u_ClearcoatFactor;uniform float u_ClearcoatRoughnessFactor;uniform vec3 u_KHR_materials_specular_specularColorFactor;uniform float u_KHR_materials_specular_specularFactor;uniform float u_TransmissionFactor;uniform float u_ThicknessFactor;uniform vec3 u_AttenuationColor;uniform float u_AttenuationDistance;uniform float u_IridescenceFactor;uniform float u_IridescenceIor;uniform float u_IridescenceThicknessMinimum;uniform float u_IridescenceThicknessMaximum;uniform float u_DiffuseTransmissionFactor;uniform vec3 u_DiffuseTransmissionColorFactor;uniform float u_EmissiveStrength;uniform float u_Ior;uniform vec3 u_Anisotropy;uniform float u_Dispersion;uniform float u_AlphaCutoff;uniform vec3 u_Camera;\n#ifdef MATERIAL_TRANSMISSION\nuniform ivec2 u_ScreenSize;\n#endif\nuniform mat4 u_ModelMatrix;uniform mat4 u_ViewMatrix;uniform mat4 u_ProjectionMatrix;struct MaterialInfo{float ior;float perceptualRoughness;vec3 f0_dielectric;float alphaRoughness;float fresnel_w;vec3 f90;vec3 f90_dielectric;float metallic;vec3 baseColor;float sheenRoughnessFactor;vec3 sheenColorFactor;vec3 clearcoatF0;vec3 clearcoatF90;float clearcoatFactor;vec3 clearcoatNormal;float clearcoatRoughness;float specularWeight;float transmissionFactor;float thickness;vec3 attenuationColor;float attenuationDistance;float iridescenceFactor;float iridescenceIor;float iridescenceThickness;float diffuseTransmissionFactor;vec3 diffuseTransmissionColorFactor;vec3 anisotropicT;vec3 anisotropicB;float anisotropyStrength;float dispersion;};NormalInfo getNormalInfo(vec3 v){vec2 UV=getNormalUV();vec2 uv_dx=dFdx(UV);vec2 uv_dy=dFdy(UV);if(length(uv_dx)<=1e-2){uv_dx=vec2(1.0,0.0);}if(length(uv_dy)<=1e-2){uv_dy=vec2(0.0,1.0);}vec3 t_=(uv_dy.t*dFdx(v_Position)-uv_dx.t*dFdy(v_Position))/(uv_dx.s*uv_dy.t-uv_dy.s*uv_dx.t);vec3 n,t,b,ng;\n#ifdef HAS_NORMAL_VEC3\n#ifdef HAS_TANGENT_VEC4\nt=normalize(v_TBN[0]);b=normalize(v_TBN[1]);ng=normalize(v_TBN[2]);\n#else\nng=normalize(v_Normal);t=normalize(t_-ng*dot(ng,t_));b=cross(ng,t);\n#endif\n#else\nng=normalize(cross(dFdx(v_Position),dFdy(v_Position)));t=normalize(t_-ng*dot(ng,t_));b=cross(ng,t);\n#endif\n#ifndef NOT_TRIANGLE\nif(gl_FrontFacing==false){t*=-1.0;b*=-1.0;ng*=-1.0;}\n#endif\nNormalInfo info;info.ng=ng;\n#ifdef HAS_NORMAL_MAP\ninfo.ntex=texture(u_NormalSampler,UV).rgb*2.0-vec3(1.0);info.ntex*=vec3(u_NormalScale,u_NormalScale,1.0);info.ntex=normalize(info.ntex);info.n=normalize(mat3(t,b,ng)*info.ntex);\n#else\ninfo.n=ng;\n#endif\ninfo.t=t;info.b=b;return info;}\n#ifdef MATERIAL_CLEARCOAT\nvec3 getClearcoatNormal(NormalInfo normalInfo){\n#ifdef HAS_CLEARCOAT_NORMAL_MAP\nvec3 n=texture(u_ClearcoatNormalSampler,getClearcoatNormalUV()).rgb*2.0-vec3(1.0);n*=vec3(u_ClearcoatNormalScale,u_ClearcoatNormalScale,1.0);n=mat3(normalInfo.t,normalInfo.b,normalInfo.ng)*normalize(n);return n;\n#else\nreturn normalInfo.ng;\n#endif\n}\n#endif\nvec4 getBaseColor(){vec4 baseColor=vec4(1);\n#if defined(MATERIAL_SPECULARGLOSSINESS)\nbaseColor=u_DiffuseFactor;\n#elif defined(MATERIAL_METALLICROUGHNESS)\nbaseColor=u_BaseColorFactor;\n#endif\n#if defined(MATERIAL_SPECULARGLOSSINESS) && defined(HAS_DIFFUSE_MAP)\nbaseColor*=texture(u_DiffuseSampler,getDiffuseUV());\n#elif defined(MATERIAL_METALLICROUGHNESS) && defined(HAS_BASE_COLOR_MAP)\nbaseColor*=texture(u_BaseColorSampler,getBaseColorUV());\n#endif\nreturn baseColor*getVertexColor();}\n#ifdef MATERIAL_SPECULARGLOSSINESS\nMaterialInfo getSpecularGlossinessInfo(MaterialInfo info){info.f0_dielectric=u_SpecularFactor;info.perceptualRoughness=u_GlossinessFactor;\n#ifdef HAS_SPECULAR_GLOSSINESS_MAP\nvec4 sgSample=texture(u_SpecularGlossinessSampler,getSpecularGlossinessUV());info.perceptualRoughness*=sgSample.a;info.f0_dielectric*=sgSample.rgb;\n#endif\ninfo.perceptualRoughness=1.0-info.perceptualRoughness;return info;}\n#endif\n#ifdef MATERIAL_METALLICROUGHNESS\nMaterialInfo getMetallicRoughnessInfo(MaterialInfo info){info.metallic=u_MetallicFactor;info.perceptualRoughness=u_RoughnessFactor;\n#ifdef HAS_METALLIC_ROUGHNESS_MAP\nvec4 mrSample=texture(u_MetallicRoughnessSampler,getMetallicRoughnessUV());info.perceptualRoughness*=mrSample.g;info.metallic*=mrSample.b;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_SHEEN\nMaterialInfo getSheenInfo(MaterialInfo info){info.sheenColorFactor=u_SheenColorFactor;info.sheenRoughnessFactor=u_SheenRoughnessFactor;\n#ifdef HAS_SHEEN_COLOR_MAP\nvec4 sheenColorSample=texture(u_SheenColorSampler,getSheenColorUV());info.sheenColorFactor*=sheenColorSample.rgb;\n#endif\n#ifdef HAS_SHEEN_ROUGHNESS_MAP\nvec4 sheenRoughnessSample=texture(u_SheenRoughnessSampler,getSheenRoughnessUV());info.sheenRoughnessFactor*=sheenRoughnessSample.a;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_SPECULAR\nMaterialInfo getSpecularInfo(MaterialInfo info){vec4 specularTexture=vec4(1.0);\n#ifdef HAS_SPECULAR_MAP\nspecularTexture.a=texture(u_SpecularSampler,getSpecularUV()).a;\n#endif\n#ifdef HAS_SPECULAR_COLOR_MAP\nspecularTexture.rgb=texture(u_SpecularColorSampler,getSpecularColorUV()).rgb;\n#endif\ninfo.f0_dielectric=min(info.f0_dielectric*u_KHR_materials_specular_specularColorFactor*specularTexture.rgb,vec3(1.0));info.specularWeight=u_KHR_materials_specular_specularFactor*specularTexture.a;info.f90_dielectric=vec3(info.specularWeight);return info;}\n#endif\n#ifdef MATERIAL_TRANSMISSION\nMaterialInfo getTransmissionInfo(MaterialInfo info){info.transmissionFactor=u_TransmissionFactor;\n#ifdef HAS_TRANSMISSION_MAP\nvec4 transmissionSample=texture(u_TransmissionSampler,getTransmissionUV());info.transmissionFactor*=transmissionSample.r;\n#endif\n#ifdef MATERIAL_DISPERSION\ninfo.dispersion=u_Dispersion;\n#else\ninfo.dispersion=0.0;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_VOLUME\nMaterialInfo getVolumeInfo(MaterialInfo info){info.thickness=u_ThicknessFactor;info.attenuationColor=u_AttenuationColor;info.attenuationDistance=u_AttenuationDistance;\n#ifdef HAS_THICKNESS_MAP\nvec4 thicknessSample=texture(u_ThicknessSampler,getThicknessUV());info.thickness*=thicknessSample.g;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_IRIDESCENCE\nMaterialInfo getIridescenceInfo(MaterialInfo info){info.iridescenceFactor=u_IridescenceFactor;info.iridescenceIor=u_IridescenceIor;info.iridescenceThickness=u_IridescenceThicknessMaximum;\n#ifdef HAS_IRIDESCENCE_MAP\ninfo.iridescenceFactor*=texture(u_IridescenceSampler,getIridescenceUV()).r;\n#endif\n#ifdef HAS_IRIDESCENCE_THICKNESS_MAP\nfloat thicknessSampled=texture(u_IridescenceThicknessSampler,getIridescenceThicknessUV()).g;float thickness=mix(u_IridescenceThicknessMinimum,u_IridescenceThicknessMaximum,thicknessSampled);info.iridescenceThickness=thickness;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nMaterialInfo getDiffuseTransmissionInfo(MaterialInfo info){info.diffuseTransmissionFactor=u_DiffuseTransmissionFactor;info.diffuseTransmissionColorFactor=u_DiffuseTransmissionColorFactor;\n#ifdef HAS_DIFFUSE_TRANSMISSION_MAP\ninfo.diffuseTransmissionFactor*=texture(u_DiffuseTransmissionSampler,getDiffuseTransmissionUV()).a;\n#endif\n#ifdef HAS_DIFFUSE_TRANSMISSION_COLOR_MAP\ninfo.diffuseTransmissionColorFactor*=texture(u_DiffuseTransmissionColorSampler,getDiffuseTransmissionColorUV()).rgb;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_CLEARCOAT\nMaterialInfo getClearCoatInfo(MaterialInfo info,NormalInfo normalInfo){info.clearcoatFactor=u_ClearcoatFactor;info.clearcoatRoughness=u_ClearcoatRoughnessFactor;info.clearcoatF0=vec3(pow((info.ior-1.0)/(info.ior+1.0),2.0));info.clearcoatF90=vec3(1.0);\n#ifdef HAS_CLEARCOAT_MAP\nvec4 clearcoatSample=texture(u_ClearcoatSampler,getClearcoatUV());info.clearcoatFactor*=clearcoatSample.r;\n#endif\n#ifdef HAS_CLEARCOAT_ROUGHNESS_MAP\nvec4 clearcoatSampleRoughness=texture(u_ClearcoatRoughnessSampler,getClearcoatRoughnessUV());info.clearcoatRoughness*=clearcoatSampleRoughness.g;\n#endif\ninfo.clearcoatNormal=getClearcoatNormal(normalInfo);info.clearcoatRoughness=clamp(info.clearcoatRoughness,0.0,1.0);return info;}\n#endif\n#ifdef MATERIAL_IOR\nMaterialInfo getIorInfo(MaterialInfo info){info.f0_dielectric=vec3(pow((u_Ior-1.0)/(u_Ior+1.0),2.0));info.ior=u_Ior;return info;}\n#endif\n#ifdef MATERIAL_ANISOTROPY\nMaterialInfo getAnisotropyInfo(MaterialInfo info,NormalInfo normalInfo){vec2 direction=vec2(1.0,0.0);float strengthFactor=1.0;\n#ifdef HAS_ANISOTROPY_MAP\nvec3 anisotropySample=texture(u_AnisotropySampler,getAnisotropyUV()).xyz;direction=anisotropySample.xy*2.0-vec2(1.0);strengthFactor=anisotropySample.z;\n#endif\nvec2 directionRotation=u_Anisotropy.xy;mat2 rotationMatrix=mat2(directionRotation.x,directionRotation.y,-directionRotation.y,directionRotation.x);direction=rotationMatrix*direction.xy;info.anisotropicT=mat3(normalInfo.t,normalInfo.b,normalInfo.n)*normalize(vec3(direction,0.0));info.anisotropicB=cross(normalInfo.ng,info.anisotropicT);info.anisotropyStrength=clamp(u_Anisotropy.z*strengthFactor,0.0,1.0);return info;}\n#endif\nfloat albedoSheenScalingLUT(float NdotV,float sheenRoughnessFactor){return texture(u_SheenELUT,vec2(NdotV,sheenRoughnessFactor)).r;}"; // eslint-disable-line
+var materialInfoShader = "#define GLSLIFY 1\nuniform float u_MetallicFactor;uniform float u_RoughnessFactor;uniform vec4 u_BaseColorFactor;uniform float u_SheenRoughnessFactor;uniform vec3 u_SheenColorFactor;uniform float u_ClearcoatFactor;uniform float u_ClearcoatRoughnessFactor;uniform vec3 u_KHR_materials_specular_specularColorFactor;uniform float u_KHR_materials_specular_specularFactor;uniform float u_TransmissionFactor;uniform float u_ThicknessFactor;uniform vec3 u_AttenuationColor;uniform float u_AttenuationDistance;uniform float u_IridescenceFactor;uniform float u_IridescenceIor;uniform float u_IridescenceThicknessMinimum;uniform float u_IridescenceThicknessMaximum;uniform float u_DiffuseTransmissionFactor;uniform vec3 u_DiffuseTransmissionColorFactor;uniform float u_EmissiveStrength;uniform float u_Ior;uniform vec3 u_Anisotropy;uniform float u_Dispersion;uniform float u_AlphaCutoff;uniform vec3 u_Camera;\n#ifdef MATERIAL_TRANSMISSION\nuniform ivec2 u_ScreenSize;\n#endif\nuniform mat4 u_ModelMatrix;uniform mat4 u_ViewMatrix;uniform mat4 u_ProjectionMatrix;struct MaterialInfo{float ior;float perceptualRoughness;vec3 f0_dielectric;float alphaRoughness;float fresnel_w;vec3 f90;vec3 f90_dielectric;float metallic;vec3 baseColor;float sheenRoughnessFactor;vec3 sheenColorFactor;vec3 clearcoatF0;vec3 clearcoatF90;float clearcoatFactor;vec3 clearcoatNormal;float clearcoatRoughness;float specularWeight;float transmissionFactor;float thickness;vec3 attenuationColor;float attenuationDistance;float iridescenceFactor;float iridescenceIor;float iridescenceThickness;float diffuseTransmissionFactor;vec3 diffuseTransmissionColorFactor;vec3 anisotropicT;vec3 anisotropicB;float anisotropyStrength;float dispersion;};NormalInfo getNormalInfo(vec3 v){vec2 UV=getNormalUV();vec2 uv_dx=dFdx(UV);vec2 uv_dy=dFdy(UV);if(length(uv_dx)<=1e-2){uv_dx=vec2(1.0,0.0);}if(length(uv_dy)<=1e-2){uv_dy=vec2(0.0,1.0);}vec3 t_=(uv_dy.t*dFdx(v_Position)-uv_dx.t*dFdy(v_Position))/(uv_dx.s*uv_dy.t-uv_dy.s*uv_dx.t);vec3 n,t,b,ng;\n#ifdef HAS_NORMAL_VEC3\n#ifdef HAS_TANGENT_VEC4\nt=normalize(v_TBN[0]);b=normalize(v_TBN[1]);ng=normalize(v_TBN[2]);\n#else\nng=normalize(v_Normal);t=normalize(t_-ng*dot(ng,t_));b=cross(ng,t);\n#endif\n#else\nng=normalize(cross(dFdx(v_Position),dFdy(v_Position)));t=normalize(t_-ng*dot(ng,t_));b=cross(ng,t);\n#endif\n#ifndef NOT_TRIANGLE\nif(gl_FrontFacing==false){t*=-1.0;b*=-1.0;ng*=-1.0;}\n#endif\nNormalInfo info;info.ng=ng;\n#ifdef HAS_NORMAL_MAP\ninfo.ntex=texture(u_NormalSampler,UV).rgb*2.0-vec3(1.0);info.ntex*=vec3(u_NormalScale,u_NormalScale,1.0);info.ntex=normalize(info.ntex);info.n=normalize(mat3(t,b,ng)*info.ntex);\n#else\ninfo.n=ng;\n#endif\ninfo.t=t;info.b=b;return info;}\n#ifdef MATERIAL_CLEARCOAT\nvec3 getClearcoatNormal(NormalInfo normalInfo){\n#ifdef HAS_CLEARCOAT_NORMAL_MAP\nvec3 n=texture(u_ClearcoatNormalSampler,getClearcoatNormalUV()).rgb*2.0-vec3(1.0);n*=vec3(u_ClearcoatNormalScale,u_ClearcoatNormalScale,1.0);n=mat3(normalInfo.t,normalInfo.b,normalInfo.ng)*normalize(n);return n;\n#else\nreturn normalInfo.ng;\n#endif\n}\n#endif\nvec4 getBaseColor(){vec4 baseColor=u_BaseColorFactor;\n#if defined(HAS_BASE_COLOR_MAP)\nbaseColor*=texture(u_BaseColorSampler,getBaseColorUV());\n#endif\nreturn baseColor*getVertexColor();}\n#ifdef MATERIAL_METALLICROUGHNESS\nMaterialInfo getMetallicRoughnessInfo(MaterialInfo info){info.metallic=u_MetallicFactor;info.perceptualRoughness=u_RoughnessFactor;\n#ifdef HAS_METALLIC_ROUGHNESS_MAP\nvec4 mrSample=texture(u_MetallicRoughnessSampler,getMetallicRoughnessUV());info.perceptualRoughness*=mrSample.g;info.metallic*=mrSample.b;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_SHEEN\nMaterialInfo getSheenInfo(MaterialInfo info){info.sheenColorFactor=u_SheenColorFactor;info.sheenRoughnessFactor=u_SheenRoughnessFactor;\n#ifdef HAS_SHEEN_COLOR_MAP\nvec4 sheenColorSample=texture(u_SheenColorSampler,getSheenColorUV());info.sheenColorFactor*=sheenColorSample.rgb;\n#endif\n#ifdef HAS_SHEEN_ROUGHNESS_MAP\nvec4 sheenRoughnessSample=texture(u_SheenRoughnessSampler,getSheenRoughnessUV());info.sheenRoughnessFactor*=sheenRoughnessSample.a;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_SPECULAR\nMaterialInfo getSpecularInfo(MaterialInfo info){vec4 specularTexture=vec4(1.0);\n#ifdef HAS_SPECULAR_MAP\nspecularTexture.a=texture(u_SpecularSampler,getSpecularUV()).a;\n#endif\n#ifdef HAS_SPECULAR_COLOR_MAP\nspecularTexture.rgb=texture(u_SpecularColorSampler,getSpecularColorUV()).rgb;\n#endif\ninfo.f0_dielectric=min(info.f0_dielectric*u_KHR_materials_specular_specularColorFactor*specularTexture.rgb,vec3(1.0));info.specularWeight=u_KHR_materials_specular_specularFactor*specularTexture.a;info.f90_dielectric=vec3(info.specularWeight);return info;}\n#endif\n#ifdef MATERIAL_TRANSMISSION\nMaterialInfo getTransmissionInfo(MaterialInfo info){info.transmissionFactor=u_TransmissionFactor;\n#ifdef HAS_TRANSMISSION_MAP\nvec4 transmissionSample=texture(u_TransmissionSampler,getTransmissionUV());info.transmissionFactor*=transmissionSample.r;\n#endif\n#ifdef MATERIAL_DISPERSION\ninfo.dispersion=u_Dispersion;\n#else\ninfo.dispersion=0.0;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_VOLUME\nMaterialInfo getVolumeInfo(MaterialInfo info){info.thickness=u_ThicknessFactor;info.attenuationColor=u_AttenuationColor;info.attenuationDistance=u_AttenuationDistance;\n#ifdef HAS_THICKNESS_MAP\nvec4 thicknessSample=texture(u_ThicknessSampler,getThicknessUV());info.thickness*=thicknessSample.g;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_IRIDESCENCE\nMaterialInfo getIridescenceInfo(MaterialInfo info){info.iridescenceFactor=u_IridescenceFactor;info.iridescenceIor=u_IridescenceIor;info.iridescenceThickness=u_IridescenceThicknessMaximum;\n#ifdef HAS_IRIDESCENCE_MAP\ninfo.iridescenceFactor*=texture(u_IridescenceSampler,getIridescenceUV()).r;\n#endif\n#ifdef HAS_IRIDESCENCE_THICKNESS_MAP\nfloat thicknessSampled=texture(u_IridescenceThicknessSampler,getIridescenceThicknessUV()).g;float thickness=mix(u_IridescenceThicknessMinimum,u_IridescenceThicknessMaximum,thicknessSampled);info.iridescenceThickness=thickness;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nMaterialInfo getDiffuseTransmissionInfo(MaterialInfo info){info.diffuseTransmissionFactor=u_DiffuseTransmissionFactor;info.diffuseTransmissionColorFactor=u_DiffuseTransmissionColorFactor;\n#ifdef HAS_DIFFUSE_TRANSMISSION_MAP\ninfo.diffuseTransmissionFactor*=texture(u_DiffuseTransmissionSampler,getDiffuseTransmissionUV()).a;\n#endif\n#ifdef HAS_DIFFUSE_TRANSMISSION_COLOR_MAP\ninfo.diffuseTransmissionColorFactor*=texture(u_DiffuseTransmissionColorSampler,getDiffuseTransmissionColorUV()).rgb;\n#endif\nreturn info;}\n#endif\n#ifdef MATERIAL_CLEARCOAT\nMaterialInfo getClearCoatInfo(MaterialInfo info,NormalInfo normalInfo){info.clearcoatFactor=u_ClearcoatFactor;info.clearcoatRoughness=u_ClearcoatRoughnessFactor;info.clearcoatF0=vec3(pow((info.ior-1.0)/(info.ior+1.0),2.0));info.clearcoatF90=vec3(1.0);\n#ifdef HAS_CLEARCOAT_MAP\nvec4 clearcoatSample=texture(u_ClearcoatSampler,getClearcoatUV());info.clearcoatFactor*=clearcoatSample.r;\n#endif\n#ifdef HAS_CLEARCOAT_ROUGHNESS_MAP\nvec4 clearcoatSampleRoughness=texture(u_ClearcoatRoughnessSampler,getClearcoatRoughnessUV());info.clearcoatRoughness*=clearcoatSampleRoughness.g;\n#endif\ninfo.clearcoatNormal=getClearcoatNormal(normalInfo);info.clearcoatRoughness=clamp(info.clearcoatRoughness,0.0,1.0);return info;}\n#endif\n#ifdef MATERIAL_IOR\nMaterialInfo getIorInfo(MaterialInfo info){info.f0_dielectric=vec3(pow((u_Ior-1.0)/(u_Ior+1.0),2.0));info.ior=u_Ior;return info;}\n#endif\n#ifdef MATERIAL_ANISOTROPY\nMaterialInfo getAnisotropyInfo(MaterialInfo info,NormalInfo normalInfo){vec2 direction=vec2(1.0,0.0);float strengthFactor=1.0;\n#ifdef HAS_ANISOTROPY_MAP\nvec3 anisotropySample=texture(u_AnisotropySampler,getAnisotropyUV()).xyz;direction=anisotropySample.xy*2.0-vec2(1.0);strengthFactor=anisotropySample.z;\n#endif\nvec2 directionRotation=u_Anisotropy.xy;mat2 rotationMatrix=mat2(directionRotation.x,directionRotation.y,-directionRotation.y,directionRotation.x);direction=rotationMatrix*direction.xy;info.anisotropicT=mat3(normalInfo.t,normalInfo.b,normalInfo.n)*normalize(vec3(direction,0.0));info.anisotropicB=cross(normalInfo.ng,info.anisotropicT);info.anisotropyStrength=clamp(u_Anisotropy.z*strengthFactor,0.0,1.0);return info;}\n#endif\nfloat albedoSheenScalingLUT(float NdotV,float sheenRoughnessFactor){return texture(u_SheenELUT,vec2(NdotV,sheenRoughnessFactor)).r;}"; // eslint-disable-line
 
-var iblShader = "#define GLSLIFY 1\nuniform float u_EnvIntensity;vec3 getDiffuseLight(vec3 n){vec4 textureSample=texture(u_LambertianEnvSampler,u_EnvRotation*n);textureSample.rgb*=u_EnvIntensity;return textureSample.rgb;}vec4 getSpecularSample(vec3 reflection,float lod){vec4 textureSample=textureLod(u_GGXEnvSampler,u_EnvRotation*reflection,lod);textureSample.rgb*=u_EnvIntensity;return textureSample;}vec4 getSheenSample(vec3 reflection,float lod){vec4 textureSample=textureLod(u_CharlieEnvSampler,u_EnvRotation*reflection,lod);textureSample.rgb*=u_EnvIntensity;return textureSample;}vec3 getIBLGGXFresnel(vec3 n,vec3 v,float roughness,vec3 F0,float specularWeight){float NdotV=clampedDot(n,v);vec2 brdfSamplePoint=clamp(vec2(NdotV,roughness),vec2(0.0,0.0),vec2(1.0,1.0));vec2 f_ab=texture(u_GGXLUT,brdfSamplePoint).rg;vec3 Fr=max(vec3(1.0-roughness),F0)-F0;vec3 k_S=F0+Fr*pow(1.0-NdotV,5.0);vec3 FssEss=specularWeight*(k_S*f_ab.x+f_ab.y);float Ems=(1.0-(f_ab.x+f_ab.y));vec3 F_avg=specularWeight*(F0+(1.0-F0)/21.0);vec3 FmsEms=Ems*FssEss*F_avg/(1.0-F_avg*Ems);return FssEss+FmsEms;}vec3 getIBLRadianceGGX(vec3 n,vec3 v,float roughness){float NdotV=clampedDot(n,v);float lod=roughness*float(u_MipCount-1);vec3 reflection=normalize(reflect(-v,n));vec4 specularSample=getSpecularSample(reflection,lod);vec3 specularLight=specularSample.rgb;return specularLight;}\n#ifdef MATERIAL_TRANSMISSION\nvec3 getTransmissionSample(vec2 fragCoord,float roughness,float ior){float framebufferLod=log2(float(u_TransmissionFramebufferSize.x))*applyIorToRoughness(roughness,ior);vec3 transmittedLight=textureLod(u_TransmissionFramebufferSampler,fragCoord.xy,framebufferLod).rgb;return transmittedLight;}\n#endif\n#ifdef MATERIAL_TRANSMISSION\nvec3 getIBLVolumeRefraction(vec3 n,vec3 v,float perceptualRoughness,vec3 baseColor,vec3 f0,vec3 f90,vec3 position,mat4 modelMatrix,mat4 viewMatrix,mat4 projMatrix,float ior,float thickness,vec3 attenuationColor,float attenuationDistance,float dispersion){\n#ifdef MATERIAL_DISPERSION\nfloat halfSpread=(ior-1.0)*0.025*dispersion;vec3 iors=vec3(ior-halfSpread,ior,ior+halfSpread);vec3 transmittedLight;float transmissionRayLength;for(int i=0;i<3;i++){vec3 transmissionRay=getVolumeTransmissionRay(n,v,thickness,iors[i],modelMatrix);transmissionRayLength=length(transmissionRay);vec3 refractedRayExit=position+transmissionRay;vec4 ndcPos=projMatrix*viewMatrix*vec4(refractedRayExit,1.0);vec2 refractionCoords=ndcPos.xy/ndcPos.w;refractionCoords+=1.0;refractionCoords/=2.0;transmittedLight[i]=getTransmissionSample(refractionCoords,perceptualRoughness,iors[i])[i];}\n#else\nvec3 transmissionRay=getVolumeTransmissionRay(n,v,thickness,ior,modelMatrix);float transmissionRayLength=length(transmissionRay);vec3 refractedRayExit=position+transmissionRay;vec4 ndcPos=projMatrix*viewMatrix*vec4(refractedRayExit,1.0);vec2 refractionCoords=ndcPos.xy/ndcPos.w;refractionCoords+=1.0;refractionCoords/=2.0;vec3 transmittedLight=getTransmissionSample(refractionCoords,perceptualRoughness,ior);\n#endif\nvec3 attenuatedColor=applyVolumeAttenuation(transmittedLight,transmissionRayLength,attenuationColor,attenuationDistance);float NdotV=clampedDot(n,v);vec2 brdfSamplePoint=clamp(vec2(NdotV,perceptualRoughness),vec2(0.0,0.0),vec2(1.0,1.0));vec2 brdf=texture(u_GGXLUT,brdfSamplePoint).rg;vec3 specularColor=f0*brdf.x+f90*brdf.y;return(1.0-specularColor)*attenuatedColor*baseColor;}\n#endif\n#ifdef MATERIAL_ANISOTROPY\nvec3 getIBLRadianceAnisotropy(vec3 n,vec3 v,float roughness,float anisotropy,vec3 anisotropyDirection){float NdotV=clampedDot(n,v);float tangentRoughness=mix(roughness,1.0,anisotropy*anisotropy);vec3 anisotropicTangent=cross(anisotropyDirection,v);vec3 anisotropicNormal=cross(anisotropicTangent,anisotropyDirection);float bendFactor=1.0-anisotropy*(1.0-roughness);float bendFactorPow4=bendFactor*bendFactor*bendFactor*bendFactor;vec3 bentNormal=normalize(mix(anisotropicNormal,n,bendFactorPow4));float lod=roughness*float(u_MipCount-1);vec3 reflection=normalize(reflect(-v,bentNormal));vec4 specularSample=getSpecularSample(reflection,lod);vec3 specularLight=specularSample.rgb;return specularLight;}\n#endif\nvec3 getIBLRadianceCharlie(vec3 n,vec3 v,float sheenRoughness,vec3 sheenColor){float NdotV=clampedDot(n,v);float lod=sheenRoughness*float(u_MipCount-1);vec3 reflection=normalize(reflect(-v,n));vec2 brdfSamplePoint=clamp(vec2(NdotV,sheenRoughness),vec2(0.0,0.0),vec2(1.0,1.0));float brdf=texture(u_CharlieLUT,brdfSamplePoint).b;vec4 sheenSample=getSheenSample(reflection,lod);vec3 sheenLight=sheenSample.rgb;return sheenLight*sheenColor*brdf;}"; // eslint-disable-line
+var iblShader = "#define GLSLIFY 1\nuniform float u_EnvIntensity;vec3 getDiffuseLight(vec3 n){vec4 textureSample=texture(u_LambertianEnvSampler,u_EnvRotation*n);textureSample.rgb*=u_EnvIntensity;return textureSample.rgb;}vec4 getSpecularSample(vec3 reflection,float lod){vec4 textureSample=textureLod(u_GGXEnvSampler,u_EnvRotation*reflection,lod);textureSample.rgb*=u_EnvIntensity;return textureSample;}vec4 getSheenSample(vec3 reflection,float lod){vec4 textureSample=textureLod(u_CharlieEnvSampler,u_EnvRotation*reflection,lod);textureSample.rgb*=u_EnvIntensity;return textureSample;}vec3 getIBLGGXFresnel(vec3 n,vec3 v,float roughness,vec3 F0,float specularWeight){float NdotV=clampedDot(n,v);vec2 brdfSamplePoint=clamp(vec2(NdotV,roughness),vec2(0.0,0.0),vec2(1.0,1.0));vec2 f_ab=texture(u_GGXLUT,brdfSamplePoint).rg;vec3 Fr=max(vec3(1.0-roughness),F0)-F0;vec3 k_S=F0+Fr*pow(1.0-NdotV,5.0);vec3 FssEss=specularWeight*(k_S*f_ab.x+f_ab.y);float Ems=(1.0-(f_ab.x+f_ab.y));vec3 F_avg=specularWeight*(F0+(1.0-F0)/21.0);vec3 FmsEms=Ems*FssEss*F_avg/(1.0-F_avg*Ems);return FssEss+FmsEms;}vec3 getIBLRadianceGGX(vec3 n,vec3 v,float roughness){float NdotV=clampedDot(n,v);float lod=roughness*float(u_MipCount-1);vec3 reflection=normalize(reflect(-v,n));vec4 specularSample=getSpecularSample(reflection,lod);vec3 specularLight=specularSample.rgb;return specularLight;}\n#ifdef MATERIAL_TRANSMISSION\nvec3 getTransmissionSample(vec2 fragCoord,float roughness,float ior){float framebufferLod=log2(float(u_TransmissionFramebufferSize.x))*applyIorToRoughness(roughness,ior);vec3 transmittedLight=textureLod(u_TransmissionFramebufferSampler,fragCoord.xy,framebufferLod).rgb;return transmittedLight;}\n#endif\n#ifdef MATERIAL_TRANSMISSION\nvec3 getIBLVolumeRefraction(vec3 n,vec3 v,float perceptualRoughness,vec3 baseColor,vec3 position,mat4 modelMatrix,mat4 viewMatrix,mat4 projMatrix,float ior,float thickness,vec3 attenuationColor,float attenuationDistance,float dispersion){\n#ifdef MATERIAL_DISPERSION\nfloat halfSpread=(ior-1.0)*0.025*dispersion;vec3 iors=vec3(ior-halfSpread,ior,ior+halfSpread);vec3 transmittedLight;float transmissionRayLength;for(int i=0;i<3;i++){vec3 transmissionRay=getVolumeTransmissionRay(n,v,thickness,iors[i],modelMatrix);transmissionRayLength=length(transmissionRay);vec3 refractedRayExit=position+transmissionRay;vec4 ndcPos=projMatrix*viewMatrix*vec4(refractedRayExit,1.0);vec2 refractionCoords=ndcPos.xy/ndcPos.w;refractionCoords+=1.0;refractionCoords/=2.0;transmittedLight[i]=getTransmissionSample(refractionCoords,perceptualRoughness,iors[i])[i];}\n#else\nvec3 transmissionRay=getVolumeTransmissionRay(n,v,thickness,ior,modelMatrix);float transmissionRayLength=length(transmissionRay);vec3 refractedRayExit=position+transmissionRay;vec4 ndcPos=projMatrix*viewMatrix*vec4(refractedRayExit,1.0);vec2 refractionCoords=ndcPos.xy/ndcPos.w;refractionCoords+=1.0;refractionCoords/=2.0;vec3 transmittedLight=getTransmissionSample(refractionCoords,perceptualRoughness,ior);\n#endif\nvec3 attenuatedColor=applyVolumeAttenuation(transmittedLight,transmissionRayLength,attenuationColor,attenuationDistance);return attenuatedColor*baseColor;}\n#endif\n#ifdef MATERIAL_ANISOTROPY\nvec3 getIBLRadianceAnisotropy(vec3 n,vec3 v,float roughness,float anisotropy,vec3 anisotropyDirection){float NdotV=clampedDot(n,v);float tangentRoughness=mix(roughness,1.0,anisotropy*anisotropy);vec3 anisotropicTangent=cross(anisotropyDirection,v);vec3 anisotropicNormal=cross(anisotropicTangent,anisotropyDirection);float bendFactor=1.0-anisotropy*(1.0-roughness);float bendFactorPow4=bendFactor*bendFactor*bendFactor*bendFactor;vec3 bentNormal=normalize(mix(anisotropicNormal,n,bendFactorPow4));float lod=roughness*float(u_MipCount-1);vec3 reflection=normalize(reflect(-v,bentNormal));vec4 specularSample=getSpecularSample(reflection,lod);vec3 specularLight=specularSample.rgb;return specularLight;}\n#endif\nvec3 getIBLRadianceCharlie(vec3 n,vec3 v,float sheenRoughness,vec3 sheenColor){float NdotV=clampedDot(n,v);float lod=sheenRoughness*float(u_MipCount-1);vec3 reflection=normalize(reflect(-v,n));vec2 brdfSamplePoint=clamp(vec2(NdotV,sheenRoughness),vec2(0.0,0.0),vec2(1.0,1.0));float brdf=texture(u_CharlieLUT,brdfSamplePoint).b;vec4 sheenSample=getSheenSample(reflection,lod);vec3 sheenLight=sheenSample.rgb;return sheenLight*sheenColor*brdf;}"; // eslint-disable-line
 
-var punctualShader = "#define GLSLIFY 1\nstruct Light{vec3 direction;float range;vec3 color;float intensity;vec3 position;float innerConeCos;float outerConeCos;int type;};const int LightType_Directional=0;const int LightType_Point=1;const int LightType_Spot=2;\n#ifdef USE_PUNCTUAL\nuniform Light u_Lights[LIGHT_COUNT+1];\n#endif\nfloat getRangeAttenuation(float range,float distance){if(range<=0.0){return 1.0/pow(distance,2.0);}return max(min(1.0-pow(distance/range,4.0),1.0),0.0)/pow(distance,2.0);}float getSpotAttenuation(vec3 pointToLight,vec3 spotDirection,float outerConeCos,float innerConeCos){float actualCos=dot(normalize(spotDirection),normalize(-pointToLight));if(actualCos>outerConeCos){if(actualCos<innerConeCos){float angularAttenuation=(actualCos-outerConeCos)/(innerConeCos-outerConeCos);return angularAttenuation*angularAttenuation;}return 1.0;}return 0.0;}vec3 getLighIntensity(Light light,vec3 pointToLight){float rangeAttenuation=1.0;float spotAttenuation=1.0;if(light.type!=LightType_Directional){rangeAttenuation=getRangeAttenuation(light.range,length(pointToLight));}if(light.type==LightType_Spot){spotAttenuation=getSpotAttenuation(pointToLight,light.direction,light.outerConeCos,light.innerConeCos);}return rangeAttenuation*spotAttenuation*light.intensity*light.color;}vec3 getPunctualRadianceTransmission(vec3 normal,vec3 view,vec3 pointToLight,float alphaRoughness,vec3 f0,vec3 f90,vec3 baseColor,float ior){float transmissionRougness=applyIorToRoughness(alphaRoughness,ior);vec3 n=normalize(normal);vec3 v=normalize(view);vec3 l=normalize(pointToLight);vec3 l_mirror=normalize(l+2.0*n*dot(-l,n));vec3 h=normalize(l_mirror+v);float D=D_GGX(clamp(dot(n,h),0.0,1.0),transmissionRougness);vec3 F=F_Schlick(f0,f90,clamp(dot(v,h),0.0,1.0));float Vis=V_GGX(clamp(dot(n,l_mirror),0.0,1.0),clamp(dot(n,v),0.0,1.0),transmissionRougness);return(1.0-F)*baseColor*D*Vis;}vec3 getPunctualRadianceClearCoat(vec3 clearcoatNormal,vec3 v,vec3 l,vec3 h,float VdotH,vec3 f0,vec3 f90,float clearcoatRoughness){float NdotL=clampedDot(clearcoatNormal,l);float NdotV=clampedDot(clearcoatNormal,v);float NdotH=clampedDot(clearcoatNormal,h);return NdotL*BRDF_specularGGX(clearcoatRoughness*clearcoatRoughness,NdotL,NdotV,NdotH);}vec3 getPunctualRadianceSheen(vec3 sheenColor,float sheenRoughness,float NdotL,float NdotV,float NdotH){return NdotL*BRDF_specularSheen(sheenColor,sheenRoughness,NdotL,NdotV,NdotH);}vec3 applyVolumeAttenuation(vec3 radiance,float transmissionDistance,vec3 attenuationColor,float attenuationDistance){if(attenuationDistance==0.0){return radiance;}else{vec3 transmittance=pow(attenuationColor,vec3(transmissionDistance/attenuationDistance));return transmittance*radiance;}}vec3 getVolumeTransmissionRay(vec3 n,vec3 v,float thickness,float ior,mat4 modelMatrix){vec3 refractionVector=refract(-v,normalize(n),1.0/ior);vec3 modelScale;modelScale.x=length(vec3(modelMatrix[0].xyz));modelScale.y=length(vec3(modelMatrix[1].xyz));modelScale.z=length(vec3(modelMatrix[2].xyz));return normalize(refractionVector)*thickness*modelScale;}"; // eslint-disable-line
+var punctualShader = "#define GLSLIFY 1\nstruct Light{vec3 direction;float range;vec3 color;float intensity;vec3 position;float innerConeCos;float outerConeCos;int type;};const int LightType_Directional=0;const int LightType_Point=1;const int LightType_Spot=2;\n#ifdef USE_PUNCTUAL\nuniform Light u_Lights[LIGHT_COUNT+1];\n#endif\nfloat getRangeAttenuation(float range,float distance){if(range<=0.0){return 1.0/pow(distance,2.0);}return max(min(1.0-pow(distance/range,4.0),1.0),0.0)/pow(distance,2.0);}float getSpotAttenuation(vec3 pointToLight,vec3 spotDirection,float outerConeCos,float innerConeCos){float actualCos=dot(normalize(spotDirection),normalize(-pointToLight));if(actualCos>outerConeCos){if(actualCos<innerConeCos){float angularAttenuation=(actualCos-outerConeCos)/(innerConeCos-outerConeCos);return angularAttenuation*angularAttenuation;}return 1.0;}return 0.0;}vec3 getLighIntensity(Light light,vec3 pointToLight){float rangeAttenuation=1.0;float spotAttenuation=1.0;if(light.type!=LightType_Directional){rangeAttenuation=getRangeAttenuation(light.range,length(pointToLight));}if(light.type==LightType_Spot){spotAttenuation=getSpotAttenuation(pointToLight,light.direction,light.outerConeCos,light.innerConeCos);}return rangeAttenuation*spotAttenuation*light.intensity*light.color;}vec3 getPunctualRadianceTransmission(vec3 normal,vec3 view,vec3 pointToLight,float alphaRoughness,vec3 baseColor,float ior){float transmissionRougness=applyIorToRoughness(alphaRoughness,ior);vec3 n=normalize(normal);vec3 v=normalize(view);vec3 l=normalize(pointToLight);vec3 l_mirror=normalize(l+2.0*n*dot(-l,n));vec3 h=normalize(l_mirror+v);float D=D_GGX(clamp(dot(n,h),0.0,1.0),transmissionRougness);float Vis=V_GGX(clamp(dot(n,l_mirror),0.0,1.0),clamp(dot(n,v),0.0,1.0),transmissionRougness);return baseColor*D*Vis;}vec3 getPunctualRadianceClearCoat(vec3 clearcoatNormal,vec3 v,vec3 l,vec3 h,float VdotH,vec3 f0,vec3 f90,float clearcoatRoughness){float NdotL=clampedDot(clearcoatNormal,l);float NdotV=clampedDot(clearcoatNormal,v);float NdotH=clampedDot(clearcoatNormal,h);return NdotL*BRDF_specularGGX(clearcoatRoughness*clearcoatRoughness,NdotL,NdotV,NdotH);}vec3 getPunctualRadianceSheen(vec3 sheenColor,float sheenRoughness,float NdotL,float NdotV,float NdotH){return NdotL*BRDF_specularSheen(sheenColor,sheenRoughness,NdotL,NdotV,NdotH);}vec3 applyVolumeAttenuation(vec3 radiance,float transmissionDistance,vec3 attenuationColor,float attenuationDistance){if(attenuationDistance==0.0){return radiance;}else{vec3 transmittance=pow(attenuationColor,vec3(transmissionDistance/attenuationDistance));return transmittance*radiance;}}vec3 getVolumeTransmissionRay(vec3 n,vec3 v,float thickness,float ior,mat4 modelMatrix){vec3 refractionVector=refract(-v,normalize(n),1.0/ior);vec3 modelScale;modelScale.x=length(vec3(modelMatrix[0].xyz));modelScale.y=length(vec3(modelMatrix[1].xyz));modelScale.z=length(vec3(modelMatrix[2].xyz));return normalize(refractionVector)*thickness*modelScale;}"; // eslint-disable-line
 
-var primitiveShader = "#define GLSLIFY 1\n#include <animation.glsl>\nuniform mat4 u_ViewProjectionMatrix;uniform mat4 u_ModelMatrix;uniform mat4 u_NormalMatrix;in vec3 a_position;out vec3 v_Position;\n#ifdef HAS_NORMAL_VEC3\nin vec3 a_normal;\n#endif\n#ifdef HAS_NORMAL_VEC3\n#ifdef HAS_TANGENT_VEC4\nin vec4 a_tangent;out mat3 v_TBN;\n#else\nout vec3 v_Normal;\n#endif\n#endif\n#ifdef HAS_TEXCOORD_0_VEC2\nin vec2 a_texcoord_0;\n#endif\n#ifdef HAS_TEXCOORD_1_VEC2\nin vec2 a_texcoord_1;\n#endif\nout vec2 v_texcoord_0;out vec2 v_texcoord_1;\n#ifdef HAS_COLOR_0_VEC3\nin vec3 a_color_0;out vec3 v_Color;\n#endif\n#ifdef HAS_COLOR_0_VEC4\nin vec4 a_color_0;out vec4 v_Color;\n#endif\nvec4 getPosition(){vec4 pos=vec4(a_position,1.0);\n#ifdef USE_MORPHING\npos+=getTargetPosition(gl_VertexID);\n#endif\n#ifdef USE_SKINNING\npos=getSkinningMatrix()*pos;\n#endif\nreturn pos;}\n#ifdef HAS_NORMAL_VEC3\nvec3 getNormal(){vec3 normal=a_normal;\n#ifdef USE_MORPHING\nnormal+=getTargetNormal(gl_VertexID);\n#endif\n#ifdef USE_SKINNING\nnormal=mat3(getSkinningNormalMatrix())*normal;\n#endif\nreturn normalize(normal);}\n#endif\n#ifdef HAS_NORMAL_VEC3\n#ifdef HAS_TANGENT_VEC4\nvec3 getTangent(){vec3 tangent=a_tangent.xyz;\n#ifdef USE_MORPHING\ntangent+=getTargetTangent(gl_VertexID);\n#endif\n#ifdef USE_SKINNING\ntangent=mat3(getSkinningMatrix())*tangent;\n#endif\nreturn normalize(tangent);}\n#endif\n#endif\nvoid main(){gl_PointSize=1.0f;vec4 pos=u_ModelMatrix*getPosition();v_Position=vec3(pos.xyz)/pos.w;\n#ifdef HAS_NORMAL_VEC3\n#ifdef HAS_TANGENT_VEC4\nvec3 tangent=getTangent();vec3 normalW=normalize(vec3(u_NormalMatrix*vec4(getNormal(),0.0)));vec3 tangentW=normalize(vec3(u_ModelMatrix*vec4(tangent,0.0)));vec3 bitangentW=cross(normalW,tangentW)*a_tangent.w;v_TBN=mat3(tangentW,bitangentW,normalW);\n#else\nv_Normal=normalize(vec3(u_NormalMatrix*vec4(getNormal(),0.0)));\n#endif\n#endif\nv_texcoord_0=vec2(0.0,0.0);v_texcoord_1=vec2(0.0,0.0);\n#ifdef HAS_TEXCOORD_0_VEC2\nv_texcoord_0=a_texcoord_0;\n#endif\n#ifdef HAS_TEXCOORD_1_VEC2\nv_texcoord_1=a_texcoord_1;\n#endif\n#ifdef USE_MORPHING\nv_texcoord_0+=getTargetTexCoord0(gl_VertexID);v_texcoord_1+=getTargetTexCoord1(gl_VertexID);\n#endif\n#if defined(HAS_COLOR_0_VEC3)\nv_Color=a_color_0;\n#if defined(USE_MORPHING)\nv_Color=clamp(v_Color+getTargetColor0(gl_VertexID).xyz,0.0f,1.0f);\n#endif\n#endif\n#if defined(HAS_COLOR_0_VEC4)\nv_Color=a_color_0;\n#if defined(USE_MORPHING)\nv_Color=clamp(v_Color+getTargetColor0(gl_VertexID),0.0f,1.0f);\n#endif\n#endif\ngl_Position=u_ViewProjectionMatrix*pos;}"; // eslint-disable-line
+var primitiveShader = "#define GLSLIFY 1\n#include <animation.glsl>\nuniform mat4 u_ViewProjectionMatrix;uniform mat4 u_ModelMatrix;uniform mat4 u_NormalMatrix;in vec3 a_position;out vec3 v_Position;\n#ifdef HAS_NORMAL_VEC3\nin vec3 a_normal;\n#endif\n#ifdef HAS_NORMAL_VEC3\n#ifdef HAS_TANGENT_VEC4\nin vec4 a_tangent;out mat3 v_TBN;\n#else\nout vec3 v_Normal;\n#endif\n#endif\n#ifdef HAS_TEXCOORD_0_VEC2\nin vec2 a_texcoord_0;\n#endif\n#ifdef HAS_TEXCOORD_1_VEC2\nin vec2 a_texcoord_1;\n#endif\nout vec2 v_texcoord_0;out vec2 v_texcoord_1;\n#ifdef HAS_COLOR_0_VEC3\nin vec3 a_color_0;out vec3 v_Color;\n#endif\n#ifdef HAS_COLOR_0_VEC4\nin vec4 a_color_0;out vec4 v_Color;\n#endif\n#ifdef USE_INSTANCING\nin mat4 a_instance_model_matrix;\n#endif\n#ifdef HAS_VERT_NORMAL_UV_TRANSFORM\nuniform mat3 u_vertNormalUVTransform;\n#endif\nvec4 getPosition(){vec4 pos=vec4(a_position,1.0);\n#ifdef USE_MORPHING\npos+=getTargetPosition(gl_VertexID);\n#endif\n#ifdef USE_SKINNING\npos=getSkinningMatrix()*pos;\n#endif\nreturn pos;}\n#ifdef HAS_NORMAL_VEC3\nvec3 getNormal(){vec3 normal=a_normal;\n#ifdef USE_MORPHING\nnormal+=getTargetNormal(gl_VertexID);\n#endif\n#ifdef USE_SKINNING\nnormal=mat3(getSkinningNormalMatrix())*normal;\n#endif\nreturn normalize(normal);}\n#endif\n#ifdef HAS_NORMAL_VEC3\n#ifdef HAS_TANGENT_VEC4\nvec3 getTangent(){vec3 tangent=a_tangent.xyz;\n#ifdef USE_MORPHING\ntangent+=getTargetTangent(gl_VertexID);\n#endif\n#ifdef USE_SKINNING\ntangent=mat3(getSkinningMatrix())*tangent;\n#endif\nreturn normalize(tangent);}\n#endif\n#endif\nvoid main(){gl_PointSize=1.0f;\n#ifdef USE_INSTANCING\nmat4 modelMatrix=a_instance_model_matrix;mat4 normalMatrix=transpose(inverse(modelMatrix));\n#else\nmat4 modelMatrix=u_ModelMatrix;mat4 normalMatrix=u_NormalMatrix;\n#endif\nvec4 pos=modelMatrix*getPosition();v_Position=vec3(pos.xyz)/pos.w;\n#ifdef HAS_NORMAL_VEC3\n#ifdef HAS_TANGENT_VEC4\nvec3 tangent=getTangent();vec3 normalW=normalize(vec3(normalMatrix*vec4(getNormal(),0.0)));vec3 tangentW=vec3(modelMatrix*vec4(tangent,0.0));vec3 bitangentW=cross(normalW,tangentW)*a_tangent.w;\n#ifdef HAS_VERT_NORMAL_UV_TRANSFORM\ntangentW=u_vertNormalUVTransform*tangentW;bitangentW=u_vertNormalUVTransform*bitangentW;\n#endif\nbitangentW=normalize(bitangentW);tangentW=normalize(tangentW);v_TBN=mat3(tangentW,bitangentW,normalW);\n#else\nv_Normal=normalize(vec3(normalMatrix*vec4(getNormal(),0.0)));\n#endif\n#endif\nv_texcoord_0=vec2(0.0,0.0);v_texcoord_1=vec2(0.0,0.0);\n#ifdef HAS_TEXCOORD_0_VEC2\nv_texcoord_0=a_texcoord_0;\n#endif\n#ifdef HAS_TEXCOORD_1_VEC2\nv_texcoord_1=a_texcoord_1;\n#endif\n#ifdef USE_MORPHING\nv_texcoord_0+=getTargetTexCoord0(gl_VertexID);v_texcoord_1+=getTargetTexCoord1(gl_VertexID);\n#endif\n#if defined(HAS_COLOR_0_VEC3)\nv_Color=a_color_0;\n#if defined(USE_MORPHING)\nv_Color=clamp(v_Color+getTargetColor0(gl_VertexID).xyz,0.0f,1.0f);\n#endif\n#endif\n#if defined(HAS_COLOR_0_VEC4)\nv_Color=a_color_0;\n#if defined(USE_MORPHING)\nv_Color=clamp(v_Color+getTargetColor0(gl_VertexID),0.0f,1.0f);\n#endif\n#endif\ngl_Position=u_ViewProjectionMatrix*pos;}"; // eslint-disable-line
 
 var texturesShader = "#define GLSLIFY 1\nuniform int u_MipCount;uniform samplerCube u_LambertianEnvSampler;uniform samplerCube u_GGXEnvSampler;uniform sampler2D u_GGXLUT;uniform samplerCube u_CharlieEnvSampler;uniform sampler2D u_CharlieLUT;uniform sampler2D u_SheenELUT;uniform mat3 u_EnvRotation;uniform sampler2D u_NormalSampler;uniform float u_NormalScale;uniform int u_NormalUVSet;uniform mat3 u_NormalUVTransform;uniform vec3 u_EmissiveFactor;uniform sampler2D u_EmissiveSampler;uniform int u_EmissiveUVSet;uniform mat3 u_EmissiveUVTransform;uniform sampler2D u_OcclusionSampler;uniform int u_OcclusionUVSet;uniform float u_OcclusionStrength;uniform mat3 u_OcclusionUVTransform;in vec2 v_texcoord_0;in vec2 v_texcoord_1;vec2 getNormalUV(){vec3 uv=vec3(u_NormalUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_NORMAL_UV_TRANSFORM\nuv=u_NormalUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getEmissiveUV(){vec3 uv=vec3(u_EmissiveUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_EMISSIVE_UV_TRANSFORM\nuv=u_EmissiveUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getOcclusionUV(){vec3 uv=vec3(u_OcclusionUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_OCCLUSION_UV_TRANSFORM\nuv=u_OcclusionUVTransform*uv;\n#endif\nreturn uv.xy;}\n#ifdef MATERIAL_METALLICROUGHNESS\nuniform sampler2D u_BaseColorSampler;uniform int u_BaseColorUVSet;uniform mat3 u_BaseColorUVTransform;uniform sampler2D u_MetallicRoughnessSampler;uniform int u_MetallicRoughnessUVSet;uniform mat3 u_MetallicRoughnessUVTransform;vec2 getBaseColorUV(){vec3 uv=vec3(u_BaseColorUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_BASECOLOR_UV_TRANSFORM\nuv=u_BaseColorUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getMetallicRoughnessUV(){vec3 uv=vec3(u_MetallicRoughnessUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_METALLICROUGHNESS_UV_TRANSFORM\nuv=u_MetallicRoughnessUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_SPECULARGLOSSINESS\nuniform sampler2D u_DiffuseSampler;uniform int u_DiffuseUVSet;uniform mat3 u_DiffuseUVTransform;uniform sampler2D u_SpecularGlossinessSampler;uniform int u_SpecularGlossinessUVSet;uniform mat3 u_SpecularGlossinessUVTransform;vec2 getSpecularGlossinessUV(){vec3 uv=vec3(u_SpecularGlossinessUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_SPECULARGLOSSINESS_UV_TRANSFORM\nuv=u_SpecularGlossinessUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getDiffuseUV(){vec3 uv=vec3(u_DiffuseUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_DIFFUSE_UV_TRANSFORM\nuv=u_DiffuseUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_CLEARCOAT\nuniform sampler2D u_ClearcoatSampler;uniform int u_ClearcoatUVSet;uniform mat3 u_ClearcoatUVTransform;uniform sampler2D u_ClearcoatRoughnessSampler;uniform int u_ClearcoatRoughnessUVSet;uniform mat3 u_ClearcoatRoughnessUVTransform;uniform sampler2D u_ClearcoatNormalSampler;uniform int u_ClearcoatNormalUVSet;uniform mat3 u_ClearcoatNormalUVTransform;uniform float u_ClearcoatNormalScale;vec2 getClearcoatUV(){vec3 uv=vec3(u_ClearcoatUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_CLEARCOAT_UV_TRANSFORM\nuv=u_ClearcoatUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getClearcoatRoughnessUV(){vec3 uv=vec3(u_ClearcoatRoughnessUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_CLEARCOATROUGHNESS_UV_TRANSFORM\nuv=u_ClearcoatRoughnessUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getClearcoatNormalUV(){vec3 uv=vec3(u_ClearcoatNormalUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_CLEARCOATNORMAL_UV_TRANSFORM\nuv=u_ClearcoatNormalUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_SHEEN\nuniform sampler2D u_SheenColorSampler;uniform int u_SheenColorUVSet;uniform mat3 u_SheenColorUVTransform;uniform sampler2D u_SheenRoughnessSampler;uniform int u_SheenRoughnessUVSet;uniform mat3 u_SheenRoughnessUVTransform;vec2 getSheenColorUV(){vec3 uv=vec3(u_SheenColorUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_SHEENCOLOR_UV_TRANSFORM\nuv=u_SheenColorUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getSheenRoughnessUV(){vec3 uv=vec3(u_SheenRoughnessUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_SHEENROUGHNESS_UV_TRANSFORM\nuv=u_SheenRoughnessUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_SPECULAR\nuniform sampler2D u_SpecularSampler;uniform int u_SpecularUVSet;uniform mat3 u_SpecularUVTransform;uniform sampler2D u_SpecularColorSampler;uniform int u_SpecularColorUVSet;uniform mat3 u_SpecularColorUVTransform;vec2 getSpecularUV(){vec3 uv=vec3(u_SpecularUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_SPECULAR_UV_TRANSFORM\nuv=u_SpecularUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getSpecularColorUV(){vec3 uv=vec3(u_SpecularColorUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_SPECULARCOLOR_UV_TRANSFORM\nuv=u_SpecularColorUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_TRANSMISSION\nuniform sampler2D u_TransmissionSampler;uniform int u_TransmissionUVSet;uniform mat3 u_TransmissionUVTransform;uniform sampler2D u_TransmissionFramebufferSampler;uniform ivec2 u_TransmissionFramebufferSize;vec2 getTransmissionUV(){vec3 uv=vec3(u_TransmissionUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_TRANSMISSION_UV_TRANSFORM\nuv=u_TransmissionUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_VOLUME\nuniform sampler2D u_ThicknessSampler;uniform int u_ThicknessUVSet;uniform mat3 u_ThicknessUVTransform;vec2 getThicknessUV(){vec3 uv=vec3(u_ThicknessUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_THICKNESS_UV_TRANSFORM\nuv=u_ThicknessUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_IRIDESCENCE\nuniform sampler2D u_IridescenceSampler;uniform int u_IridescenceUVSet;uniform mat3 u_IridescenceUVTransform;uniform sampler2D u_IridescenceThicknessSampler;uniform int u_IridescenceThicknessUVSet;uniform mat3 u_IridescenceThicknessUVTransform;vec2 getIridescenceUV(){vec3 uv=vec3(u_IridescenceUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_IRIDESCENCE_UV_TRANSFORM\nuv=u_IridescenceUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getIridescenceThicknessUV(){vec3 uv=vec3(u_IridescenceThicknessUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_IRIDESCENCETHICKNESS_UV_TRANSFORM\nuv=u_IridescenceThicknessUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_DIFFUSE_TRANSMISSION\nuniform sampler2D u_DiffuseTransmissionSampler;uniform int u_DiffuseTransmissionUVSet;uniform mat3 u_DiffuseTransmissionUVTransform;uniform sampler2D u_DiffuseTransmissionColorSampler;uniform int u_DiffuseTransmissionColorUVSet;uniform mat3 u_DiffuseTransmissionColorUVTransform;vec2 getDiffuseTransmissionUV(){vec3 uv=vec3(u_DiffuseTransmissionUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_DIFFUSETRANSMISSION_UV_TRANSFORM\nuv=u_DiffuseTransmissionUVTransform*uv;\n#endif\nreturn uv.xy;}vec2 getDiffuseTransmissionColorUV(){vec3 uv=vec3(u_DiffuseTransmissionColorUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_DIFFUSETRANSMISSIONCOLOR_UV_TRANSFORM\nuv=u_DiffuseTransmissionColorUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n#ifdef MATERIAL_ANISOTROPY\nuniform sampler2D u_AnisotropySampler;uniform int u_AnisotropyUVSet;uniform mat3 u_AnisotropyUVTransform;vec2 getAnisotropyUV(){vec3 uv=vec3(u_AnisotropyUVSet<1 ? v_texcoord_0 : v_texcoord_1,1.0);\n#ifdef HAS_ANISOTROPY_UV_TRANSFORM\nuv=u_AnisotropyUVTransform*uv;\n#endif\nreturn uv.xy;}\n#endif\n"; // eslint-disable-line
 
@@ -3825,6 +3828,8 @@ var animationShader = "#define GLSLIFY 1\n#ifdef HAS_MORPH_TARGETS\nuniform high
 var cubemapVertShader = "#define GLSLIFY 1\nuniform mat4 u_ViewProjectionMatrix;uniform mat3 u_EnvRotation;in vec3 a_position;out vec3 v_TexCoords;void main(){v_TexCoords=u_EnvRotation*a_position;mat4 mat=u_ViewProjectionMatrix;mat[3]=vec4(0.0,0.0,0.0,0.1);vec4 pos=mat*vec4(a_position,1.0);gl_Position=pos.xyww;}"; // eslint-disable-line
 
 var cubemapFragShader = "precision highp float;\n#define GLSLIFY 1\n#include <tonemapping.glsl>\nuniform float u_EnvIntensity;uniform float u_EnvBlurNormalized;uniform int u_MipCount;uniform samplerCube u_GGXEnvSampler;out vec4 FragColor;in vec3 v_TexCoords;void main(){vec4 color=textureLod(u_GGXEnvSampler,v_TexCoords,u_EnvBlurNormalized*float(u_MipCount-1));color.rgb*=u_EnvIntensity;color.a=1.0;\n#ifdef LINEAR_OUTPUT\nFragColor=color.rgba;\n#else\nFragColor=vec4(toneMap(color.rgb),color.a);\n#endif\n}"; // eslint-disable-line
+
+var specularGlossinesShader = "precision highp float;\n#define GLSLIFY 1\n#include <tonemapping.glsl>\n#include <textures.glsl>\n#include <functions.glsl>\n#include <brdf.glsl>\n#include <punctual.glsl>\n#include <ibl.glsl>\n#include <material_info.glsl>\nout vec4 g_finalColor;uniform vec3 u_SpecularFactor;uniform vec4 u_DiffuseFactor;uniform float u_GlossinessFactor;void main(){vec4 baseColor=u_DiffuseFactor;\n#if defined(HAS_DIFFUSE_MAP)\nbaseColor*=texture(u_DiffuseSampler,getDiffuseUV());\n#endif\nbaseColor*=getVertexColor();\n#if ALPHAMODE == ALPHAMODE_OPAQUE\nbaseColor.a=1.0;\n#endif\nvec3 color=vec3(0);vec3 v=normalize(u_Camera-v_Position);NormalInfo normalInfo=getNormalInfo(v);vec3 n=normalInfo.n;float NdotV=clampedDot(n,v);MaterialInfo materialInfo;materialInfo.baseColor=baseColor.rgb;materialInfo.f90_dielectric=vec3(1.0);materialInfo.metallic=0.0;vec3 specular=u_SpecularFactor;float glossiness=u_GlossinessFactor;\n#ifdef HAS_SPECULAR_GLOSSINESS_MAP\nvec4 sgSample=texture(u_SpecularGlossinessSampler,getSpecularGlossinessUV());glossiness*=sgSample.a;specular*=sgSample.rgb;\n#endif\nmaterialInfo.perceptualRoughness=1.0-glossiness;materialInfo.f0_dielectric=min(specular,vec3(1.0));materialInfo.perceptualRoughness=clamp(materialInfo.perceptualRoughness,0.0,1.0);materialInfo.alphaRoughness=materialInfo.perceptualRoughness*materialInfo.perceptualRoughness;vec3 f_emissive=vec3(0.0);\n#ifdef USE_IBL\nvec3 f_diffuse=getDiffuseLight(n)*baseColor.rgb;vec3 f_specular_dielectric=getIBLRadianceGGX(n,v,materialInfo.perceptualRoughness);vec3 f_dielectric_fresnel_ibl=getIBLGGXFresnel(n,v,materialInfo.perceptualRoughness,materialInfo.f0_dielectric,1.0);vec3 f_dielectric_brdf_ibl=mix(f_diffuse,f_specular_dielectric,f_dielectric_fresnel_ibl);color=f_dielectric_brdf_ibl;\n#ifdef HAS_OCCLUSION_MAP\nfloat ao=1.0;ao=texture(u_OcclusionSampler,getOcclusionUV()).r;color=color*(1.0+u_OcclusionStrength*(ao-1.0));\n#endif\n#endif\n#ifdef USE_PUNCTUAL\nfor(int i=0;i<LIGHT_COUNT;++i){Light light=u_Lights[i];vec3 pointToLight;if(light.type!=LightType_Directional){pointToLight=light.position-v_Position;}else{pointToLight=-light.direction;}vec3 l=normalize(pointToLight);vec3 h=normalize(l+v);float NdotL=clampedDot(n,l);float NdotV=clampedDot(n,v);float NdotH=clampedDot(n,h);float VdotH=clampedDot(v,h);vec3 dielectric_fresnel=F_Schlick(materialInfo.f0_dielectric,materialInfo.f90_dielectric,abs(VdotH));vec3 lightIntensity=getLighIntensity(light,pointToLight);vec3 l_diffuse=lightIntensity*NdotL*BRDF_lambertian(baseColor.rgb);vec3 intensity=getLighIntensity(light,pointToLight);vec3 l_specular_dielectric=intensity*NdotL*BRDF_specularGGX(materialInfo.alphaRoughness,NdotL,NdotV,NdotH);vec3 l_dielectric_brdf=mix(l_diffuse,l_specular_dielectric,dielectric_fresnel);color+=l_dielectric_brdf;}\n#endif\nf_emissive=u_EmissiveFactor;\n#ifdef MATERIAL_EMISSIVE_STRENGTH\nf_emissive*=u_EmissiveStrength;\n#endif\n#ifdef HAS_EMISSIVE_MAP\nf_emissive*=texture(u_EmissiveSampler,getEmissiveUV()).rgb;\n#endif\n#ifdef MATERIAL_UNLIT\ncolor=baseColor.rgb;\n#elif defined(NOT_TRIANGLE) && !defined(HAS_NORMAL_VEC3)\ncolor=f_emissive+baseColor.rgb;\n#else\ncolor=f_emissive+color;\n#endif\n#if DEBUG == DEBUG_NONE\n#if ALPHAMODE == ALPHAMODE_MASK\nif(baseColor.a<u_AlphaCutoff){discard;}baseColor.a=1.0;\n#endif\n#ifdef LINEAR_OUTPUT\ng_finalColor=vec4(color.rgb,baseColor.a);\n#else\ng_finalColor=vec4(toneMap(color),baseColor.a);\n#endif\n#else\ng_finalColor=vec4(1.0);{float frequency=0.02;float gray=0.9;vec2 v1=step(0.5,fract(frequency*gl_FragCoord.xy));vec2 v2=step(0.5,vec2(1.0)-fract(frequency*gl_FragCoord.xy));g_finalColor.rgb*=gray+v1.x*v1.y+v2.x*v2.y;}\n#endif\n#if DEBUG == DEBUG_UV_0 && defined(HAS_TEXCOORD_0_VEC2)\ng_finalColor.rgb=vec3(v_texcoord_0,0);\n#endif\n#if DEBUG == DEBUG_UV_1 && defined(HAS_TEXCOORD_1_VEC2)\ng_finalColor.rgb=vec3(v_texcoord_1,0);\n#endif\n#if DEBUG == DEBUG_NORMAL_TEXTURE && defined(HAS_NORMAL_MAP)\ng_finalColor.rgb=(normalInfo.ntex+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_NORMAL_SHADING\ng_finalColor.rgb=(n+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_NORMAL_GEOMETRY\ng_finalColor.rgb=(normalInfo.ng+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_TANGENT\ng_finalColor.rgb=(normalInfo.t+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_BITANGENT\ng_finalColor.rgb=(normalInfo.b+1.0)/2.0;\n#endif\n#if DEBUG == DEBUG_ALPHA\ng_finalColor.rgb=vec3(baseColor.a);\n#endif\n#if DEBUG == DEBUG_OCCLUSION && defined(HAS_OCCLUSION_MAP)\ng_finalColor.rgb=vec3(ao);\n#endif\n#if DEBUG == DEBUG_EMISSIVE\ng_finalColor.rgb=linearTosRGB(f_emissive);\n#endif\n#if DEBUG == DEBUG_METALLIC\ng_finalColor.rgb=vec3(materialInfo.metallic);\n#endif\n#if DEBUG == DEBUG_ROUGHNESS\ng_finalColor.rgb=vec3(materialInfo.perceptualRoughness);\n#endif\n#if DEBUG == DEBUG_BASE_COLOR\ng_finalColor.rgb=linearTosRGB(materialInfo.baseColor);\n#endif\n}"; // eslint-disable-line
 
 class gltfLight extends GltfObject
 {
@@ -3980,6 +3985,7 @@ class gltfRenderer
         shaderSources.set("animation.glsl", animationShader);
         shaderSources.set("cubemap.vert", cubemapVertShader);
         shaderSources.set("cubemap.frag", cubemapFragShader);
+        shaderSources.set("specular_glossiness.frag", specularGlossinesShader);
 
         this.shaderCache = new ShaderCache(shaderSources, this.webGl);
 
@@ -4010,6 +4016,9 @@ class gltfRenderer
         this.lightFill.direction = create$2();
         transformQuat(this.lightKey.direction, [0, 0, -1], quatKey);
         transformQuat(this.lightFill.direction, [0, 0, -1], quatFill);
+        
+        this.maxVertAttributes = undefined;
+        this.instanceBuffer = undefined;
     }
 
     /////////////////////////////////////////////////////////////////////
@@ -4076,6 +4085,8 @@ class gltfRenderer
             context.viewport(0, 0, this.opaqueFramebufferWidth, this.opaqueFramebufferHeight);
             context.bindFramebuffer(context.FRAMEBUFFER, null);
 
+            this.maxVertAttributes = context.getParameter(context.MAX_VERTEX_ATTRIBS);
+
             this.initialized = true;
 
             this.environmentRenderer = new EnvironmentRenderer(this.webGl);
@@ -4134,8 +4145,8 @@ class gltfRenderer
         // and nodes for the transform
         const drawables = this.nodes
             .filter(node => node.mesh !== undefined)
-            .reduce((acc, node) => acc.concat(state.gltf.meshes[node.mesh].primitives.map( primitive => {
-                return  {node: node, primitive: primitive};
+            .reduce((acc, node) => acc.concat(state.gltf.meshes[node.mesh].primitives.map( (primitive, index) => {
+                return  {node: node, primitive: primitive, primitiveIndex: index};
             })), [])
             .filter(({primitive}) => primitive.material !== undefined);
 
@@ -4144,6 +4155,22 @@ class gltfRenderer
             .filter(({primitive}) => state.gltf.materials[primitive.material].alphaMode !== "BLEND"
                 && (state.gltf.materials[primitive.material].extensions === undefined
                     || state.gltf.materials[primitive.material].extensions.KHR_materials_transmission === undefined));
+        
+        let counter = 0;
+        this.opaqueDrawables = Object.groupBy(this.opaqueDrawables, (a) => {
+            const winding = Math.sign(determinant(a.node.worldTransform));
+            const id = `${a.node.mesh}_${winding}_${a.primitiveIndex}`;
+            // Disable instancing for skins, morph targets and if the GPU attributes limit is reached.
+            // Additionally we define a new id for each instance of the EXT_mesh_gpu_instancing extension.
+            if (a.node.skin || a.primitive.targets.length > 0 || a.primitive.glAttributes.length + 4 > this.maxVertAttributes || a.node.instanceMatrices) {
+                if (a.node.instanceMatrices && a.primitive.glAttributes.length + 4 > this.maxVertAttributes) {
+                    console.warn(`EXT_mesh_gpu_instancing disabled for mesh ${a.node.mesh} because the GPU vertex attribute limit is reached.`);
+                }
+                counter++;
+                return id + "_" + counter;
+            }
+            return id;
+        });
 
         // transparent drawables need sorting before they can be drawn
         this.transparentDrawables = drawables
@@ -4227,6 +4254,24 @@ class gltfRenderer
             }
         }
 
+        const instanceWorldTransforms = [];
+        for (const instance of Object.values(this.opaqueDrawables))
+        {  
+            let instanceOffset = undefined;
+            if (instance.length > 1) {
+                instanceOffset = [];
+                for (const iDrawable of instance) {
+                    instanceOffset.push(iDrawable.node.worldTransform);
+                }
+            } else if (instance[0].node.instanceMatrices !== undefined) {
+                // Set instance matrices for EXT_mesh_gpu_instancing extension
+                if (instance[0].primitive.glAttributes.length + 4 <= this.maxVertAttributes) {
+                    instanceOffset = instance[0].node.instanceWorldTransforms;
+                }
+            }
+            instanceWorldTransforms.push(instanceOffset);
+        }
+
         // If any transmissive drawables are present, render all opaque and transparent drawables into a separate framebuffer.
         if (this.transmissionDrawables.length > 0) {
             // Render transmission sample texture
@@ -4236,11 +4281,15 @@ class gltfRenderer
             // Render environment for the transmission background
             this.environmentRenderer.drawEnvironmentMap(this.webGl, this.viewProjectionMatrix, state, this.shaderCache, ["LINEAR_OUTPUT 1"]);
 
-            for (const drawable of this.opaqueDrawables)
+            let drawableCounter = 0;
+            for (const instance of Object.values(this.opaqueDrawables))
             {
+                const drawable = instance[0];
                 let renderpassConfiguration = {};
                 renderpassConfiguration.linearOutput = true;
-                this.drawPrimitive(state, renderpassConfiguration, drawable.primitive, drawable.node, this.viewProjectionMatrix);
+                const instanceOffset = instanceWorldTransforms[drawableCounter];
+                drawableCounter++;
+                this.drawPrimitive(state, renderpassConfiguration, drawable.primitive, drawable.node, this.viewProjectionMatrix, undefined, instanceOffset);
             }
 
             this.transparentDrawables = currentCamera.sortPrimitivesByDepth(state.gltf, this.transparentDrawables);
@@ -4271,11 +4320,15 @@ class gltfRenderer
         this.pushFragParameterDefines(fragDefines, state);
         this.environmentRenderer.drawEnvironmentMap(this.webGl, this.viewProjectionMatrix, state, this.shaderCache, fragDefines);
 
-        for (const drawable of this.opaqueDrawables)
+        let drawableCounter = 0;
+        for (const instance of Object.values(this.opaqueDrawables))
         {  
+            const drawable = instance[0];
             let renderpassConfiguration = {};
             renderpassConfiguration.linearOutput = false;
-            this.drawPrimitive(state, renderpassConfiguration, drawable.primitive, drawable.node, this.viewProjectionMatrix);
+            const instanceOffset = instanceWorldTransforms[drawableCounter];
+            drawableCounter++;
+            this.drawPrimitive(state, renderpassConfiguration, drawable.primitive, drawable.node, this.viewProjectionMatrix, undefined, instanceOffset);
         }
 
         // filter materials with transmission extension
@@ -4298,7 +4351,7 @@ class gltfRenderer
     }
 
     // vertices with given material
-    drawPrimitive(state, renderpassConfiguration, primitive, node, viewProjectionMatrix, transmissionSampleTexture)
+    drawPrimitive(state, renderpassConfiguration, primitive, node, viewProjectionMatrix, transmissionSampleTexture, instanceOffset = undefined)
     {
         if (primitive.skip) return;
 
@@ -4326,12 +4379,24 @@ class gltfRenderer
         let vertDefines = [];
         this.pushVertParameterDefines(vertDefines, state.renderingParameters, state.gltf, node, primitive);
         vertDefines = primitive.defines.concat(vertDefines);
+        if (instanceOffset !== undefined) {
+            vertDefines.push("USE_INSTANCING 1");
+        }
+        if (material.textureTransforms.length > 0) {
+            for (let i = 0; i < material.textureTransforms.length; i++) {
+                if (material.textureTransforms[i] !== undefined && material.textureTransforms[i].key === "Normal") {
+                    vertDefines.push("HAS_VERT_NORMAL_UV_TRANSFORM 1");
+                    break;
+                }
+            }
+        }
 
         let fragDefines = material.getDefines(state.renderingParameters).concat(vertDefines);
         if (renderpassConfiguration.linearOutput)
         {
             fragDefines.push("LINEAR_OUTPUT 1");
         }
+
         // POINTS, LINES, LINE_LOOP, LINE_STRIP
         if (primitive.mode < 4) {
             fragDefines.push("NOT_TRIANGLE 1");
@@ -4340,9 +4405,12 @@ class gltfRenderer
                 fragDefines = fragDefines.filter(e => e !== "HAS_NORMAL_MAP 1" && e !== "HAS_CLEARCOAT_NORMAL_MAP 1");
             }
         }
+
         this.pushFragParameterDefines(fragDefines, state);
         
-        const fragmentHash = this.shaderCache.selectShader("pbr.frag", fragDefines);
+        const fragmentShader = material.type === "SG" ? "specular_glossiness.frag" : "pbr.frag";
+
+        const fragmentHash = this.shaderCache.selectShader(fragmentShader, fragDefines);
         const vertexHash = this.shaderCache.selectShader("primitive.vert", vertDefines);
 
         if (fragmentHash && vertexHash)
@@ -4368,6 +4436,7 @@ class gltfRenderer
         this.shader.updateUniform("u_NormalMatrix", node.normalMatrix, false);
         this.shader.updateUniform("u_Exposure", state.renderingParameters.exposure, false);
         this.shader.updateUniform("u_Camera", this.currentCameraPosition, false);
+        
 
         this.updateAnimationUniforms(state, node, primitive);
 
@@ -4388,7 +4457,7 @@ class gltfRenderer
         {
             this.webGl.context.enable(GL.CULL_FACE);
         }
-
+    
         if (material.alphaMode === 'BLEND')
         {
             this.webGl.context.enable(GL.BLEND);
@@ -4399,6 +4468,7 @@ class gltfRenderer
         {
             this.webGl.context.disable(GL.BLEND);
         }
+        
 
         const drawIndexed = primitive.indices !== undefined;
         if (drawIndexed)
@@ -4426,8 +4496,37 @@ class gltfRenderer
             }
         }
 
-        // Update material uniforms
+        if (instanceOffset !== undefined) {
+            const location = this.shader.getAttributeLocation("a_instance_model_matrix");
+            const location2 = location + 1;
+            const location3 = location2 + 1;
+            const location4 = location3 + 1;
+            if (this.instanceBuffer === undefined) {
+                this.instanceBuffer = this.webGl.context.createBuffer();
+            }
+            this.webGl.context.enableVertexAttribArray(location);
+            this.webGl.context.enableVertexAttribArray(location2);
+            this.webGl.context.enableVertexAttribArray(location3);
+            this.webGl.context.enableVertexAttribArray(location4);
 
+            this.webGl.context.bindBuffer(GL.ARRAY_BUFFER, this.instanceBuffer);
+            const data = new Float32Array(instanceOffset.length * 16);
+            instanceOffset.forEach((element, index) => {
+                data.set(element, 16 * index);
+            });
+            this.webGl.context.bufferData(GL.ARRAY_BUFFER, data, GL.DYNAMIC_DRAW);
+            this.webGl.context.vertexAttribPointer(location, 4, GL.FLOAT, GL.FALSE, 4 * 16, 0);
+            this.webGl.context.vertexAttribPointer(location2, 4, GL.FLOAT, GL.FALSE, 4 * 16, 4 * 4);
+            this.webGl.context.vertexAttribPointer(location3, 4, GL.FLOAT, GL.FALSE, 4 * 16, 4 * 8);
+            this.webGl.context.vertexAttribPointer(location4, 4, GL.FLOAT, GL.FALSE, 4 * 16, 4 * 12);
+            
+            this.webGl.context.vertexAttribDivisor(location, 1);
+            this.webGl.context.vertexAttribDivisor(location2, 1);
+            this.webGl.context.vertexAttribDivisor(location3, 1);
+            this.webGl.context.vertexAttribDivisor(location4, 1);
+        }
+
+        // Update material uniforms
         material.updateTextureTransforms(this.shader);
 
         this.shader.updateUniform("u_EmissiveFactor", jsToGl(material.emissiveFactor));
@@ -4503,7 +4602,7 @@ class gltfRenderer
         this.shader.updateUniform("u_GlossinessFactor", material.extensions?.KHR_materials_pbrSpecularGlossiness?.glossinessFactor);
         this.shader.updateUniform("u_SpecularGlossinessUVSet", material.extensions?.KHR_materials_pbrSpecularGlossiness?.specularGlossinessTexture?.texCoord);
         this.shader.updateUniform("u_DiffuseUVSet", material.extensions?.KHR_materials_pbrSpecularGlossiness?.diffuseTexture?.texCoord);
-
+    
         let textureIndex = 0;
         for (; textureIndex < material.textures.length; ++textureIndex)
         {
@@ -4514,6 +4613,7 @@ class gltfRenderer
                 continue;
             }
         }
+
 
         // set the morph target texture
         if (primitive.morphTargetTextureInfo !== undefined) 
@@ -4533,18 +4633,18 @@ class gltfRenderer
         }
 
         let textureCount = textureIndex;
-        if (state.renderingParameters.useIBL && state.environment !== undefined)
-        {
-            textureCount = this.applyEnvironmentMap(state, textureCount);
-        }
+
+        textureCount = this.applyEnvironmentMap(state, textureCount);
+
 
         if (state.environment !== undefined)
         {
             this.webGl.setTexture(this.shader.getUniformLocation("u_SheenELUT"), state.environment, state.environment.sheenELUT, textureCount++);
         }
 
-        if(transmissionSampleTexture !== undefined && state.renderingParameters.useIBL
-                    && state.environment && state.renderingParameters.enabledExtensions.KHR_materials_transmission)
+        if(transmissionSampleTexture !== undefined &&
+            state.environment &&
+            state.renderingParameters.enabledExtensions.KHR_materials_transmission)
         {
             this.webGl.context.activeTexture(GL.TEXTURE0 + textureCount);
             this.webGl.context.bindTexture(this.webGl.context.TEXTURE_2D, this.opaqueRenderTexture);
@@ -4561,11 +4661,19 @@ class gltfRenderer
         if (drawIndexed)
         {
             const indexAccessor = state.gltf.accessors[primitive.indices];
-            this.webGl.context.drawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType, 0);
+            if (instanceOffset !== undefined) {
+                this.webGl.context.drawElementsInstanced(primitive.mode, indexAccessor.count, indexAccessor.componentType, 0, instanceOffset.length);
+            } else {
+                this.webGl.context.drawElements(primitive.mode, indexAccessor.count, indexAccessor.componentType, 0);
+            }
         }
         else
         {
-            this.webGl.context.drawArrays(primitive.mode, 0, vertexCount);
+            if (instanceOffset !== undefined) {
+                this.webGl.context.drawArraysInstanced(primitive.mode, 0, vertexCount, instanceOffset.length);
+            } else {
+                this.webGl.context.drawArrays(primitive.mode, 0, vertexCount);
+            }
         }
 
         for (const attribute of primitive.glAttributes)
@@ -4576,6 +4684,17 @@ class gltfRenderer
                 continue; // skip this attribute
             }
             this.webGl.context.disableVertexAttribArray(location);
+        }
+        if (instanceOffset !== undefined) {
+            const location = this.shader.getAttributeLocation("a_instance_model_matrix");
+            this.webGl.context.vertexAttribDivisor(location, 0);
+            this.webGl.context.vertexAttribDivisor(location + 1, 0);
+            this.webGl.context.vertexAttribDivisor(location + 2, 0);
+            this.webGl.context.vertexAttribDivisor(location + 3, 0);
+            this.webGl.context.disableVertexAttribArray(location);
+            this.webGl.context.disableVertexAttribArray(location + 1);
+            this.webGl.context.disableVertexAttribArray(location + 2);
+            this.webGl.context.disableVertexAttribArray(location + 3);
         }
     }
 
@@ -4687,33 +4806,26 @@ class gltfRenderer
             {debugOutput: GltfState.DebugOutput.generic.OCCLUSION, shaderDefine: "DEBUG_OCCLUSION"},
             {debugOutput: GltfState.DebugOutput.generic.EMISSIVE, shaderDefine: "DEBUG_EMISSIVE"},
 
-            {debugOutput: GltfState.DebugOutput.mr.METALLIC_ROUGHNESS, shaderDefine: "DEBUG_METALLIC_ROUGHNESS"},
             {debugOutput: GltfState.DebugOutput.mr.BASECOLOR, shaderDefine: "DEBUG_BASE_COLOR"},
             {debugOutput: GltfState.DebugOutput.mr.ROUGHNESS, shaderDefine: "DEBUG_ROUGHNESS"},
             {debugOutput: GltfState.DebugOutput.mr.METALLIC, shaderDefine: "DEBUG_METALLIC"},
             
-            {debugOutput: GltfState.DebugOutput.clearcoat.CLEARCOAT, shaderDefine: "DEBUG_CLEARCOAT"},
             {debugOutput: GltfState.DebugOutput.clearcoat.CLEARCOAT_FACTOR, shaderDefine: "DEBUG_CLEARCOAT_FACTOR"},
             {debugOutput: GltfState.DebugOutput.clearcoat.CLEARCOAT_ROUGHNESS, shaderDefine: "DEBUG_CLEARCOAT_ROUGHNESS"},
             {debugOutput: GltfState.DebugOutput.clearcoat.CLEARCOAT_NORMAL, shaderDefine: "DEBUG_CLEARCOAT_NORMAL"},
             
-            {debugOutput: GltfState.DebugOutput.sheen.SHEEN, shaderDefine: "DEBUG_SHEEN"},
             {debugOutput: GltfState.DebugOutput.sheen.SHEEN_COLOR, shaderDefine: "DEBUG_SHEEN_COLOR"},
             {debugOutput: GltfState.DebugOutput.sheen.SHEEN_ROUGHNESS, shaderDefine: "DEBUG_SHEEN_ROUGHNESS"},
 
-            {debugOutput: GltfState.DebugOutput.specular.SPECULAR, shaderDefine: "DEBUG_SPECULAR"},
             {debugOutput: GltfState.DebugOutput.specular.SPECULAR_FACTOR, shaderDefine: "DEBUG_SPECULAR_FACTOR"},
             {debugOutput: GltfState.DebugOutput.specular.SPECULAR_COLOR, shaderDefine: "DEBUG_SPECULAR_COLOR"},
 
-            {debugOutput: GltfState.DebugOutput.transmission.TRANSMISSION_VOLUME, shaderDefine: "DEBUG_TRANSMISSION_VOLUME"},
             {debugOutput: GltfState.DebugOutput.transmission.TRANSMISSION_FACTOR, shaderDefine: "DEBUG_TRANSMISSION_FACTOR"},
             {debugOutput: GltfState.DebugOutput.transmission.VOLUME_THICKNESS, shaderDefine: "DEBUG_VOLUME_THICKNESS"},
 
-            {debugOutput: GltfState.DebugOutput.diffuseTransmission.DIFFUSE_TRANSMISSION, shaderDefine: "DEBUG_DIFFUSE_TRANSMISSION"},
             {debugOutput: GltfState.DebugOutput.diffuseTransmission.DIFFUSE_TRANSMISSION_FACTOR, shaderDefine: "DEBUG_DIFFUSE_TRANSMISSION_FACTOR"},
             {debugOutput: GltfState.DebugOutput.diffuseTransmission.DIFFUSE_TRANSMISSION_COLOR_FACTOR, shaderDefine: "DEBUG_DIFFUSE_TRANSMISSION_COLOR_FACTOR"},
 
-            {debugOutput: GltfState.DebugOutput.iridescence.IRIDESCENCE, shaderDefine: "DEBUG_IRIDESCENCE"},
             {debugOutput: GltfState.DebugOutput.iridescence.IRIDESCENCE_FACTOR, shaderDefine: "DEBUG_IRIDESCENCE_FACTOR"},
             {debugOutput: GltfState.DebugOutput.iridescence.IRIDESCENCE_THICKNESS, shaderDefine: "DEBUG_IRIDESCENCE_THICKNESS"},
 
@@ -4753,6 +4865,9 @@ class gltfRenderer
     applyEnvironmentMap(state, texSlotOffset)
     {
         const environment = state.environment;
+        if (environment === undefined) {
+            return texSlotOffset;
+        }
         this.webGl.setTexture(this.shader.getUniformLocation("u_LambertianEnvSampler"), environment, environment.diffuseEnvMap, texSlotOffset++);
 
         this.webGl.setTexture(this.shader.getUniformLocation("u_GGXEnvSampler"), environment, environment.specularEnvMap, texSlotOffset++);
@@ -4769,7 +4884,12 @@ class gltfRenderer
         fromMat4(rotMatrix3, rotMatrix4);
         this.shader.updateUniform("u_EnvRotation", rotMatrix3);
 
-        const envIntensity = state.renderingParameters.iblIntensity * state.environment.iblIntensityScale;
+        let envIntensity = state.renderingParameters.iblIntensity * state.environment.iblIntensityScale;
+
+        if(state.renderingParameters.useIBL === false) {
+            envIntensity = 0.0;
+        }
+
         this.shader.updateUniform("u_EnvIntensity", envIntensity);
 
         return texSlotOffset;
@@ -15127,6 +15247,7 @@ class gltfTexture extends GltfObject
         this.type = type;
         this.initialized = false;
         this.mipLevelCount = 0;
+        this.linear = true;
     }
 
     initGl(gltf, webGlContext)
@@ -15187,6 +15308,9 @@ class gltfTextureInfo extends GltfObject
 
     initGl(gltf, webGlContext)
     {
+        if (!this.linear) {
+            gltf.textures[this.index].linear = false;
+        }
         initGlForMembers(this, gltf, webGlContext);
     }
 
@@ -15348,6 +15472,10 @@ class gltfMaterial extends GltfObject
             multiply$1(uvMatrix, translation, rotation);
             multiply$1(uvMatrix, uvMatrix, scale);
             shader.updateUniform("u_" + key + "UVTransform", jsToGl(uvMatrix));
+            
+            if(key === "Normal") {
+                shader.updateUniform("u_vertNormalUVTransform", jsToGl(uvMatrix));
+            }
         }
     }
 
@@ -15419,6 +15547,7 @@ class gltfMaterial extends GltfObject
         {
             const diffuseTexture = this.extensions.KHR_materials_pbrSpecularGlossiness.diffuseTexture;
             diffuseTexture.samplerName = "u_DiffuseSampler";
+            diffuseTexture.linear = false;
             this.parseTextureInfoExtensions(diffuseTexture, "Diffuse");
             this.textures.push(diffuseTexture);
             this.defines.push("HAS_DIFFUSE_MAP 1");
@@ -15428,6 +15557,7 @@ class gltfMaterial extends GltfObject
         {
             const specularGlossinessTexture = this.extensions.KHR_materials_pbrSpecularGlossiness.specularGlossinessTexture;
             specularGlossinessTexture.samplerName = "u_SpecularGlossinessSampler";
+            specularGlossinessTexture.linear = false;
             this.parseTextureInfoExtensions(specularGlossinessTexture, "SpecularGlossiness");
             this.textures.push(specularGlossinessTexture);
             this.defines.push("HAS_SPECULAR_GLOSSINESS_MAP 1");
@@ -16289,7 +16419,7 @@ async function load(module, imports) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('mikktspace_bg.wasm', (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.src || new URL('gltf-viewer.js', document.baseURI).href)));
+        input = new URL('mikktspace_bg.wasm', (typeof document === 'undefined' ? require('u' + 'rl').pathToFileURL(__filename).href : (_documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === 'SCRIPT' && _documentCurrentScript.src || new URL('gltf-viewer.js', document.baseURI).href)));
     }
     const imports = {};
     imports.wbg = {};
@@ -16394,10 +16524,7 @@ class gltfPrimitive extends GltfObject
                 console.error("To many vertex attributes for this primitive, skipping " + attribute);
                 break;
             }
-
-            const idx = this.attributes[attribute];
-            this.glAttributes.push({ attribute: attribute, name: "a_" + attribute.toLowerCase(), accessor: idx });
-            this.defines.push(`HAS_${attribute}_${gltf.accessors[idx].type} 1`);
+            let knownAttribute = true;
             switch (attribute)
             {
             case "POSITION":
@@ -16431,7 +16558,13 @@ class gltfPrimitive extends GltfObject
                 this.hasWeights = true;
                 break;
             default:
+                knownAttribute = false;
                 console.log("Unknown attribute: " + attribute);
+            }
+            if (knownAttribute) {
+                const idx = this.attributes[attribute];
+                this.glAttributes.push({ attribute: attribute, name: "a_" + attribute.toLowerCase(), accessor: idx });
+                this.defines.push(`HAS_${attribute}_${gltf.accessors[idx].type} 1`);
             }
         }
 
@@ -17200,6 +17333,43 @@ class gltfNode extends GltfObject
         this.inverseWorldTransform = create$3();
         this.normalMatrix = create$3();
         this.light = undefined;
+        this.instanceMatrices = undefined;
+        this.instanceWorldTransforms = undefined;
+    }
+
+    initGl(gltf, webGlContext)
+    {
+        if (this.extensions?.EXT_mesh_gpu_instancing?.attributes !== undefined) {
+            const firstAccessor = Object.values(this.extensions?.EXT_mesh_gpu_instancing?.attributes)[0];
+            const count = gltf.accessors[firstAccessor].count;
+            const translationAccessor = this.extensions?.EXT_mesh_gpu_instancing?.attributes?.TRANSLATION;
+            let translationData = undefined;
+            if (translationAccessor !== undefined) {
+                translationData = gltf.accessors[translationAccessor].getDeinterlacedView(gltf);
+            }
+            const rotationAccessor = this.extensions?.EXT_mesh_gpu_instancing?.attributes?.ROTATION;
+            let rotationData = undefined;
+            if (rotationAccessor !== undefined) {
+                rotationData = gltf.accessors[rotationAccessor].getDeinterlacedView(gltf);
+            }
+            const scaleAccessor = this.extensions?.EXT_mesh_gpu_instancing?.attributes?.SCALE;
+            let scaleData = undefined;
+            if (scaleAccessor !== undefined) {
+                scaleData = gltf.accessors[scaleAccessor].getDeinterlacedView(gltf);
+            }
+            this.instanceMatrices = [];
+            for (let i = 0; i < count; i++) {
+                const translation = translationData ? jsToGlSlice(translationData, i * 3, 3) : create$2();
+                const rotation = rotationData ? jsToGlSlice(rotationData, i * 4, 4) : create();
+                const scale = scaleData ? jsToGlSlice(scaleData, i * 3, 3) : fromValues$2(1, 1, 1);
+                this.instanceMatrices.push(fromRotationTranslationScale(
+                    create$3(),
+                    rotation,
+                    translation,
+                    scale
+                ));
+            }
+        }
     }
 
     fromJson(jsonNode) {
@@ -17282,6 +17452,16 @@ class gltfScene extends GltfObject
             multiply(node.worldTransform, parentTransform, node.getLocalTransform());
             invert(node.inverseWorldTransform, node.worldTransform);
             transpose(node.normalMatrix, node.inverseWorldTransform);
+
+            if (node.instanceMatrices) {
+                node.instanceWorldTransforms = [];
+                for (let i = 0; i < node.instanceMatrices.length; i++) {
+                    const instanceTransform = node.instanceMatrices[i];
+                    const instanceWorldTransform = create$3();
+                    multiply(instanceWorldTransform, node.worldTransform, instanceTransform);
+                    node.instanceWorldTransforms.push(instanceWorldTransform);
+                }
+            }
 
             for (const child of node.children)
             {
@@ -18602,7 +18782,7 @@ class gltfAnimation extends GltfObject
                 // The interpolator will always return a `Float32Array`, even if the animated value is a scalar.
                 // For the renderer it's not a problem because uploading a single-element array is the same as uploading a scalar to a uniform.
                 // However, it becomes a problem if we use the animated value for further computation and assume is stays a scalar.
-                // Thus we explicitly convert the animated value back to a scalar if the interpolant is a single-element array.
+                // Thus we explicitly convert the animated value back to a scalar if the interpolant is a single-element array and the rest value is not an array itself.
                 if (animatedArrayElement !== undefined) {
                     const array = animatedProperty.value();
                     if (interpolant.length == 1) {
@@ -18613,7 +18793,7 @@ class gltfAnimation extends GltfObject
                     }
                     animatedProperty.animate(array);
                 } else {
-                    if (interpolant.length == 1) {
+                    if (interpolant.length == 1 && !Array.isArray(animatedProperty.restValue)) {
                         animatedProperty.animate(interpolant[0]);
                     }
                     else {
@@ -19220,9 +19400,9 @@ class gltfLoader
     }
 }
 
-var iblFiltering = "precision highp float;\n#define GLSLIFY 1\n#define MATH_PI 3.1415926535897932384626433832795\nuniform samplerCube uCubeMap;const int cLambertian=0;const int cGGX=1;const int cCharlie=2;uniform float u_roughness;uniform int u_sampleCount;uniform int u_width;uniform float u_lodBias;uniform int u_distribution;uniform int u_currentFace;uniform int u_isGeneratingLUT;uniform int u_floatTexture;uniform float u_intensityScale;in vec2 texCoord;out vec4 fragmentColor;vec3 uvToXYZ(int face,vec2 uv){if(face==0)return vec3(1.f,uv.y,-uv.x);else if(face==1)return vec3(-1.f,uv.y,uv.x);else if(face==2)return vec3(+uv.x,-1.f,+uv.y);else if(face==3)return vec3(+uv.x,1.f,-uv.y);else if(face==4)return vec3(+uv.x,uv.y,1.f);else{return vec3(-uv.x,+uv.y,-1.f);}}vec2 dirToUV(vec3 dir){return vec2(0.5f+0.5f*atan(dir.z,dir.x)/MATH_PI,1.f-acos(dir.y)/MATH_PI);}float saturate(float v){return clamp(v,0.0f,1.0f);}float radicalInverse_VdC(uint bits){bits=(bits<<16u)|(bits>>16u);bits=((bits&0x55555555u)<<1u)|((bits&0xAAAAAAAAu)>>1u);bits=((bits&0x33333333u)<<2u)|((bits&0xCCCCCCCCu)>>2u);bits=((bits&0x0F0F0F0Fu)<<4u)|((bits&0xF0F0F0F0u)>>4u);bits=((bits&0x00FF00FFu)<<8u)|((bits&0xFF00FF00u)>>8u);return float(bits)*2.3283064365386963e-10;}vec2 hammersley2d(int i,int N){return vec2(float(i)/float(N),radicalInverse_VdC(uint(i)));}mat3 generateTBN(vec3 normal){vec3 bitangent=vec3(0.0,1.0,0.0);float NdotUp=dot(normal,vec3(0.0,1.0,0.0));float epsilon=0.0000001;if(1.0-abs(NdotUp)<=epsilon){if(NdotUp>0.0){bitangent=vec3(0.0,0.0,1.0);}else{bitangent=vec3(0.0,0.0,-1.0);}}vec3 tangent=normalize(cross(bitangent,normal));bitangent=cross(normal,tangent);return mat3(tangent,bitangent,normal);}struct MicrofacetDistributionSample{float pdf;float cosTheta;float sinTheta;float phi;};float D_GGX(float NdotH,float roughness){float a=NdotH*roughness;float k=roughness/(1.0-NdotH*NdotH+a*a);return k*k*(1.0/MATH_PI);}MicrofacetDistributionSample GGX(vec2 xi,float roughness){MicrofacetDistributionSample ggx;float alpha=roughness*roughness;ggx.cosTheta=saturate(sqrt((1.0-xi.y)/(1.0+(alpha*alpha-1.0)*xi.y)));ggx.sinTheta=sqrt(1.0-ggx.cosTheta*ggx.cosTheta);ggx.phi=2.0*MATH_PI*xi.x;ggx.pdf=D_GGX(ggx.cosTheta,alpha);ggx.pdf/=4.0;return ggx;}float D_Ashikhmin(float NdotH,float roughness){float alpha=roughness*roughness;float a2=alpha*alpha;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;float sin4h=sin2h*sin2h;float cot2=-cos2h/(a2*sin2h);return 1.0/(MATH_PI*(4.0*a2+1.0)*sin4h)*(4.0*exp(cot2)+sin4h);}float D_Charlie(float sheenRoughness,float NdotH){sheenRoughness=max(sheenRoughness,0.000001);float invR=1.0/sheenRoughness;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;return(2.0+invR)*pow(sin2h,invR*0.5)/(2.0*MATH_PI);}MicrofacetDistributionSample Charlie(vec2 xi,float roughness){MicrofacetDistributionSample charlie;float alpha=roughness*roughness;charlie.sinTheta=pow(xi.y,alpha/(2.0*alpha+1.0));charlie.cosTheta=sqrt(1.0-charlie.sinTheta*charlie.sinTheta);charlie.phi=2.0*MATH_PI*xi.x;charlie.pdf=D_Charlie(alpha,charlie.cosTheta);charlie.pdf/=4.0;return charlie;}MicrofacetDistributionSample Lambertian(vec2 xi,float roughness){MicrofacetDistributionSample lambertian;lambertian.cosTheta=sqrt(1.0-xi.y);lambertian.sinTheta=sqrt(xi.y);lambertian.phi=2.0*MATH_PI*xi.x;lambertian.pdf=lambertian.cosTheta/MATH_PI;return lambertian;}vec4 getImportanceSample(int sampleIndex,vec3 N,float roughness){vec2 xi=hammersley2d(sampleIndex,u_sampleCount);MicrofacetDistributionSample importanceSample;if(u_distribution==cLambertian){importanceSample=Lambertian(xi,roughness);}else if(u_distribution==cGGX){importanceSample=GGX(xi,roughness);}else if(u_distribution==cCharlie){importanceSample=Charlie(xi,roughness);}vec3 localSpaceDirection=normalize(vec3(importanceSample.sinTheta*cos(importanceSample.phi),importanceSample.sinTheta*sin(importanceSample.phi),importanceSample.cosTheta));mat3 TBN=generateTBN(N);vec3 direction=TBN*localSpaceDirection;return vec4(direction,importanceSample.pdf);}float computeLod(float pdf){float lod=0.5*log2(6.0*float(u_width)*float(u_width)/(float(u_sampleCount)*pdf));return lod;}vec3 filterColor(vec3 N){vec3 color=vec3(0.f);float weight=0.0f;for(int i=0;i<u_sampleCount;++i){vec4 importanceSample=getImportanceSample(i,N,u_roughness);vec3 H=vec3(importanceSample.xyz);float pdf=importanceSample.w;float lod=computeLod(pdf);lod+=u_lodBias;if(u_distribution==cLambertian){vec3 lambertian=textureLod(uCubeMap,H,lod).rgb*u_intensityScale;color+=lambertian;}else if(u_distribution==cGGX||u_distribution==cCharlie){vec3 V=N;vec3 L=normalize(reflect(-V,H));float NdotL=dot(N,L);if(NdotL>0.0){if(u_roughness==0.0){lod=u_lodBias;}vec3 sampleColor=textureLod(uCubeMap,L,lod).rgb*u_intensityScale;color+=sampleColor*NdotL;weight+=NdotL;}}}if(weight!=0.0f){color/=weight;}else{color/=float(u_sampleCount);}return color.rgb;}float V_SmithGGXCorrelated(float NoV,float NoL,float roughness){float a2=pow(roughness,4.0);float GGXV=NoL*sqrt(NoV*NoV*(1.0-a2)+a2);float GGXL=NoV*sqrt(NoL*NoL*(1.0-a2)+a2);return 0.5/(GGXV+GGXL);}float V_Ashikhmin(float NdotL,float NdotV){return clamp(1.0/(4.0*(NdotL+NdotV-NdotL*NdotV)),0.0,1.0);}vec3 LUT(float NdotV,float roughness){vec3 V=vec3(sqrt(1.0-NdotV*NdotV),0.0,NdotV);vec3 N=vec3(0.0,0.0,1.0);float A=0.0;float B=0.0;float C=0.0;for(int i=0;i<u_sampleCount;++i){vec4 importanceSample=getImportanceSample(i,N,roughness);vec3 H=importanceSample.xyz;vec3 L=normalize(reflect(-V,H));float NdotL=saturate(L.z);float NdotH=saturate(H.z);float VdotH=saturate(dot(V,H));if(NdotL>0.0){if(u_distribution==cGGX){float V_pdf=V_SmithGGXCorrelated(NdotV,NdotL,roughness)*VdotH*NdotL/NdotH;float Fc=pow(1.0-VdotH,5.0);A+=(1.0-Fc)*V_pdf;B+=Fc*V_pdf;C+=0.0;}if(u_distribution==cCharlie){float sheenDistribution=D_Charlie(roughness,NdotH);float sheenVisibility=V_Ashikhmin(NdotL,NdotV);A+=0.0;B+=0.0;C+=sheenVisibility*sheenDistribution*NdotL*VdotH;}}}return vec3(4.0*A,4.0*B,4.0*2.0*MATH_PI*C)/float(u_sampleCount);}void main(){vec3 color=vec3(0);if(u_isGeneratingLUT==0){vec2 newUV=texCoord;newUV=newUV*2.0-1.0;vec3 scan=uvToXYZ(u_currentFace,newUV);vec3 direction=normalize(scan);direction.y=-direction.y;color=filterColor(direction);}else{color=LUT(texCoord.x,texCoord.y);fragmentColor.rgb=color;fragmentColor.a=1.0;return;}fragmentColor.a=1.0;if(u_floatTexture==0){float maxV=max(max(color.r,color.g),color.b);color/=u_intensityScale;color=clamp(color,0.0f,1.0f);}fragmentColor.rgb=color;}"; // eslint-disable-line
+var iblFiltering = "precision highp float;\n#define GLSLIFY 1\n#define MATH_PI 3.1415926535897932384626433832795\nuniform samplerCube u_cubemapTexture;const int cLambertian=0;const int cGGX=1;const int cCharlie=2;uniform float u_roughness;uniform int u_sampleCount;uniform int u_width;uniform float u_lodBias;uniform int u_distribution;uniform int u_currentFace;uniform int u_isGeneratingLUT;uniform int u_floatTexture;uniform float u_intensityScale;in vec2 texCoord;out vec4 fragmentColor;vec3 uvToXYZ(int face,vec2 uv){if(face==0)return vec3(1.f,uv.y,-uv.x);else if(face==1)return vec3(-1.f,uv.y,uv.x);else if(face==2)return vec3(+uv.x,-1.f,+uv.y);else if(face==3)return vec3(+uv.x,1.f,-uv.y);else if(face==4)return vec3(+uv.x,uv.y,1.f);else{return vec3(-uv.x,+uv.y,-1.f);}}vec2 dirToUV(vec3 dir){return vec2(0.5f+0.5f*atan(dir.z,dir.x)/MATH_PI,1.f-acos(dir.y)/MATH_PI);}float saturate(float v){return clamp(v,0.0f,1.0f);}float radicalInverse_VdC(uint bits){bits=(bits<<16u)|(bits>>16u);bits=((bits&0x55555555u)<<1u)|((bits&0xAAAAAAAAu)>>1u);bits=((bits&0x33333333u)<<2u)|((bits&0xCCCCCCCCu)>>2u);bits=((bits&0x0F0F0F0Fu)<<4u)|((bits&0xF0F0F0F0u)>>4u);bits=((bits&0x00FF00FFu)<<8u)|((bits&0xFF00FF00u)>>8u);return float(bits)*2.3283064365386963e-10;}vec2 hammersley2d(int i,int N){return vec2(float(i)/float(N),radicalInverse_VdC(uint(i)));}mat3 generateTBN(vec3 normal){vec3 bitangent=vec3(0.0,1.0,0.0);float NdotUp=dot(normal,vec3(0.0,1.0,0.0));float epsilon=0.0000001;if(1.0-abs(NdotUp)<=epsilon){if(NdotUp>0.0){bitangent=vec3(0.0,0.0,1.0);}else{bitangent=vec3(0.0,0.0,-1.0);}}vec3 tangent=normalize(cross(bitangent,normal));bitangent=cross(normal,tangent);return mat3(tangent,bitangent,normal);}struct MicrofacetDistributionSample{float pdf;float cosTheta;float sinTheta;float phi;};float D_GGX(float NdotH,float roughness){float a=NdotH*roughness;float k=roughness/(1.0-NdotH*NdotH+a*a);return k*k*(1.0/MATH_PI);}MicrofacetDistributionSample GGX(vec2 xi,float roughness){MicrofacetDistributionSample ggx;float alpha=roughness*roughness;ggx.cosTheta=saturate(sqrt((1.0-xi.y)/(1.0+(alpha*alpha-1.0)*xi.y)));ggx.sinTheta=sqrt(1.0-ggx.cosTheta*ggx.cosTheta);ggx.phi=2.0*MATH_PI*xi.x;ggx.pdf=D_GGX(ggx.cosTheta,alpha);ggx.pdf/=4.0;return ggx;}float D_Ashikhmin(float NdotH,float roughness){float alpha=roughness*roughness;float a2=alpha*alpha;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;float sin4h=sin2h*sin2h;float cot2=-cos2h/(a2*sin2h);return 1.0/(MATH_PI*(4.0*a2+1.0)*sin4h)*(4.0*exp(cot2)+sin4h);}float D_Charlie(float sheenRoughness,float NdotH){sheenRoughness=max(sheenRoughness,0.000001);float invR=1.0/sheenRoughness;float cos2h=NdotH*NdotH;float sin2h=1.0-cos2h;return(2.0+invR)*pow(sin2h,invR*0.5)/(2.0*MATH_PI);}MicrofacetDistributionSample Charlie(vec2 xi,float roughness){MicrofacetDistributionSample charlie;float alpha=roughness*roughness;charlie.sinTheta=pow(xi.y,alpha/(2.0*alpha+1.0));charlie.cosTheta=sqrt(1.0-charlie.sinTheta*charlie.sinTheta);charlie.phi=2.0*MATH_PI*xi.x;charlie.pdf=D_Charlie(alpha,charlie.cosTheta);charlie.pdf/=4.0;return charlie;}MicrofacetDistributionSample Lambertian(vec2 xi,float roughness){MicrofacetDistributionSample lambertian;lambertian.cosTheta=sqrt(1.0-xi.y);lambertian.sinTheta=sqrt(xi.y);lambertian.phi=2.0*MATH_PI*xi.x;lambertian.pdf=lambertian.cosTheta/MATH_PI;return lambertian;}vec4 getImportanceSample(int sampleIndex,vec3 N,float roughness){vec2 xi=hammersley2d(sampleIndex,u_sampleCount);MicrofacetDistributionSample importanceSample;if(u_distribution==cLambertian){importanceSample=Lambertian(xi,roughness);}else if(u_distribution==cGGX){importanceSample=GGX(xi,roughness);}else if(u_distribution==cCharlie){importanceSample=Charlie(xi,roughness);}vec3 localSpaceDirection=normalize(vec3(importanceSample.sinTheta*cos(importanceSample.phi),importanceSample.sinTheta*sin(importanceSample.phi),importanceSample.cosTheta));mat3 TBN=generateTBN(N);vec3 direction=TBN*localSpaceDirection;return vec4(direction,importanceSample.pdf);}float computeLod(float pdf){float lod=0.5*log2(6.0*float(u_width)*float(u_width)/(float(u_sampleCount)*pdf));return lod;}vec3 filterColor(vec3 N){vec3 color=vec3(0.f);float weight=0.0f;for(int i=0;i<u_sampleCount;++i){vec4 importanceSample=getImportanceSample(i,N,u_roughness);vec3 H=vec3(importanceSample.xyz);float pdf=importanceSample.w;float lod=computeLod(pdf);lod+=u_lodBias;if(u_distribution==cLambertian){vec3 lambertian=textureLod(u_cubemapTexture,H,lod).rgb*u_intensityScale;color+=lambertian;}else if(u_distribution==cGGX||u_distribution==cCharlie){vec3 V=N;vec3 L=normalize(reflect(-V,H));float NdotL=dot(N,L);if(NdotL>0.0){if(u_roughness==0.0){lod=u_lodBias;}vec3 sampleColor=textureLod(u_cubemapTexture,L,lod).rgb*u_intensityScale;color+=sampleColor*NdotL;weight+=NdotL;}}}if(weight!=0.0f){color/=weight;}else{color/=float(u_sampleCount);}return color.rgb;}float V_SmithGGXCorrelated(float NoV,float NoL,float roughness){float a2=pow(roughness,4.0);float GGXV=NoL*sqrt(NoV*NoV*(1.0-a2)+a2);float GGXL=NoV*sqrt(NoL*NoL*(1.0-a2)+a2);return 0.5/(GGXV+GGXL);}float V_Ashikhmin(float NdotL,float NdotV){return clamp(1.0/(4.0*(NdotL+NdotV-NdotL*NdotV)),0.0,1.0);}vec3 LUT(float NdotV,float roughness){vec3 V=vec3(sqrt(1.0-NdotV*NdotV),0.0,NdotV);vec3 N=vec3(0.0,0.0,1.0);float A=0.0;float B=0.0;float C=0.0;for(int i=0;i<u_sampleCount;++i){vec4 importanceSample=getImportanceSample(i,N,roughness);vec3 H=importanceSample.xyz;vec3 L=normalize(reflect(-V,H));float NdotL=saturate(L.z);float NdotH=saturate(H.z);float VdotH=saturate(dot(V,H));if(NdotL>0.0){if(u_distribution==cGGX){float V_pdf=V_SmithGGXCorrelated(NdotV,NdotL,roughness)*VdotH*NdotL/NdotH;float Fc=pow(1.0-VdotH,5.0);A+=(1.0-Fc)*V_pdf;B+=Fc*V_pdf;C+=0.0;}if(u_distribution==cCharlie){float sheenDistribution=D_Charlie(roughness,NdotH);float sheenVisibility=V_Ashikhmin(NdotL,NdotV);A+=0.0;B+=0.0;C+=sheenVisibility*sheenDistribution*NdotL*VdotH;}}}return vec3(4.0*A,4.0*B,4.0*2.0*MATH_PI*C)/float(u_sampleCount);}void main(){vec3 color=vec3(0);if(u_isGeneratingLUT==0){vec2 newUV=texCoord;newUV=newUV*2.0-1.0;vec3 scan=uvToXYZ(u_currentFace,newUV);vec3 direction=normalize(scan);direction.y=-direction.y;color=filterColor(direction);}else{color=LUT(texCoord.x,texCoord.y);fragmentColor.rgb=color;fragmentColor.a=1.0;return;}fragmentColor.a=1.0;if(u_floatTexture==0){float maxV=max(max(color.r,color.g),color.b);color/=u_intensityScale;color=clamp(color,0.0f,1.0f);}fragmentColor.rgb=color;}"; // eslint-disable-line
 
-var panoramaToCubeMap = "#define MATH_PI 3.1415926535897932384626433832795\n#define MATH_INV_PI (1.0 / MATH_PI)\nprecision highp float;\n#define GLSLIFY 1\nin vec2 texCoord;out vec4 fragmentColor;uniform int u_currentFace;uniform sampler2D u_inputTexture;uniform sampler2D u_panorama;vec3 uvToXYZ(int face,vec2 uv){if(face==0)return vec3(1.f,uv.y,-uv.x);else if(face==1)return vec3(-1.f,uv.y,uv.x);else if(face==2)return vec3(+uv.x,-1.f,+uv.y);else if(face==3)return vec3(+uv.x,1.f,-uv.y);else if(face==4)return vec3(+uv.x,uv.y,1.f);else{return vec3(-uv.x,+uv.y,-1.f);}}vec2 dirToUV(vec3 dir){return vec2(0.5f+0.5f*atan(dir.z,dir.x)/MATH_PI,1.f-acos(dir.y)/MATH_PI);}vec3 panoramaToCubeMap(int face,vec2 texCoord){vec2 texCoordNew=texCoord*2.0-1.0;vec3 scan=uvToXYZ(face,texCoordNew);vec3 direction=normalize(scan);vec2 src=dirToUV(direction);return texture(u_panorama,src).rgb;}void main(void){fragmentColor=vec4(0.0,0.0,0.0,1.0);fragmentColor.rgb=panoramaToCubeMap(u_currentFace,texCoord);}"; // eslint-disable-line
+var panoramaToCubeMap = "#define MATH_PI 3.1415926535897932384626433832795\n#define MATH_INV_PI (1.0 / MATH_PI)\nprecision highp float;\n#define GLSLIFY 1\nin vec2 texCoord;out vec4 fragmentColor;uniform int u_currentFace;uniform sampler2D u_panorama;vec3 uvToXYZ(int face,vec2 uv){if(face==0)return vec3(1.f,uv.y,-uv.x);else if(face==1)return vec3(-1.f,uv.y,uv.x);else if(face==2)return vec3(+uv.x,-1.f,+uv.y);else if(face==3)return vec3(+uv.x,1.f,-uv.y);else if(face==4)return vec3(+uv.x,uv.y,1.f);else{return vec3(-uv.x,+uv.y,-1.f);}}vec2 dirToUV(vec3 dir){return vec2(0.5f+0.5f*atan(dir.z,dir.x)/MATH_PI,1.f-acos(dir.y)/MATH_PI);}vec3 panoramaToCubeMap(int face,vec2 texCoord){vec2 texCoordNew=texCoord*2.0-1.0;vec3 scan=uvToXYZ(face,texCoordNew);vec3 direction=normalize(scan);vec2 src=dirToUV(direction);return texture(u_panorama,src).rgb;}void main(void){fragmentColor=vec4(0.0,0.0,0.0,1.0);fragmentColor.rgb=panoramaToCubeMap(u_currentFace,texCoord);}"; // eslint-disable-line
 
 var debugOutput = "precision highp float;\n#define GLSLIFY 1\nin vec2 texCoord;out vec4 fragmentColor;uniform int u_currentFace;uniform samplerCube u_inputTexture;vec3 uvToXYZ(int face,vec2 uv){if(face==0)return vec3(1.f,uv.y,-uv.x);else if(face==1)return vec3(-1.f,uv.y,uv.x);else if(face==2)return vec3(+uv.x,-1.f,+uv.y);else if(face==3)return vec3(+uv.x,1.f,-uv.y);else if(face==4)return vec3(+uv.x,uv.y,1.f);else{return vec3(-uv.x,+uv.y,-1.f);}}void main(void){fragmentColor=vec4(texCoord.x*10.0,0.0,texCoord.y*10.0,1.0);vec2 newUV=texCoord;newUV=newUV*2.0-1.0;vec4 textureColor=vec4(0.0,0.0,0.0,1.0);vec3 direction=normalize(uvToXYZ(u_currentFace,newUV.xy));textureColor=textureLod(u_inputTexture,direction,1.0);if(texCoord.x>0.1){fragmentColor=textureColor;}if(texCoord.y>0.1){fragmentColor=textureColor;}}"; // eslint-disable-line
 
@@ -19257,7 +19437,8 @@ class iblSampler
         this.cubemapTextureID = undefined;
         this.framebuffer = undefined;
 
-        this.supportedFormat = "BYTE";
+        this.supportedFormats = ["BYTE"];
+        this.preferredFormat = "HALF_FLOAT";
 
         const shaderSources = new Map();
 
@@ -19281,7 +19462,7 @@ class iblSampler
         // Reset scaling of hdrs 
         this.scaleValue = 1.0;
 
-        if(this.supportedFormat == "BYTE")
+        if(this.supportedFormats.includes("FLOAT") == false && this.supportedFormats.includes("HALF_FLOAT") == false)
         {
             texture.internalFormat = this.internalFormat();
             texture.format = this.gl.RGBA;
@@ -19299,7 +19480,7 @@ class iblSampler
                 if(max_component > 1.0) {
                     diff_sum += max_component-1.0;
                 }
-                clamped_sum += Math.max(max_component, 1.0);
+                clamped_sum += Math.min(max_component, 1.0);
 
                 max_value =  Math.max(max_component, max_value);
             }
@@ -19328,52 +19509,81 @@ class iblSampler
             return texture;
         }
 
-        if(this.supportedFormat == "HALF_FLOAT")
+
+
+        const numPixels = image.dataFloat.length / 3;
+        texture.data = new Float32Array(numPixels * 4);
+        
+        let max_value = 0.0;
+        for(let i = 0, src = 0, dst = 0; i < numPixels; ++i, src += 3, dst += 4)
+        {
+            // pad the alpha channel
+            // workaround for node-gles not supporting RGB32F -> convert to RGBA32F
+            texture.data[dst] =  image.dataFloat[src];
+            texture.data[dst+1] = image.dataFloat[src+1];
+            texture.data[dst+2] = image.dataFloat[src+2];
+            texture.data[dst+3] = 1.0; // unused
+            
+            let max_component = Math.max(image.dataFloat[src+0], image.dataFloat[src+1], image.dataFloat[src+2]);
+            max_value =  Math.max(max_component, max_value);
+        }
+
+        if(max_value > 65504.0) {
+            // We need float (32 bit) to support value range
+            if(this.supportedFormats.includes("FLOAT"))
+            {
+                // Remove HALF_FLOAT from supported list as we require a higher value range 
+                this.supportedFormats.splice(this.supportedFormats.indexOf("HALF_FLOAT"), 1);
+            }
+            else
+            {
+                console.warn("Supported texture formats do not support HDR value range ");
+                console.warn("Environment light intensity cannot be displayed correctly on this device");
+
+                // Recalcualte texture data to fit in half_float range
+                let clamped_sum = 0.0;
+                let diff_sum = 0.0;
+                const max_range = 65504.0;
+                for(let i = 0, src = 0, dst = 0; i < numPixels; ++i, src += 3, dst += 4)
+                {
+                    texture.data[dst] =  Math.min(image.dataFloat[src], max_range);
+                    texture.data[dst+1] = Math.min(image.dataFloat[src+1], max_range);
+                    texture.data[dst+2] = Math.min(image.dataFloat[src+2], max_range);
+                    texture.data[dst+3] = 1.0; // unused
+
+                    let max_component = Math.max(image.dataFloat[src+0], image.dataFloat[src+1], image.dataFloat[src+2]);
+                    if(max_component > max_range) {
+                        diff_sum += max_component-max_range;
+                    }
+                    clamped_sum += Math.min(max_component, max_range);
+     
+                } 
+                if(clamped_sum > 1.0) {
+                    // Apply global scale factor to compensate for intensity lost when clamping
+                    this.scaleValue =   (clamped_sum+diff_sum)/clamped_sum;
+                }
+    
+
+            }
+        }
+
+
+        if(image.dataFloat instanceof Float32Array && this.supportedFormats.includes("HALF_FLOAT"))
         {
             texture.internalFormat = this.internalFormat();
             texture.format = this.gl.RGBA;
             texture.type = this.gl.FLOAT;
 
-            const numPixels = image.dataFloat.length / 3;
-            texture.data = new Float32Array(numPixels * 4);
-            for(let i = 0, src = 0, dst = 0; i < numPixels; ++i, src += 3, dst += 4)
-            {
-                // pad the alpha channel
-                texture.data[dst] =  image.dataFloat[src];
-                texture.data[dst+1] = image.dataFloat[src+1];
-                texture.data[dst+2] = image.dataFloat[src+2];
-                texture.data[dst+3] = 1.0; // unused
-            }
             return texture;
         }
-        
-
-        if (image.dataFloat instanceof Float32Array && typeof(this.gl.RGB32F) !== 'undefined')
+ 
+        if (image.dataFloat instanceof Float32Array &&  this.supportedFormats.includes("FLOAT"))
         {
-            texture.internalFormat = this.gl.RGB32F;
-            texture.format = this.gl.RGB;
-            texture.type = this.gl.FLOAT;
-            texture.data = image.dataFloat;
-            return texture;
-        }
-
-        if (image.dataFloat instanceof Float32Array)
-        {
-            // workaround for node-gles not supporting RGB32F -> conver to RGBA32F
+            
             texture.internalFormat = this.gl.RGBA32F;
             texture.format = this.gl.RGBA;
             texture.type = this.gl.FLOAT;
 
-            const numPixels = image.dataFloat.length / 3;
-            texture.data = new Float32Array(numPixels * 4);
-            for(let i = 0, src = 0, dst = 0; i < numPixels; ++i, src += 3, dst += 4)
-            {
-                // copy the pixels and pad the alpha channel
-                texture.data[dst] = image.dataFloat[src];
-                texture.data[dst+1] = image.dataFloat[src+1];
-                texture.data[dst+2] = image.dataFloat[src+2];
-                texture.data[dst+3] = 1.0; // unused
-            }
             return texture;
         }
 
@@ -19419,17 +19629,35 @@ class iblSampler
 
     internalFormat()
     {
-        if(this.supportedFormat == "FLOAT") return  this.gl.RGBA32F;
-        if(this.supportedFormat == "HALF_FLOAT") return  this.gl.RGBA16F;
-        if(this.supportedFormat == "BYTE") return  this.gl.RGBA8;
+        
+        if(this.supportedFormats.includes(this.preferredFormat))
+        { 
+            // Try to use preferred format
+            if(this.preferredFormat == "FLOAT") return  this.gl.RGBA32F;
+            if(this.preferredFormat == "HALF_FLOAT") return  this.gl.RGBA16F;
+            if(this.preferredFormat == "BYTE") return  this.gl.RGBA8;
+        }
+        if(this.supportedFormats.includes("FLOAT")) return  this.gl.RGBA32F;
+        if(this.supportedFormats.includes("HALF_FLOAT")) return  this.gl.RGBA16F;
+        if(this.supportedFormats.includes("BYTE")) return  this.gl.RGBA8;
+
         return this.gl.RGBA8; // Fallback
     }
 
     textureTargetType()
     {
-        if(this.supportedFormat == "FLOAT") return  this.gl.FLOAT;
-        if(this.supportedFormat == "HALF_FLOAT") return  this.gl.HALF_FLOAT;
-        if(this.supportedFormat == "BYTE") return  this.gl.UNSIGNED_BYTE;
+        
+        if(this.supportedFormats.includes(this.preferredFormat))
+        { 
+            // Try to use preferred format
+            if(this.preferredFormat == "FLOAT") return   this.gl.FLOAT;
+            if(this.preferredFormat == "HALF_FLOAT") return  this.gl.HALF_FLOAT;
+            if(this.preferredFormat == "BYTE") return  this.gl.UNSIGNED_BYTE;
+        }
+        if(this.supportedFormats.includes("FLOAT")) return   this.gl.FLOAT;
+        if(this.supportedFormats.includes("HALF_FLOAT")) return   this.gl.HALF_FLOAT;
+        if(this.supportedFormats.includes("BYTE")) return  this.gl.UNSIGNED_BYTE;
+
         return this.gl.UNSIGNED_BYTE; // Fallback
     }
 
@@ -19496,21 +19724,15 @@ class iblSampler
 
     init(panoramaImage)
     {
-
         if (this.gl.getExtension("EXT_color_buffer_float") && this.gl.getExtension("OES_texture_float_linear"))
         {
-            this.supportedFormat = "FLOAT";  
-        } 
-        else if (this.gl.getExtension("EXT_color_buffer_float") || this.gl.getExtension("EXT_color_buffer_half_float"))
-        {
-            console.warn("Using 16-bit floats for IBL filtering");
-            this.supportedFormat = "HALF_FLOAT";
+            this.supportedFormats.push("FLOAT");
         }
-        else
+        if (this.gl.getExtension("EXT_color_buffer_float") || this.gl.getExtension("EXT_color_buffer_half_float"))
         {
-            console.warn("Using 8-bit floats for IBL filtering");
-            this.supportedFormat = "BYTE";  
+            this.supportedFormats.push("HALF_FLOAT");
         }
+       
 
         this.inputTextureID = this.loadTextureHDR(panoramaImage);
 
@@ -20000,9 +20222,18 @@ class ResourceLoader
         let filename = "";
         if (typeof gltfFile === "string")
         {
-            isGlb = getIsGlb(gltfFile);
             const response = await fetch(gltfFile);
-            json = data = await (isGlb ? response.arrayBuffer() : response.json());
+            const responseData = await response.arrayBuffer();
+            const uintData = new Uint8Array(responseData);
+            const fileMagicNumbers = new TextDecoder().decode(uintData.subarray(0, 5));
+
+            isGlb = fileMagicNumbers.startsWith("glTF");
+            if(isGlb) {
+                json = data = responseData;
+            } else {
+                json = data = JSON.parse(new TextDecoder().decode(uintData));
+            }
+
             filename = gltfFile;
         }
         else if (gltfFile instanceof ArrayBuffer)
@@ -20034,8 +20265,12 @@ class ResourceLoader
             }
         }
         else
-        {
-            console.error("Passed invalid type to loadGltf " + typeof (gltfFile));
+        {   
+            // Load empty glTF
+            data = "{\"asset\":{\"version\": \"2.0\"}}";
+            filename = "empty";
+            isGlb = false;
+            json = JSON.parse(data);
         }
 
         if (isGlb)
@@ -20313,10 +20548,10 @@ async function _loadEnvironmentFromPanorama(imageHDR, view, luts)
 
     environment.images.push(new gltfImage(luts.lut_sheen_E_file, GL.TEXTURE_2D, 0, undefined, undefined, ImageMimeType.PNG));
     const sheenELut = new gltfTexture(lutSamplerIdx, [imageIdx++], GL.TEXTURE_2D);
-    sheenELut.initialized = true; // iblsampler has already initialized the texture
+    sheenELut.initialized = false; // iblsampler does not create this texture
     environment.textures.push(sheenELut);
 
-    environment.sheenELUT = new gltfTextureInfo(environment.textures.length - 1);
+    environment.sheenELUT = new gltfTextureInfo(environment.textures.length - 1, 0, true);
     environment.sheenELUT.generateMips = false;
 
     await gltfLoader.loadImages(environment);
