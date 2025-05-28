@@ -128,8 +128,9 @@ canvas.height = window.innerHeight;
   });
 */
 
+  const assets = await Rn.defaultAssetLoader.load({
   // gltf
-  const mainExpression = (await Rn.GltfImporter.importFromUri(
+    mainExpression: (await Rn.GltfImporter.importFromUrl(
     url,
     {
       defaultMaterialHelperArgumentArray: [
@@ -138,12 +139,14 @@ canvas.height = window.innerHeight;
         },
       ],
     }
-  )).unwrapForce();
+    ))
+  });
+  
 
   // env
-  const envExpression = createEnvCubeExpression('../../textures/papermill_hdr', cameraEntity);
+  const envExpression = await createEnvCubeExpression('../../textures/papermill_hdr', cameraEntity);
 
-  const mainRenderPass = mainExpression.renderPasses[0];
+  const mainRenderPass = assets.mainExpression.renderPasses[0];
   // cameraController
   const mainCameraControllerComponent = cameraEntity.getCameraController();
   const controller = mainCameraControllerComponent.controller;
@@ -183,22 +186,26 @@ canvas.height = window.innerHeight;
   }
 
   if (modelInfo.name != "VirtualCity") {
-    await forwardRenderPipeline.setExpressions([envExpression, mainExpression]);
+    await forwardRenderPipeline.setExpressions([envExpression, assets.mainExpression]);
   } else {
-    await forwardRenderPipeline.setExpressions([mainExpression]);
+    await forwardRenderPipeline.setExpressions([assets.mainExpression]);
   }
 
   const diffuseCubeTexture = new Rn.CubeTexture();
-  diffuseCubeTexture.baseUriToLoad = "../../textures/papermill_hdr/diffuse/diffuse";
-  diffuseCubeTexture.isNamePosNeg = true;
-  diffuseCubeTexture.hdriFormat = Rn.HdriFormat.RGBE_PNG;
-  diffuseCubeTexture.mipmapLevelNumber = 1;
-  
+  await diffuseCubeTexture.loadTextureImages({
+    baseUrl: "../../textures/papermill_hdr/diffuse/diffuse",
+    isNamePosNeg: true,
+    hdriFormat: Rn.HdriFormat.RGBE_PNG,
+    mipmapLevelNumber: 1
+  });
+
   const specularCubeTexture = new Rn.CubeTexture();
-  specularCubeTexture.baseUriToLoad = "../../textures/papermill_hdr/specular/specular";
-  specularCubeTexture.isNamePosNeg = true;
-  specularCubeTexture.hdriFormat = Rn.HdriFormat.RGBE_PNG;
-  specularCubeTexture.mipmapLevelNumber = 10;
+  await specularCubeTexture.loadTextureImages({
+    baseUrl: "../../textures/papermill_hdr/specular/specular",
+    isNamePosNeg: true,
+    hdriFormat: Rn.HdriFormat.RGBE_PNG,
+    mipmapLevelNumber: 10
+  });
 
   await forwardRenderPipeline.setIBLTextures(diffuseCubeTexture, specularCubeTexture);
 
@@ -305,13 +312,14 @@ function createCamera() {
   return {cameraComponent, cameraEntity};
 }
 
-function createEnvCubeExpression(baseuri, cameraEntity) {
+async function createEnvCubeExpression(baseuri, cameraEntity) {
   const environmentCubeTexture = new Rn.CubeTexture();
-  environmentCubeTexture.baseUriToLoad = baseuri + '/environment/environment';
-  environmentCubeTexture.isNamePosNeg = true;
-  environmentCubeTexture.hdriFormat = Rn.HdriFormat.LDR_SRGB;
-  environmentCubeTexture.mipmapLevelNumber = 1;
-  environmentCubeTexture.loadTextureImagesAsync();
+  await environmentCubeTexture.loadTextureImages({
+    baseUrl: baseuri + '/environment/environment',
+    isNamePosNeg: true,
+    hdriFormat: Rn.HdriFormat.LDR_SRGB,
+    mipmapLevelNumber: 1
+  });
 
   const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
   const sampler = new Rn.Sampler({
