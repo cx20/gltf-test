@@ -38,6 +38,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
+import { GLTFAnimationPointerExtension } from '@needle-tools/three-animation-pointer';
+
 const params = {
     exposure: 1,
     // for THREE.ACESFilmicToneMapping
@@ -129,13 +131,17 @@ function init() {
     const loader = new GLTFLoader(manager);
     loader.setCrossOrigin( 'anonymous' );
 
-    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r179/examples/jsm/libs/draco/gltf/' );
+    const dracoLoader = new DRACOLoader().setDecoderPath( '../../libs/three.js/r180/examples/jsm/libs/draco/gltf/' );
     loader.setDRACOLoader( dracoLoader );
 
-    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r179/examples/jsm/libs/basis/' );
+    const ktx2Loader = new KTX2Loader().setTranscoderPath( '../../libs/three.js/r180/examples/jsm/libs/basis/' );
     ktx2Loader.detectSupport( renderer );
     loader.setKTX2Loader( ktx2Loader );
     loader.setMeshoptDecoder( MeshoptDecoder );
+
+    loader.register(p => {
+        return new GLTFAnimationPointerExtension(p);
+    });
 
     const scale = modelInfo.scale;
     let url = "../../" + modelInfo.category + "/" + modelInfo.path;
