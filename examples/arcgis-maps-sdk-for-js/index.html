@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no"
+    />
+    <title>ArcGIS Maps SDK for JS + glTF Loader</title>
+    <script src="../../sampleModels/model-index.js"></script>
+    <script src="../../tutorialModels/model-index.js"></script>
+    <script src="../../tutorialModels/pbr-model-index.js"></script>
+    <script src="../../tutorialModels/further-pbr-model-index.js"></script>
+    <script src="../../tutorialModels/feature-test-model-index.js"></script>
+    <script src="../../tutorialModels/compare-pbr-model-index.js"></script>
+    <script src="../../tutorialModels/extension-test-model-index.js"></script>
+    <script src="../../tutorialModels/wip-extension-test-model-index.js"></script>
+
+    <!-- Load Calcite components and the JavaScript Maps SDK core API-->
+    <script
+      type="module"
+      src="https://js.arcgis.com/calcite-components/3.3.3/calcite.esm.js"
+    ></script>
+    <script src="https://js.arcgis.com/4.34/"></script>
+
+    <!-- Load Map components -->
+    <script
+      type="module"
+      src="https://js.arcgis.com/4.34/map-components/"
+    ></script>
+
+    <link
+      rel="stylesheet"
+      type="text/css"
+      media="screen,print"
+      href="style.css"
+    />
+  </head>
+  <body>
+    <div id="loadingOverlay">
+      <img
+        id="loadingImg"
+        src="https://js.arcgis.com/4.34/esri/themes/base/images/loading-throb.gif"
+      />
+    </div>
+    <arcgis-scene basemap="dark-gray">
+      <div id="rotateToggleDiv" slot="top-right">
+        <input type="checkbox" id="rotateToggle" /> Rotate
+      </div>
+      <arcgis-expand id="expandLine" slot="bottom-right" group="bottom-right">
+        <arcgis-direct-line-measurement-3d></arcgis-direct-line-measurement-3d>
+      </arcgis-expand>
+      <arcgis-expand id="expandArea" slot="bottom-right" group="bottom-right">
+        <arcgis-area-measurement-3d></arcgis-area-measurement-3d>
+      </arcgis-expand>
+      <arcgis-expand slot="bottom-right" group="bottom-right">
+        <arcgis-basemap-gallery></arcgis-basemap-gallery>
+      </arcgis-expand>
+      <arcgis-expand slot="bottom-right" group="bottom-right">
+        <arcgis-slice></arcgis-slice>
+      </arcgis-expand>
+    </arcgis-scene>
+
+    <script type="module" src="index.js"></script>
+  </body>
+</html>

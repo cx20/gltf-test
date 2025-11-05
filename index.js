@@ -14,8 +14,8 @@ let engines = [{
     name: 'Cesium',
     path: 'examples/cesium/index.html?category={category}&model={model}&scale={scale}&type={type}'
 }, {
-    name: 'ArcGISJSAPI',
-    path: 'examples/arcgisjsapi/index.html?category={category}&model={model}&scale={scale}&type={type}'
+    name: 'ArcGIS Maps SDK for JS',
+    path: 'examples/arcgis-maps-sdk-for-js/index.html?category={category}&model={model}&scale={scale}&type={type}'
 //}, {
 //    name: 'AMAPJSAPI',
 //    path: 'examples/amapjsapi/index.html?category={category}&model={model}&scale={scale}&type={type}'
