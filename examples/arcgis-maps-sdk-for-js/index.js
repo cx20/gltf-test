@@ -59,7 +59,7 @@ esriConfig.log.interceptors.push((level, module, ...args) => {
   }
   for (const arg of args) {
     if (arg.includes("unsupported feature")) {
-      const title = `glTF Model not supported in ArGIS Maps SDK for Javascript ${esriNS.fullVersion}`;
+      const title = `glTF Model not supported in ArcGIS Maps SDK for Javascript ${esriNS.fullVersion}`;
 
       const matches = arg.match(/Required extensions:.*/);
       const requiredExtensions = matches?.[0];
