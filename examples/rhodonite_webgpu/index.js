@@ -58,23 +58,22 @@ const canvas = document.getElementById('world');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+let engine;
+
 (async () => {
-  await Rn.ModuleManager.getInstance().loadModule('webgpu');
-  
-  Rn.Config.isUboEnabled = false;
-  Rn.Config.maxLightNumberInShader = 8;
-  Rn.Config.maxMorphTargetNumber = 8;
-  Rn.Config.maxSkeletalBoneNumber = 400
-  Rn.Config.maxSkeletonNumber = 84;
-  await Rn.System.init({
+  const config = new Rn.Config({
+    isUboEnabled: false
+  });
+  engine = await Rn.Engine.init({
     approach: Rn.ProcessApproach.WebGPU,
     canvas,
+    config,
   });
 
   Rn.MeshRendererComponent.isDepthMaskTrueForTransparencies = true;
 
   // create ForwardRenderPipeline
-  const forwardRenderPipeline = new Rn.ForwardRenderPipeline();
+  const forwardRenderPipeline = new Rn.ForwardRenderPipeline(engine);
   forwardRenderPipeline.setup(canvas.width, canvas.height, {
     //isBloom: true,
     isBloom: false, // TODO: Set to true to enable Bloom. This is a heavy process, so it is turned off in this sample.
@@ -83,7 +82,7 @@ canvas.height = window.innerHeight;
   
   // camera
   //const {cameraComponent, cameraEntity} = createCamera();
-  const cameraEntity = Rn.createCameraControllerEntity();
+  const cameraEntity = Rn.createCameraControllerEntity(engine);
   const cameraComponent = cameraEntity.getCamera();
 
   cameraComponent.zNear = 0.1;
@@ -92,7 +91,7 @@ canvas.height = window.innerHeight;
   cameraComponent.aspect = canvas.width / canvas.height;
 
   // Lights
-  const lightEntity1 = Rn.createLightEntity();
+  const lightEntity1 = Rn.createLightEntity(engine);
   const lightComponent1 = lightEntity1.getLight();
   lightComponent1.type = Rn.LightType.Directional;
   lightEntity1.getTransform().localPosition = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
@@ -100,7 +99,7 @@ canvas.height = window.innerHeight;
   lightEntity1.getComponent(Rn.LightComponent).type = Rn.LightType.Directional;
   lightEntity1.getTransform().localEulerAngles = Rn.Vector3.fromCopyArray([-Math.PI / 2, -Math.PI / 4, Math.PI / 4]);
 
-  const lightEntity2 = Rn.createLightEntity();
+  const lightEntity2 = Rn.createLightEntity(engine);
   const lightComponent2 = lightEntity2.getLight();
   lightComponent1.type = Rn.LightType.Directional;
   lightEntity2.getTransform().localPosition = Rn.Vector3.fromCopyArray([1.0, 1.0, 100000.0]);
@@ -131,6 +130,7 @@ canvas.height = window.innerHeight;
   const assets = await Rn.defaultAssetLoader.load({
   // gltf
     mainExpression: (await Rn.GltfImporter.importFromUrl(
+    engine,
     url,
     {
       defaultMaterialHelperArgumentArray: [
@@ -144,7 +144,7 @@ canvas.height = window.innerHeight;
   
 
   // env
-  const envExpression = await createEnvCubeExpression('../../textures/papermill_hdr', cameraEntity);
+  const envExpression = await createEnvCubeExpression(engine, '../../textures/papermill_hdr', cameraEntity);
 
   const mainRenderPass = assets.mainExpression.renderPasses[0];
   // cameraController
@@ -191,7 +191,7 @@ canvas.height = window.innerHeight;
     await forwardRenderPipeline.setExpressions([assets.mainExpression]);
   }
 
-  const diffuseCubeTexture = new Rn.CubeTexture();
+  const diffuseCubeTexture = new Rn.CubeTexture(engine);
   await diffuseCubeTexture.loadTextureImages({
     baseUrl: "../../textures/papermill_hdr/diffuse/diffuse",
     isNamePosNeg: true,
@@ -199,7 +199,7 @@ canvas.height = window.innerHeight;
     mipmapLevelNumber: 1
   });
 
-  const specularCubeTexture = new Rn.CubeTexture();
+  const specularCubeTexture = new Rn.CubeTexture(engine);
   await specularCubeTexture.loadTextureImages({
     baseUrl: "../../textures/papermill_hdr/specular/specular",
     isNamePosNeg: true,
@@ -211,7 +211,7 @@ canvas.height = window.innerHeight;
 
   // cameraController
   // Exclude a specific camera from the camera list
-  const cameraComponents = Rn.ComponentRepository.getComponentsWithType(Rn.CameraComponent).filter(
+  const cameraComponents = engine.componentRepository.getComponentsWithType(Rn.CameraComponent).filter(
       camera => camera.entity.getTagValue("type") !== "background-assets");
   
   if (cameraComponents.length > 1) {
@@ -240,11 +240,11 @@ canvas.height = window.innerHeight;
     controller.registerEventListeners(canvas);
 
     // Prepare Entity to fix the camera target
-    const boardPrimitive = new Rn.Plane();
+    const boardPrimitive = new Rn.Plane(engine);
     boardPrimitive.generate({width: 3 / scale, height: 3 / scale, uSpan: 1, vSpan: 1, isUVRepeat: false});
-    const boardMesh = new Rn.Mesh();
+    const boardMesh = new Rn.Mesh(engine);
     boardMesh.addPrimitive(boardPrimitive);
-    const boardEntity = Rn.createMeshEntity();
+    const boardEntity = Rn.createMeshEntity(engine);
     const boardMeshComponent = boardEntity.getMesh();
     boardMeshComponent.setMesh(boardMesh);
 
@@ -254,18 +254,18 @@ canvas.height = window.innerHeight;
       if (selectedCameraComponent.type === Rn.CameraType.Perspective) {
         selectedCameraComponent.aspect = canvas.width / canvas.height; // Apply the aspect of the actual window instead of the glTF aspect information
       }
-      Rn.CameraComponent.current = selectedCameraComponent.componentSID;
+      Rn.CameraComponent.setCurrent(engine, selectedCameraComponent.componentSID);
       const zFar = selectedCameraComponent.zFar * 0.95;
       envExpression.renderPasses[0].entities[0].getTransform().localScale = Rn.Vector3.fromCopy3(-zFar, zFar, zFar)
     } else {
-      Rn.CameraComponent.current = cameraComponent.componentSID;
+      Rn.CameraComponent.setCurrent(engine, cameraComponent.componentSID);
       const zFar = cameraComponent.zFar * 0.95;
       envExpression.renderPasses[0].entities[0].getTransform().localScale = Rn.Vector3.fromCopy3(-zFar, zFar, zFar)
     }
   }
 
   guiIBL.onChange(function(value) {
-    const meshRendererComponents = Rn.ComponentRepository.getComponentsWithType(Rn.MeshRendererComponent);
+    const meshRendererComponents = engine.componentRepository.getComponentsWithType(Rn.MeshRendererComponent);
     for (let i = 0; i < meshRendererComponents.length; i++) {
       const meshRendererComponent = meshRendererComponents[i];
       meshRendererComponent.specularCubeMapContribution = value ? 1.0 : 0.0;
@@ -294,7 +294,7 @@ canvas.height = window.innerHeight;
       controller.rotX = angle;
     }
 
-    Rn.System.process(frame);
+    engine.process(frame);
 
     count++;
   };
@@ -302,8 +302,8 @@ canvas.height = window.innerHeight;
   forwardRenderPipeline.startRenderLoop(draw);
 })();
 
-function createCamera() {
-  const cameraEntity = Rn.createCameraControllerEntity();
+function createCamera(engine) {
+  const cameraEntity = Rn.createCameraControllerEntity(engine);
   const cameraComponent = cameraEntity.getCamera();
   cameraComponent.zNear = 0.1;
   cameraComponent.zFar = 1000.0;
@@ -312,8 +312,8 @@ function createCamera() {
   return {cameraComponent, cameraEntity};
 }
 
-async function createEnvCubeExpression(baseuri, cameraEntity) {
-  const environmentCubeTexture = new Rn.CubeTexture();
+async function createEnvCubeExpression(engine, baseuri, cameraEntity) {
+  const environmentCubeTexture = new Rn.CubeTexture(engine);
   await environmentCubeTexture.loadTextureImages({
     baseUrl: baseuri + '/environment/environment',
     isNamePosNeg: true,
@@ -321,8 +321,8 @@ async function createEnvCubeExpression(baseuri, cameraEntity) {
     mipmapLevelNumber: 1
   });
 
-  const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial();
-  const sampler = new Rn.Sampler({
+  const sphereMaterial = Rn.MaterialHelper.createEnvConstantMaterial(engine);
+  const sampler = new Rn.Sampler(engine, {
     wrapS: Rn.TextureParameter.ClampToEdge,
     wrapT: Rn.TextureParameter.ClampToEdge,
     minFilter: Rn.TextureParameter.Linear,
@@ -332,7 +332,7 @@ async function createEnvCubeExpression(baseuri, cameraEntity) {
   sphereMaterial.setParameter("envHdriFormat", Rn.HdriFormat.LDR_SRGB.index);
   sphereMaterial.setParameter("makeOutputSrgb", 0);
   
-  const spherePrimitive = new Rn.Sphere();
+  const spherePrimitive = new Rn.Sphere(engine);
   spherePrimitive.generate({
     radius: 1,
     widthSegments: 40,
@@ -340,17 +340,17 @@ async function createEnvCubeExpression(baseuri, cameraEntity) {
     material: sphereMaterial,
   });
 
-  const sphereMesh = new Rn.Mesh();
+  const sphereMesh = new Rn.Mesh(engine);
   sphereMesh.addPrimitive(spherePrimitive);
 
-  const sphereEntity = Rn.createMeshEntity();
+  const sphereEntity = Rn.createMeshEntity(engine);
   sphereEntity.getTransform().localScale = Rn.Vector3.fromCopyArray([-1, 1, 1]);
   sphereEntity.getTransform().localPosition = Rn.Vector3.fromCopyArray([0, 0, 0]);
 
   const sphereMeshComponent = sphereEntity.getMesh();
   sphereMeshComponent.setMesh(sphereMesh);
 
-  const sphereRenderPass = new Rn.RenderPass();
+  const sphereRenderPass = new Rn.RenderPass(engine);
   sphereRenderPass.addEntities([sphereEntity]);
 
   const sphereExpression = new Rn.Expression();
