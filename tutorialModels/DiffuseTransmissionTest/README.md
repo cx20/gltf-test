@@ -2,7 +2,7 @@
 
 ## Tags
 
-[video](../../Models-video.md), [written](../../Models-written.md), [showcase](../../Models-showcase.md), [extension](../../Models-extension.md)
+[video](../Models-video.md), [written](../Models-written.md), [extension](../Models-extension.md)
 
 ## Extensions
 
@@ -13,8 +13,6 @@
 
 ### Used
 
-* KHR_materials_unlit
-* KHR_lights_punctual
 * KHR_materials_diffuse_transmission
 * KHR_materials_unlit
 * KHR_lights_punctual

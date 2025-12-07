@@ -2,7 +2,7 @@
 
 ## Tags
 
-[showcase](../../Models-showcase.md), [extension](../../Models-extension.md)
+[extension](../Models-extension.md)
 
 ## Extensions
 
@@ -12,7 +12,6 @@
 
 ### Used
 
-* KHR_materials_sheen
 * KHR_materials_sheen
 
 ## Summary

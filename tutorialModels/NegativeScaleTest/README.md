@@ -1,5 +1,19 @@
 # Negative Scale Test
 
+## Tags
+
+[core](../Models-core.md), [testing](../Models-testing.md)
+
+## Summary
+
+This model tests what happens when a glTF node has negative scaling.
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/NegativeScaleTest/glTF-Binary/NegativeScaleTest.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/NegativeScaleTest/glTF-Binary/NegativeScaleTest.glb)
+* [Model Directory](./)
+
 ## Screenshot
 
 ![screenshot](screenshot/screenshot-large.jpg)
@@ -43,8 +57,12 @@ The lower portion of the model contains spheres.  The `-1.0` column shown on the
 
 This problem with normal vectors is likely also the cause the upper "check" and "X" blocks that appear to be lit differently from the samples.
 
-## License Information
 
-Copyright 2023 Analytical Graphics, Inc.
-CC-BY 4.0 https://creativecommons.org/licenses/by/4.0/
-Model and textures by Ed Mackey.
+
+## Legal
+
+&copy; 2023, Analytical Graphics, Inc.. [CC BY 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+ - Ed Mackey for Everything
+
+#### Assembled by modelmetadata

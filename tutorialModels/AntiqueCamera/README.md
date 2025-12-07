@@ -1,13 +1,35 @@
-# Antique Camera 
+# Antique Camera
+
+## Tags
+
+[core](../Models-core.md), [testing](../Models-testing.md), [issues](../Models-issues.md)
+
+## Summary
+
+Static model of old camera on a tripod. [Issues: non-Khronos mark]
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/AntiqueCamera/glTF-Binary/AntiqueCamera.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/AntiqueCamera/glTF-Binary/AntiqueCamera.glb)
+* [Model Directory](./)
 
 ## Screenshot
 
-![screenshot](screenshot/screenshot.png)
+![screenshot](screenshot/screenshot.jpg)
 
-## License Information
+## Description
 
-Old camera model by Maximilian Kamps.  
-Dontated by UX3D for glTF testing.
+Static model of old camera on a tripod, with UX3D logo on one of the legs.
 
-[![CC0](http://i.creativecommons.org/p/zero/1.0/88x31.png)](http://creativecommons.org/publicdomain/zero/1.0/)  
-To the extent possible under law, UX3D has waived all copyright and related or neighboring rights to this asset.
+## Legal
+
+&copy; 2018, UX3D. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
+
+ - Maximillan Kamps for Everything
+
+&copy; 2017, UX3D. [UX3D Trademark or Logo]()
+
+ - Non-copyrightable logo for UX3D logo
+
+#### Assembled by modelmetadata

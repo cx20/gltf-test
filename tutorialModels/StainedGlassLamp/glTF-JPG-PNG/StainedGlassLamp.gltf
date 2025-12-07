@@ -506,24 +506,21 @@
         {
             "buffer": 0,
             "byteLength": 210792,
-            "name": "bufferViewScalar",
-            "target": 34963
+            "name": "bufferViewScalar"
         },
         {
             "buffer": 0,
             "byteOffset": 210792,
             "byteLength": 1227600,
             "byteStride": 12,
-            "name": "bufferViewFloatVec3",
-            "target": 34962
+            "name": "bufferViewFloatVec3"
         },
         {
             "buffer": 0,
             "byteOffset": 1438392,
             "byteLength": 409200,
             "byteStride": 8,
-            "name": "bufferViewFloatVec2",
-            "target": 34962
+            "name": "bufferViewFloatVec2"
         }
     ],
     "buffers": [
@@ -581,7 +578,7 @@
                     1,
                     0.6,
                     0.2,
-                    0.75
+                    0.5
                 ],
                 "metallicFactor": 0,
                 "roughnessFactor": 0.02
@@ -808,7 +805,7 @@
             "uri": "StainedGlassLamp_grill_basecolor-alpha.png"
         },
         {
-            "uri": "StainedGlassLamp_steel_occlusion-rough-metal.jpg"
+            "uri": "StainedGlassLamp_steel_occlusion.jpg"
         },
         {
             "uri": "StainedGlassLamp_hardware_normal.jpg"
@@ -835,7 +832,7 @@
             "uri": "StainedGlassLamp_base_basecolor.jpg"
         },
         {
-            "uri": "StainedGlassLamp_bulbs_occlusion-rough-metal.jpg"
+            "uri": "StainedGlassLamp_bulbs_occlusion.jpg"
         },
         {
             "uri": "StainedGlassLamp_glass_normal.jpg"

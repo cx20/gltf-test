@@ -1,5 +1,31 @@
 # Clear Coat Car Paint
 
+## Tags
+
+[extension](../Models-extension.md), [testing](../Models-testing.md)
+
+## Extensions
+
+### Required
+
+* KHR_texture_transform
+* KHR_materials_clearcoat
+
+### Used
+
+* KHR_texture_transform
+* KHR_materials_clearcoat
+
+## Summary
+
+This model is a sphere using the glTF ClearCoat extension overtop a car paint base material. 
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/ClearCoatCarPaint/glTF-Binary/ClearCoatCarPaint.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/ClearCoatCarPaint/glTF-Binary/ClearCoatCarPaint.glb)
+* [Model Directory](./)
+
 ## Screenshot
 
 ![screenshot](screenshot/screenshot_large.jpg)
@@ -21,6 +47,12 @@ The normal bump texture, enlarged 200% to show detail.
 
 Roughness was increased to 0.4 to scatter the reflected light and to provide a contrast with the clear coat layer which uses zero Roughness. Metalness was set arbitrarily to a partial value of 0.3 to increase the specularity of the base material.
 
-## License Information
 
-CC0, No Rights Reserved, https://creativecommons.org/share-your-work/public-domain/cc0/. Model and texture created by Eric Chadwick.
+
+## Legal
+
+&copy; 2023, Public. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
+
+ - Eric Chadwick for Everything
+
+#### Assembled by modelmetadata

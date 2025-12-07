@@ -1,8 +1,8 @@
-# SheenWoodLeatherSofa
+# Sheen Wood Leather Sofa
 
 ## Tags
 
-[showcase](../../Models-showcase.md), [extension](../../Models-extension.md)
+[showcase](../Models-showcase.md), [extension](../Models-extension.md)
 
 ## Extensions
 
@@ -13,8 +13,6 @@
 
 ### Used
 
-* KHR_texture_transform
-* EXT_texture_webp
 * KHR_materials_specular
 * KHR_materials_sheen
 * KHR_texture_transform

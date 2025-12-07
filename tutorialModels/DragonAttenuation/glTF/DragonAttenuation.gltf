@@ -1,5 +1,6 @@
 {
     "asset" : {
+        "copyright":"The dragon model is copyright 1996 Stanford University.  Cloth backdrop CC0 by Adobe Inc.",
         "generator" : "Khronos glTF Blender I/O v1.5.17, with hand-edits for newer glTF extensions.",
         "version" : "2.0"
     },
@@ -194,8 +195,8 @@
     ],
     "images" : [
         {
-            "mimeType" : "image/jpeg",
-            "uri" : "checkerboard.jpg"
+            "mimeType" : "image/png",
+            "uri" : "checkerboard.png"
         },
         {
             "mimeType" : "image/jpeg",

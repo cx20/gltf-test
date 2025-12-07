@@ -1,4 +1,30 @@
-# SheenChair
+# Sheen Chair
+
+## Tags
+
+[showcase](../Models-showcase.md), [video](../Models-video.md), [extension](../Models-extension.md)
+
+## Extensions
+
+### Required
+
+* KHR_texture_transform
+
+### Used
+
+* KHR_texture_transform
+* KHR_materials_sheen
+* KHR_materials_variants
+
+## Summary
+
+Chair using material variants and sheen.
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/SheenChair/glTF-Binary/SheenChair.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/SheenChair/glTF-Binary/SheenChair.glb)
+* [Model Directory](./)
 
 ## Screenshot
 
@@ -36,6 +62,12 @@ The Peacock Velvet material uses 1.0 metalness. While not being physically accur
 
 The model was created in Autodesk 3ds Max 2020 and exported using the [`Max2Babylon`](https://github.com/BabylonJS/Exporters/tree/master/3ds%20Max) exporter. To add `KHR_materials_sheen` and `KHR_materials_variants` the glTF file was edited manually. 
 
-## License Information
 
-Copyright 2020 Wayfair LLC, CC-BY 4.0 https://creativecommons.org/licenses/by/4.0/, model and textures created by Eric Chadwick.
+
+## Legal
+
+&copy; 2020, Wayfair, LLC. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
+
+ - Eric Chadwick for Everything
+
+#### Assembled by modelmetadata
