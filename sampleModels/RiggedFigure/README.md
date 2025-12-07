@@ -1,10 +1,31 @@
 # Rigged Figure
+
+## Tags
+
+[core](../Models-core.md), [testing](../Models-testing.md)
+
+## Summary
+
+Animations. Skins.
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/RiggedFigure/glTF-Binary/RiggedFigure.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/RiggedFigure/glTF-Binary/RiggedFigure.glb)
+* [Model Directory](./)
+
 ## Screenshot
 
 ![screenshot](screenshot/screenshot.gif)
 
-## License Information
+## Description
 
-Donated by [Cesium](http://cesiumjs.org/) for glTF testing.
+_None provided._
 
-This model is licensed under a [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/).
+## Legal
+
+&copy; 2017, Cesium. [CC BY 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+ - Cesium for Everything
+
+#### Assembled by modelmetadata

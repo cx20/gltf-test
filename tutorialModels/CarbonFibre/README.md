@@ -1,4 +1,22 @@
-# Carbon Fibre
+# Carbon Fibre Ball
+
+## Tags
+
+[extension](../Models-extension.md)
+
+## Extensions Used
+
+* KHR_materials_anisotropy
+
+## Summary
+
+Example of anisotropy applied to a ball with a simulated carbon fiber surface.
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/CarbonFibre/glTF-Binary/CarbonFibre.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/CarbonFibre/glTF-Binary/CarbonFibre.glb)
+* [Model Directory](./)
 
 ## Screenshot
 
@@ -15,6 +33,10 @@ The normalTexture is a higher resolution than the others to preserve more detail
 ![textures](screenshot/textures.jpg)
 
 
-## License Information
+## Legal
 
-(C) 2023, Wayfair LLC. CC-BY 4.0 International https://creativecommons.org/licenses/by/4.0/. Model and textures created by Eric Chadwick.
+&copy; 2023, Wayfair. [CC BY 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+ - Eric Chadwick for Models and Textures
+
+#### Assembled by modelmetadata

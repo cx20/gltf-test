@@ -1,5 +1,26 @@
 # Iridescence Lamp
 
+## Tags
+
+[showcase](../Models-showcase.md), [extension](../Models-extension.md)
+
+## Extensions Used
+
+* KHR_materials_transmission
+* KHR_materials_volume
+* KHR_materials_iridescence
+* KHR_materials_ior
+
+## Summary
+
+Wayfair Lamp model using transmission, volume, and KHR_materials_iridescence.
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/IridescenceLamp/glTF-Binary/IridescenceLamp.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/IridescenceLamp/glTF-Binary/IridescenceLamp.glb)
+* [Model Directory](./)
+
 ## Screenshot
 
 ![A screenshot of the glTF model in the glTF Sample Viewer.](screenshot/screenshot_Large.jpg)
@@ -41,6 +62,10 @@ The iridescence on the lamp shade uses a thickness range from 485 to 515 nanomet
 The asset was created using [3ds Max](https://www.autodesk.com/products/3ds-max), exported to glTF using [Max2Babylon](https://github.com/BabylonJS/Exporters#babylonjs-exporters), and materials were edited in [Visual Studio Code](https://code.visualstudio.com/) with [glTF Tools](https://github.com/AnalyticalGraphicsInc/gltf-vscode#gltf-tools-extension-for-visual-studio-code).
 
 
-## License Information
+## Legal
 
-Copyright 2022 Wayfair LLC. CC BY 4.0 International https://creativecommons.org/licenses/by/4.0/
+&copy; 2022, Wayfair, LLC. [CC BY 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+ - Eric Chadwick for Everything
+
+#### Assembled by modelmetadata

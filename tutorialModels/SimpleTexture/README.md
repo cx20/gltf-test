@@ -1,22 +1,34 @@
-# SimpleTexture
+# Simple Texture
+
+## Tags
+
+[core](../Models-core.md), [testing](../Models-testing.md), [written](../Models-written.md)
+
+## Summary
+
+A simple glTF asset with a texture
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/SimpleTexture/glTF/SimpleTexture.gltf) in SampleViewer
+* [Model Directory](./)
 
 ## Screenshot
 
 ![screenshot](screenshot/screenshot.png)
 
+## Notes
 
-Note that the texture image also shows the *texture coordinates*:
+An example of a simple glTF asset with a texture, as described
+in the [Simple Texture](https://github.com/KhronosGroup/glTF-Tutorials/blob/master/gltfTutorial/gltfTutorial_013_SimpleTexture.md)
+section of the glTF tutorial.
 
-- The *upper left* point of the texture image has the texture coordinates `(0,0)` 
-- The *lower right* point of the texture image has the texture coordinates `(1,1)` 
 
 
-## License Information
+## Legal
 
-Public domain ([CC0](https://creativecommons.org/publicdomain/zero/1.0/))
+&copy; 2017, Public. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
 
-## Data layout
+ - Marco Hutter (https://github.com/javagl/) for Everything
 
-The following image shows the data layout of this sample:
-
-![square](screenshot/square.png)
+#### Assembled by modelmetadata

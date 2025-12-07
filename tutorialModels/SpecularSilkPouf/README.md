@@ -1,8 +1,8 @@
-# SpecularSilkPouf
+# Specular Silk Pouf
 
 ## Tags
 
-[showcase](../../Models-showcase.md), [extension](../../Models-extension.md)
+[showcase](../Models-showcase.md), [extension](../Models-extension.md)
 
 ## Extensions
 
@@ -13,8 +13,6 @@
 
 ### Used
 
-* KHR_materials_specular
-* KHR_materials_sheen
 * KHR_materials_specular
 * KHR_materials_sheen
 

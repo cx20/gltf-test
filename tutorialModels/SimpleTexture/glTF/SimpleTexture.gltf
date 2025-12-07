@@ -1,4 +1,5 @@
 {
+  "scene": 0,
   "scenes" : [ {
     "nodes" : [ 0 ]
   } ],
@@ -41,7 +42,7 @@
   } ],
 
   "buffers" : [ {
-    "uri" : "texturedSquare.bin",
+    "uri" : "SimpleTexture.bin",
     "byteLength" : 108
   } ],
   "bufferViews" : [ {
@@ -81,7 +82,7 @@
     "max" : [ 1.0, 1.0 ],
     "min" : [ 0.0, 0.0 ]
   } ],
-  
+
   "asset" : {
     "version" : "2.0"
   }

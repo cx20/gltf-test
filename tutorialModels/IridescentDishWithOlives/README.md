@@ -1,5 +1,26 @@
 # Iridescent Dish with Olives
 
+## Tags
+
+[showcase](../Models-showcase.md), [video](../Models-video.md), [extension](../Models-extension.md)
+
+## Extensions Used
+
+* KHR_materials_ior
+* KHR_materials_iridescence
+* KHR_materials_transmission
+* KHR_materials_volume
+
+## Summary
+
+Dish using transmission, volume, IOR, and specular. [Issues: non-Khronos mark]
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/IridescentDishWithOlives/glTF-Binary/IridescentDishWithOlives.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/IridescentDishWithOlives/glTF-Binary/IridescentDishWithOlives.glb)
+* [Model Directory](./)
+
 ## Screenshots
 
 ![screenshot Babylon.js](screenshot/screenshot_Large.jpg)
@@ -70,6 +91,10 @@ The upper surfaces of the glassDish and goldLeaf use a texture for precomputed a
 The asset was created using [3ds Max](https://www.autodesk.com/products/3ds-max), exported to glTF using [Max2Babylon](https://github.com/BabylonJS/Exporters#babylonjs-exporters), and materials were edited in [Visual Studio Code](https://code.visualstudio.com/) with [glTF Tools](https://github.com/AnalyticalGraphicsInc/gltf-vscode#gltf-tools-extension-for-visual-studio-code).
 
 
-## License Information
+## Legal
 
-Copyright 2021 Wayfair LLC. CC BY 4.0 International https://creativecommons.org/licenses/by/4.0/
+&copy; 2020, Wayfair, LLC. [CC BY 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+ - Eric Chadwick for Everything
+
+#### Assembled by modelmetadata

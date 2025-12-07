@@ -1,5 +1,24 @@
 # A Beautiful Game
 
+## Tags
+
+[showcase](../Models-showcase.md), [video](../Models-video.md), [extension](../Models-extension.md)
+
+## Extensions Used
+
+* KHR_materials_transmission
+* KHR_materials_volume
+
+## Summary
+
+Chess set using transmission and volume.
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/ABeautifulGame/glTF-Binary/ABeautifulGame.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/ABeautifulGame/glTF-Binary/ABeautifulGame.glb)
+* [Model Directory](./)
+
 ## Screenshots
 
 ![screenshot](screenshot/screenshot-babylonjs.jpg)
@@ -48,9 +67,15 @@ exploring changes needed to the asset as it moves from an artist's editing workf
 USD / MaterialX to the final delivery form in glTF. Ideally this work can serve as
 inspiration for more automated conversion tooling in the future.
 
-## License Information
 
-CC-BY 4.0 https://creativecommons.org/licenses/by/4.0/
-Academy Software Foundation, MaterialX Project
-([ref](https://twitter.com/SheriffStone/status/1560286061854482434))  
-with additional conversion by Ed Mackey, AGI.
+## Legal
+
+&copy; 2020, ASWF. [CC BY 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+ - MaterialX Project for Original model
+
+&copy; 2022, Ed Mackey. [CC BY 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+ - Ed Mackey for Conversion to glTF
+
+#### Assembled by modelmetadata

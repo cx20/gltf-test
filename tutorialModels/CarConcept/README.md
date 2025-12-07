@@ -1,8 +1,8 @@
-# CarConcept
+# Car Concept
 
 ## Tags
 
-[showcase](../../Models-showcase.md), [extension](../../Models-extension.md)
+[showcase](../Models-showcase.md), [extension](../Models-extension.md)
 
 ## Extensions Used
 
@@ -19,7 +19,8 @@ Concept car with Khronos logos and material variants
 
 ## Operations
 
-* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/CarConcept/glTF/CarConcept.gltf) in SampleViewer
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/CarConcept/glTF-Binary/CarConcept.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/CarConcept/glTF-Binary/CarConcept.glb)
 * [Model Directory](./)
 
 ## Screenshot

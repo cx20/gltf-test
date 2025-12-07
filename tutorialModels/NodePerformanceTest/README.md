@@ -2,7 +2,17 @@
 
 ## Tags
 
-[core](../../Models-core.md), [testing](../../Models-testing.md)
+[core](../Models-core.md), [testing](../Models-testing.md)
+
+## Extensions
+
+### Required
+
+* KHR_lights_punctual
+
+### Used
+
+* KHR_lights_punctual
 
 ## Summary
 

@@ -1,16 +1,17 @@
 {
+  "scene": 0,
   "scenes" : [
     {
       "nodes" : [ 0 ]
     }
   ],
-  
+
   "nodes" : [
     {
       "mesh" : 0
     }
   ],
-  
+
   "meshes" : [
     {
       "primitives" : [ {
@@ -25,7 +26,7 @@
 
   "buffers" : [
     {
-      "uri" : "simpleTriangle.bin",
+      "uri" : "triangle.bin",
       "byteLength" : 44
     }
   ],
@@ -63,7 +64,7 @@
       "min" : [ 0.0, 0.0, 0.0 ]
     }
   ],
-  
+
   "materials" : [
     {
       "pbrMetallicRoughness": {

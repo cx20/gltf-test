@@ -1,4 +1,25 @@
-# StainedGlassLamp
+# Stained Glass Lamp
+
+## Tags
+
+[showcase](../Models-showcase.md), [extension](../Models-extension.md)
+
+## Extensions Used
+
+* KHR_materials_transmission
+* KHR_materials_clearcoat
+* KHR_materials_variants
+* KHR_materials_ior
+* KHR_materials_volume
+
+## Summary
+
+A real product, a Tiffany-style stained glass table lamp sold on the Wayfair website.
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf) in SampleViewer
+* [Model Directory](./)
 
 ## Screenshot
 
@@ -141,6 +162,12 @@ The model was created with [3ds Max](https://www.autodesk.com/products/3ds-max/)
 
 The textures were created from photo reference, augmented with procedural textures and hand-painted detail. The emissive textures were pre-rendered in 3ds Max using the V-Ray renderer and sphere lights, and the textures were hand-tuned to work with baseColor and transmission.
 
-## License Information
 
-(C) 2021, Wayfair LLC. CC-BY 4.0 International https://creativecommons.org/licenses/by/4.0/. 
+
+## Legal
+
+&copy; 2021, Wayfair. [CC BY 4.0 International](https://creativecommons.org/licenses/by/4.0/legalcode)
+
+ - Eric Chadwick for Everything
+
+#### Assembled by modelmetadata

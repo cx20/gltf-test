@@ -1,8 +1,8 @@
-# PotOfCoalsAnimationPointer
+# Pot of Coals Animation Pointer
 
 ## Tags
 
-[showcase](../../Models-showcase.md), [extension](../../Models-extension.md)
+[showcase](../Models-showcase.md), [extension](../Models-extension.md)
 
 ## Extensions
 
@@ -15,10 +15,6 @@
 
 ### Used
 
-* KHR_materials_specular
-* KHR_materials_transmission
-* KHR_materials_volume
-* KHR_texture_transform
 * KHR_animation_pointer
 * KHR_materials_clearcoat
 * KHR_materials_specular

@@ -1,6 +1,28 @@
 # Directional Light
 
-## Screenshot
+## Tags
+
+[core](../Models-core.md), [testing](../Models-testing.md)
+
+## Extensions
+
+### Required
+
+* KHR_lights_punctual
+
+### Used
+
+* KHR_lights_punctual
+
+## Summary
+
+Verification of light calculations
+
+## Operations
+
+* [Display](https://github.khronos.org/glTF-Sample-Viewer-Release/?model=https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/DirectionalLight/glTF-Binary/DirectionalLight.glb) in SampleViewer
+* [Download GLB](https://raw.GithubUserContent.com/KhronosGroup/glTF-Sample-Assets/main/./Models/DirectionalLight/glTF-Binary/DirectionalLight.glb)
+* [Model Directory](./)
 
 ## Purpose
 
@@ -48,6 +70,10 @@ HEX : F3E759
 Important to note is that the RG values should not be so high that they are clipped, ie if they are FFFF then that may be a sign that energy has been added and further investigation is needed.  
 
 
-## License Information
+## Legal
 
-[![CC0](http://i.creativecommons.org/p/zero/1.0/88x31.png)](http://creativecommons.org/publicdomain/zero/1.0/)  
+&copy; 2020, Public. [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/legalcode)
+
+ - Rickard Sahlin for Everything
+
+#### Assembled by modelmetadata
