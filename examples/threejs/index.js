@@ -62,7 +62,7 @@ let state = {
     CUBEMAP: true,
     IBL: true,
     LIGHTS: false, // The default is to use IBL instead of lights
-    BLOOM: true,
+    BLOOM: false,
     TONEMAP: "NoToneMapping",
     CAMERA: DEFAULT_NAME,
     VARIANT: DEFAULT_NAME
