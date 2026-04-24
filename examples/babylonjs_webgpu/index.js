@@ -40,6 +40,56 @@ let params = {
     TONEMAP: "None"
 }
 
+function registerRigidBodyExtensions() {
+    const register = BABYLON.GLTF2?.registerGLTFExtension || BABYLON.registerGLTFExtension;
+    const unregister = BABYLON.GLTF2?.unregisterGLTFExtension || BABYLON.unregisterGLTFExtension;
+    const loaderExtensions = BABYLON?.GLTF2?.Loader?.Extensions;
+    const rigidBodyLoader = globalThis.GLTFRigidBodyLoader;
+
+    if (!rigidBodyLoader) {
+        return;
+    }
+
+    const registerExtension = function(name, pluginType) {
+        if (typeof pluginType !== "function") {
+            return;
+        }
+        if (typeof register === "function") {
+            if (typeof unregister === "function") {
+                unregister(name);
+            }
+            register(name, true, function(loader) {
+                return new pluginType(loader);
+            });
+            return;
+        }
+        if (loaderExtensions) {
+            loaderExtensions[name] = pluginType;
+        }
+    };
+
+    registerExtension("KHR_implicit_shapes", rigidBodyLoader.KHR_ImplicitShapes_Plugin);
+    registerExtension("KHR_physics_rigid_bodies", rigidBodyLoader.KHR_PhysicsRigidBodies_Plugin);
+    registerExtension("MSFT_rigid_bodies", rigidBodyLoader.MSFT_RigidBodies_Plugin);
+}
+
+registerRigidBodyExtensions();
+
+async function initializeRigidBodyPhysics() {
+    const rigidBodyLoader = globalThis.GLTFRigidBodyLoader;
+    if (!rigidBodyLoader || typeof globalThis.HavokPhysics !== "function") {
+        return;
+    }
+
+    const havokInterface = await globalThis.HavokPhysics();
+    if (typeof rigidBodyLoader.KHR_PhysicsRigidBodies_Plugin === "function") {
+        rigidBodyLoader.KHR_PhysicsRigidBodies_Plugin.s_havokInterface = havokInterface;
+    }
+    if (typeof rigidBodyLoader.MSFT_RigidBodies_Plugin === "function") {
+        rigidBodyLoader.MSFT_RigidBodies_Plugin.s_havokInterface = havokInterface;
+    }
+}
+
 let createScene = async function(engine) {
 
     let scene = new BABYLON.Scene(engine);
@@ -263,4 +313,5 @@ engine.enableOfflineSupport = false; // Suppress manifest reference
 window.addEventListener('resize', function() {
     engine.resize();
 });
+await initializeRigidBodyPhysics();
 let scene = await createScene(engine);
