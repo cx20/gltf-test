@@ -16,12 +16,14 @@
 <link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" type="text/css" media="screen,print" href="../../libs/common/dat.gui.css" />
 
+<script src="https://unpkg.com/gl-matrix@3.4.4/gl-matrix-min.js"></script>
+<script src="https://cx20.github.io/gltf-test/libs/babylonjs/dev/HavokPhysics_umd.js"></script>
 <script src="https://www.gstatic.com/draco/v1/decoders/draco_decoder_gltf.js"></script>
-<script src="../../libs/khronos-gltf-rv/1.0.11/libs/libktx.js"></script>
+<script src="../../libs/khronos-gltf-rv/1.1.0/libs/libktx.js"></script>
 <script type="importmap">
 {
     "imports": {
-        "gltf-viewer": "../../libs/khronos-gltf-rv/1.0.11/gltf-viewer.module.js",
+        "gltf-viewer": "../../libs/khronos-gltf-rv/1.1.0/gltf-viewer.module.js",
         "dat.gui": "../../libs/common/dat.gui.module.js"
     }
 }
@@ -30,6 +32,7 @@
 
 <body>
 <canvas id="canvas" width="768" height="768">No Canvas!</canvas>
+<div id="container"></div>
 <script type="module" src="index.js"></script>
 </body>
 
