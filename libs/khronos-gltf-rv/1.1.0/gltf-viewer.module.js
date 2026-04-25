@@ -18956,6 +18956,8 @@ const allowedExtensions = [
     "KHR_texture_transform",
     "KHR_xmp_json_ld",
     "EXT_texture_webp",
+    "KHR_implicit_shapes",
+    "KHR_physics_rigid_bodies",
 ];
 
 class glTF extends GltfObject
