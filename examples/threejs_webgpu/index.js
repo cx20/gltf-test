@@ -45,6 +45,13 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 import { pass, uniform, vec4, max, sub } from 'three/tsl';
 
+// ---- Physics (Rapier / KHR_physics_rigid_bodies) ----
+const RAPIER_PATH = 'https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.17.3';
+const RESET_Y_THRESHOLD = -20;
+let RAPIER = null;
+let physicsWorld = null;
+const dynamicBodies = [];
+
 const clock = new THREE.Clock();
 const DEFAULT_NAME = '[default]';
 
@@ -174,7 +181,14 @@ async function init() {
 
     const loader = new GLTFLoader(manager);
     loader.setCrossOrigin( 'anonymous' );
-    loader.load( url, function ( gltf ) {
+    loader.register(() => ({ name: 'KHR_implicit_shapes',      afterRoot: () => Promise.resolve() }));
+    loader.register(() => ({ name: 'KHR_physics_rigid_bodies', afterRoot: () => Promise.resolve() }));
+
+    // Initialize Rapier
+    RAPIER = await import(RAPIER_PATH);
+    await RAPIER.init();
+
+    loader.load( url, async function ( gltf ) {
 
         modelRoot = gltf.scene || gltf.scenes[0];
         modelRoot.scale.set( resolvedScale, resolvedScale, resolvedScale );
@@ -194,6 +208,20 @@ async function init() {
         }
 
         scene.add( modelRoot );
+
+        // KHR_physics_rigid_bodies: initialize physics if extension is present
+        const gltfJson = gltf.parser.json;
+        if (gltfJson.extensions?.KHR_physics_rigid_bodies || gltfJson.extensions?.KHR_implicit_shapes) {
+            const nodeCount = (gltfJson.nodes ?? []).length;
+            scene.updateMatrixWorld(true);
+            const threeNodes = await Promise.all(
+                Array.from({ length: nodeCount }, (_, i) =>
+                    gltf.parser.getDependency('node', i).catch(() => null)
+                )
+            );
+            scene.updateMatrixWorld(true);
+            initPhysics(gltfJson, threeNodes);
+        }
 
         if ( gltf.cameras && gltf.cameras.length > 0 ) {
             gltfCameras = [camera].concat(gltf.cameras);
@@ -344,6 +372,7 @@ function animate() {
     if ( mixer ) {
         mixer.update( delta );
     }
+    physicsStep(delta);
 
     controls.update();
 
@@ -361,4 +390,292 @@ function render() {
         renderer.render( scene, camera );
     }
 
+}
+
+// ---- KHR_physics_rigid_bodies helpers ----
+
+function collectDescendantColliders(nodes, nodeIndex, result, excludedSet) {
+    const node = nodes[nodeIndex];
+    for (const ci of (node.children ?? [])) {
+        const childExt = nodes[ci].extensions?.KHR_physics_rigid_bodies;
+        if (childExt?.motion) continue;
+        if (childExt?.collider?.geometry) {
+            result.push(ci);
+            excludedSet.add(ci);
+        }
+        collectDescendantColliders(nodes, ci, result, excludedSet);
+    }
+}
+
+function colliderDescFromImplicit(shapeDef, worldScale) {
+    if (shapeDef.sphere) {
+        const r = shapeDef.sphere.radius * Math.max(worldScale.x, worldScale.y, worldScale.z);
+        return RAPIER.ColliderDesc.ball(r);
+    }
+    if (shapeDef.capsule) {
+        const radiusTop    = shapeDef.capsule.radiusTop    ?? shapeDef.capsule.radius ?? 0.5;
+        const radiusBottom = shapeDef.capsule.radiusBottom ?? shapeDef.capsule.radius ?? 0.5;
+        const r         = ((radiusTop + radiusBottom) / 2) * Math.max(worldScale.x, worldScale.z);
+        const halfShaft = (shapeDef.capsule.height ?? 1.0) * worldScale.y / 2;
+        return RAPIER.ColliderDesc.capsule(halfShaft, r);
+    }
+    if (shapeDef.cylinder) {
+        const radiusTop    = shapeDef.cylinder.radiusTop    ?? shapeDef.cylinder.radius ?? 0.5;
+        const radiusBottom = shapeDef.cylinder.radiusBottom ?? shapeDef.cylinder.radius ?? 0.5;
+        const r     = Math.max(radiusTop, radiusBottom) * Math.max(worldScale.x, worldScale.z);
+        const halfH = (shapeDef.cylinder.height ?? 1.0) * worldScale.y / 2;
+        return RAPIER.ColliderDesc.cylinder(halfH, r);
+    }
+    if (shapeDef.box) {
+        const s = shapeDef.box.size ?? [1, 1, 1];
+        return RAPIER.ColliderDesc.cuboid(
+            Math.abs(s[0] * worldScale.x) / 2,
+            Math.abs(s[1] * worldScale.y) / 2,
+            Math.abs(s[2] * worldScale.z) / 2
+        );
+    }
+    console.warn('KHR physics: unsupported implicit shape', shapeDef);
+    return null;
+}
+
+function colliderDescFromMeshObject(object3D, isConvex, worldScale) {
+    let geometry = null;
+    object3D.traverseVisible(o => { if (!geometry && o.isMesh && o.geometry) geometry = o.geometry; });
+    if (!geometry) return null;
+    const posAttr = geometry.getAttribute('position');
+    if (!posAttr) return null;
+    const verts = [];
+    for (let i = 0; i < posAttr.count; i++) {
+        verts.push(
+            posAttr.getX(i) * worldScale.x,
+            posAttr.getY(i) * worldScale.y,
+            posAttr.getZ(i) * worldScale.z
+        );
+    }
+    const posFloat32 = new Float32Array(verts);
+    if (isConvex) return RAPIER.ColliderDesc.convexHull(posFloat32) ?? null;
+    const rawIdx = geometry.getIndex();
+    const indices = rawIdx
+        ? new Uint32Array(rawIdx.array)
+        : Uint32Array.from({ length: posAttr.count }, (_, i) => i);
+    return RAPIER.ColliderDesc.trimesh(posFloat32, indices) ?? null;
+}
+
+function makeRigidBodyDesc(threeNode, motionDef, isKinematic) {
+    const pos  = new THREE.Vector3();
+    const quat = new THREE.Quaternion();
+    threeNode.getWorldPosition(pos);
+    threeNode.getWorldQuaternion(quat);
+    let desc;
+    if (!motionDef)       desc = RAPIER.RigidBodyDesc.fixed();
+    else if (isKinematic) desc = RAPIER.RigidBodyDesc.kinematicPositionBased();
+    else                  desc = RAPIER.RigidBodyDesc.dynamic();
+    desc.setTranslation(pos.x, pos.y, pos.z);
+    desc.setRotation({ x: quat.x, y: quat.y, z: quat.z, w: quat.w });
+    if (motionDef?.gravityFactor !== undefined) desc.setGravityScale(motionDef.gravityFactor);
+    // mass=0 means infinite translational mass → lock translations
+    if (motionDef?.mass === 0) desc.lockTranslations();
+    // inertiaDiagonal: 0 component means infinite rotational inertia for that axis → lock it.
+    // Rapier's enabledRotations uses world-space axes, so transform principal axes
+    // from body-local space (via inertiaOrientation then body world rotation) first.
+    if (motionDef?.inertiaDiagonal) {
+        const [ix, iy, iz] = motionDef.inertiaDiagonal;
+        if (ix === 0 || iy === 0 || iz === 0) {
+            const bodyWorldQuat = new THREE.Quaternion();
+            threeNode.getWorldQuaternion(bodyWorldQuat);
+            const io = motionDef.inertiaOrientation;
+            if (io) bodyWorldQuat.multiply(new THREE.Quaternion(io[0], io[1], io[2], io[3]));
+            const diag = [ix, iy, iz];
+            const localAxes = [[1,0,0],[0,1,0],[0,0,1]];
+            let allowX = false, allowY = false, allowZ = false;
+            for (let j = 0; j < 3; j++) {
+                if (diag[j] !== 0) {
+                    const v = new THREE.Vector3(...localAxes[j]).applyQuaternion(bodyWorldQuat);
+                    const ax = Math.abs(v.x), ay = Math.abs(v.y), az = Math.abs(v.z);
+                    if (ax >= ay && ax >= az) allowX = true;
+                    else if (ay >= ax && ay >= az) allowY = true;
+                    else allowZ = true;
+                }
+            }
+            desc.enabledRotations(allowX, allowY, allowZ);
+        }
+    }
+    return desc;
+}
+
+function buildColliderDesc(gltfJson, threeNode, geomDef, worldScale, matDef) {
+    const shapeDefs  = gltfJson.extensions?.KHR_implicit_shapes?.shapes ?? [];
+    const shapeIndex = geomDef.shape;
+    let desc = null;
+    if (shapeIndex !== undefined) {
+        const shapeDef = shapeDefs[shapeIndex];
+        if (!shapeDef) { console.warn('KHR physics: shape index not found:', shapeIndex); return null; }
+        desc = colliderDescFromImplicit(shapeDef, worldScale);
+    } else {
+        desc = colliderDescFromMeshObject(threeNode, !!geomDef.convexHull, worldScale);
+    }
+    if (!desc) { console.warn('KHR physics: failed to build collider for', threeNode.name); return null; }
+    if (matDef) {
+        if (matDef.staticFriction !== undefined) desc.setFriction(matDef.staticFriction);
+        if (matDef.restitution    !== undefined) desc.setRestitution(matDef.restitution);
+    }
+    return desc;
+}
+
+function computeApproxInertia(mass, geomDef, gltfJson, worldScale) {
+    const shapeDefs = gltfJson.extensions?.KHR_implicit_shapes?.shapes ?? [];
+    if (geomDef.shape !== undefined) {
+        const s = shapeDefs[geomDef.shape];
+        if (s?.sphere) {
+            const r = (s.sphere.radius ?? 0.5) * Math.max(worldScale.x, worldScale.y, worldScale.z);
+            const I = 0.4 * mass * r * r;
+            return { x: I, y: I, z: I };
+        }
+        if (s?.capsule) {
+            const r = ((s.capsule.radiusTop ?? 0.5) + (s.capsule.radiusBottom ?? 0.5)) / 2 * Math.max(worldScale.x, worldScale.z);
+            const h = (s.capsule.height ?? 1.0) * worldScale.y;
+            const Iy = 0.5 * mass * r * r;
+            const Ixz = mass * (r * r / 4 + h * h / 12);
+            return { x: Ixz, y: Iy, z: Ixz };
+        }
+        if (s?.cylinder) {
+            const r = Math.max(s.cylinder.radiusTop ?? 0.5, s.cylinder.radiusBottom ?? 0.5) * Math.max(worldScale.x, worldScale.z);
+            const h = (s.cylinder.height ?? 1.0) * worldScale.y;
+            const Iy = 0.5 * mass * r * r;
+            const Ixz = mass * (r * r / 4 + h * h / 12);
+            return { x: Ixz, y: Iy, z: Ixz };
+        }
+        if (s?.box) {
+            const sz = s.box.size ?? [1, 1, 1];
+            const bx = Math.abs(sz[0] * worldScale.x), by = Math.abs(sz[1] * worldScale.y), bz = Math.abs(sz[2] * worldScale.z);
+            return { x: mass / 12 * (by * by + bz * bz), y: mass / 12 * (bx * bx + bz * bz), z: mass / 12 * (bx * bx + by * by) };
+        }
+    }
+    return { x: 0.1 * mass, y: 0.1 * mass, z: 0.1 * mass };
+}
+
+function initPhysics(gltfJson, threeNodes) {
+    physicsWorld = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
+    dynamicBodies.length = 0;
+    const matDefs = gltfJson.extensions?.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
+    const nodes   = gltfJson.nodes ?? [];
+    const excludedIndices = new Set();
+
+    // --- First pass: compound bodies (motion present, no collider on root) ---
+    for (let i = 0; i < nodes.length; i++) {
+        const physExt = nodes[i].extensions?.KHR_physics_rigid_bodies;
+        if (!physExt?.motion || physExt?.collider) continue;
+        const childColliderIndices = [];
+        collectDescendantColliders(nodes, i, childColliderIndices, excludedIndices);
+        if (childColliderIndices.length === 0) continue;
+        const threeNode = threeNodes[i];
+        if (!threeNode) continue;
+        const motionDef   = physExt.motion;
+        const isKinematic = !!(motionDef.isKinematic);
+        const body        = physicsWorld.createRigidBody(makeRigidBodyDesc(threeNode, motionDef, isKinematic));
+        const parentPos  = new THREE.Vector3();
+        const parentQuat = new THREE.Quaternion();
+        threeNode.getWorldPosition(parentPos);
+        threeNode.getWorldQuaternion(parentQuat);
+        const parentQuatInv = parentQuat.clone().invert();
+        for (const ci of childColliderIndices) {
+            const childNode    = threeNodes[ci];
+            if (!childNode) continue;
+            const childPhys    = nodes[ci].extensions?.KHR_physics_rigid_bodies;
+            const childGeomDef = childPhys.collider.geometry;
+            const childMatDef  = childPhys.collider.physicsMaterial !== undefined
+                ? matDefs[childPhys.collider.physicsMaterial] : null;
+            const childPos   = new THREE.Vector3();
+            const childQuat  = new THREE.Quaternion();
+            const childScale = new THREE.Vector3();
+            childNode.getWorldPosition(childPos);
+            childNode.getWorldQuaternion(childQuat);
+            childNode.getWorldScale(childScale);
+            const localPos  = childPos.clone().sub(parentPos).applyQuaternion(parentQuatInv);
+            const localQuat = childQuat.clone().premultiply(parentQuatInv).normalize();
+            const desc = buildColliderDesc(gltfJson, childNode, childGeomDef, childScale, childMatDef);
+            if (!desc) continue;
+            desc.setTranslation(localPos.x, localPos.y, localPos.z);
+            desc.setRotation({ x: localQuat.x, y: localQuat.y, z: localQuat.z, w: localQuat.w });
+            physicsWorld.createCollider(desc, body);
+        }
+        if (!isKinematic) {
+            const ip = new THREE.Vector3(), iq = new THREE.Quaternion();
+            threeNode.getWorldPosition(ip);
+            threeNode.getWorldQuaternion(iq);
+            dynamicBodies.push({ node: threeNode, body, initPos: ip.clone(), initQuat: iq.clone() });
+        }
+    }
+
+    // --- Second pass: single-shape bodies ---
+    for (let i = 0; i < nodes.length; i++) {
+        if (excludedIndices.has(i)) continue;
+        const physExt = nodes[i].extensions?.KHR_physics_rigid_bodies;
+        if (!physExt?.collider?.geometry) continue;
+        const threeNode = threeNodes[i];
+        if (!threeNode) continue;
+        const motionDef   = physExt.motion ?? null;
+        const isKinematic = !!(motionDef?.isKinematic);
+        const matDef      = physExt.collider.physicsMaterial !== undefined
+            ? matDefs[physExt.collider.physicsMaterial] : null;
+        const worldScale = new THREE.Vector3();
+        threeNode.getWorldScale(worldScale);
+        const desc = buildColliderDesc(gltfJson, threeNode, physExt.collider.geometry, worldScale, matDef);
+        if (!desc) continue;
+        // centerOfMass: make collider massless, set mass props explicitly so Rapier uses the correct COM
+        const hasCom = !!(motionDef?.centerOfMass);
+        if (hasCom) {
+            desc.setDensity(0);
+        } else if (motionDef?.mass !== undefined && motionDef.mass > 0) {
+            desc.setMass(motionDef.mass);
+        }
+        if (motionDef?.restitution !== undefined) desc.setRestitution(motionDef.restitution);
+        const body = physicsWorld.createRigidBody(makeRigidBodyDesc(threeNode, motionDef, isKinematic));
+        physicsWorld.createCollider(desc, body);
+        if (hasCom && motionDef) {
+            const [cx, cy, cz] = motionDef.centerOfMass;
+            const mass = motionDef.mass ?? 1.0;
+            const inertia = computeApproxInertia(mass, physExt.collider.geometry, gltfJson, worldScale);
+            body.setAdditionalMassProperties(mass, { x: cx, y: cy, z: cz }, inertia, { x: 0, y: 0, z: 0, w: 1 }, true);
+        }
+        if (motionDef && !isKinematic) {
+            const ip = new THREE.Vector3(), iq = new THREE.Quaternion();
+            threeNode.getWorldPosition(ip);
+            threeNode.getWorldQuaternion(iq);
+            dynamicBodies.push({ node: threeNode, body, initPos: ip.clone(), initQuat: iq.clone() });
+        }
+    }
+    console.log('KHR physics initialized:', dynamicBodies.length, 'dynamic bodies');
+}
+
+function physicsStep(delta) {
+    if (!physicsWorld) return;
+    physicsWorld.timestep = Math.min(delta, 1 / 30);
+    physicsWorld.step();
+    for (const entry of dynamicBodies) {
+        const t = entry.body.translation();
+        const r = entry.body.rotation();
+        if (t.y < RESET_Y_THRESHOLD) {
+            entry.body.setTranslation(entry.initPos, true);
+            entry.body.setRotation({ x: entry.initQuat.x, y: entry.initQuat.y,
+                z: entry.initQuat.z, w: entry.initQuat.w }, true);
+            entry.body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+            entry.body.setAngvel({ x: 0, y: 0, z: 0 }, true);
+            continue;
+        }
+        const worldPos  = new THREE.Vector3(t.x, t.y, t.z);
+        const worldQuat = new THREE.Quaternion(r.x, r.y, r.z, r.w);
+        const parent = entry.node.parent;
+        if (parent) {
+            parent.updateWorldMatrix(true, false);
+            const invParent = parent.matrixWorld.clone().invert();
+            const localMat  = new THREE.Matrix4()
+                .compose(worldPos, worldQuat, entry.node.scale.clone());
+            localMat.premultiply(invParent);
+            localMat.decompose(entry.node.position, entry.node.quaternion, entry.node.scale);
+        } else {
+            entry.node.position.copy(worldPos);
+            entry.node.quaternion.copy(worldQuat);
+        }
+    }
 }
