@@ -378,10 +378,11 @@ function createImplicitShapeFromDef(shapeDef, worldScale, motionDef, matDef) {
             checkResult(HK.HP_Shape_SetDensity(shapeId, density), 'HP_Shape_SetDensity');
         }
     } else if (shapeDef.box) {
+        const boxSize = shapeDef.box.size ?? [1, 1, 1];
         const size = [
-            Math.abs(shapeDef.box.size[0] * worldScale[0]),
-            Math.abs(shapeDef.box.size[1] * worldScale[1]),
-            Math.abs(shapeDef.box.size[2] * worldScale[2]),
+            Math.abs(boxSize[0] * worldScale[0]),
+            Math.abs(boxSize[1] * worldScale[1]),
+            Math.abs(boxSize[2] * worldScale[2]),
         ];
         const created = HK.HP_Shape_CreateBox([0, 0, 0], IDENTITY_QUATERNION, size);
         checkResult(created[0], 'HP_Shape_CreateBox');
