@@ -36,11 +36,13 @@ let gui = new dat.GUI();
 var obj = {
     LIGHTS: false,
     IBL: true,
+    PHYSICS_DEBUG: true,
     VARIANT: "",
 }
 
 let guiLights = gui.add(obj, 'LIGHTS').name('Lights');
 let guiIBL    = gui.add(obj, 'IBL').name('IBL');
+let guiPhysicsDebug = gui.add(obj, 'PHYSICS_DEBUG').name('Physics Debug');
 let guiVariants = DEFAULT_NAME;
 let guiCameras = null;
 
@@ -72,7 +74,9 @@ class Viewer {
             pc.CameraComponentSystem,
             pc.LightComponentSystem,
             pc.ScriptComponentSystem,
-            pc.ElementComponentSystem
+            pc.ElementComponentSystem,
+            pc.RigidBodyComponentSystem,
+            pc.CollisionComponentSystem
         ];
         createOptions.resourceHandlers = [
             pc.TextureHandler,
@@ -177,6 +181,7 @@ class Viewer {
         this.entities = [];
         this.morphMap = {};
         this.animationMap = {};
+        this.physicsDebugEntities = [];
 
         await pc.WasmModule.setConfig("DracoDecoderModule", {
             glueUrl:     pcRoot + "/draco/draco.wasm.js",
@@ -185,6 +190,32 @@ class Viewer {
         });
         
         await pc.WasmModule.getInstance("DracoDecoderModule");
+
+        // Configure and load Ammo.js (Bullet physics WASM). If unavailable,
+        // physics extension is silently skipped.
+        try {
+            pc.WasmModule.setConfig('Ammo', {
+                glueUrl:     pcRoot + '/ammo/ammo.wasm.js',
+                wasmUrl:     pcRoot + '/ammo/ammo.wasm.wasm',
+                fallbackUrl: pcRoot + '/ammo/ammo.js',
+            });
+            await pc.WasmModule.getInstance('Ammo');
+        } catch (e) {
+            console.warn('KHR physics: Ammo.js failed to load, physics will not run:', e);
+        }
+
+        // Initialize Ammo-based physics system if available.
+        if (typeof Ammo !== 'undefined' && app.systems.rigidbody) {
+            app.systems.rigidbody.gravity.set(0, -9.81, 0);
+            app.systems.rigidbody.onLibraryLoaded();
+        }
+
+        // Per-frame KHR physics wireframe debug overlay.
+        app.on('update', () => {
+            if (!obj.PHYSICS_DEBUG) return;
+            if (!this.physicsDebugEntities || this.physicsDebugEntities.length === 0) return;
+            drawPhysicsDebug(app, this.physicsDebugEntities);
+        });
 
         let url = "../../" + modelInfo.category + "/" + modelInfo.path;
         url = getAbsolutePathFromRelativePath(url);
@@ -363,6 +394,18 @@ class Viewer {
             this.entities.push(entity);
             this.entity = entity;
             this.asset = asset;
+
+            // KHR_physics_rigid_bodies: attach rigidbody/collision components if extension is present
+            const gltfJson = resource.data?.gltf;
+            if (gltfJson && (gltfJson.extensions?.KHR_physics_rigid_bodies || gltfJson.extensions?.KHR_implicit_shapes)) {
+                if (typeof Ammo === 'undefined' || !this.app.systems.rigidbody) {
+                    console.warn('KHR physics: Ammo.js / rigidbody system unavailable; physics will not run');
+                } else {
+                    const entityMap = buildEntityMap(resource.data, entity);
+                    const debugEntities = initPhysics(gltfJson, entityMap);
+                    this.physicsDebugEntities = debugEntities;
+                }
+            }
             
             let variants = resource.getMaterialVariants && resource.getMaterialVariants();
             if (variants && variants.length > 0) {
@@ -410,3 +453,378 @@ async function startViewer() {
 }
 
 startViewer();
+
+// ---- KHR_physics_rigid_bodies helpers (PlayCanvas / Ammo) ----
+
+function buildEntityMap(data, clonedRoot) {
+    const map = new Array(data.gltf.nodes.length).fill(null);
+    const sceneRoots = data.scenes.length === 1 ? [clonedRoot] : clonedRoot.children;
+    for (let s = 0; s < data.scenes.length; s++) {
+        zipChildren(data.scenes[s], sceneRoots[s], data.nodes, map);
+    }
+    return map;
+}
+
+function zipChildren(orig, clone, dataNodes, map) {
+    if (!orig || !clone) return;
+    let cursor = 0;
+    for (const oc of orig.children) {
+        let matched = null;
+        for (let j = cursor; j < clone.children.length; j++) {
+            if (clone.children[j].name === oc.name) {
+                matched = clone.children[j];
+                cursor = j + 1;
+                break;
+            }
+        }
+        if (!matched) continue;
+        const idx = dataNodes.indexOf(oc);
+        if (idx >= 0) map[idx] = matched;
+        zipChildren(oc, matched, dataNodes, map);
+    }
+}
+
+function getCollisionDataFromImplicit(shapeDef, worldScale) {
+    const sx = Math.abs(worldScale.x);
+    const sy = Math.abs(worldScale.y);
+    const sz = Math.abs(worldScale.z);
+    if (shapeDef.sphere) {
+        const r = (shapeDef.sphere.radius ?? 0.5) * Math.max(sx, sy, sz);
+        return { type: 'sphere', radius: r };
+    }
+    if (shapeDef.box) {
+        const s = shapeDef.box.size ?? [1, 1, 1];
+        return {
+            type: 'box',
+            halfExtents: new pc.Vec3(
+                Math.abs(s[0] * sx) / 2,
+                Math.abs(s[1] * sy) / 2,
+                Math.abs(s[2] * sz) / 2
+            )
+        };
+    }
+    if (shapeDef.capsule) {
+        const r  = ((shapeDef.capsule.radiusTop ?? shapeDef.capsule.radius ?? 0.5) +
+                    (shapeDef.capsule.radiusBottom ?? shapeDef.capsule.radius ?? 0.5)) / 2 *
+                   Math.max(sx, sz);
+        const h  = (shapeDef.capsule.height ?? 1.0) * sy + 2 * r;
+        return { type: 'capsule', radius: r, height: h, axis: 1 };
+    }
+    if (shapeDef.cylinder) {
+        const r = Math.max(shapeDef.cylinder.radiusTop    ?? shapeDef.cylinder.radius ?? 0.5,
+                           shapeDef.cylinder.radiusBottom ?? shapeDef.cylinder.radius ?? 0.5) *
+                  Math.max(sx, sz);
+        const h = (shapeDef.cylinder.height ?? 1.0) * sy;
+        return { type: 'cylinder', radius: r, height: h, axis: 1 };
+    }
+    console.warn('KHR physics: unsupported implicit shape', shapeDef);
+    return null;
+}
+
+function getFriction(matDef) {
+    if (!matDef) return undefined;
+    return matDef.dynamicFriction ?? matDef.staticFriction;
+}
+
+const COMBINE_PRIORITY = { average: 1, minimum: 2, maximum: 3, multiply: 4 };
+function pickCombineRule(rule0, rule1) {
+    const r0 = rule0 || 'average';
+    const r1 = rule1 || 'average';
+    return (COMBINE_PRIORITY[r1] > COMBINE_PRIORITY[r0]) ? r1 : r0;
+}
+function applyCombine(rule, a, b) {
+    switch (rule) {
+        case 'minimum':  return Math.min(a, b);
+        case 'maximum':  return Math.max(a, b);
+        case 'multiply': return a * b;
+        case 'average':
+        default:         return (a + b) * 0.5;
+    }
+}
+
+function initPhysics(gltfJson, entityMap) {
+    const matDefs   = gltfJson.extensions?.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
+    const shapeDefs = gltfJson.extensions?.KHR_implicit_shapes?.shapes ?? [];
+    const nodes     = gltfJson.nodes ?? [];
+
+    const dynamicInfos = [];
+    const staticInfos  = [];
+    const gravityOverrides = [];
+    let bodyCount = 0;
+
+    for (let i = 0; i < nodes.length; i++) {
+        const physExt = nodes[i].extensions?.KHR_physics_rigid_bodies;
+        if (!physExt) continue;
+        const entity = entityMap[i];
+        if (!entity) continue;
+        const motionDef = physExt.motion ?? null;
+        const collider  = physExt.collider ?? null;
+
+        let needsRenderWiring = false;
+        if (collider?.geometry) {
+            const geomDef    = collider.geometry;
+            const shapeIndex = geomDef.shape;
+            const worldScale = entity.getLocalScale().clone();
+            let cd = null;
+            if (shapeIndex !== undefined) {
+                const shapeDef = shapeDefs[shapeIndex];
+                if (!shapeDef) {
+                    console.warn('KHR physics: shape index not found:', shapeIndex);
+                    continue;
+                }
+                cd = getCollisionDataFromImplicit(shapeDef, worldScale);
+            } else if (geomDef.mesh !== undefined) {
+                cd = { type: 'mesh', convexHull: !!geomDef.convexHull };
+                needsRenderWiring = true;
+            } else {
+                console.warn('KHR physics: collider geometry has neither shape nor mesh');
+                continue;
+            }
+            if (!cd) continue;
+            entity.addComponent('collision', cd);
+            if (needsRenderWiring && entity.render?.meshInstances?.length) {
+                const meshes = entity.render.meshInstances.map(mi => mi.mesh);
+                entity.collision.render = { meshes };
+            }
+        }
+
+        const isKinematic = !!(motionDef?.isKinematic);
+        const mass        = motionDef?.mass ?? 1;
+        const bodyType    = !motionDef
+            ? pc.BODYTYPE_STATIC
+            : (isKinematic ? pc.BODYTYPE_KINEMATIC : pc.BODYTYPE_DYNAMIC);
+        const rbConfig = { type: bodyType };
+        if (bodyType === pc.BODYTYPE_DYNAMIC) rbConfig.mass = mass;
+        entity.addComponent('rigidbody', rbConfig);
+
+        const mat = (collider?.physicsMaterial !== undefined)
+            ? (matDefs[collider.physicsMaterial] ?? {})
+            : {};
+        if (bodyType === pc.BODYTYPE_DYNAMIC) {
+            dynamicInfos.push({ entity, mat });
+        } else {
+            staticInfos.push({ entity, mat });
+        }
+
+        if (bodyType === pc.BODYTYPE_DYNAMIC && motionDef?.gravityFactor !== undefined) {
+            gravityOverrides.push({ entity, factor: motionDef.gravityFactor });
+        }
+        bodyCount++;
+    }
+
+    const ground = staticInfos[0]?.mat ?? {};
+    for (const info of dynamicInfos) {
+        const dynFr = getFriction(info.mat);
+        const grdFr = getFriction(ground);
+        if (dynFr !== undefined || grdFr !== undefined) {
+            const a = dynFr ?? 0.5;
+            const b = grdFr ?? 0.5;
+            const rule = pickCombineRule(info.mat.frictionCombine, ground.frictionCombine);
+            info.entity.rigidbody.friction = applyCombine(rule, a, b);
+        }
+        const dynRe = info.mat.restitution;
+        const grdRe = ground.restitution;
+        if (dynRe !== undefined || grdRe !== undefined) {
+            const a = dynRe ?? 0;
+            const b = grdRe ?? 0;
+            const rule = pickCombineRule(info.mat.restitutionCombine, ground.restitutionCombine);
+            info.entity.rigidbody.restitution = applyCombine(rule, a, b);
+        }
+    }
+    for (const info of staticInfos) {
+        info.entity.rigidbody.friction    = 1;
+        info.entity.rigidbody.restitution = 1;
+    }
+
+    if (gravityOverrides.length > 0 && typeof Ammo !== 'undefined') {
+        for (const { entity, factor } of gravityOverrides) {
+            const body = entity.rigidbody?.body;
+            if (!body) continue;
+            const g = new Ammo.btVector3(0, -9.81 * factor, 0);
+            body.setGravity(g);
+            Ammo.destroy(g);
+        }
+    }
+
+    console.log('KHR physics initialized:', bodyCount, 'bodies (Ammo / PlayCanvas)');
+
+    const debugEntities = [];
+    for (const info of dynamicInfos) debugEntities.push(info.entity);
+    for (const info of staticInfos)  debugEntities.push(info.entity);
+    return debugEntities;
+}
+
+// ---- Physics wireframe debug overlay ------------------------------------
+
+const _DBG_COLOR_DYNAMIC = new pc.Color(0, 1, 0, 1);
+const _DBG_COLOR_STATIC  = new pc.Color(1, 1, 0, 1);
+
+function _ringPoints(axis, radius, segments, out, mat) {
+    const tmp = new pc.Vec3();
+    const transformed = new pc.Vec3();
+    let prev = null;
+    for (let i = 0; i <= segments; i++) {
+        const t = (i / segments) * Math.PI * 2;
+        const c = Math.cos(t) * radius;
+        const s = Math.sin(t) * radius;
+        if      (axis === 0) tmp.set(0, c, s);
+        else if (axis === 1) tmp.set(c, 0, s);
+        else                 tmp.set(c, s, 0);
+        mat.transformPoint(tmp, transformed);
+        const cur = transformed.clone();
+        if (prev) { out.push(prev); out.push(cur); }
+        prev = cur;
+    }
+}
+
+function _drawWireSphereLocal(app, mat, radius, color) {
+    const pts = [];
+    const segs = 16;
+    _ringPoints(0, radius, segs, pts, mat);
+    _ringPoints(1, radius, segs, pts, mat);
+    _ringPoints(2, radius, segs, pts, mat);
+    const colors = pts.map(() => color);
+    app.drawLines(pts, colors, false);
+}
+
+function _drawWireBoxLocal(app, mat, hx, hy, hz, color) {
+    app.drawWireAlignedBox(
+        new pc.Vec3(-hx, -hy, -hz),
+        new pc.Vec3( hx,  hy,  hz),
+        color, false, undefined, mat
+    );
+}
+
+function _drawWireCylinderLocal(app, mat, radius, halfHeight, axis, color) {
+    const pts = [];
+    const segs = 16;
+    const offsetA = new pc.Vec3();
+    const offsetB = new pc.Vec3();
+    if      (axis === 0) { offsetA.set(-halfHeight, 0, 0); offsetB.set(halfHeight, 0, 0); }
+    else if (axis === 1) { offsetA.set(0, -halfHeight, 0); offsetB.set(0, halfHeight, 0); }
+    else                 { offsetA.set(0, 0, -halfHeight); offsetB.set(0, 0, halfHeight); }
+
+    const tmp = new pc.Vec3();
+    const transformed = new pc.Vec3();
+    const verts = [];
+    for (const off of [offsetA, offsetB]) {
+        const ring = [];
+        for (let i = 0; i <= segs; i++) {
+            const t = (i / segs) * Math.PI * 2;
+            const c = Math.cos(t) * radius;
+            const s = Math.sin(t) * radius;
+            if      (axis === 0) tmp.set(off.x, c, s);
+            else if (axis === 1) tmp.set(c, off.y, s);
+            else                 tmp.set(c, s, off.z);
+            mat.transformPoint(tmp, transformed);
+            ring.push(transformed.clone());
+        }
+        verts.push(ring);
+        for (let i = 0; i < segs; i++) { pts.push(ring[i]); pts.push(ring[i + 1]); }
+    }
+    const stepIdx = Math.floor(segs / 4);
+    for (let k = 0; k < 4; k++) {
+        const idx = k * stepIdx;
+        pts.push(verts[0][idx]);
+        pts.push(verts[1][idx]);
+    }
+    const colors = pts.map(() => color);
+    app.drawLines(pts, colors, false);
+}
+
+function _drawWireCapsuleLocal(app, mat, radius, cylinderHalfHeight, axis, color) {
+    _drawWireCylinderLocal(app, mat, radius, cylinderHalfHeight, axis, color);
+    const off = new pc.Vec3();
+    for (const sign of [-1, 1]) {
+        if      (axis === 0) off.set(sign * cylinderHalfHeight, 0, 0);
+        else if (axis === 1) off.set(0, sign * cylinderHalfHeight, 0);
+        else                 off.set(0, 0, sign * cylinderHalfHeight);
+        const local = new pc.Mat4().setTranslate(off.x, off.y, off.z);
+        const world = new pc.Mat4().mul2(mat, local);
+        _drawWireSphereLocal(app, world, radius, color);
+    }
+}
+
+const _meshLineCache = new WeakMap();
+
+function _drawWireMesh(app, entity, mat, color) {
+    if (!entity.render || !entity.render.meshInstances) return;
+    for (const mi of entity.render.meshInstances) {
+        const mesh = mi.mesh;
+        if (!mesh) continue;
+        let cached = _meshLineCache.get(mesh);
+        if (!cached) {
+            const positions = [];
+            const indices = [];
+            mesh.getPositions(positions);
+            mesh.getIndices(indices);
+            const maxTris = 4096;
+            const triCount = Math.min(indices.length / 3, maxTris);
+            const linePairs = new Float32Array(triCount * 3 * 2 * 3);
+            let w = 0;
+            for (let t = 0; t < triCount; t++) {
+                const i0 = indices[t * 3] * 3;
+                const i1 = indices[t * 3 + 1] * 3;
+                const i2 = indices[t * 3 + 2] * 3;
+                const ax = positions[i0], ay = positions[i0 + 1], az = positions[i0 + 2];
+                const bx = positions[i1], by = positions[i1 + 1], bz = positions[i1 + 2];
+                const cx = positions[i2], cy = positions[i2 + 1], cz = positions[i2 + 2];
+                linePairs[w++] = ax; linePairs[w++] = ay; linePairs[w++] = az;
+                linePairs[w++] = bx; linePairs[w++] = by; linePairs[w++] = bz;
+                linePairs[w++] = bx; linePairs[w++] = by; linePairs[w++] = bz;
+                linePairs[w++] = cx; linePairs[w++] = cy; linePairs[w++] = cz;
+                linePairs[w++] = cx; linePairs[w++] = cy; linePairs[w++] = cz;
+                linePairs[w++] = ax; linePairs[w++] = ay; linePairs[w++] = az;
+            }
+            cached = linePairs;
+            _meshLineCache.set(mesh, cached);
+        }
+        const pts = [];
+        const tmp = new pc.Vec3();
+        const transformed = new pc.Vec3();
+        for (let i = 0; i < cached.length; i += 3) {
+            tmp.set(cached[i], cached[i + 1], cached[i + 2]);
+            mat.transformPoint(tmp, transformed);
+            pts.push(transformed.clone());
+        }
+        const colors = pts.map(() => color);
+        app.drawLines(pts, colors, false);
+    }
+}
+
+function drawPhysicsDebug(app, entities) {
+    for (const entity of entities) {
+        const col = entity.collision;
+        if (!col || !col.type) continue;
+        const isDynamic = entity.rigidbody?.type === pc.BODYTYPE_DYNAMIC;
+        const color = isDynamic ? _DBG_COLOR_DYNAMIC : _DBG_COLOR_STATIC;
+        const mat = entity.getWorldTransform();
+        switch (col.type) {
+            case 'box': {
+                const h = col.halfExtents;
+                _drawWireBoxLocal(app, mat, h.x, h.y, h.z, color);
+                break;
+            }
+            case 'sphere': {
+                _drawWireSphereLocal(app, mat, col.radius, color);
+                break;
+            }
+            case 'capsule': {
+                const r = col.radius;
+                const cylHalf = Math.max(0, (col.height - 2 * r) * 0.5);
+                _drawWireCapsuleLocal(app, mat, r, cylHalf, col.axis ?? 1, color);
+                break;
+            }
+            case 'cylinder': {
+                _drawWireCylinderLocal(app, mat, col.radius, col.height * 0.5, col.axis ?? 1, color);
+                break;
+            }
+            case 'mesh': {
+                _drawWireMesh(app, entity, mat, color);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+}
