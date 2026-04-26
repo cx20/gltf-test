@@ -605,7 +605,7 @@ function initPhysics(gltfJson, entityMap) {
         if (collider?.geometry) {
             const geomDef    = collider.geometry;
             const shapeIndex = geomDef.shape;
-            const worldScale = entity.getLocalScale().clone();
+            const worldScale = entity.getWorldTransform().getScale();
             let cd = null;
             if (shapeIndex !== undefined) {
                 const shapeDef = shapeDefs[shapeIndex];
@@ -695,14 +695,20 @@ function initPhysics(gltfJson, entityMap) {
         info.entity.rigidbody.restitution = 1;
     }
 
-    // Apply per-body gravity overrides via Bullet's setGravity. Must run after
-    // the rigid body has been created and added to the dynamics world.
+    // Apply per-body gravity overrides via Bullet's setGravity.
+    // BT_DISABLE_WORLD_GRAVITY (= 1) must be set so that
+    // dynamicsWorld.setGravity() — called every frame by PlayCanvas's
+    // rigidbody.onUpdate to sync scene gravity — does NOT overwrite
+    // the per-body gravity we set here.
     if (gravityOverrides.length > 0 && typeof Ammo !== 'undefined') {
+        const BT_DISABLE_WORLD_GRAVITY = 1;
         for (const { entity, factor } of gravityOverrides) {
             const body = entity.rigidbody?.body;
             if (!body) continue;
+            body.setFlags(body.getFlags() | BT_DISABLE_WORLD_GRAVITY);
             const g = new Ammo.btVector3(0, -9.81 * factor, 0);
             body.setGravity(g);
+            body.activate(true);
             Ammo.destroy(g);
         }
     }
@@ -865,40 +871,47 @@ function _drawWireMesh(app, entity, mat, color) {
     }
 }
 
+// Build a matrix with the entity's world position and rotation but unit scale.
+// Shape dimensions (halfExtents, radius, height) are stored in world-space units
+// (already multiplied by the entity's world scale during initPhysics), so we must
+// NOT apply scale again when drawing — otherwise shapes appear at scale².
+function _getPosRotMat(entity) {
+    return new pc.Mat4().setTRS(entity.getPosition(), entity.getRotation(), pc.Vec3.ONE);
+}
+
 function drawPhysicsDebug(app, entities) {
     for (const entity of entities) {
         const col = entity.collision;
         if (!col || !col.type) continue;
         const isDynamic = entity.rigidbody?.type === pc.BODYTYPE_DYNAMIC;
         const color = isDynamic ? _DBG_COLOR_DYNAMIC : _DBG_COLOR_STATIC;
-        const mat = entity.getWorldTransform();
         switch (col.type) {
             case 'box': {
+                const mat = _getPosRotMat(entity);
                 const h = col.halfExtents;
                 _drawWireBoxLocal(app, mat, h.x, h.y, h.z, color);
                 break;
             }
             case 'sphere': {
+                const mat = _getPosRotMat(entity);
                 _drawWireSphereLocal(app, mat, col.radius, color);
                 break;
             }
             case 'capsule': {
-                // PlayCanvas/Ammo: capsule.height is the length of the
-                // cylindrical section *including* the two hemispheres on
-                // construction, but the Ammo shape encodes cylinderHalfHeight.
-                // We previously set height = cylinderLength + 2*radius, so
-                // cylinderHalfHeight = (height - 2r) / 2.
+                const mat = _getPosRotMat(entity);
                 const r = col.radius;
                 const cylHalf = Math.max(0, (col.height - 2 * r) * 0.5);
                 _drawWireCapsuleLocal(app, mat, r, cylHalf, col.axis ?? 1, color);
                 break;
             }
             case 'cylinder': {
+                const mat = _getPosRotMat(entity);
                 _drawWireCylinderLocal(app, mat, col.radius, col.height * 0.5, col.axis ?? 1, color);
                 break;
             }
             case 'mesh': {
-                _drawWireMesh(app, entity, mat, color);
+                // Mesh vertices are in local space; full world transform (incl. scale) is correct here.
+                _drawWireMesh(app, entity, entity.getWorldTransform(), color);
                 break;
             }
             default:

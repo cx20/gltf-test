@@ -189,7 +189,9 @@ class Viewer {
             fallbackUrl: pcRoot + "/draco/draco.js",
         });
         
-        await pc.WasmModule.getInstance("DracoDecoderModule");
+        await new Promise((resolve) => {
+            pc.WasmModule.getInstance("DracoDecoderModule", resolve);
+        });
 
         // Configure and load Ammo.js (Bullet physics WASM). If unavailable,
         // physics extension is silently skipped.
@@ -206,10 +208,13 @@ class Viewer {
             console.warn('KHR physics: Ammo.js failed to load, physics will not run:', e);
         }
 
-        // Initialize Ammo-based physics system if available.
+        // Set gravity. app.start() will call app.onLibrariesLoaded() →
+        // rigidbody.onLibraryLoaded() automatically (once), which creates the
+        // dynamicsWorld using this.gravity. Do NOT call onLibraryLoaded()
+        // manually here — doing so before app.start() causes it to be called
+        // twice (double dynamicsWorld + double update handler).
         if (typeof Ammo !== 'undefined' && app.systems.rigidbody) {
             app.systems.rigidbody.gravity.set(0, -9.81, 0);
-            app.systems.rigidbody.onLibraryLoaded();
         }
 
         // Per-frame KHR physics wireframe debug overlay.
@@ -566,7 +571,7 @@ function initPhysics(gltfJson, entityMap) {
         if (collider?.geometry) {
             const geomDef    = collider.geometry;
             const shapeIndex = geomDef.shape;
-            const worldScale = entity.getLocalScale().clone();
+            const worldScale = entity.getWorldTransform().getScale();
             let cd = null;
             if (shapeIndex !== undefined) {
                 const shapeDef = shapeDefs[shapeIndex];
@@ -638,12 +643,20 @@ function initPhysics(gltfJson, entityMap) {
         info.entity.rigidbody.restitution = 1;
     }
 
+    // Apply per-body gravity overrides via Bullet's setGravity.
+    // BT_DISABLE_WORLD_GRAVITY (= 1) must be set so that
+    // dynamicsWorld.setGravity() — called every frame by PlayCanvas's
+    // rigidbody.onUpdate to sync scene gravity — does NOT overwrite
+    // the per-body gravity we set here.
     if (gravityOverrides.length > 0 && typeof Ammo !== 'undefined') {
+        const BT_DISABLE_WORLD_GRAVITY = 1;
         for (const { entity, factor } of gravityOverrides) {
             const body = entity.rigidbody?.body;
             if (!body) continue;
+            body.setFlags(body.getFlags() | BT_DISABLE_WORLD_GRAVITY);
             const g = new Ammo.btVector3(0, -9.81 * factor, 0);
             body.setGravity(g);
+            body.activate(true);
             Ammo.destroy(g);
         }
     }
@@ -794,35 +807,42 @@ function _drawWireMesh(app, entity, mat, color) {
     }
 }
 
+function _getPosRotMat(entity) {
+    return new pc.Mat4().setTRS(entity.getPosition(), entity.getRotation(), pc.Vec3.ONE);
+}
+
 function drawPhysicsDebug(app, entities) {
     for (const entity of entities) {
         const col = entity.collision;
         if (!col || !col.type) continue;
         const isDynamic = entity.rigidbody?.type === pc.BODYTYPE_DYNAMIC;
         const color = isDynamic ? _DBG_COLOR_DYNAMIC : _DBG_COLOR_STATIC;
-        const mat = entity.getWorldTransform();
         switch (col.type) {
             case 'box': {
+                const mat = _getPosRotMat(entity);
                 const h = col.halfExtents;
                 _drawWireBoxLocal(app, mat, h.x, h.y, h.z, color);
                 break;
             }
             case 'sphere': {
+                const mat = _getPosRotMat(entity);
                 _drawWireSphereLocal(app, mat, col.radius, color);
                 break;
             }
             case 'capsule': {
+                const mat = _getPosRotMat(entity);
                 const r = col.radius;
                 const cylHalf = Math.max(0, (col.height - 2 * r) * 0.5);
                 _drawWireCapsuleLocal(app, mat, r, cylHalf, col.axis ?? 1, color);
                 break;
             }
             case 'cylinder': {
+                const mat = _getPosRotMat(entity);
                 _drawWireCylinderLocal(app, mat, col.radius, col.height * 0.5, col.axis ?? 1, color);
                 break;
             }
             case 'mesh': {
-                _drawWireMesh(app, entity, mat, color);
+                _drawWireMesh(app, entity, entity.getWorldTransform(), color);
                 break;
             }
             default:
