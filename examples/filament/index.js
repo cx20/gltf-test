@@ -731,12 +731,12 @@ void main(){o=uColor;}`);
 }
 
 function drawPhysicsDebug(eye, center, up, aspect) {
-    if (!physicsDebugEnabled || !physicsDebugGl || !physicsDebugProg || !physicsDebugVbo) return;
-    if (!HK || !physicsWorldId) return;
+    if (!physicsDebugGl || !physicsDebugProg || !physicsDebugVbo) return;
     const gl = physicsDebugGl;
     gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    if (!physicsDebugEnabled || !HK || !physicsWorldId) return;
     gl.enable(gl.DEPTH_TEST);
     gl.useProgram(physicsDebugProg);
     const aPos   = gl.getAttribLocation(physicsDebugProg, 'aPos');
@@ -884,6 +884,7 @@ var CAMERA = DEFAULT_STRING;
 var SKYBOX = true;
 var LIGHTS = false;
 var IBL = true;
+var PHYSICS_DEBUG = true;
 var aperture = 16.0;
 var shutterSpeed = 125.0;
 var ISO = 100.0;
@@ -892,6 +893,7 @@ let guiRotate = gui.add(window, 'ROTATE').name('Rotate');
 let guiSkybox = gui.add(window, 'SKYBOX').name('Skybox');
 let guiLights = gui.add(window, 'LIGHTS').name('Lights');
 let guiIBL    = gui.add(window, 'IBL').name('IBL');
+let guiPhysicsDebug = gui.add(window, 'PHYSICS_DEBUG').name('Physics Debug');
 let guiCameraFolder = gui.addFolder('Camera');
 let guiAperture     = guiCameraFolder.add(window, 'aperture',     1,   32, 0.1).name('Aperture');
 let guiShutterSpeed = guiCameraFolder.add(window, 'shutterSpeed', 1, 1000, 0.1).name('Speed (1/s)');
@@ -985,6 +987,10 @@ Filament.init([mesh_url, ibl_url, sky_url], () => {
         } else {
             app.scene.setSkybox(null);
         }
+    });
+
+    guiPhysicsDebug.onChange(function(value) {
+        physicsDebugEnabled = value;
     });
 
 });
@@ -1164,10 +1170,8 @@ class App {
         }
         this.camera.lookAt(dbgEye, dbgCenter, dbgUp);
         this.renderer.render(this.swapChain, this.view);
-        if (physicsDebugEnabled) {
-            const aspect = this.canvas.width / this.canvas.height;
-            drawPhysicsDebug(dbgEye, dbgCenter, dbgUp, aspect);
-        }
+        const aspect = this.canvas.width / this.canvas.height;
+        drawPhysicsDebug(dbgEye, dbgCenter, dbgUp, aspect);
     }
 
     resize() {
