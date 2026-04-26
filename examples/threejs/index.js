@@ -566,6 +566,21 @@ function buildColliderDesc(gltfJson, threeNode, geomDef, worldScale, matDef) {
     if (matDef) {
         if (matDef.staticFriction !== undefined) desc.setFriction(matDef.staticFriction);
         if (matDef.restitution    !== undefined) desc.setRestitution(matDef.restitution);
+        // KHR_physics_rigid_bodies combine rules: "average" | "minimum" | "maximum" | "multiply"
+        // Rapier defaults to Average, so explicitly forwarding the rule is required for
+        // assets like RigidBodies_Materials_01 where two spheres differ only by combine.
+        const combineMap = {
+            average:  RAPIER.CoefficientCombineRule.Average,
+            minimum:  RAPIER.CoefficientCombineRule.Min,
+            maximum:  RAPIER.CoefficientCombineRule.Max,
+            multiply: RAPIER.CoefficientCombineRule.Multiply,
+        };
+        if (matDef.frictionCombine && combineMap[matDef.frictionCombine] !== undefined) {
+            desc.setFrictionCombineRule(combineMap[matDef.frictionCombine]);
+        }
+        if (matDef.restitutionCombine && combineMap[matDef.restitutionCombine] !== undefined) {
+            desc.setRestitutionCombineRule(combineMap[matDef.restitutionCombine]);
+        }
     }
     return desc;
 }
@@ -716,11 +731,15 @@ function physicsStep(delta) {
         const parent = entry.node.parent;
         if (parent) {
             parent.updateWorldMatrix(true, false);
-            const invParent = parent.matrixWorld.clone().invert();
-            const localMat  = new THREE.Matrix4()
-                .compose(worldPos, worldQuat, entry.node.scale.clone());
-            localMat.premultiply(invParent);
-            localMat.decompose(entry.node.position, entry.node.quaternion, entry.node.scale);
+            // Convert world transform to parent-local without touching node.scale.
+            // Decomposing a (compose * invParent) matrix would feed node.scale back
+            // into itself when the parent has non-identity scale, causing the local
+            // scale to drift exponentially every frame.
+            const invParentMat = parent.matrixWorld.clone().invert();
+            entry.node.position.copy(worldPos).applyMatrix4(invParentMat);
+            const parentWorldQuat = new THREE.Quaternion();
+            parent.getWorldQuaternion(parentWorldQuat);
+            entry.node.quaternion.copy(parentWorldQuat).invert().multiply(worldQuat);
         } else {
             entry.node.position.copy(worldPos);
             entry.node.quaternion.copy(worldQuat);
