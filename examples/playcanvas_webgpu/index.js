@@ -199,7 +199,9 @@ class Viewer {
                 wasmUrl:     pcRoot + '/ammo/ammo.wasm.wasm',
                 fallbackUrl: pcRoot + '/ammo/ammo.js',
             });
-            await pc.WasmModule.getInstance('Ammo');
+            await new Promise((resolve) => {
+                pc.WasmModule.getInstance('Ammo', resolve);
+            });
         } catch (e) {
             console.warn('KHR physics: Ammo.js failed to load, physics will not run:', e);
         }
