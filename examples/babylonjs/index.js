@@ -35,6 +35,7 @@ let params = {
     LIGHTS: false, // The default is to use IBL instead of lights
     BLOOM: true,
     DEBUG: false,
+    PHYSICS_DEBUG: true,
     VARIANT: DEFAULT_NAME,
     CAMERA: DEFAULT_NAME,
     TONEMAP: "None"
@@ -117,6 +118,7 @@ let createScene = function(engine) {
     const tonemaps = ["None", "Standard", "ACES", "PBR Neutral"];
     let guiTonemap = gui.add(params, 'TONEMAP', tonemaps).name('Tonemap');
     let guiDebug = gui.add(params, 'DEBUG').name('Debug');
+    let guiPhysicsDebug = gui.add(params, 'PHYSICS_DEBUG').name('Physics Debug');
     let guiVariants = null;
     let guiCameras = null;
 
@@ -295,6 +297,27 @@ let createScene = function(engine) {
         guiDebug.onChange(function (value) {
             scene.debugLayer.show({embedMode: value});
         });
+
+        let physicsViewer = null;
+        function showPhysicsDebug(value) {
+            if (value) {
+                if (!physicsViewer && BABYLON.PhysicsViewer) {
+                    physicsViewer = new BABYLON.PhysicsViewer(scene);
+                }
+                if (physicsViewer) {
+                    scene.meshes.forEach(function(m) {
+                        if (m.physicsBody) {
+                            try { physicsViewer.showBody(m.physicsBody); } catch(e) {}
+                        }
+                    });
+                }
+            } else if (physicsViewer) {
+                physicsViewer.dispose();
+                physicsViewer = null;
+            }
+        }
+        if (params.PHYSICS_DEBUG) showPhysicsDebug(true);
+        guiPhysicsDebug.onChange(showPhysicsDebug);
 
         engine.runRenderLoop(function() {
             scene.activeCamera.alpha += params.ROTATE ? 0.005 : 0;

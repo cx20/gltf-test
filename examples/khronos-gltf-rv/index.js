@@ -43,6 +43,19 @@ let physicsWorldId = null;
 const physicsNodesList = [];
 const dynamicNodesList = [];
 
+// ---- Physics debug wireframe overlay ----
+let physicsDebugEnabled = true;
+let physicsDebugCanvas = null;
+let physicsDebugGl     = null;
+let physicsDebugProg   = null;
+let physicsDebugVbo    = null;
+const PHYSICS_DEBUG_COLORS = [
+    [1.0, 0.25, 0.25, 1.0],
+    [0.25, 0.75, 1.0, 1.0],
+    [0.25, 1.0, 0.25, 1.0],
+    [1.0, 1.0, 0.25, 1.0],
+];
+
 function enumToNumber(value) {
     if (typeof value === 'number') return value;
     if (typeof value === 'bigint') return Number(value);
@@ -564,10 +577,12 @@ function initPhysics(gltf) {
 
         const linearAxisLock  = motionDef?.linearAxisLock  ?? 0;
         const angularAxisLock = motionDef?.angularAxisLock ?? 0;
+        const debugShapeDef = shapeIndex !== undefined ? shapeDefs[shapeIndex] : null;
         const entry = { node, bodyId,
             worldScale: [worldScale[0], worldScale[1], worldScale[2]],
             initPos, initRot, parentInvWorldMat,
-            linearAxisLock, angularAxisLock };
+            linearAxisLock, angularAxisLock,
+            shapeDef: debugShapeDef };
         if (!isKinematic) physicsNodesList.push(entry);
         if (motionDef && !isKinematic) dynamicNodesList.push(entry);
     }
@@ -645,6 +660,163 @@ function resetDynamicNodesIfNeeded() {
     }
 }
 
+// ---- Physics debug wireframe geometry helpers ----
+function makeSphereLineVerts(r, segments = 32) {
+    const v = [];
+    for (let c = 0; c < 3; c++) {
+        for (let i = 0; i < segments; i++) {
+            const a0 = (i / segments) * Math.PI * 2;
+            const a1 = ((i + 1) / segments) * Math.PI * 2;
+            const c0 = Math.cos(a0) * r, s0 = Math.sin(a0) * r;
+            const c1 = Math.cos(a1) * r, s1 = Math.sin(a1) * r;
+            if      (c === 0) v.push(c0, s0, 0,  c1, s1, 0);
+            else if (c === 1) v.push(c0, 0,  s0, c1, 0,  s1);
+            else              v.push(0,  c0, s0, 0,  c1, s1);
+        }
+    }
+    return new Float32Array(v);
+}
+function makeBoxLineVerts(sx, sy, sz) {
+    const hx = sx / 2, hy = sy / 2, hz = sz / 2;
+    const c = [
+        [-hx,-hy,-hz], [hx,-hy,-hz], [hx,hy,-hz], [-hx,hy,-hz],
+        [-hx,-hy, hz], [hx,-hy, hz], [hx,hy, hz], [-hx,hy, hz],
+    ];
+    const edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+    const v = [];
+    for (const [a, b] of edges) v.push(...c[a], ...c[b]);
+    return new Float32Array(v);
+}
+function makeCapsuleLineVerts(radius, halfHeight, segments = 32) {
+    const v = [];
+    for (let s = 0; s < 2; s++) {
+        const y = s === 0 ? -halfHeight : halfHeight;
+        for (let i = 0; i < segments; i++) {
+            const a0 = (i / segments) * Math.PI * 2, a1 = ((i + 1) / segments) * Math.PI * 2;
+            v.push(Math.cos(a0)*radius, y, Math.sin(a0)*radius, Math.cos(a1)*radius, y, Math.sin(a1)*radius);
+        }
+    }
+    for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2;
+        v.push(Math.cos(a)*radius, -halfHeight, Math.sin(a)*radius, Math.cos(a)*radius, halfHeight, Math.sin(a)*radius);
+    }
+    const half = segments / 2;
+    for (let s = 0; s < 2; s++) {
+        const sign = s === 0 ? -1 : 1, yOff = sign * halfHeight, baseAng = sign < 0 ? Math.PI : 0;
+        for (let plane = 0; plane < 2; plane++) {
+            for (let i = 0; i < half; i++) {
+                const a0 = baseAng + (i / half) * Math.PI, a1 = baseAng + ((i + 1) / half) * Math.PI;
+                const c0 = Math.cos(a0)*radius, s0 = Math.sin(a0)*radius;
+                const c1 = Math.cos(a1)*radius, s1 = Math.sin(a1)*radius;
+                if (plane === 0) v.push(c0, yOff + s0, 0, c1, yOff + s1, 0);
+                else             v.push(0, yOff + s0, c0, 0, yOff + s1, c1);
+            }
+        }
+    }
+    return new Float32Array(v);
+}
+function makeCylinderLineVerts(radius, halfHeight, segments = 32) {
+    const v = [];
+    for (let s = 0; s < 2; s++) {
+        const y = s === 0 ? -halfHeight : halfHeight;
+        for (let i = 0; i < segments; i++) {
+            const a0 = (i / segments) * Math.PI * 2, a1 = ((i + 1) / segments) * Math.PI * 2;
+            v.push(Math.cos(a0)*radius, y, Math.sin(a0)*radius, Math.cos(a1)*radius, y, Math.sin(a1)*radius);
+        }
+    }
+    for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2;
+        v.push(Math.cos(a)*radius, -halfHeight, Math.sin(a)*radius, Math.cos(a)*radius, halfHeight, Math.sin(a)*radius);
+    }
+    return new Float32Array(v);
+}
+function buildDebugVertsForEntry(entry) {
+    const sd = entry.shapeDef;
+    if (sd?.sphere)  return makeSphereLineVerts(sd.sphere.radius ?? 1.0);
+    if (sd?.box)     return makeBoxLineVerts(...(sd.box.size ?? [1, 1, 1]));
+    if (sd?.capsule) {
+        const r = sd.capsule.radiusTop ?? sd.capsule.radius ?? 0.5;
+        const h = (sd.capsule.height ?? 1.0) / 2;
+        return makeCapsuleLineVerts(r, h);
+    }
+    if (sd?.cylinder) {
+        const r = Math.max(sd.cylinder.radiusTop ?? sd.cylinder.radius ?? 0.5,
+                           sd.cylinder.radiusBottom ?? sd.cylinder.radius ?? 0.5);
+        const h = (sd.cylinder.height ?? 1.0) / 2;
+        return makeCylinderLineVerts(r, h);
+    }
+    return makeSphereLineVerts(0.5);
+}
+function initPhysicsDebugCanvas(mainCanvas) {
+    physicsDebugCanvas = document.createElement('canvas');
+    physicsDebugCanvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none';
+    physicsDebugCanvas.width  = mainCanvas.width;
+    physicsDebugCanvas.height = mainCanvas.height;
+    mainCanvas.parentElement.appendChild(physicsDebugCanvas);
+    const gl = physicsDebugGl = physicsDebugCanvas.getContext('webgl2');
+    if (!gl) { console.warn('[debug] WebGL2 not available for debug overlay'); return; }
+    const vs = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vs, `#version 300 es\nin vec3 aPos; uniform mat4 uMVP;\nvoid main(){gl_Position=uMVP*vec4(aPos,1.0);}`);
+    gl.compileShader(vs);
+    const fs = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fs, `#version 300 es\nprecision mediump float; uniform vec4 uColor; out vec4 o;\nvoid main(){o=uColor;}`);
+    gl.compileShader(fs);
+    physicsDebugProg = gl.createProgram();
+    gl.attachShader(physicsDebugProg, vs); gl.attachShader(physicsDebugProg, fs);
+    gl.linkProgram(physicsDebugProg);
+    gl.deleteShader(vs); gl.deleteShader(fs);
+    if (!gl.getProgramParameter(physicsDebugProg, gl.LINK_STATUS)) {
+        console.warn('[debug] shader link error:', gl.getProgramInfoLog(physicsDebugProg));
+        physicsDebugProg = null; return;
+    }
+    physicsDebugVbo = gl.createBuffer();
+    console.log('[debug] physics wireframe overlay ready');
+}
+function drawPhysicsDebug() {
+    if (!physicsDebugGl || !physicsDebugProg || !physicsDebugVbo) return;
+    const { mat4, quat, vec3 } = glMatrix;
+    const gl = physicsDebugGl;
+    const w = physicsDebugCanvas.width = canvas.width;
+    const h = physicsDebugCanvas.height = canvas.height;
+    gl.viewport(0, 0, w, h);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    if (!physicsDebugEnabled || !HK || !physicsWorldId) return;
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.useProgram(physicsDebugProg);
+    const aPos   = gl.getAttribLocation(physicsDebugProg, 'aPos');
+    const uMVP   = gl.getUniformLocation(physicsDebugProg, 'uMVP');
+    const uColor = gl.getUniformLocation(physicsDebugProg, 'uColor');
+    const aspect = w / h;
+    const viewMat = state.userCamera.getViewMatrix();
+    const projMat = state.userCamera.getProjectionMatrix(aspect);
+    const vp = mat4.multiply(mat4.create(), projMat, viewMat);
+    gl.bindBuffer(gl.ARRAY_BUFFER, physicsDebugVbo);
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 3, gl.FLOAT, false, 0, 0);
+    function drawEntry(verts, colorIdx, p, r) {
+        const modelMat = mat4.fromRotationTranslation(mat4.create(),
+            quat.fromValues(r[0], r[1], r[2], r[3]),
+            vec3.fromValues(p[0], p[1], p[2]));
+        const mvp = mat4.multiply(mat4.create(), vp, modelMat);
+        gl.uniformMatrix4fv(uMVP, false, mvp);
+        gl.uniform4fv(uColor, PHYSICS_DEBUG_COLORS[colorIdx % PHYSICS_DEBUG_COLORS.length]);
+        gl.bufferData(gl.ARRAY_BUFFER, verts, gl.DYNAMIC_DRAW);
+        gl.drawArrays(gl.LINES, 0, verts.length / 3);
+    }
+    for (let i = 0; i < physicsNodesList.length; i++) {
+        const entry = physicsNodesList[i];
+        const pr = HK.HP_Body_GetPosition(entry.bodyId);
+        const qr = HK.HP_Body_GetOrientation(entry.bodyId);
+        if (pr[0] !== HK.Result.RESULT_OK || qr[0] !== HK.Result.RESULT_OK) continue;
+        if (!entry.debugVerts) entry.debugVerts = buildDebugVertsForEntry(entry);
+        drawEntry(entry.debugVerts, i, pr[1], qr[1]);
+    }
+    gl.disableVertexAttribArray(aPos);
+}
+
 // GUI
 let gui = new dat.GUI();
 
@@ -652,16 +824,21 @@ var obj = {
 	ROTATE: false,
 	CAMERA: "",
 	IBL: true,
+	PHYSICS_DEBUG: true,
 	VARIANT: ""
 }
 let guiRotate = gui.add(obj, 'ROTATE').name('Rotate');
 let guiIBL    = gui.add(obj, 'IBL').name('IBL');
+let guiPhysicsDebug = gui.add(obj, 'PHYSICS_DEBUG').name('Physics Debug');
 let guiCameras = null;
 let guiVariantNames = null;
 
 let isRotating = false;
 guiRotate.onChange(function (value) {
     isRotating = value;
+});
+guiPhysicsDebug.onChange(function(value) {
+    physicsDebugEnabled = value;
 });
 
 const canvas = document.getElementById('canvas');
@@ -766,6 +943,7 @@ if (state.gltf?.extensions &&
         locateFile: (path) => path.endsWith('.wasm') ? HAVOK_WASM_URL : path
     });
     initPhysics(state.gltf);
+    initPhysicsDebugCanvas(canvas);
 }
 
 let angle = 0;
@@ -778,6 +956,7 @@ const update = () => {
     }
 
     view.renderFrame(state, canvas.clientWidth, canvas.clientHeight);
+    drawPhysicsDebug();
 
     if (isRotating) {
         const rotationSpeed = 2;

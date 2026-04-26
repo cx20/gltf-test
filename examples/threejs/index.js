@@ -65,7 +65,8 @@ let state = {
     BLOOM: false,
     TONEMAP: "NoToneMapping",
     CAMERA: DEFAULT_NAME,
-    VARIANT: DEFAULT_NAME
+    VARIANT: DEFAULT_NAME,
+    PHYSICS_DEBUG: true
 }
 
 let scene;
@@ -78,6 +79,7 @@ let renderTarget;
 let cubeMap;
 let width;
 let height;
+let physicsDebugLines = null;
 
 let composer;
 
@@ -295,6 +297,7 @@ function init() {
     let guiBloom = gui.add(state, 'BLOOM').name('Bloom');
     const tonemaps = ["NoToneMapping", "ReinhardToneMapping", "ACESFilmicToneMapping", "NeutralToneMapping"];
     let guiTonemap = gui.add(state, 'TONEMAP', tonemaps).name('Tonemap');
+    let guiPhysicsDebug = gui.add(state, 'PHYSICS_DEBUG').name('Physics Debug');
 
     guiRotate.onChange(function (value) {
         controls.autoRotate = value;
@@ -744,5 +747,26 @@ function physicsStep(delta) {
             entry.node.position.copy(worldPos);
             entry.node.quaternion.copy(worldQuat);
         }
+    }
+    // Rapier physics debug wireframe
+    if (state.PHYSICS_DEBUG) {
+        const buffers = physicsWorld.debugRender();
+        if (!physicsDebugLines) {
+            const geo = new THREE.BufferGeometry();
+            const mat = new THREE.LineBasicMaterial({ vertexColors: true });
+            physicsDebugLines = new THREE.LineSegments(geo, mat);
+            scene.add(physicsDebugLines);
+        }
+        physicsDebugLines.geometry.setAttribute('position', new THREE.BufferAttribute(buffers.vertices, 3));
+        // Rapier returns RGBA (4 floats/vertex); LineBasicMaterial needs RGB (3 floats/vertex)
+        const rgba = buffers.colors;
+        const rgb  = new Float32Array(rgba.length / 4 * 3);
+        for (let i = 0; i < rgba.length / 4; i++) {
+            rgb[i * 3] = rgba[i * 4]; rgb[i * 3 + 1] = rgba[i * 4 + 1]; rgb[i * 3 + 2] = rgba[i * 4 + 2];
+        }
+        physicsDebugLines.geometry.setAttribute('color', new THREE.BufferAttribute(rgb, 3));
+        physicsDebugLines.visible = true;
+    } else if (physicsDebugLines) {
+        physicsDebugLines.visible = false;
     }
 }
