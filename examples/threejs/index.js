@@ -89,7 +89,16 @@ const RESET_Y_THRESHOLD = -20;
 let RAPIER = await import(RAPIER_PATH);
 await RAPIER.init();
 let physicsWorld = null;
+let physicsReady = false;
+let envReady = false;
 const dynamicBodies = [];
+
+function tryStartPhysics() {
+    if (physicsReady) return;
+    if (!physicsWorld) return;
+    if (!envReady) return;
+    setTimeout(function() { physicsReady = true; }, 200);
+}
 
 init();
 animate();
@@ -243,6 +252,11 @@ function init() {
                 renderer.toneMappingExposure = Math.pow(params.exposure, 4.0);
                 composer.addPass( renderScene );
                 composer.addPass( bloomPass );
+
+                // Resources are now loaded. Allow physics to start after a short delay
+                // so the first rendered frame shows the scene before bodies start moving.
+                envReady = true;
+                tryStartPhysics();
             } );
 
         scene.add(object);
@@ -712,10 +726,21 @@ function initPhysics(gltfJson, threeNodes) {
         }
     }
     console.log('KHR physics initialized:', dynamicBodies.length, 'dynamic bodies');
+    // Try to start physics now (will only proceed if env is also ready).
+    tryStartPhysics();
+    // Fallback: in case the HDR environment fails to load, still start physics
+    // so the simulation does not stay frozen forever.
+    setTimeout(function() {
+        if (!physicsReady) {
+            console.log('[Physics] Fallback start (resources not ready within 5s)');
+            physicsReady = true;
+        }
+    }, 5000);
 }
 
 function physicsStep(delta) {
     if (!physicsWorld) return;
+    if (!physicsReady) return;
     physicsWorld.timestep = Math.min(delta, 1 / 30);
     physicsWorld.step();
     for (const entry of dynamicBodies) {
