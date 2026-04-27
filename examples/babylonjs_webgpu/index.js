@@ -123,6 +123,7 @@ let createScene = async function(engine) {
     let variants = null;
     let variantsExtension = null;
     let emissiveStrengthExtension = null;
+    let physicsExtensionLoaded = false;
 
     BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (loader) {
         loader.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
@@ -132,6 +133,8 @@ let createScene = async function(engine) {
                 variantsExtension = extension;
             } else if (extension.name === "KHR_materials_emissive_strength") {
                 emissiveStrengthExtension = extension;
+            } else if (extension.name === "KHR_physics_rigid_bodies" || extension.name === "MSFT_rigid_bodies") {
+                physicsExtensionLoaded = true;
             }
         });
     });
@@ -139,7 +142,38 @@ let createScene = async function(engine) {
     return BABYLON.SceneLoader.LoadAsync(path).then(function (newScene) {
 
         scene = newScene;
-        
+
+        // Pause physics until the loading spinner is hidden, so users can see the
+        // simulation start (e.g. balls falling) instead of seeing it already settled.
+        const physicsEngine = scene.getPhysicsEngine && scene.getPhysicsEngine();
+        if (physicsExtensionLoaded && physicsEngine && typeof physicsEngine.setTimeStep === 'function') {
+            const originalTimeStep = typeof physicsEngine.getTimeStep === 'function'
+                ? physicsEngine.getTimeStep()
+                : 1 / 60;
+            physicsEngine.setTimeStep(0);
+
+            const resumePhysics = function() {
+                physicsEngine.setTimeStep(originalTimeStep);
+            };
+
+            const originalHideLoadingUI = engine.hideLoadingUI.bind(engine);
+            let resumed = false;
+            engine.hideLoadingUI = function() {
+                originalHideLoadingUI();
+                if (!resumed) {
+                    resumed = true;
+                    setTimeout(resumePhysics, 200);
+                }
+            };
+            // Fallback: in case hideLoadingUI is not invoked for some reason
+            setTimeout(function() {
+                if (!resumed) {
+                    resumed = true;
+                    resumePhysics();
+                }
+            }, 3000);
+        }
+
         let parentMesh = scene.rootNodes[0];
         
         if ( variantsExtension != null ) {
