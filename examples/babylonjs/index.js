@@ -47,7 +47,16 @@ function registerRigidBodyExtensions() {
     const loaderExtensions = BABYLON?.GLTF2?.Loader?.Extensions;
     const rigidBodyLoader = globalThis.GLTFRigidBodyLoader;
 
+    console.log('[Physics] registerRigidBodyExtensions called');
+    console.log('[Physics] GLTFRigidBodyLoader:', rigidBodyLoader ? 'found' : 'NOT FOUND');
+    console.log('[Physics] HavokPhysics:', typeof globalThis.HavokPhysics === 'function' ? 'found' : 'NOT FOUND');
+    console.log('[Physics] BABYLON.GLTF2.registerGLTFExtension:', typeof register);
+    console.log('[Physics] KHR_ImplicitShapes_Plugin:', typeof rigidBodyLoader?.KHR_ImplicitShapes_Plugin);
+    console.log('[Physics] KHR_PhysicsRigidBodies_Plugin:', typeof rigidBodyLoader?.KHR_PhysicsRigidBodies_Plugin);
+    console.log('[Physics] MSFT_RigidBodies_Plugin:', typeof rigidBodyLoader?.MSFT_RigidBodies_Plugin);
+
     if (!rigidBodyLoader) {
+        console.warn('[Physics] GLTFRigidBodyLoader not found - physics extensions will NOT be registered');
         return;
     }
 
@@ -72,22 +81,33 @@ function registerRigidBodyExtensions() {
     registerExtension("KHR_implicit_shapes", rigidBodyLoader.KHR_ImplicitShapes_Plugin);
     registerExtension("KHR_physics_rigid_bodies", rigidBodyLoader.KHR_PhysicsRigidBodies_Plugin);
     registerExtension("MSFT_rigid_bodies", rigidBodyLoader.MSFT_RigidBodies_Plugin);
+    console.log('[Physics] Extension registration complete');
 }
 
 registerRigidBodyExtensions();
 
 async function initializeRigidBodyPhysics() {
     const rigidBodyLoader = globalThis.GLTFRigidBodyLoader;
-    if (!rigidBodyLoader || typeof globalThis.HavokPhysics !== "function") {
+    console.log('[Physics] initializeRigidBodyPhysics called');
+    if (!rigidBodyLoader) {
+        console.warn('[Physics] GLTFRigidBodyLoader not found - skipping Havok initialization');
+        return;
+    }
+    if (typeof globalThis.HavokPhysics !== "function") {
+        console.warn('[Physics] HavokPhysics function not found - skipping Havok initialization');
         return;
     }
 
+    console.log('[Physics] Initializing HavokPhysics...');
     const havokInterface = await globalThis.HavokPhysics();
+    console.log('[Physics] HavokPhysics initialized:', havokInterface);
     if (typeof rigidBodyLoader.KHR_PhysicsRigidBodies_Plugin === "function") {
         rigidBodyLoader.KHR_PhysicsRigidBodies_Plugin.s_havokInterface = havokInterface;
+        console.log('[Physics] Set s_havokInterface on KHR_PhysicsRigidBodies_Plugin');
     }
     if (typeof rigidBodyLoader.MSFT_RigidBodies_Plugin === "function") {
         rigidBodyLoader.MSFT_RigidBodies_Plugin.s_havokInterface = havokInterface;
+        console.log('[Physics] Set s_havokInterface on MSFT_RigidBodies_Plugin');
     }
 }
 
@@ -125,15 +145,19 @@ let createScene = function(engine) {
     let variants = null;
     let variantsExtension = null;
     let emissiveStrengthExtension = null;
+    let physicsExtensionLoaded = false;
 
     BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (loader) {
         loader.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
 
         loader.onExtensionLoadedObservable.add(function (extension) {
+            console.log('[Physics] glTF extension loaded:', extension.name);
             if (extension.name === "KHR_materials_variants") {
                 variantsExtension = extension;
             } else if (extension.name === "KHR_materials_emissive_strength") {
                 emissiveStrengthExtension = extension;
+            } else if (extension.name === "KHR_physics_rigid_bodies" || extension.name === "MSFT_rigid_bodies") {
+                physicsExtensionLoaded = true;
             }
         });
     });
@@ -141,7 +165,79 @@ let createScene = function(engine) {
     return BABYLON.SceneLoader.LoadAsync(path).then(function (newScene) {
 
         scene = newScene;
-        
+
+        // Physics diagnostics
+        console.log('[Physics] Scene loaded');
+        console.log('[Physics] scene.physicsEnabled:', scene.physicsEnabled);
+        console.log('[Physics] scene.getPhysicsEngine():', scene.getPhysicsEngine());
+        const physicsEngine = scene.getPhysicsEngine();
+        if (physicsEngine) {
+            console.log('[Physics] Physics engine name:', physicsEngine.name);
+            console.log('[Physics] Gravity:', physicsEngine.gravity ? physicsEngine.gravity.toString() : physicsEngine._gravity ? physicsEngine._gravity.toString() : 'unknown');
+        } else {
+            console.warn('[Physics] No physics engine attached to scene');
+        }
+
+        const meshesWithPhysics = scene.meshes.filter(m => m.physicsBody);
+        console.log('[Physics] Total meshes:', scene.meshes.length);
+        console.log('[Physics] Meshes with physicsBody:', meshesWithPhysics.length);
+        scene.meshes.forEach(function(m) {
+            if (m.physicsBody) {
+                const motionType = m.physicsBody.motionType;
+                const motionTypeStr = motionType === 0 ? 'STATIC(0)'
+                    : motionType === 1 ? 'ANIMATED(1)'
+                    : motionType === 2 ? 'DYNAMIC(2)'
+                    : String(motionType);
+                console.log('[Physics] Mesh:', m.name,
+                    '| motionType:', motionTypeStr,
+                    '| position:', m.position.toString(),
+                    '| physicsBody:', m.physicsBody);
+            } else {
+                console.log('[Physics] Mesh (no physicsBody):', m.name, '| position:', m.position.toString());
+            }
+        });
+
+        // フレームごとの位置変化を監視（最初の120フレーム、10フレームおき）
+        const dynamicMesh = scene.meshes.find(m => m.physicsBody && m.physicsBody.motionType === 2);
+        if (!dynamicMesh) {
+            console.warn('[Physics] No DYNAMIC mesh found');
+        }
+
+        // Pause physics until the loading spinner is hidden, so users can see the
+        // simulation start (e.g. balls falling) instead of seeing it already settled.
+        if (physicsExtensionLoaded && physicsEngine && typeof physicsEngine.setTimeStep === 'function') {
+            const originalTimeStep = typeof physicsEngine.getTimeStep === 'function'
+                ? physicsEngine.getTimeStep()
+                : 1 / 60;
+            physicsEngine.setTimeStep(0);
+            console.log('[Physics] Simulation paused (timeStep=0). Will resume after loading UI hides. Original timeStep:', originalTimeStep);
+
+            const resumePhysics = function() {
+                physicsEngine.setTimeStep(originalTimeStep);
+                console.log('[Physics] Simulation resumed (timeStep=' + originalTimeStep + ')');
+            };
+
+            // Hook into engine.hideLoadingUI so we resume right after the spinner hides.
+            // Add a small extra delay so the first rendered frame is visible before things move.
+            const originalHideLoadingUI = engine.hideLoadingUI.bind(engine);
+            let resumed = false;
+            engine.hideLoadingUI = function() {
+                originalHideLoadingUI();
+                if (!resumed) {
+                    resumed = true;
+                    setTimeout(resumePhysics, 200);
+                }
+            };
+            // Fallback: in case hideLoadingUI is not invoked for some reason
+            setTimeout(function() {
+                if (!resumed) {
+                    resumed = true;
+                    console.log('[Physics] Fallback resume (hideLoadingUI was not called within 3s)');
+                    resumePhysics();
+                }
+            }, 3000);
+        }
+
         let parentMesh = scene.rootNodes[0];
         
         if ( variantsExtension != null ) {
