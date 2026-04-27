@@ -50,6 +50,15 @@ const RAPIER_PATH = 'https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.17.3';
 const RESET_Y_THRESHOLD = -20;
 let RAPIER = null;
 let physicsWorld = null;
+let physicsReady = false;
+let envReady = false;
+
+function tryStartPhysics() {
+    if (physicsReady) return;
+    if (!physicsWorld) return;
+    if (!envReady) return;
+    setTimeout(function() { physicsReady = true; }, 200);
+}
 const dynamicBodies = [];
 
 const clock = new THREE.Clock();
@@ -280,10 +289,18 @@ async function init() {
 
             updateEnvironment();
 
+            // Resources are now loaded. Allow physics to start after a short delay
+            // so the first rendered frame shows the scene before bodies start moving.
+            envReady = true;
+            tryStartPhysics();
+
         }, undefined, function () {
 
             console.warn('Failed to load local HDR environment map. Rendering without environment map.');
             updateEnvironment();
+
+            envReady = true;
+            tryStartPhysics();
 
         } );
 
@@ -661,10 +678,21 @@ function initPhysics(gltfJson, threeNodes) {
         }
     }
     console.log('KHR physics initialized:', dynamicBodies.length, 'dynamic bodies');
+    // Try to start physics now (will only proceed if env is also ready).
+    tryStartPhysics();
+    // Fallback: in case the HDR environment fails to load, still start physics
+    // so the simulation does not stay frozen forever.
+    setTimeout(function() {
+        if (!physicsReady) {
+            console.log('[Physics] Fallback start (resources not ready within 5s)');
+            physicsReady = true;
+        }
+    }, 5000);
 }
 
 function physicsStep(delta) {
     if (!physicsWorld) return;
+    if (!physicsReady) return;
     physicsWorld.timestep = Math.min(delta, 1 / 30);
     physicsWorld.step();
     for (const entry of dynamicBodies) {
