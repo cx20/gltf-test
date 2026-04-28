@@ -586,12 +586,61 @@ function computeApproxInertia(mass, geomDef, gltfJson, worldScale) {
     return { x: 0.1 * mass, y: 0.1 * mass, z: 0.1 * mass };
 }
 
+// ---- KHR_physics_rigid_bodies collision filter ----
+// Build a table mapping each glTF collisionFilter index to a Rapier collision-groups u32.
+// Rapier format: high 16 bits = membership groups, low 16 bits = filter mask.
+// Two colliders collide iff (A.mem & B.filter) != 0 AND (B.mem & A.filter) != 0.
+function buildCollisionFilterTable(gltfJson) {
+    const filters = gltfJson.extensions?.KHR_physics_rigid_bodies?.collisionFilters ?? [];
+    if (filters.length === 0) return [];
+    const systemBit = new Map();
+    let nextBit = 0;
+    function bitFor(name) {
+        if (!systemBit.has(name)) {
+            if (nextBit >= 16) {
+                console.warn('[Physics] Too many collision systems (>16), ignoring:', name);
+                systemBit.set(name, 0);
+            } else {
+                systemBit.set(name, 1 << nextBit);
+                nextBit++;
+            }
+        }
+        return systemBit.get(name);
+    }
+    const ALL = 0xFFFF;
+    return filters.map(function (f) {
+        let membership = 0;
+        for (const n of (f.collisionSystems ?? [])) membership |= bitFor(n);
+        let filterMask;
+        if (Array.isArray(f.collideWithSystems)) {
+            filterMask = 0;
+            for (const n of f.collideWithSystems) filterMask |= bitFor(n);
+        } else if (Array.isArray(f.notCollideWithSystems)) {
+            let mask = 0;
+            for (const n of f.notCollideWithSystems) mask |= bitFor(n);
+            filterMask = ALL & ~mask;
+        } else {
+            filterMask = ALL;
+        }
+        return (((membership & ALL) << 16) | (filterMask & ALL)) >>> 0;
+    });
+}
+
+function applyCollisionFilterToDesc(desc, colliderDef, table) {
+    const idx = colliderDef?.collisionFilter;
+    if (typeof idx !== 'number') return;
+    const groups = table[idx];
+    if (groups === undefined) return;
+    desc.setCollisionGroups(groups);
+}
+
 function initPhysics(gltfJson, threeNodes) {
     physicsWorld = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
     dynamicBodies.length = 0;
     const matDefs = gltfJson.extensions?.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
     const nodes   = gltfJson.nodes ?? [];
     const excludedIndices = new Set();
+    const collisionGroupsByFilterIndex = buildCollisionFilterTable(gltfJson);
 
     // --- First pass: compound bodies (motion present, no collider on root) ---
     for (let i = 0; i < nodes.length; i++) {
@@ -629,6 +678,7 @@ function initPhysics(gltfJson, threeNodes) {
             if (!desc) continue;
             desc.setTranslation(localPos.x, localPos.y, localPos.z);
             desc.setRotation({ x: localQuat.x, y: localQuat.y, z: localQuat.z, w: localQuat.w });
+            applyCollisionFilterToDesc(desc, childPhys.collider, collisionGroupsByFilterIndex);
             physicsWorld.createCollider(desc, body);
         }
         if (!isKinematic) {
@@ -663,6 +713,7 @@ function initPhysics(gltfJson, threeNodes) {
         }
         if (motionDef?.restitution !== undefined) desc.setRestitution(motionDef.restitution);
         const body = physicsWorld.createRigidBody(makeRigidBodyDesc(threeNode, motionDef, isKinematic));
+        applyCollisionFilterToDesc(desc, physExt.collider, collisionGroupsByFilterIndex);
         physicsWorld.createCollider(desc, body);
         if (hasCom && motionDef) {
             const [cx, cy, cz] = motionDef.centerOfMass;
