@@ -99,6 +99,54 @@ function applyPhysicsMaterial(shapeId, materialDef) {
     HK.HP_Shape_SetMaterial(shapeId, [df, sf, re, frictionCombine, restitutionCombine]);
 }
 
+// Build a table mapping each glTF collisionFilter index to a Havok [membership, collide] pair.
+// Each value is a 32-bit mask; system names are assigned bits in first-seen order (max 32).
+let collisionFilterTable = [];
+function buildCollisionFilterTable(gltfJson) {
+    const filters = gltfJson.extensions?.KHR_physics_rigid_bodies?.collisionFilters ?? [];
+    if (filters.length === 0) { collisionFilterTable = []; return; }
+    const systemBit = new Map();
+    let nextBit = 0;
+    function bitFor(name) {
+        if (!systemBit.has(name)) {
+            if (nextBit >= 32) {
+                console.warn('[Physics] Too many collision systems (>32), ignoring:', name);
+                systemBit.set(name, 0);
+            } else {
+                systemBit.set(name, (1 << nextBit) >>> 0);
+                nextBit++;
+            }
+        }
+        return systemBit.get(name);
+    }
+    const ALL = 0xFFFFFFFF >>> 0;
+    collisionFilterTable = filters.map(function (f) {
+        let membership = 0;
+        for (const n of (f.collisionSystems ?? [])) membership = (membership | bitFor(n)) >>> 0;
+        let collideMask;
+        if (Array.isArray(f.collideWithSystems)) {
+            collideMask = 0;
+            for (const n of f.collideWithSystems) collideMask = (collideMask | bitFor(n)) >>> 0;
+        } else if (Array.isArray(f.notCollideWithSystems)) {
+            let mask = 0;
+            for (const n of f.notCollideWithSystems) mask = (mask | bitFor(n)) >>> 0;
+            collideMask = (ALL & ~mask) >>> 0;
+        } else {
+            collideMask = ALL;
+        }
+        return [membership || ALL, collideMask];
+    });
+}
+
+function applyCollisionFilterToShape(shapeId, colliderDef) {
+    if (!colliderDef || typeof HK.HP_Shape_SetFilterInfo !== 'function') return;
+    const idx = colliderDef.collisionFilter;
+    if (typeof idx !== 'number') return;
+    const pair = collisionFilterTable[idx];
+    if (!pair) return;
+    HK.HP_Shape_SetFilterInfo(shapeId, [pair[0], pair[1]]);
+}
+
 // Create a physics shape from mesh data (convexHull or trimesh).
 // geometry: physExt.collider.geometry when geometry.shape is undefined
 function createMeshPhysicsShape(gltf, node, geomDef, motionDef, matDef) {
@@ -418,6 +466,7 @@ function initPhysics(gltf) {
     const gltfExt   = gltf.extensions || {};
     const shapeDefs = gltfExt.KHR_implicit_shapes?.shapes ?? [];
     const matDefs   = gltfExt.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
+    buildCollisionFilterTable(gltf);
 
     const worldRes = HK.HP_World_Create();
     checkResult(worldRes[0], 'HP_World_Create');
@@ -478,6 +527,7 @@ function initPhysics(gltf) {
                 childShapeId = createImplicitShapeFromDef(childShapeDef, childWorldScale, null, childMatDef);
                 if (!childShapeId) continue;
             }
+            applyCollisionFilterToShape(childShapeId, childPhysExt.collider);
 
             const childPos = vec3.create(), childRot = quat.create();
             mat4.getTranslation(childPos, childNode.worldTransform);
@@ -552,6 +602,7 @@ function initPhysics(gltf) {
             shapeId = createImplicitShapeFromDef(shapeDef, worldScale, motionDef, matDef);
             if (!shapeId) continue;
         }
+        applyCollisionFilterToShape(shapeId, physExt.collider);
 
         // World-space initial pose
         const wPos = vec3.create(), wRot = quat.create();
