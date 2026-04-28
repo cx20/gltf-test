@@ -66,6 +66,55 @@ function applyPhysicsMaterial(shapeId, materialDef) {
     HK.HP_Shape_SetMaterial(shapeId, [df, sf, re, frictionCombine, restitutionCombine]);
 }
 
+// ---- KHR_physics_rigid_bodies collision filter ----
+// Build a table mapping each glTF collisionFilter index to a Havok [membership, collide] pair.
+// Each value is a 32-bit mask; system names are assigned bits in first-seen order (max 32).
+let collisionFilterTable = [];
+function buildCollisionFilterTable(gltfJson) {
+    const filters = gltfJson.extensions?.KHR_physics_rigid_bodies?.collisionFilters ?? [];
+    if (filters.length === 0) { collisionFilterTable = []; return; }
+    const systemBit = new Map();
+    let nextBit = 0;
+    function bitFor(name) {
+        if (!systemBit.has(name)) {
+            if (nextBit >= 32) {
+                console.warn('[Physics] Too many collision systems (>32), ignoring:', name);
+                systemBit.set(name, 0);
+            } else {
+                systemBit.set(name, (1 << nextBit) >>> 0);
+                nextBit++;
+            }
+        }
+        return systemBit.get(name);
+    }
+    const ALL = 0xFFFFFFFF >>> 0;
+    collisionFilterTable = filters.map(function (f) {
+        let membership = 0;
+        for (const n of (f.collisionSystems ?? [])) membership = (membership | bitFor(n)) >>> 0;
+        let collideMask;
+        if (Array.isArray(f.collideWithSystems)) {
+            collideMask = 0;
+            for (const n of f.collideWithSystems) collideMask = (collideMask | bitFor(n)) >>> 0;
+        } else if (Array.isArray(f.notCollideWithSystems)) {
+            let mask = 0;
+            for (const n of f.notCollideWithSystems) mask = (mask | bitFor(n)) >>> 0;
+            collideMask = (ALL & ~mask) >>> 0;
+        } else {
+            collideMask = ALL;
+        }
+        return [membership || ALL, collideMask];
+    });
+}
+
+function applyCollisionFilterToShape(shapeId, colliderDef) {
+    if (!colliderDef || typeof HK.HP_Shape_SetFilterInfo !== 'function') return;
+    const idx = colliderDef.collisionFilter;
+    if (typeof idx !== 'number') return;
+    const pair = collisionFilterTable[idx];
+    if (!pair) return;
+    HK.HP_Shape_SetFilterInfo(shapeId, [pair[0], pair[1]]);
+}
+
 // Extract rotation quaternion from a transform matrix that may have non-uniform scale.
 // gl-matrix's mat4.getRotation produces wrong results when columns have different
 // magnitudes, so we normalize each basis column first.
@@ -426,6 +475,7 @@ async function initPhysicsFromUrl(meshUrl, filamentAsset, filamentEngine, modelS
 
     const shapeDefs = gltfExt.KHR_implicit_shapes?.shapes ?? [];
     const matDefs   = gltfExt.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
+    buildCollisionFilterTable(gltfJson);
     const accCache  = buildAccessorCache(gltfJson, bufferData);
     const worldMats = buildWorldTransforms(gltfJson);
     // Physics runs in glTF world space (full scale, NOT multiplied by modelScale).
@@ -489,6 +539,7 @@ async function initPhysicsFromUrl(meshUrl, filamentAsset, filamentEngine, modelS
                 cShapeId = createImplicitShapeFromDef(cShapeDef, cScale, null, cMatDef);
             }
             if (!cShapeId) continue;
+            applyCollisionFilterToShape(cShapeId, cPhys.collider);
             const cPos = vec3.create(), cRot = quat.create();
             mat4.getTranslation(cPos, worldMats[ci]);
             getRotationFromMat(cRot, worldMats[ci]);
@@ -547,6 +598,7 @@ async function initPhysicsFromUrl(meshUrl, filamentAsset, filamentEngine, modelS
             shapeId = createImplicitShapeFromDef(sd, worldScale, motionDef, matDef);
         }
         if (!shapeId) continue;
+        applyCollisionFilterToShape(shapeId, physExt.collider);
         const wPos = vec3.create(), wRot = quat.create();
         mat4.getTranslation(wPos, worldMats[i]);
         getRotationFromMat(wRot, worldMats[i]);
