@@ -549,10 +549,63 @@ function applyCombine(rule, a, b) {
     }
 }
 
+// Build a table mapping each glTF collisionFilter index to a PlayCanvas/Bullet
+// {group, mask} 16-bit pair. System names are assigned bits in first-seen
+// order (max 16, since Bullet's broadphase filter pair is 16-bit).
+function buildCollisionFilterTable(gltfJson) {
+    const filters = gltfJson.extensions?.KHR_physics_rigid_bodies?.collisionFilters ?? [];
+    if (filters.length === 0) {
+        console.log('[Physics] No collisionFilters in glTF.');
+        return [];
+    }
+    const systemBit = new Map();
+    let nextBit = 0;
+    function bitFor(name) {
+        if (!systemBit.has(name)) {
+            if (nextBit >= 16) {
+                console.warn('[Physics] Too many collision systems (>16), ignoring:', name);
+                systemBit.set(name, 0);
+            } else {
+                systemBit.set(name, (1 << nextBit) & 0xFFFF);
+                nextBit++;
+            }
+        }
+        return systemBit.get(name);
+    }
+    const ALL = 0xFFFF;
+    const table = filters.map(function (f) {
+        let group = 0;
+        for (const n of (f.collisionSystems ?? [])) group = (group | bitFor(n)) & 0xFFFF;
+        let mask;
+        if (Array.isArray(f.collideWithSystems)) {
+            mask = 0;
+            for (const n of f.collideWithSystems) mask = (mask | bitFor(n)) & 0xFFFF;
+        } else if (Array.isArray(f.notCollideWithSystems)) {
+            let m = 0;
+            for (const n of f.notCollideWithSystems) m = (m | bitFor(n)) & 0xFFFF;
+            mask = (ALL & ~m) & 0xFFFF;
+        } else {
+            mask = ALL;
+        }
+        return { group: group || ALL, mask };
+    });
+    const sysDump = {};
+    for (const [name, bit] of systemBit) sysDump[name] = '0x' + bit.toString(16).padStart(4, '0');
+    console.log('[Physics] systemBit:', sysDump);
+    console.log('[Physics] filterTable:', table.map((f, i) => ({
+        idx: i,
+        raw: filters[i],
+        group: '0x' + f.group.toString(16).padStart(4, '0'),
+        mask:  '0x' + f.mask.toString(16).padStart(4, '0'),
+    })));
+    return table;
+}
+
 function initPhysics(gltfJson, entityMap) {
     const matDefs   = gltfJson.extensions?.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
     const shapeDefs = gltfJson.extensions?.KHR_implicit_shapes?.shapes ?? [];
     const nodes     = gltfJson.nodes ?? [];
+    const filterTable = buildCollisionFilterTable(gltfJson);
 
     const dynamicInfos = [];
     const staticInfos  = [];
@@ -602,7 +655,26 @@ function initPhysics(gltfJson, entityMap) {
             : (isKinematic ? pc.BODYTYPE_KINEMATIC : pc.BODYTYPE_DYNAMIC);
         const rbConfig = { type: bodyType };
         if (bodyType === pc.BODYTYPE_DYNAMIC) rbConfig.mass = mass;
+        // KHR_physics_rigid_bodies.collisionFilters -> Bullet broadphase {group, mask}.
+        // Note: Bullet only supports per-body (not per-shape) filters, so for compound
+        // bodies the per-collider filter cannot be honoured exactly.
+        const cf = collider?.collisionFilter;
+        if (typeof cf === 'number' && filterTable[cf]) {
+            rbConfig.group = filterTable[cf].group;
+            rbConfig.mask  = filterTable[cf].mask;
+        }
         entity.addComponent('rigidbody', rbConfig);
+        {
+            const rb = entity.rigidbody;
+            const usedFilter = (typeof cf === 'number' && filterTable[cf]) ? filterTable[cf] : null;
+            console.log('[Physics] body node=' + i + ' name="' + (nodes[i].name ?? '') + '"',
+                'type=' + (bodyType === pc.BODYTYPE_DYNAMIC ? 'DYNAMIC'
+                          : bodyType === pc.BODYTYPE_KINEMATIC ? 'KINEMATIC' : 'STATIC'),
+                'cfgGroup=' + (usedFilter ? '0x' + usedFilter.group.toString(16) : 'default'),
+                'cfgMask='  + (usedFilter ? '0x' + usedFilter.mask.toString(16)  : 'default'),
+                'rb.group=0x' + (rb?.group ?? 0).toString(16),
+                'rb.mask=0x'  + (rb?.mask  ?? 0).toString(16));
+        }
 
         const mat = (collider?.physicsMaterial !== undefined)
             ? (matDefs[collider.physicsMaterial] ?? {})

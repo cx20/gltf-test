@@ -581,87 +581,254 @@ function applyCombine(rule, a, b) {
     }
 }
 
+// Build a table mapping each glTF collisionFilter index to a PlayCanvas/Bullet
+// {group, mask} 16-bit pair. System names are assigned bits in first-seen
+// order (max 16, since Bullet's broadphase filter pair is 16-bit).
+function buildCollisionFilterTable(gltfJson) {
+    const filters = gltfJson.extensions?.KHR_physics_rigid_bodies?.collisionFilters ?? [];
+    if (filters.length === 0) {
+        console.log('[Physics] No collisionFilters in glTF.');
+        return [];
+    }
+    const systemBit = new Map();
+    let nextBit = 0;
+    function bitFor(name) {
+        if (!systemBit.has(name)) {
+            if (nextBit >= 16) {
+                console.warn('[Physics] Too many collision systems (>16), ignoring:', name);
+                systemBit.set(name, 0);
+            } else {
+                systemBit.set(name, (1 << nextBit) & 0xFFFF);
+                nextBit++;
+            }
+        }
+        return systemBit.get(name);
+    }
+    const ALL = 0xFFFF;
+    const table = filters.map(function (f) {
+        let group = 0;
+        for (const n of (f.collisionSystems ?? [])) group = (group | bitFor(n)) & 0xFFFF;
+        let mask;
+        if (Array.isArray(f.collideWithSystems)) {
+            mask = 0;
+            for (const n of f.collideWithSystems) mask = (mask | bitFor(n)) & 0xFFFF;
+        } else if (Array.isArray(f.notCollideWithSystems)) {
+            let m = 0;
+            for (const n of f.notCollideWithSystems) m = (m | bitFor(n)) & 0xFFFF;
+            mask = (ALL & ~m) & 0xFFFF;
+        } else {
+            mask = ALL;
+        }
+        return { group: group || ALL, mask };
+    });
+    const sysDump = {};
+    for (const [name, bit] of systemBit) sysDump[name] = '0x' + bit.toString(16).padStart(4, '0');
+    console.log('[Physics] systemBit:', sysDump);
+    console.log('[Physics] filterTable:', table.map((f, i) => ({
+        idx: i,
+        raw: filters[i],
+        group: '0x' + f.group.toString(16).padStart(4, '0'),
+        mask:  '0x' + f.mask.toString(16).padStart(4, '0'),
+    })));
+    return table;
+}
+
 function initPhysics(gltfJson, entityMap) {
     const matDefs   = gltfJson.extensions?.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
     const shapeDefs = gltfJson.extensions?.KHR_implicit_shapes?.shapes ?? [];
     const nodes     = gltfJson.nodes ?? [];
+    const filterTable = buildCollisionFilterTable(gltfJson);
 
-    // First pass: create components; remember per-body the assigned KHR material.
-    const dynamicInfos = []; // { entity, mat }
+    // Resolve {group, mask} for a body. Bullet has one filter pair per body,
+    // so for compound bodies we pick the first collisionFilter found by
+    // walking the body-owner subtree (own collider first, then descendants).
+    function getFilterForBody(rootIdx) {
+        const stack = [rootIdx];
+        let firstChildHit = -1;
+        while (stack.length) {
+            const idx = stack.pop();
+            const physExt = nodes[idx]?.extensions?.KHR_physics_rigid_bodies;
+            const cf = physExt?.collider?.collisionFilter;
+            if (typeof cf === 'number') {
+                if (idx === rootIdx) return filterTable[cf] ?? null;
+                if (firstChildHit < 0) firstChildHit = cf;
+            }
+            const ch = nodes[idx]?.children;
+            if (ch) for (const c of ch) stack.push(c);
+        }
+        return firstChildHit >= 0 ? (filterTable[firstChildHit] ?? null) : null;
+    }
+    function getFilterForCollider(colliderDef) {
+        const cf = colliderDef?.collisionFilter;
+        if (typeof cf !== 'number') return null;
+        return filterTable[cf] ?? null;
+    }
+
+    // Build child -> parent index map so we can resolve the nearest ancestor
+    // node that owns a rigid body (i.e. has KHR_physics_rigid_bodies.motion).
+    // KHR allows compound bodies: a dynamic node provides `motion`, while its
+    // descendants supply the actual `collider` shapes. We must group those
+    // colliders under the dynamic body via PlayCanvas's `compound` collision.
+    const parentOf = new Array(nodes.length).fill(-1);
+    for (let i = 0; i < nodes.length; i++) {
+        const ch = nodes[i].children;
+        if (!ch) continue;
+        for (const c of ch) parentOf[c] = i;
+    }
+    const hasMotion = (i) => !!nodes[i]?.extensions?.KHR_physics_rigid_bodies?.motion;
+    function findBodyOwner(nodeIdx) {
+        // Returns ancestor (including self) index that has a `motion`, or -1.
+        let cur = nodeIdx;
+        while (cur >= 0) {
+            if (hasMotion(cur)) return cur;
+            cur = parentOf[cur];
+        }
+        return -1;
+    }
+
+    // Helper: build a PlayCanvas collision data object from a KHR collider def.
+    function buildCollisionData(collider, entity) {
+        const geomDef = collider.geometry;
+        if (!geomDef) return null;
+        const worldScale = entity.getWorldTransform().getScale();
+        if (geomDef.shape !== undefined) {
+            const shapeDef = shapeDefs[geomDef.shape];
+            if (!shapeDef) {
+                console.warn('KHR physics: shape index not found:', geomDef.shape);
+                return null;
+            }
+            return { cd: getCollisionDataFromImplicit(shapeDef, worldScale), wireRender: false };
+        }
+        if (geomDef.mesh !== undefined) {
+            return { cd: { type: 'mesh', convexHull: !!geomDef.convexHull }, wireRender: true };
+        }
+        console.warn('KHR physics: collider geometry has neither shape nor mesh');
+        return null;
+    }
+
+    // Pass 1: install collision components.
+    //  - Body-owner nodes (have `motion`): collision type='compound'. Their own
+    //    `collider` (if any) is attached to a child entity so it composes with
+    //    descendant colliders into a single compound shape.
+    //  - Collider nodes whose body-owner ancestor exists: plain collision
+    //    component (no rigidbody) → becomes a child shape of the compound body.
+    //  - Collider nodes with no body-owner ancestor: plain collision component
+    //    plus a static rigidbody on the same entity.
+    const dynamicInfos = []; // { entity, mat }   for materials / debug
     const staticInfos  = []; // { entity, mat }
-    const gravityOverrides = []; // { entity, factor }
+    const compoundShapeOwners = []; // entities that hold a compound rigidbody
+    const standaloneStaticEntities = []; // static collider+rigidbody entities
+    const gravityOverrides = [];
     let bodyCount = 0;
+
+    // First, give every body-owner a compound collision component.
+    const bodyOwnerNodes = [];
+    for (let i = 0; i < nodes.length; i++) {
+        if (!hasMotion(i)) continue;
+        const entity = entityMap[i];
+        if (!entity) continue;
+        entity.addComponent('collision', { type: 'compound' });
+        bodyOwnerNodes.push(i);
+    }
+
+    // Then walk every node with a collider and place it appropriately.
     for (let i = 0; i < nodes.length; i++) {
         const physExt = nodes[i].extensions?.KHR_physics_rigid_bodies;
         if (!physExt) continue;
-        const entity = entityMap[i];
-        if (!entity) continue;
-        const motionDef = physExt.motion ?? null;
-        const collider  = physExt.collider ?? null;
+        const collider = physExt.collider;
+        if (!collider) continue;
+        const ownerIdx = findBodyOwner(i);
 
-        // Build collision component from the implicit shape attached to this node,
-        // or from a glTF mesh primitive if the collider references one directly.
-        let needsRenderWiring = false;
-        if (collider?.geometry) {
-            const geomDef    = collider.geometry;
-            const shapeIndex = geomDef.shape;
-            const worldScale = entity.getWorldTransform().getScale();
-            let cd = null;
-            if (shapeIndex !== undefined) {
-                const shapeDef = shapeDefs[shapeIndex];
-                if (!shapeDef) {
-                    console.warn('KHR physics: shape index not found:', shapeIndex);
-                    continue;
+        if (ownerIdx === i) {
+            // The body-owner itself carries a collider. Reparent it onto a
+            // synthetic child entity so the parent stays a `compound`.
+            const parentEntity = entityMap[i];
+            if (!parentEntity) continue;
+            const child = new pc.Entity('__khrCollider');
+            parentEntity.addChild(child);
+            const built = buildCollisionData(collider, child);
+            if (!built || !built.cd) continue;
+            child.addComponent('collision', built.cd);
+            if (built.wireRender) {
+                // Mesh-on-self: copy meshes from the parent's render component.
+                const renderE = parentEntity.render ? parentEntity : null;
+                if (renderE?.render?.meshInstances?.length) {
+                    const meshes = renderE.render.meshInstances.map(mi => mi.mesh);
+                    child.collision.render = { meshes };
                 }
-                cd = getCollisionDataFromImplicit(shapeDef, worldScale);
-            } else if (geomDef.mesh !== undefined) {
-                // Mesh collider: build from the entity's already-instantiated
-                // render component. Bullet's btBvhTriangleMeshShape (concave,
-                // static) and btConvexHullShape (dynamic) are handled by
-                // PlayCanvas's `mesh` collision implementation.
-                cd = { type: 'mesh', convexHull: !!geomDef.convexHull };
-                needsRenderWiring = true;
-            } else {
-                console.warn('KHR physics: collider geometry has neither shape nor mesh');
-                continue;
             }
-            if (!cd) continue;
-            entity.addComponent('collision', cd);
-            if (needsRenderWiring && entity.render?.meshInstances?.length) {
-                // PlayCanvas's mesh-collision implementation expects a Render
-                // *resource* with a `meshes` array (not the render component
-                // itself). Build a minimal duck-typed object from the entity's
-                // already-instantiated render component to trigger the shape
-                // build via Ammo's btBvhTriangleMesh / btConvexHullShape.
+        } else {
+            const entity = entityMap[i];
+            if (!entity) continue;
+            const built = buildCollisionData(collider, entity);
+            if (!built || !built.cd) continue;
+            entity.addComponent('collision', built.cd);
+            if (built.wireRender && entity.render?.meshInstances?.length) {
                 const meshes = entity.render.meshInstances.map(mi => mi.mesh);
                 entity.collision.render = { meshes };
             }
+            if (ownerIdx < 0) {
+                // Standalone static collider — needs its own static rigidbody.
+                standaloneStaticEntities.push({ entity, collider });
+            }
+            // else: descendant of a body-owner; the compound parent handles it.
         }
+    }
 
-        // Rigid body component: dynamic when motion is present, static otherwise
-        // (collider-only nodes act as the static world).
-        const isKinematic = !!(motionDef?.isKinematic);
-        const mass        = motionDef?.mass ?? 1;
-        const bodyType    = !motionDef
-            ? pc.BODYTYPE_STATIC
-            : (isKinematic ? pc.BODYTYPE_KINEMATIC : pc.BODYTYPE_DYNAMIC);
+    // Pass 2: add the rigidbody components.
+    for (const i of bodyOwnerNodes) {
+        const entity = entityMap[i];
+        const motionDef = nodes[i].extensions.KHR_physics_rigid_bodies.motion;
+        const isKinematic = !!motionDef?.isKinematic;
+        const mass = motionDef?.mass ?? 1;
+        const bodyType = isKinematic ? pc.BODYTYPE_KINEMATIC : pc.BODYTYPE_DYNAMIC;
         const rbConfig = { type: bodyType };
         if (bodyType === pc.BODYTYPE_DYNAMIC) rbConfig.mass = mass;
+        const filter = getFilterForBody(i);
+        if (filter) { rbConfig.group = filter.group; rbConfig.mask = filter.mask; }
         entity.addComponent('rigidbody', rbConfig);
-
-        const mat = (collider?.physicsMaterial !== undefined)
-            ? (matDefs[collider.physicsMaterial] ?? {})
+        {
+            const rb = entity.rigidbody;
+            console.log('[Physics] body(compound) node=' + i + ' name="' + (nodes[i].name ?? '') + '"',
+                'type=' + (isKinematic ? 'KINEMATIC' : 'DYNAMIC'),
+                'cfgGroup=' + (filter ? '0x' + filter.group.toString(16) : 'default'),
+                'cfgMask='  + (filter ? '0x' + filter.mask.toString(16)  : 'default'),
+                'rb.group=0x' + (rb?.group ?? 0).toString(16),
+                'rb.mask=0x'  + (rb?.mask  ?? 0).toString(16));
+        }
+        // Material from own collider if any (otherwise default).
+        const ownCollider = nodes[i].extensions.KHR_physics_rigid_bodies.collider;
+        const mat = (ownCollider?.physicsMaterial !== undefined)
+            ? (matDefs[ownCollider.physicsMaterial] ?? {})
             : {};
+        compoundShapeOwners.push(entity);
         if (bodyType === pc.BODYTYPE_DYNAMIC) {
             dynamicInfos.push({ entity, mat });
+            if (motionDef?.gravityFactor !== undefined) {
+                gravityOverrides.push({ entity, factor: motionDef.gravityFactor });
+            }
         } else {
             staticInfos.push({ entity, mat });
         }
-
-        // KHR motion.gravityFactor: 1 = normal gravity, 0 = none, -1 = inverted.
-        if (bodyType === pc.BODYTYPE_DYNAMIC && motionDef?.gravityFactor !== undefined) {
-            gravityOverrides.push({ entity, factor: motionDef.gravityFactor });
+        bodyCount++;
+    }
+    for (const { entity, collider } of standaloneStaticEntities) {
+        const rbConfig = { type: pc.BODYTYPE_STATIC };
+        const filter = getFilterForCollider(collider);
+        if (filter) { rbConfig.group = filter.group; rbConfig.mask = filter.mask; }
+        entity.addComponent('rigidbody', rbConfig);
+        {
+            const rb = entity.rigidbody;
+            console.log('[Physics] body(static) name="' + (entity.name ?? '') + '"',
+                'cfgGroup=' + (filter ? '0x' + filter.group.toString(16) : 'default'),
+                'cfgMask='  + (filter ? '0x' + filter.mask.toString(16)  : 'default'),
+                'rb.group=0x' + (rb?.group ?? 0).toString(16),
+                'rb.mask=0x'  + (rb?.mask  ?? 0).toString(16));
         }
+        const mat = (collider.physicsMaterial !== undefined)
+            ? (matDefs[collider.physicsMaterial] ?? {})
+            : {};
+        staticInfos.push({ entity, mat });
         bodyCount++;
     }
 
@@ -715,11 +882,17 @@ function initPhysics(gltfJson, entityMap) {
 
     console.log('KHR physics initialized:', bodyCount, 'bodies (Ammo / PlayCanvas)');
 
-    // Return the list of entities that own a collision component so the viewer
-    // can draw wireframe debug overlays for them each frame.
+    // Return every entity that ended up with a non-compound collision component
+    // (compound parents themselves don't draw — only their child shapes do).
     const debugEntities = [];
-    for (const info of dynamicInfos) debugEntities.push(info.entity);
-    for (const info of staticInfos)  debugEntities.push(info.entity);
+    const visit = (e) => {
+        if (e.collision && e.collision.type && e.collision.type !== 'compound') {
+            debugEntities.push(e);
+        }
+        for (const c of e.children) visit(c);
+    };
+    for (const info of dynamicInfos) visit(info.entity);
+    for (const info of staticInfos)  visit(info.entity);
     return debugEntities;
 }
 
@@ -883,7 +1056,10 @@ function drawPhysicsDebug(app, entities) {
     for (const entity of entities) {
         const col = entity.collision;
         if (!col || !col.type) continue;
-        const isDynamic = entity.rigidbody?.type === pc.BODYTYPE_DYNAMIC;
+        // Walk up to find the rigidbody owner (compound children don't carry one).
+        let rbOwner = entity;
+        while (rbOwner && !rbOwner.rigidbody) rbOwner = rbOwner.parent;
+        const isDynamic = rbOwner?.rigidbody?.type === pc.BODYTYPE_DYNAMIC;
         const color = isDynamic ? _DBG_COLOR_DYNAMIC : _DBG_COLOR_STATIC;
         switch (col.type) {
             case 'box': {
