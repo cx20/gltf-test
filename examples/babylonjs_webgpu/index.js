@@ -1,30 +1,30 @@
-let modelInfo = ModelIndex.getCurrentModel();
-if (!modelInfo) {
-    modelInfo = TutorialModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    document.getElementById('container').innerHTML = 'Please specify a model to load';
-    throw new Error('Model not specified or not found in list.');
+function getInitialModelInfo() {
+    let modelInfo = ModelIndex.getCurrentModel();
+    if (!modelInfo) {
+        modelInfo = TutorialModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
+    }
+    return modelInfo;
 }
 
+const initialModelInfo = getInitialModelInfo();
 const DEFAULT_NAME = "[default]";
 
 let params = {
@@ -32,12 +32,152 @@ let params = {
     BOUNDING_BOX: false,
     CUBEMAP: true,
     IBL: true,
-    LIGHTS: false, // The default is to use IBL instead of lights
+    LIGHTS: false,
     BLOOM: true,
     DEBUG: false,
     VARIANT: DEFAULT_NAME,
     CAMERA: DEFAULT_NAME,
     TONEMAP: "None"
+}
+
+const canvas = document.querySelector("#renderCanvas");
+const dropZone = document.getElementById("dropZone");
+const dropZoneMessage = document.getElementById("dropZoneMessage");
+const fileInput = document.getElementById("fileInput");
+
+let currentScene = null;
+let currentGui = null;
+let currentObjectUrls = [];
+let activeLoadToken = 0;
+let emptyScene = null;
+
+function setDropZoneMessage(message, isError) {
+    dropZoneMessage.textContent = message;
+    dropZone.classList.toggle("error", !!isError);
+}
+
+function showDropZone(message, isError) {
+    if (message) {
+        setDropZoneMessage(message, isError);
+    }
+    dropZone.classList.remove("hidden");
+}
+
+function hideDropZone() {
+    dropZone.classList.add("hidden");
+    dropZone.classList.remove("dragover");
+    dropZone.classList.remove("error");
+}
+
+function revokeCurrentObjectUrls() {
+    currentObjectUrls.forEach(function(url) {
+        URL.revokeObjectURL(url);
+    });
+    currentObjectUrls = [];
+}
+
+function getFileExtension(name) {
+    const lastDot = name.lastIndexOf(".");
+    return lastDot >= 0 ? name.slice(lastDot).toLowerCase() : "";
+}
+
+function isExternalUri(uri) {
+    return uri
+        && !uri.startsWith("data:")
+        && !uri.startsWith("blob:")
+        && !/^[a-z]+:/i.test(uri);
+}
+
+function getBasename(path) {
+    return path.split("/").pop();
+}
+
+async function createDroppedModelSource(fileList) {
+    const files = Array.from(fileList);
+    const modelFile = files.find(function(file) {
+        const extension = getFileExtension(file.name);
+        return extension === ".glb" || extension === ".gltf";
+    });
+
+    if (!modelFile) {
+        throw new Error("`.glb` または `.gltf` ファイルを含めてドロップしてください。");
+    }
+
+    const fileMap = new Map();
+    files.forEach(function(file) {
+        fileMap.set(file.name, file);
+        fileMap.set(getBasename(file.name), file);
+        if (file.webkitRelativePath) {
+            fileMap.set(file.webkitRelativePath, file);
+            fileMap.set(getBasename(file.webkitRelativePath), file);
+        }
+    });
+
+    const objectUrls = [];
+
+    function createTrackedObjectUrl(fileOrBlob) {
+        const url = URL.createObjectURL(fileOrBlob);
+        objectUrls.push(url);
+        return url;
+    }
+
+    if (getFileExtension(modelFile.name) === ".glb") {
+        return {
+            url: createTrackedObjectUrl(modelFile),
+            displayName: modelFile.name,
+            pluginExtension: ".glb",
+            scale: 1,
+            allAnimations: true,
+            objectUrls: objectUrls,
+        };
+    }
+
+    const gltf = JSON.parse(await modelFile.text());
+    const resourceUrls = new Map();
+
+    function resolveObjectUrl(uri) {
+        if (!isExternalUri(uri)) {
+            return uri;
+        }
+
+        const decodedUri = decodeURIComponent(uri);
+        const file = fileMap.get(decodedUri) || fileMap.get(getBasename(decodedUri));
+        if (!file) {
+            return uri;
+        }
+
+        if (!resourceUrls.has(file)) {
+            resourceUrls.set(file, createTrackedObjectUrl(file));
+        }
+        return resourceUrls.get(file);
+    }
+
+    if (Array.isArray(gltf.buffers)) {
+        gltf.buffers.forEach(function(buffer) {
+            if (buffer.uri) {
+                buffer.uri = resolveObjectUrl(buffer.uri);
+            }
+        });
+    }
+
+    if (Array.isArray(gltf.images)) {
+        gltf.images.forEach(function(image) {
+            if (image.uri) {
+                image.uri = resolveObjectUrl(image.uri);
+            }
+        });
+    }
+
+    const gltfBlob = new Blob([JSON.stringify(gltf)], { type: "model/gltf+json" });
+
+    return {
+        url: createTrackedObjectUrl(gltfBlob),
+        displayName: modelFile.name,
+        pluginExtension: ".gltf",
+        scale: 1,
+        allAnimations: true,
+        objectUrls: objectUrls,
+    };
 }
 
 function registerRigidBodyExtensions() {
@@ -90,24 +230,70 @@ async function initializeRigidBodyPhysics() {
     }
 }
 
-let createScene = async function(engine) {
+function createEmptyScene(engine) {
+    const scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color4(1, 1, 1, 1);
 
+    const camera = new BABYLON.ArcRotateCamera(DEFAULT_NAME, -Math.PI / 2, Math.PI / 2.4, 8, BABYLON.Vector3.Zero(), scene);
+    camera.attachControl(canvas, false, false);
+    camera.wheelDeltaPercentage = 0.005;
+    scene.activeCamera = camera;
+
+    const light = new BABYLON.HemisphericLight("dropZoneLight", new BABYLON.Vector3(0, 1, 0), scene);
+    light.intensity = 0.8;
+
+    return scene;
+}
+
+function getPluginExtension(modelSource, path, modelInfo) {
+    if (modelSource.pluginExtension) {
+        return modelSource.pluginExtension;
+    }
+    if (modelInfo?.path) {
+        return getFileExtension(modelInfo.path);
+    }
+    if (modelInfo?.url) {
+        return getFileExtension(modelInfo.url);
+    }
+    return getFileExtension(path);
+}
+
+function splitScenePath(path) {
+    if (!path) {
+        return { rootUrl: "", sceneFilename: "" };
+    }
+    if (path.startsWith("blob:") || path.startsWith("data:")) {
+        return { rootUrl: "", sceneFilename: path };
+    }
+    const lastSlash = path.lastIndexOf("/");
+    if (lastSlash === -1) {
+        return { rootUrl: "", sceneFilename: path };
+    }
+    return {
+        rootUrl: path.slice(0, lastSlash + 1),
+        sceneFilename: path.slice(lastSlash + 1),
+    };
+}
+
+let createScene = function(engine, modelSource) {
     let scene = new BABYLON.Scene(engine);
-    let mesh;
     let cubeTexture;
     scene.clearColor = new BABYLON.Color3(1, 1, 1);
 
-    let scale = modelInfo.scale;
-    //let path = "../../sampleModels/" + modelInfo.path;
-    let path = "../../" + modelInfo.category + "/" + modelInfo.path;
-    if(modelInfo.url) {
-        path = modelInfo.url;
+    const modelInfo = modelSource.modelInfo;
+    let scale = modelSource.scale || 1;
+    let path = modelSource.url;
+    if (!path && modelInfo) {
+        path = "../../" + modelInfo.category + "/" + modelInfo.path;
+        if (modelInfo.url) {
+            path = modelInfo.url;
+        }
     }
-    let base = path.substr(0, path.lastIndexOf("/") + 1);
-    let file = path.substr(path.lastIndexOf("/") + 1);
+    const pluginExtension = getPluginExtension(modelSource, path, modelInfo);
+    const sceneSource = splitScenePath(path);
 
-    // GUI
     let gui = new dat.GUI();
+    let pipeline = null;
     let guiRotate = gui.add(params, 'ROTATE').name('Rotate');
     let guiBoundingBox = gui.add(params, 'BOUNDING_BOX').name('Bounding Box');
     let guiCubeMap = gui.add(params, 'CUBEMAP').name('CubeMap');
@@ -126,7 +312,11 @@ let createScene = async function(engine) {
     let physicsExtensionLoaded = false;
 
     BABYLON.SceneLoader.OnPluginActivatedObservable.addOnce(function (loader) {
-        loader.animationStartMode = modelInfo.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
+        loader.animationStartMode = modelSource.allAnimations ? BABYLON.GLTFLoaderAnimationStartMode.ALL : BABYLON.GLTFLoaderAnimationStartMode.FIRST;
+
+        if (!loader.onExtensionLoadedObservable) {
+            return;
+        }
 
         loader.onExtensionLoadedObservable.add(function (extension) {
             if (extension.name === "KHR_materials_variants") {
@@ -139,12 +329,15 @@ let createScene = async function(engine) {
         });
     });
 
-    return BABYLON.SceneLoader.LoadAsync(path).then(function (newScene) {
-
+    return BABYLON.SceneLoader.LoadAsync(
+        sceneSource.rootUrl,
+        sceneSource.sceneFilename,
+        engine,
+        undefined,
+        pluginExtension
+    ).then(function (newScene) {
         scene = newScene;
 
-        // Pause physics until the loading spinner is hidden, so users can see the
-        // simulation start (e.g. balls falling) instead of seeing it already settled.
         const physicsEngine = scene.getPhysicsEngine && scene.getPhysicsEngine();
         if (physicsExtensionLoaded && physicsEngine && typeof physicsEngine.setTimeStep === 'function') {
             const originalTimeStep = typeof physicsEngine.getTimeStep === 'function'
@@ -165,7 +358,6 @@ let createScene = async function(engine) {
                     setTimeout(resumePhysics, 200);
                 }
             };
-            // Fallback: in case hideLoadingUI is not invoked for some reason
             setTimeout(function() {
                 if (!resumed) {
                     resumed = true;
@@ -174,57 +366,52 @@ let createScene = async function(engine) {
             }, 3000);
         }
 
-        let parentMesh = scene.rootNodes[0];
-        
-        if ( variantsExtension != null ) {
+        let parentMesh = scene.rootNodes[0] || scene.meshes[0] || null;
+
+        if (variantsExtension != null && parentMesh != null) {
             variants = variantsExtension.getAvailableVariants(parentMesh);
-            if (variants.length > 0 ) {
-                params.VARIANT = modelInfo.variant == undefined ? DEFAULT_NAME : modelInfo.variant;
-                let variantNames = variants.reduce(function (allNames, name) { 
+            if (variants.length > 0) {
+                params.VARIANT = modelInfo?.variant == undefined ? DEFAULT_NAME : modelInfo.variant;
+                let variantNames = variants.reduce(function (allNames, name) {
                     allNames[name] = name;
                     return allNames
                 }, {});
                 variantNames[DEFAULT_NAME] = DEFAULT_NAME;
                 guiVariants = gui.add(params, 'VARIANT', variantNames).name("Variant");
-                variantsExtension.selectVariant(parentMesh, params.VARIANT)
+                variantsExtension.selectVariant(parentMesh, params.VARIANT);
 
                 guiVariants.onChange(function (value) {
                     if (value == DEFAULT_NAME) {
-                         variantsExtension.reset(parentMesh);
+                        variantsExtension.reset(parentMesh);
                     } else {
-                         variantsExtension.selectVariant(parentMesh, value);
+                        variantsExtension.selectVariant(parentMesh, value);
                     }
                 });
             }
         }
-        
-        if ( modelInfo.name == "GearboxAssy" ) {
-            // TODO: Position adjustment required
+
+        if (modelInfo?.name == "GearboxAssy" && parentMesh) {
             parentMesh.position.x += 159.20;
             parentMesh.position.y -= 17.02;
             parentMesh.position.z += 3.21;
-        } else if ( modelInfo.name == "Fox" ) {
-            scene.animationGroups[2].play(true); // 0:Survey, 1:Walk, 2:Run
-        } else if ( modelInfo.name == "MorphStressTest" ) {
-            scene.animationGroups[1].play(true); // 0:Individuals, 1:TheWave, 2:Pulse
+        } else if (modelInfo?.name == "Fox") {
+            scene.animationGroups[2].play(true);
+        } else if (modelInfo?.name == "MorphStressTest") {
+            scene.animationGroups[1].play(true);
         }
-        let modelScaling = parentMesh.scaling;
+
         let camera = new BABYLON.ArcRotateCamera(DEFAULT_NAME, 0, 1, 5, BABYLON.Vector3.Zero(), scene);
-        
-        camera.minZ /= 100; // TODO: If near is 1, the model is missing, so adjusted
+        camera.minZ /= 100;
         camera.setPosition(new BABYLON.Vector3(0 / scale, 3 / scale, 5 / scale));
-        
         camera.attachControl(canvas, false, false);
         camera.wheelDeltaPercentage = 0.005;
         scene.activeCamera = camera;
 
-        if ( scene.cameras.length > 1 ) {
-            if ( modelInfo.name == "VC" || modelInfo.name == "VirtualCity" ) {
-                scene.cameras.forEach(camera => camera.name == DEFAULT_NAME ? camera.minZ : camera.minZ /= 100); // TODO: If near is 1, the model is missing, so adjusted
+        if (scene.cameras.length > 1) {
+            if (modelInfo?.name == "VC" || modelInfo?.name == "VirtualCity") {
+                scene.cameras.forEach(camera => camera.name == DEFAULT_NAME ? camera.minZ : camera.minZ /= 100);
             }
-            
-            // TODO: Some models feel that the camera is not in ascending order, so you need to investigate
-            //let cameraNames = scene.cameras.map(camera => camera.name).reverse();
+
             let cameraNames = scene.cameras.map(camera => camera.name);
             guiCameras = gui.add(params, 'CAMERA', cameraNames).name("Camera");
 
@@ -237,12 +424,12 @@ let createScene = async function(engine) {
             });
         }
 
-        if ( emissiveStrengthExtension != null ) {
-            var pipeline = new BABYLON.DefaultRenderingPipeline(
-                "defaultPipeline", // The name of the pipeline
-                true, // Do you want the pipeline to use HDR texture?
-                scene, // The scene instance
-                scene.cameras // The list of cameras to be attached to
+        if (emissiveStrengthExtension != null) {
+            pipeline = new BABYLON.DefaultRenderingPipeline(
+                "defaultPipeline",
+                true,
+                scene,
+                scene.cameras
             );
             pipeline.bloomEnabled = true;
         }
@@ -255,38 +442,13 @@ let createScene = async function(engine) {
         let environmentTexture;
         let skybox;
         if (scene.environmentTexture) {
-            // Models with "EXT_lights_image_based" can supply their own environmentTexture.
             environmentTexture = scene.environmentTexture;
             let skyboxBlur = 0;
             skybox = scene.createDefaultSkybox(environmentTexture.clone(), true,
                 (scene.activeCamera.maxZ - scene.activeCamera.minZ) / 2, skyboxBlur);
         } else {
-            // Skybox
-            
-            // Using CubeTexture can reduce the size of the texture, but it will take longer to load because of the need to calculate spherical harmonics.
-            //cubeTexture = new BABYLON.CubeTexture("../../textures/cube/skybox/", scene, ["px.jpg", "py.jpg", "pz.jpg", "nx.jpg", "ny.jpg", "nz.jpg"]);
-            //cubeTexture = new BABYLON.CubeTexture("../../textures/papermill/environment/", scene, ["environment_right_0.jpg", "environment_top_0.jpg", "environment_front_0.jpg", "environment_left_0.jpg", "environment_bottom_0.jpg", "environment_back_0.jpg"]);
-            
-            // If you are worried about performance, you can speed up reading by using a .dds or .env file.
-            // https://doc.babylonjs.com/how_to/use_hdr_environment
             cubeTexture = new BABYLON.CubeTexture("../../textures/env/papermillSpecularHDR.env", scene);
-            //cubeTexture = new BABYLON.CubeTexture.CreateFromPrefilteredData("../../textures/dds/papermillSpecularHDR.dds", scene);
-            
-            //cubeTexture.gammaSpace = true;
-            
             skybox = scene.createDefaultSkybox(cubeTexture, true, 10000);
-/*
-            // If you care about the performance of createDefaultSkybox(), The following code can be used to avoid this. However, the environmental texture will not be applied.
-            // http://www.html5gamedevs.com/topic/36997-using-skybox-takes-time-to-display-is-it-a-usage-problem/?tab=comments#comment-211765
-            let skybox = BABYLON.Mesh.CreateBox("skyBox", 10000, scene);
-            let skyboxMaterial = new BABYLON.StandardMaterial("skyBoxMaterial", scene);
-            skyboxMaterial.backFaceCulling = false;
-            skyboxMaterial.reflectionTexture = cubeTexture;
-            skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
-            skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
-            skyboxMaterial.disableLighting = true;
-            skybox.material = skyboxMaterial;
-*/
             environmentTexture = cubeTexture;
         }
 
@@ -308,44 +470,183 @@ let createScene = async function(engine) {
         });
 
         guiBloom.onChange(function (value) {
-            pipeline.bloomEnabled = value;
+            if (pipeline) {
+                pipeline.bloomEnabled = value;
+            }
         });
 
         guiTonemap.onChange(function (value) {
-          if (value == "None") {
-            scene.imageProcessingConfiguration.toneMappingEnabled = false;
-          } else if (value == "Standard") {
-            scene.imageProcessingConfiguration.toneMappingEnabled = true;
-            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_STANDARD;
-          } else if (value == "ACES") {
-            scene.imageProcessingConfiguration.toneMappingEnabled = true;
-            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
-          } else if (value == "PBR Neutral") {
-            scene.imageProcessingConfiguration.toneMappingEnabled = true;
-            scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_KHR_PBR_NEUTRAL;
-          }
+            if (value == "None") {
+                scene.imageProcessingConfiguration.toneMappingEnabled = false;
+            } else if (value == "Standard") {
+                scene.imageProcessingConfiguration.toneMappingEnabled = true;
+                scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_STANDARD;
+            } else if (value == "ACES") {
+                scene.imageProcessingConfiguration.toneMappingEnabled = true;
+                scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
+            } else if (value == "PBR Neutral") {
+                scene.imageProcessingConfiguration.toneMappingEnabled = true;
+                scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_KHR_PBR_NEUTRAL;
+            }
         });
 
         guiDebug.onChange(function (value) {
             scene.debugLayer.show({embedMode: value});
         });
 
-        engine.runRenderLoop(function() {
-            scene.activeCamera.alpha += params.ROTATE ? 0.005 : 0;
-            scene.render();
-        });
+        scene._viewerGui = gui;
+        return scene;
+    }).catch(function(error) {
+        gui.destroy();
+        throw error;
     });
-
-    return scene;
 };
 
-let canvas = document.querySelector("#renderCanvas");
+async function loadSceneFromSource(engine, modelSource) {
+    const loadToken = ++activeLoadToken;
+    showDropZone("Loading model...");
+
+    try {
+        const nextScene = await createScene(engine, modelSource);
+        if (loadToken !== activeLoadToken) {
+            nextScene.dispose();
+            if (modelSource.objectUrls) {
+                modelSource.objectUrls.forEach(function(url) {
+                    URL.revokeObjectURL(url);
+                });
+            }
+            return;
+        }
+
+        const previousScene = currentScene;
+        const previousGui = currentGui;
+
+        currentScene = nextScene;
+        currentGui = nextScene._viewerGui || null;
+
+        if (previousGui) {
+            previousGui.destroy();
+        }
+        if (previousScene) {
+            previousScene.dispose();
+        }
+
+        revokeCurrentObjectUrls();
+        currentObjectUrls = modelSource.objectUrls || [];
+        hideDropZone();
+    } catch (error) {
+        console.error(error);
+        if (modelSource.objectUrls) {
+            modelSource.objectUrls.forEach(function(url) {
+                URL.revokeObjectURL(url);
+            });
+        }
+        showDropZone("読み込みに失敗しました: " + error.message, true);
+    }
+}
+
+function handleDragEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+function setDragActive(isActive) {
+    dropZone.classList.toggle("dragover", isActive);
+    if (isActive) {
+        setDropZoneMessage("Drop glTF/glb files here");
+        dropZone.classList.remove("hidden");
+    } else if (!currentScene || currentScene === emptyScene) {
+        showDropZone("Drag & drop a .glb or .gltf model here, or click to choose files.");
+    } else {
+        hideDropZone();
+    }
+}
+
+async function handleModelFiles(engine, fileList) {
+    if (!fileList || fileList.length === 0) {
+        return;
+    }
+
+    try {
+        const modelSource = await createDroppedModelSource(fileList);
+        await loadSceneFromSource(engine, modelSource);
+    } catch (error) {
+        console.error(error);
+        showDropZone("読み込みに失敗しました: " + error.message, true);
+    }
+}
+
 let engine = new BABYLON.WebGPUEngine(canvas);
 await engine.initAsync();
-engine.enableOfflineSupport = false; // Suppress manifest reference
+engine.enableOfflineSupport = false;
 
 window.addEventListener('resize', function() {
     engine.resize();
 });
+
+dropZone.addEventListener("click", function() {
+    fileInput.click();
+});
+
+dropZone.addEventListener("dragenter", function(event) {
+    handleDragEvent(event);
+    setDragActive(true);
+});
+
+dropZone.addEventListener("dragover", function(event) {
+    handleDragEvent(event);
+    setDragActive(true);
+});
+
+dropZone.addEventListener("dragleave", function(event) {
+    handleDragEvent(event);
+    if (event.target === dropZone) {
+        setDragActive(false);
+    }
+});
+
+dropZone.addEventListener("drop", async function(event) {
+    handleDragEvent(event);
+    setDragActive(false);
+    await handleModelFiles(engine, event.dataTransfer.files);
+});
+
+fileInput.addEventListener("change", async function(event) {
+    await handleModelFiles(engine, event.target.files);
+    fileInput.value = "";
+});
+
+document.addEventListener("dragenter", function(event) {
+    handleDragEvent(event);
+    setDragActive(true);
+});
+
+document.addEventListener("dragover", handleDragEvent);
+
+document.addEventListener("drop", async function(event) {
+    handleDragEvent(event);
+    setDragActive(false);
+    await handleModelFiles(engine, event.dataTransfer.files);
+});
+
 await initializeRigidBodyPhysics();
-let scene = await createScene(engine);
+emptyScene = createEmptyScene(engine);
+currentScene = emptyScene;
+
+engine.runRenderLoop(function() {
+    if (currentScene?.activeCamera && params.ROTATE) {
+        currentScene.activeCamera.alpha += 0.005;
+    }
+    currentScene?.render();
+});
+
+if (initialModelInfo) {
+    await loadSceneFromSource(engine, {
+        modelInfo: initialModelInfo,
+        pluginExtension: getFileExtension(initialModelInfo.path || initialModelInfo.url || ""),
+        scale: initialModelInfo.scale,
+        allAnimations: initialModelInfo.allAnimations,
+    });
+} else {
+    showDropZone("Drag & drop a .glb or .gltf model here, or click to choose files.");
+}

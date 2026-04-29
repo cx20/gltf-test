@@ -11,3 +11,55 @@ html, body {
     height: 100%;
     touch-action: none;
 }
+
+.drop-zone {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(6px);
+    z-index: 10;
+    cursor: pointer;
+}
+
+.drop-zone.hidden {
+    display: none;
+}
+
+.drop-zone.dragover {
+    background: rgba(207, 235, 255, 0.82);
+}
+
+.drop-zone.error {
+    background: rgba(255, 232, 232, 0.82);
+}
+
+.drop-zone__panel {
+    max-width: 32rem;
+    margin: 1.5rem;
+    padding: 1.5rem 1.75rem;
+    border: 2px dashed #4d8dff;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 24px 60px rgba(40, 60, 90, 0.14);
+    text-align: center;
+}
+
+.drop-zone.error .drop-zone__panel {
+    border-color: #d64545;
+}
+
+.drop-zone__title {
+    margin-bottom: 0.65rem;
+    color: #16314f;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.drop-zone__message {
+    color: #42556d;
+    font-size: 0.98rem;
+    line-height: 1.5;
+}
