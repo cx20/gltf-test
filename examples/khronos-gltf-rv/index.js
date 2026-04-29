@@ -1,33 +1,27 @@
-let modelInfo = ModelIndex.getCurrentModel();
-if (!modelInfo) {
-    modelInfo = TutorialModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
-}
-let url;
-if (modelInfo) {
-    url = "../../" + modelInfo.category + "/" + modelInfo.path;
-    if (modelInfo.url) {
-        url = modelInfo.url;
+function getInitialModelInfo() {
+    let modelInfo = ModelIndex.getCurrentModel();
+    if (!modelInfo) {
+        modelInfo = TutorialModelIndex.getCurrentModel();
     }
-} else {
-    url = 'https://cx20.github.io/gltf-test/sampleModels/Duck/glTF/Duck.gltf';
+    if (!modelInfo) {
+        modelInfo = TutorialPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
+    }
+    return modelInfo;
 }
 
 import { GltfView } from "gltf-viewer";
@@ -42,6 +36,11 @@ let HK = null;
 let physicsWorldId = null;
 const physicsNodesList = [];
 const dynamicNodesList = [];
+function resetPhysicsState() {
+    physicsWorldId = null;
+    physicsNodesList.length = 0;
+    dynamicNodesList.length = 0;
+}
 
 // ---- Physics debug wireframe overlay ----
 let physicsDebugEnabled = true;
@@ -883,6 +882,227 @@ let guiIBL    = gui.add(obj, 'IBL').name('IBL');
 let guiPhysicsDebug = gui.add(obj, 'PHYSICS_DEBUG').name('Physics Debug');
 let guiCameras = null;
 let guiVariantNames = null;
+const initialModelInfo = getInitialModelInfo();
+const dropZone = document.getElementById('dropZone');
+const dropZoneMessage = document.getElementById('dropZoneMessage');
+const fileInput = document.getElementById('fileInput');
+let currentObjectUrls = [];
+
+function setDropZoneMessage(message, isError) {
+    dropZoneMessage.textContent = message;
+    dropZone.classList.toggle('error', !!isError);
+}
+
+function showDropZone(message, isError) {
+    if (message) {
+        setDropZoneMessage(message, isError);
+    }
+    dropZone.classList.remove('hidden');
+}
+
+function hideDropZone() {
+    dropZone.classList.add('hidden');
+    dropZone.classList.remove('dragover');
+    dropZone.classList.remove('error');
+}
+
+function revokeCurrentObjectUrls() {
+    currentObjectUrls.forEach(function(url) {
+        URL.revokeObjectURL(url);
+    });
+    currentObjectUrls = [];
+}
+
+function getFileExtension(name) {
+    const lastDot = name.lastIndexOf('.');
+    return lastDot >= 0 ? name.slice(lastDot).toLowerCase() : '';
+}
+
+function isExternalUri(uri) {
+    return uri
+        && !uri.startsWith('data:')
+        && !uri.startsWith('blob:')
+        && !/^[a-z]+:/i.test(uri);
+}
+
+function getBasename(path) {
+    return path.split('/').pop();
+}
+
+function createTrackedObjectUrl(fileOrBlob, objectUrls) {
+    const url = URL.createObjectURL(fileOrBlob);
+    objectUrls.push(url);
+    return url;
+}
+
+async function createDroppedModelSource(fileList) {
+    const files = Array.from(fileList);
+    const modelFile = files.find(function(file) {
+        const extension = getFileExtension(file.name);
+        return extension === '.glb' || extension === '.gltf';
+    });
+
+    if (!modelFile) {
+        throw new Error('Please drop a .glb or .gltf file.');
+    }
+
+    const fileMap = new Map();
+    files.forEach(function(file) {
+        fileMap.set(file.name, file);
+        fileMap.set(getBasename(file.name), file);
+        if (file.webkitRelativePath) {
+            fileMap.set(file.webkitRelativePath, file);
+            fileMap.set(getBasename(file.webkitRelativePath), file);
+        }
+    });
+
+    const objectUrls = [];
+    const resourceUrls = new Map();
+
+    if (getFileExtension(modelFile.name) === '.glb') {
+        return {
+            url: createTrackedObjectUrl(modelFile, objectUrls),
+            displayName: modelFile.name,
+            objectUrls: objectUrls,
+        };
+    }
+
+    const gltfJson = JSON.parse(await modelFile.text());
+
+    function resolveObjectUrl(uri) {
+        if (!isExternalUri(uri)) {
+            return uri;
+        }
+        const decodedUri = decodeURIComponent(uri);
+        const file = fileMap.get(decodedUri) || fileMap.get(getBasename(decodedUri));
+        if (!file) {
+            return uri;
+        }
+        if (!resourceUrls.has(file)) {
+            resourceUrls.set(file, createTrackedObjectUrl(file, objectUrls));
+        }
+        return resourceUrls.get(file);
+    }
+
+    if (Array.isArray(gltfJson.buffers)) {
+        gltfJson.buffers.forEach(function(buffer) {
+            if (buffer.uri) buffer.uri = resolveObjectUrl(buffer.uri);
+        });
+    }
+    if (Array.isArray(gltfJson.images)) {
+        gltfJson.images.forEach(function(image) {
+            if (image.uri) image.uri = resolveObjectUrl(image.uri);
+        });
+    }
+
+    const gltfBlob = new Blob([JSON.stringify(gltfJson)], { type: 'model/gltf+json' });
+    return {
+        url: createTrackedObjectUrl(gltfBlob, objectUrls),
+        displayName: modelFile.name,
+        objectUrls: objectUrls,
+    };
+}
+
+function buildModelSourceFromInfo(modelInfo) {
+    let url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    if (modelInfo.url) {
+        url = modelInfo.url;
+    }
+    return {
+        modelInfo: modelInfo,
+        url: url,
+    };
+}
+
+function clearModelControls() {
+    obj.CAMERA = "";
+    obj.VARIANT = "";
+    if (guiCameras) {
+        gui.remove(guiCameras);
+        guiCameras = null;
+    }
+    if (guiVariantNames) {
+        gui.remove(guiVariantNames);
+        guiVariantNames = null;
+    }
+}
+
+async function applyLoadedGltf(gltf) {
+    resizeCanvas();
+    console.log('model loaded');
+    state.gltf = gltf;
+    const defaultScene = state.gltf.scene;
+    state.sceneIndex = defaultScene === undefined ? 0 : defaultScene;
+    state.cameraIndex = undefined;
+
+    if (state.gltf.cameras.length > 0) {
+        let cameraNames = ["User Camera"].concat(state.gltf.cameras.map((value, index) => "camera" + index));
+        obj.CAMERA = cameraNames[0];
+        guiCameras = gui.add(obj, 'CAMERA', cameraNames).name("Camera");
+        guiCameras.onChange(function(value) {
+            if (value === "User Camera") {
+                state.cameraIndex = undefined;
+            } else {
+                const selectedIndex = cameraNames.indexOf(value) - 1;
+                state.cameraIndex = selectedIndex;
+            }
+        });
+    } else {
+        state.cameraIndex = undefined;
+    }
+
+    if (state.gltf.scenes.length !== 0) {
+        if (state.sceneIndex > state.gltf.scenes.length - 1) {
+            state.sceneIndex = 0;
+        }
+        const scene = state.gltf.scenes[state.sceneIndex];
+        scene.applyTransformHierarchy(state.gltf);
+        state.userCamera.aspectRatio = canvas.width / canvas.height;
+        state.userCamera.fitViewToScene(state.gltf, state.sceneIndex);
+
+        state.animationIndices = [];
+        for (let i = 0; i < gltf.animations.length; i++) {
+            if (!gltf.nonDisjointAnimations(state.animationIndices).includes(i)) {
+                state.animationIndices.push(i);
+            }
+        }
+        state.animationTimer.start();
+    }
+
+    resetPhysicsState();
+    if (state.gltf?.extensions &&
+        (state.gltf.extensions.KHR_physics_rigid_bodies || state.gltf.extensions.KHR_implicit_shapes) &&
+        typeof HavokPhysics !== 'undefined') {
+        HK = await HavokPhysics({
+            locateFile: (path) => path.endsWith('.wasm') ? HAVOK_WASM_URL : path
+        });
+        initPhysics(state.gltf);
+        if (!physicsDebugCanvas) {
+            initPhysicsDebugCanvas(canvas);
+        }
+    }
+    hideDropZone();
+}
+
+async function loadModelSource(modelSource) {
+    clearModelControls();
+    resetPhysicsState();
+    revokeCurrentObjectUrls();
+    currentObjectUrls = modelSource.objectUrls || [];
+    showDropZone('Loading model...');
+    try {
+        const gltf = await resourceLoader.loadGltf(modelSource.url);
+        await applyLoadedGltf(gltf);
+    } catch (error) {
+        if (modelSource.objectUrls) {
+            modelSource.objectUrls.forEach(function(url) {
+                URL.revokeObjectURL(url);
+            });
+        }
+        console.error(error);
+        showDropZone('Failed to load model: ' + (error.message || error), true);
+    }
+}
 
 let isRotating = false;
 guiRotate.onChange(function (value) {
@@ -929,72 +1149,10 @@ await resourceLoader
         });
     });
 
-await resourceLoader
-    .loadGltf(
-        //'https://cx20.github.io/gltf-test/sampleModels/Duck/glTF/Duck.gltf'
-        url
-    )
-    .then((gltf) => {
-        resizeCanvas();
-        
-        console.log('model loaded');
-        state.gltf = gltf;
-        const defaultScene = state.gltf.scene;
-        state.sceneIndex = defaultScene === undefined ? 0 : defaultScene;
-        state.cameraIndex = undefined;
-
-        if (state.gltf.cameras.length > 0) {
-            let cameraNames = ["User Camera"].concat(state.gltf.cameras.map((value, index) => "camera" + index));
-            const defaultIndex = Math.floor(Math.random() * cameraNames.length); // Randomly switch if there are multiple cameras
-            obj.CAMERA = cameraNames[defaultIndex];
-            guiCameras = gui.add(obj, 'CAMERA', cameraNames).name("Camera");
-
-            guiCameras.onChange(function(value) {
-                if (value === "User Camera") {
-                    state.cameraIndex = undefined;
-                } else {
-                    const selectedIndex = cameraNames.indexOf(value) - 1;
-                    state.cameraIndex = selectedIndex;
-                }
-            });
-
-            state.cameraIndex = defaultIndex === 0 ? undefined : defaultIndex - 1;
-        } else {
-            state.cameraIndex = undefined;
-        }
-        
-        if (state.gltf.scenes.length != 0) {
-            if (state.sceneIndex > state.gltf.scenes.length - 1) {
-                state.sceneIndex = 0;
-            }
-            const scene = state.gltf.scenes[state.sceneIndex];
-            scene.applyTransformHierarchy(state.gltf);
-            state.userCamera.aspectRatio = canvas.width / canvas.height;
-            state.userCamera.fitViewToScene(state.gltf, state.sceneIndex);
-
-            state.animationIndices = [];
-            for (let i = 0; i < gltf.animations.length; i++) {
-                if (
-                    !gltf
-                        .nonDisjointAnimations(state.animationIndices)
-                        .includes(i)
-                ) {
-                    state.animationIndices.push(i);
-                }
-            }
-            state.animationTimer.start();
-        }
-    });
-
-// Initialize Havok physics if the model declares physics extensions
-if (state.gltf?.extensions &&
-    (state.gltf.extensions.KHR_physics_rigid_bodies || state.gltf.extensions.KHR_implicit_shapes) &&
-    typeof HavokPhysics !== 'undefined') {
-    HK = await HavokPhysics({
-        locateFile: (path) => path.endsWith('.wasm') ? HAVOK_WASM_URL : path
-    });
-    initPhysics(state.gltf);
-    initPhysicsDebugCanvas(canvas);
+if (initialModelInfo) {
+    await loadModelSource(buildModelSourceFromInfo(initialModelInfo));
+} else {
+    showDropZone('Drag & drop a .glb or .gltf model here, or click to choose files.');
 }
 
 let angle = 0;
@@ -1020,6 +1178,77 @@ const update = () => {
 window.addEventListener('resize', resizeCanvas);
 
 window.requestAnimationFrame(update);
+
+function handleDragEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+function setDragActive(isActive) {
+    dropZone.classList.toggle('dragover', isActive);
+    if (isActive) {
+        setDropZoneMessage('Drop glTF/glb files here');
+        dropZone.classList.remove('hidden');
+    } else if (!state.gltf) {
+        showDropZone('Drag & drop a .glb or .gltf model here, or click to choose files.');
+    } else {
+        hideDropZone();
+    }
+}
+
+async function handleModelFiles(fileList) {
+    if (!fileList || fileList.length === 0) {
+        return;
+    }
+    try {
+        const modelSource = await createDroppedModelSource(fileList);
+        await loadModelSource(modelSource);
+    } catch (error) {
+        console.error(error);
+        showDropZone('Failed to load model: ' + (error.message || error), true);
+    }
+}
+
+function setupDropZone() {
+    dropZone.addEventListener('click', function() {
+        fileInput.click();
+    });
+    dropZone.addEventListener('dragenter', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    dropZone.addEventListener('dragover', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    dropZone.addEventListener('dragleave', function(event) {
+        handleDragEvent(event);
+        if (event.target === dropZone) {
+            setDragActive(false);
+        }
+    });
+    dropZone.addEventListener('drop', async function(event) {
+        handleDragEvent(event);
+        setDragActive(false);
+        await handleModelFiles(event.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', async function(event) {
+        await handleModelFiles(event.target.files);
+        fileInput.value = '';
+    });
+    document.addEventListener('dragenter', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    document.addEventListener('dragover', handleDragEvent);
+    document.addEventListener('drop', async function(event) {
+        handleDragEvent(event);
+        setDragActive(false);
+        await handleModelFiles(event.dataTransfer.files);
+    });
+}
+
+setupDropZone();
 
 let isDragging = false;
 let previousMousePosition = { x: 0, y: 0 };
