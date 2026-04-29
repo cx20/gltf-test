@@ -6,6 +6,11 @@ The status of loading and viewing various glTF models using different [WebGL](ht
 
 [All Tests]( https://cx20.github.io/gltf-test/index.html ) : https://cx20.github.io/gltf-test/ ![status](https://img.shields.io/badge/glTF-2%2E0-green.svg?style=flat)
 
+## References
+
+- [glTF Unit Test](https://cx20.github.io/gltf-unit-test/) : A collection of links for glTF unit tests
+- [glTF Physics Unit Test](https://cx20.github.io/gltf-physics-unit-test/) : A collection of links for glTF Physics extension unit tests
+
 If you want to narrow down the engine you can specify it with arguments. See below for usage of arguments.
 
 ```
