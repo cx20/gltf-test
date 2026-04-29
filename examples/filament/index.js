@@ -13,6 +13,17 @@ const physicsNodesList = [];   // all non-kinematic bodies needing transform syn
 const dynamicNodesList = [];   // subset needing Y-reset
 const physicsStaticBodies = []; // static bodies for diagnostic logging
 
+function resetPhysicsState() {
+    physicsWorldId = null;
+    physicsFilamentEngine = null;
+    physicsFilamentScene = null;
+    physicsFilamentAsset = null;
+    physicsModelScale = 1.0;
+    physicsNodesList.length = 0;
+    dynamicNodesList.length = 0;
+    physicsStaticBodies.length = 0;
+}
+
 // ---- Physics debug wireframe overlay ----
 let physicsDebugCanvas = null;
 let physicsDebugGl     = null;
@@ -449,16 +460,21 @@ async function initPhysicsFromUrl(meshUrl, filamentAsset, filamentEngine, modelS
     // Fetch glTF JSON (supports .gltf + embedded .glb)
     const resp = await fetch(meshUrl);
     let gltfJson, bufferData;
-    const contentType = resp.headers.get('content-type') ?? '';
-    if (meshUrl.toLowerCase().endsWith('.glb') || contentType.includes('octet')) {
-        const ab  = await resp.arrayBuffer();
+    const ab = await resp.arrayBuffer();
+    const header = new Uint8Array(ab, 0, Math.min(4, ab.byteLength));
+    const isGlb = header.length === 4
+        && header[0] === 0x67
+        && header[1] === 0x6c
+        && header[2] === 0x54
+        && header[3] === 0x46;
+    if (isGlb) {
         const dv  = new DataView(ab);
         const jsonLen = dv.getUint32(12, true);
         gltfJson  = JSON.parse(new TextDecoder().decode(new Uint8Array(ab, 20, jsonLen)));
         const binStart = 20 + jsonLen + 8;
         bufferData = ab.slice(binStart);
     } else {
-        gltfJson  = await resp.json();
+        gltfJson  = JSON.parse(new TextDecoder().decode(new Uint8Array(ab)));
         // Load the first .bin buffer relative to the model URL
         if (gltfJson.buffers?.[0]?.uri) {
             const binUrl = new URL(gltfJson.buffers[0].uri, new URL(meshUrl, location.href).href).href;
@@ -901,31 +917,30 @@ function physicsStep() {
     }
 }
 
-let modelInfo = ModelIndex.getCurrentModel();
-if (!modelInfo) {
-    modelInfo = TutorialModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    document.getElementById('container').innerHTML = 'Please specify a model to load';
-    throw new Error('Model not specified or not found in list.');
+function getInitialModelInfo() {
+    let modelInfo = ModelIndex.getCurrentModel();
+    if (!modelInfo) {
+        modelInfo = TutorialModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
+    }
+    return modelInfo;
 }
 
 // GUI
@@ -957,12 +972,137 @@ let guiVariants = null;
 const env = 'papermill';
 const ibl_url = `../../textures/ktx/${env}/${env}_ibl.ktx`;
 const sky_url = `../../textures/ktx/${env}/${env}_skybox.ktx`;
-let mesh_url = "../../" + modelInfo.category + "/" + modelInfo.path;
-if(modelInfo.url) {
-    mesh_url = modelInfo.url;
+const initialModelInfo = getInitialModelInfo();
+const dropZone = document.getElementById('dropZone');
+const dropZoneMessage = document.getElementById('dropZoneMessage');
+const fileInput = document.getElementById('fileInput');
+const messages = document.getElementById('messages');
+
+function setDropZoneMessage(message, isError) {
+    dropZoneMessage.textContent = message;
+    dropZone.classList.toggle('error', !!isError);
 }
-let basePath = convertRelativeToAbsUrl(getPathNameFromUrl(mesh_url)) + "/";
-let scale = modelInfo.scale;
+
+function showDropZone(message, isError) {
+    if (message) {
+        setDropZoneMessage(message, isError);
+    }
+    dropZone.classList.remove('hidden');
+}
+
+function hideDropZone() {
+    dropZone.classList.add('hidden');
+    dropZone.classList.remove('dragover');
+    dropZone.classList.remove('error');
+}
+
+function getFileExtension(name) {
+    const lastDot = name.lastIndexOf('.');
+    return lastDot >= 0 ? name.slice(lastDot).toLowerCase() : '';
+}
+
+function isExternalUri(uri) {
+    return uri
+        && !uri.startsWith('data:')
+        && !uri.startsWith('blob:')
+        && !/^[a-z]+:/i.test(uri);
+}
+
+function getBasename(path) {
+    return path.split('/').pop();
+}
+
+function createTrackedObjectUrl(fileOrBlob, objectUrls) {
+    const url = URL.createObjectURL(fileOrBlob);
+    objectUrls.push(url);
+    return url;
+}
+
+async function createDroppedModelSource(fileList) {
+    const files = Array.from(fileList);
+    const modelFile = files.find(function(file) {
+        const extension = getFileExtension(file.name);
+        return extension === '.glb' || extension === '.gltf';
+    });
+
+    if (!modelFile) {
+        throw new Error('Please drop a .glb or .gltf file.');
+    }
+
+    const fileMap = new Map();
+    files.forEach(function(file) {
+        fileMap.set(file.name, file);
+        fileMap.set(getBasename(file.name), file);
+        if (file.webkitRelativePath) {
+            fileMap.set(file.webkitRelativePath, file);
+            fileMap.set(getBasename(file.webkitRelativePath), file);
+        }
+    });
+
+    const objectUrls = [];
+    const resourceUrls = new Map();
+
+    if (getFileExtension(modelFile.name) === '.glb') {
+        return {
+            url: createTrackedObjectUrl(modelFile, objectUrls),
+            filename: modelFile.name,
+            displayName: modelFile.name,
+            scale: 1,
+            objectUrls: objectUrls,
+        };
+    }
+
+    const gltfJson = JSON.parse(await modelFile.text());
+
+    function resolveObjectUrl(uri) {
+        if (!isExternalUri(uri)) {
+            return uri;
+        }
+        const decodedUri = decodeURIComponent(uri);
+        const file = fileMap.get(decodedUri) || fileMap.get(getBasename(decodedUri));
+        if (!file) {
+            return uri;
+        }
+        if (!resourceUrls.has(file)) {
+            resourceUrls.set(file, createTrackedObjectUrl(file, objectUrls));
+        }
+        return resourceUrls.get(file);
+    }
+
+    if (Array.isArray(gltfJson.buffers)) {
+        gltfJson.buffers.forEach(function(buffer) {
+            if (buffer.uri) buffer.uri = resolveObjectUrl(buffer.uri);
+        });
+    }
+    if (Array.isArray(gltfJson.images)) {
+        gltfJson.images.forEach(function(image) {
+            if (image.uri) image.uri = resolveObjectUrl(image.uri);
+        });
+    }
+
+    const gltfBlob = new Blob([JSON.stringify(gltfJson)], { type: 'model/gltf+json' });
+    return {
+        url: createTrackedObjectUrl(gltfBlob, objectUrls),
+        filename: modelFile.name,
+        displayName: modelFile.name,
+        scale: 1,
+        objectUrls: objectUrls,
+    };
+}
+
+function buildModelSourceFromInfo(modelInfo) {
+    let meshUrl = "../../" + modelInfo.category + "/" + modelInfo.path;
+    if (modelInfo.url) {
+        meshUrl = modelInfo.url;
+    }
+    return {
+        modelInfo: modelInfo,
+        url: meshUrl,
+        filename: meshUrl.split('/').pop(),
+        displayName: modelInfo.name || meshUrl.split('/').pop(),
+        scale: modelInfo.scale,
+    };
+}
 
 function getPathNameFromUrl(path) {
     let result = path.replace(/\\/g, '/').replace(/\/[^/]*$/, '');
@@ -978,7 +1118,82 @@ function convertRelativeToAbsUrl(relativePath) {
     return anchor.href;
 }
 
-Filament.init([mesh_url, ibl_url, sky_url], () => {
+function handleDragEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+function setDragActive(isActive) {
+    dropZone.classList.toggle('dragover', isActive);
+    if (isActive) {
+        setDropZoneMessage('Drop glTF/glb files here');
+        dropZone.classList.remove('hidden');
+    } else if (!window.app || !window.app.asset) {
+        showDropZone('Drag & drop a .glb or .gltf model here, or click to choose files.');
+    } else {
+        hideDropZone();
+    }
+}
+
+async function handleModelFiles(fileList) {
+    if (!fileList || fileList.length === 0) {
+        return;
+    }
+    if (!window.app) {
+        showDropZone('Viewer is still starting. Please try again in a moment.', true);
+        return;
+    }
+    try {
+        const modelSource = await createDroppedModelSource(fileList);
+        await window.app.loadModelSource(modelSource);
+    } catch (error) {
+        console.error(error);
+        showDropZone('Failed to load model: ' + (error.message || error), true);
+    }
+}
+
+function setupDropZone() {
+    dropZone.addEventListener('click', function() {
+        fileInput.click();
+    });
+    dropZone.addEventListener('dragenter', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    dropZone.addEventListener('dragover', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    dropZone.addEventListener('dragleave', function(event) {
+        handleDragEvent(event);
+        if (event.target === dropZone) {
+            setDragActive(false);
+        }
+    });
+    dropZone.addEventListener('drop', async function(event) {
+        handleDragEvent(event);
+        setDragActive(false);
+        await handleModelFiles(event.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', async function(event) {
+        await handleModelFiles(event.target.files);
+        fileInput.value = '';
+    });
+    document.addEventListener('dragenter', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    document.addEventListener('dragover', handleDragEvent);
+    document.addEventListener('drop', async function(event) {
+        handleDragEvent(event);
+        setDragActive(false);
+        await handleModelFiles(event.dataTransfer.files);
+    });
+}
+
+setupDropZone();
+
+Filament.init([ibl_url, sky_url], () => {
     window.gltfio = Filament.gltfio;
     window.Fov = Filament.Camera$Fov;
     window.LightType = Filament.LightManager$Type;
@@ -1081,116 +1296,208 @@ class App {
         const skybox = engine.createSkyFromKtx1(sky_url);
         this.scene.setSkybox(skybox);
 
-        const loader = engine.createAssetLoader();
-        this.asset= loader.createAsset(mesh_url);
-        const asset = this.asset;
-        this.instance = this.asset.getInstance();
-        const instance = this.instance;
-        const messages = document.getElementById('messages');
-
-        // Crudely indicate progress by printing the URI of each resource as it is loaded.
-        const onFetched = (uri) => messages.innerText += `Downloaded ${uri}\n`;
-        const onDone = () => {
-            // Destroy the asset loader.
-            loader.delete();
-            
-            // Enable shadows on every renderable.
-            const entities = asset.getEntities();
-            const rm = engine.getRenderableManager();
-            for (const entity of entities) {
-                const instance = rm.getInstance(entity);
-                rm.setCastShadows(instance, true);
-                instance.delete();
-            }
-
-            const cameras = asset.getCameraEntities();
-            if (cameras.length > 0) {
-                let cameraNames = [];
-                for (let i = 0; i < cameras.length; i++) {
-                    cameraNames.push("camera" + i);
-                }
-                cameraNames.push(DEFAULT_STRING);
-                let index = 0;
-                guiCameras = guiCameraFolder.add(window, 'CAMERA', cameraNames).name('Cameras');
-                guiCameras.onChange(function(value) {
-                    index = cameraNames.indexOf(value);
-                    if (index < cameras.length) {
-                        const c = engine.getCameraComponent(cameras[index]);
-                        const aspect = window.innerWidth / window.innerHeight;
-                        c.setScaling([1 / aspect, 1]); // Please refer to filament#3615 for API specification changes.
-                        app.view.setCamera(c);
-                    } else {
-                        app.camera = engine.createCamera(Filament.EntityManager.get().create());
-                        app.view.setCamera(app.camera);
-                        app.resize();
-                    }
-                });
-            }
-
-            const variantNames = instance.getMaterialVariantNames();
-            if (variantNames.length > 0) {
-                variantNames.push(DEFAULT_STRING);
-                guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variants");
-                guiVariants.onChange(function(value) {
-                    const selectedIndex = value == DEFAULT_STRING ? 0 : variantNames.indexOf(value);
-                    instance.applyMaterialVariant(selectedIndex);
-                });
-            }
-
-            const lights = asset.getLightEntities();
-            for (let i = 0; i < lights.length; i++) {
-                this.scene.addEntity(lights[i]);
-            }
-
-            messages.remove();
-            this.animator = instance.getAnimator();
-            this.animationStartTime = Date.now();
-
-            // Initialize Havok physics if extensions are present
-            if (typeof HavokPhysics !== 'undefined') {
-                HavokPhysics({
-                    locateFile: (path) => path.endsWith('.wasm') ? HAVOK_WASM_URL : path
-                }).then((hk) => {
-                    HK = hk;
-                    return initPhysicsFromUrl(mesh_url, asset, engine, scale, this.scene);
-                }).catch((e) => console.warn('Physics init failed:', e));
-            }
-        };
-        asset.loadResources(onDone, onFetched, basePath);
-
         this.swapChain = engine.createSwapChain();
         this.renderer = engine.createRenderer();
         this.camera = engine.createCamera(Filament.EntityManager.get().create());
+        this.defaultCamera = this.camera;
         this.view = engine.createView();
         this.view.setCamera(this.camera);
         this.view.setScene(this.scene);
         this.view.setColorGrading(colorGrading);
         this.renderer.setClearOptions({clearColor: [0.6, 0.6, 0.6, 1.0], clear: true});
+        this.asset = null;
+        this.instance = null;
+        this.animator = null;
+        this.animationStartTime = 0;
+        this.currentModelInfo = initialModelInfo;
+        this.currentModelUrl = null;
+        this.currentBasePath = null;
+        this.currentScale = initialModelInfo?.scale || 1;
+        this.currentObjectUrls = [];
         this.resize();
         this.render = this.render.bind(this);
         this.resize = this.resize.bind(this);
         window.addEventListener('resize', this.resize);
         window.requestAnimationFrame(this.render);
         initPhysicsDebugCanvas(this.canvas);
+
+        if (initialModelInfo) {
+            this.loadModelSource(buildModelSourceFromInfo(initialModelInfo));
+        } else {
+            showDropZone('Drag & drop a .glb or .gltf model here, or click to choose files.');
+        }
+    }
+
+    revokeCurrentObjectUrls() {
+        this.currentObjectUrls.forEach(function(url) {
+            URL.revokeObjectURL(url);
+        });
+        this.currentObjectUrls = [];
+    }
+
+    clearModelControls() {
+        CAMERA = DEFAULT_STRING;
+        VARIANT = DEFAULT_STRING;
+        if (guiCameras) {
+            guiCameraFolder.remove(guiCameras);
+            guiCameras = null;
+        }
+        if (guiVariants) {
+            gui.remove(guiVariants);
+            guiVariants = null;
+        }
+        this.view.setCamera(this.defaultCamera);
+        this.camera = this.defaultCamera;
+        this.resize();
+    }
+
+    unloadCurrentAsset() {
+        if (this.asset) {
+            this.scene.removeEntities(this.asset.getEntities());
+            this.asset = null;
+        }
+        this.instance = null;
+        this.animator = null;
+        this.animationStartTime = 0;
+        this.clearModelControls();
+        resetPhysicsState();
+    }
+
+    async loadModelSource(modelSource) {
+        this.currentModelInfo = modelSource.modelInfo || null;
+        this.currentScale = modelSource.scale || 1;
+        this.currentModelUrl = modelSource.url;
+        this.currentBasePath = convertRelativeToAbsUrl(getPathNameFromUrl(modelSource.url)) + "/";
+        this.revokeCurrentObjectUrls();
+        this.currentObjectUrls = modelSource.objectUrls || [];
+        messages.textContent = '';
+        showDropZone('Loading model...');
+        this.unloadCurrentAsset();
+
+        let assetLoader = null;
+        try {
+            const response = await fetch(modelSource.url);
+            if (!response.ok) {
+                throw new Error('Unable to fetch model data.');
+            }
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            assetLoader = this.engine.createAssetLoader();
+            this.asset = assetLoader.createAsset(bytes);
+            if (!this.asset) {
+                throw new Error('Failed to create Filament asset.');
+            }
+            this.instance = this.asset.getInstance();
+            await this.loadAssetResources(this.asset, this.instance, assetLoader);
+            assetLoader = null;
+            hideDropZone();
+        } catch (error) {
+            if (assetLoader) {
+                assetLoader.delete();
+            }
+            this.unloadCurrentAsset();
+            this.revokeCurrentObjectUrls();
+            console.error(error);
+            showDropZone('Failed to load model: ' + (error.message || error), true);
+        }
+    }
+
+    async loadAssetResources(asset, instance, assetLoader) {
+        const engine = this.engine;
+        const onFetched = (uri) => {
+            messages.textContent += `Downloaded ${uri}\n`;
+        };
+        await new Promise((resolve, reject) => {
+            const onDone = () => {
+                try {
+                    assetLoader.delete();
+                    const entities = asset.getEntities();
+                    const rm = engine.getRenderableManager();
+                    for (const entity of entities) {
+                        const renderable = rm.getInstance(entity);
+                        rm.setCastShadows(renderable, true);
+                        renderable.delete();
+                    }
+
+                    const cameras = asset.getCameraEntities();
+                    if (cameras.length > 0) {
+                        let cameraNames = [];
+                        for (let i = 0; i < cameras.length; i++) {
+                            cameraNames.push("camera" + i);
+                        }
+                        cameraNames.push(DEFAULT_STRING);
+                        let index = 0;
+                        guiCameras = guiCameraFolder.add(window, 'CAMERA', cameraNames).name('Cameras');
+                        guiCameras.onChange((value) => {
+                            index = cameraNames.indexOf(value);
+                            if (index < cameras.length) {
+                                const c = engine.getCameraComponent(cameras[index]);
+                                const aspect = window.innerWidth / window.innerHeight;
+                                c.setScaling([1 / aspect, 1]);
+                                this.view.setCamera(c);
+                            } else {
+                                this.view.setCamera(this.defaultCamera);
+                                this.camera = this.defaultCamera;
+                                this.resize();
+                            }
+                        });
+                    }
+
+                    const variantNames = instance.getMaterialVariantNames();
+                    if (variantNames.length > 0) {
+                        variantNames.push(DEFAULT_STRING);
+                        guiVariants = gui.add(window, 'VARIANT', variantNames).name("Variants");
+                        guiVariants.onChange((value) => {
+                            const selectedIndex = value == DEFAULT_STRING ? 0 : variantNames.indexOf(value);
+                            instance.applyMaterialVariant(selectedIndex);
+                        });
+                    }
+
+                    const lights = asset.getLightEntities();
+                    for (let i = 0; i < lights.length; i++) {
+                        this.scene.addEntity(lights[i]);
+                    }
+
+                    this.animator = instance.getAnimator();
+                    this.animationStartTime = Date.now();
+
+                    if (typeof HavokPhysics !== 'undefined') {
+                        HavokPhysics({
+                            locateFile: (path) => path.endsWith('.wasm') ? HAVOK_WASM_URL : path
+                        }).then((hk) => {
+                            HK = hk;
+                            return initPhysicsFromUrl(this.currentModelUrl, asset, engine, this.currentScale, this.scene);
+                        }).catch((e) => console.warn('Physics init failed:', e));
+                    }
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            asset.loadResources(onDone, onFetched, this.currentBasePath);
+        });
     }
 
     render() {
         window.requestAnimationFrame(this.render);
 
         // Step physics
-        const tcm = this.engine.getTransformManager();
-        const inst = tcm.getInstance(this.asset.getRoot());
-        let m = mat4.create();
-        let s = vec3.create();
-        let t = vec3.create();
-        vec3.set(s, scale, scale, scale);
-        mat4.scale(m, m, s);
-        tcm.setTransform(inst, m);
-        inst.delete();
+        if (this.asset) {
+            const tcm = this.engine.getTransformManager();
+            const inst = tcm.getInstance(this.asset.getRoot());
+            let m = mat4.create();
+            let s = vec3.create();
+            vec3.set(s, this.currentScale, this.currentScale, this.currentScale);
+            mat4.scale(m, m, s);
+            tcm.setTransform(inst, m);
+            inst.delete();
+        }
 
         // Add renderable entities to the scene as they become ready.
         let entity;
         const popRenderable = () => {
+            if (!this.asset) {
+                return false;
+            }
             entity = this.asset.popRenderable();
             return entity.getId() != 0;
         }
@@ -1198,7 +1505,7 @@ class App {
             this.scene.addEntity(entity);
         }
 
-        if (this.animator) {
+        if (this.animator && this.instance) {
             const ms = Date.now() - this.animationStartTime;
             for (let i = 0; i < this.instance.getAnimator().getAnimationCount(); i++ ) {
                 this.animator.applyAnimation(i, ms / 1000);

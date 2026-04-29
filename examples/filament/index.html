@@ -24,6 +24,13 @@
 <div id="container">
     <canvas></canvas>
     <pre id="messages"></pre>
+    <div id="dropZone" class="drop-zone hidden">
+        <div class="drop-zone__panel">
+            <div class="drop-zone__title">Drop glTF Model</div>
+            <div id="dropZoneMessage" class="drop-zone__message">Drag &amp; drop a .glb or .gltf model here, or click to choose files.</div>
+        </div>
+    </div>
+    <input id="fileInput" type="file" accept=".glb,.gltf,.bin,image/*" multiple hidden />
 </div>
 <script src="index.js"></script>
 </body>
