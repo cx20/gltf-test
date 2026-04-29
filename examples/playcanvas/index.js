@@ -2,34 +2,38 @@ import * as pc from 'playcanvas';
 import { CameraControls } from 'camera-controls';
 import * as dat from 'dat.gui';
 
-let modelInfo = ModelIndex.getCurrentModel();
-if (!modelInfo) {
-    modelInfo = TutorialModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    throw new Error('Model not specified or not found in list.');
+function getInitialModelInfo() {
+    let modelInfo = ModelIndex.getCurrentModel();
+    if (!modelInfo) {
+        modelInfo = TutorialModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
+    }
+    return modelInfo;
 }
 
 const pcRoot = '../../libs/playcanvas/v2.14.2';
 const DEFAULT_NAME = "[default]";
+const initialModelInfo = getInitialModelInfo();
+const dropZone = document.getElementById('dropZone');
+const dropZoneMessage = document.getElementById('dropZoneMessage');
+const fileInput = document.getElementById('fileInput');
 
 // GUI
 let gui = new dat.GUI();
@@ -56,6 +60,133 @@ let getAbsolutePathFromRelativePath = function(href) {
     let link = document.createElement("a");
     link.href = href;
     return link.href;
+}
+
+function setDropZoneMessage(message, isError) {
+    dropZoneMessage.textContent = message;
+    dropZone.classList.toggle('error', !!isError);
+}
+
+function showDropZone(message, isError) {
+    if (message) {
+        setDropZoneMessage(message, isError);
+    }
+    dropZone.classList.remove('hidden');
+}
+
+function hideDropZone() {
+    dropZone.classList.add('hidden');
+    dropZone.classList.remove('dragover');
+    dropZone.classList.remove('error');
+}
+
+function getFileExtension(name) {
+    const lastDot = name.lastIndexOf('.');
+    return lastDot >= 0 ? name.slice(lastDot).toLowerCase() : '';
+}
+
+function isExternalUri(uri) {
+    return uri
+        && !uri.startsWith('data:')
+        && !uri.startsWith('blob:')
+        && !/^[a-z]+:/i.test(uri);
+}
+
+function getBasename(path) {
+    return path.split('/').pop();
+}
+
+function createTrackedObjectUrl(fileOrBlob, objectUrls) {
+    const url = URL.createObjectURL(fileOrBlob);
+    objectUrls.push(url);
+    return url;
+}
+
+async function createDroppedModelSource(fileList) {
+    const files = Array.from(fileList);
+    const modelFile = files.find(function(file) {
+        const extension = getFileExtension(file.name);
+        return extension === '.glb' || extension === '.gltf';
+    });
+
+    if (!modelFile) {
+        throw new Error('Please drop a .glb or .gltf file.');
+    }
+
+    const fileMap = new Map();
+    files.forEach(function(file) {
+        fileMap.set(file.name, file);
+        fileMap.set(getBasename(file.name), file);
+        if (file.webkitRelativePath) {
+            fileMap.set(file.webkitRelativePath, file);
+            fileMap.set(getBasename(file.webkitRelativePath), file);
+        }
+    });
+
+    const objectUrls = [];
+    const resourceUrls = new Map();
+
+    if (getFileExtension(modelFile.name) === '.glb') {
+        return {
+            url: createTrackedObjectUrl(modelFile, objectUrls),
+            filename: modelFile.name,
+            displayName: modelFile.name,
+            scale: 1,
+            objectUrls: objectUrls,
+        };
+    }
+
+    const gltfJson = JSON.parse(await modelFile.text());
+
+    function resolveObjectUrl(uri) {
+        if (!isExternalUri(uri)) {
+            return uri;
+        }
+        const decodedUri = decodeURIComponent(uri);
+        const file = fileMap.get(decodedUri) || fileMap.get(getBasename(decodedUri));
+        if (!file) {
+            return uri;
+        }
+        if (!resourceUrls.has(file)) {
+            resourceUrls.set(file, createTrackedObjectUrl(file, objectUrls));
+        }
+        return resourceUrls.get(file);
+    }
+
+    if (Array.isArray(gltfJson.buffers)) {
+        gltfJson.buffers.forEach(function(buffer) {
+            if (buffer.uri) buffer.uri = resolveObjectUrl(buffer.uri);
+        });
+    }
+    if (Array.isArray(gltfJson.images)) {
+        gltfJson.images.forEach(function(image) {
+            if (image.uri) image.uri = resolveObjectUrl(image.uri);
+        });
+    }
+
+    const gltfBlob = new Blob([JSON.stringify(gltfJson)], { type: 'model/gltf+json' });
+    return {
+        url: createTrackedObjectUrl(gltfBlob, objectUrls),
+        filename: modelFile.name,
+        displayName: modelFile.name,
+        scale: 1,
+        objectUrls: objectUrls,
+    };
+}
+
+function buildModelSourceFromInfo(modelInfo) {
+    let url = "../../" + modelInfo.category + "/" + modelInfo.path;
+    url = getAbsolutePathFromRelativePath(url);
+    if (modelInfo.url) {
+        url = modelInfo.url;
+    }
+    return {
+        modelInfo: modelInfo,
+        url: url,
+        filename: url.split('/').pop(),
+        displayName: modelInfo.name || url.split('/').pop(),
+        scale: modelInfo.scale,
+    };
 }
 
 let Viewer = function (canvas) {
@@ -137,7 +268,7 @@ let Viewer = function (canvas) {
     app.scene.layers.remove(depthLayer);
     app.scene.layers.insertOpaque(depthLayer, 2);
     
-    let scale = modelInfo.scale;
+    let scale = initialModelInfo?.scale || 1;
 
     const start = new pc.Vec3(0, 0, 5 / scale);
     const camera = new pc.Entity();
@@ -183,6 +314,12 @@ let Viewer = function (canvas) {
     this.entity = null;
     this.entities = [];
     this.physicsDebugEntities = [];
+    this.asset = null;
+    this.animationMap = {};
+    this.morphMap = {};
+    this.currentObjectUrls = [];
+    this.currentModelInfo = initialModelInfo;
+    this.currentScale = scale;
 
     // Per-frame KHR physics wireframe debug overlay.
     app.on('update', () => {
@@ -191,19 +328,36 @@ let Viewer = function (canvas) {
         drawPhysicsDebug(app, self.physicsDebugEntities);
     });
 
-    let url = "../../" + modelInfo.category + "/" + modelInfo.path;
-    url = getAbsolutePathFromRelativePath(url);
-    if(modelInfo.url) {
-        url = modelInfo.url;
-    }
-    let filename = url.split('/').pop();
-    self.load(url, filename);
-
     // start the application
     app.start();
+
+    if (initialModelInfo) {
+        self.loadModelSource(buildModelSourceFromInfo(initialModelInfo));
+    } else {
+        showDropZone('Drag & drop a .glb or .gltf model here, or click to choose files.');
+    }
 };
 
 Object.assign(Viewer.prototype, {
+    revokeCurrentObjectUrls: function() {
+        this.currentObjectUrls.forEach(function(url) {
+            URL.revokeObjectURL(url);
+        });
+        this.currentObjectUrls = [];
+    },
+
+    clearModelControls: function() {
+        obj.VARIANT = DEFAULT_NAME;
+        if (guiVariants && guiVariants !== DEFAULT_NAME) {
+            gui.remove(guiVariants);
+            guiVariants = DEFAULT_NAME;
+        }
+        if (guiCameras) {
+            gui.remove(guiCameras);
+            guiCameras = null;
+        }
+    },
+
     // reset the viewer, unloading resources
     resetScene: function() {
         let app = this.app;
@@ -221,8 +375,10 @@ Object.assign(Viewer.prototype, {
             this.asset = null;
         }
 
+        this.entities = [];
+        this.physicsDebugEntities = [];
         this.animationMap = {};
-        //onAnimationsLoaded([]);
+        this.morphMap = {};
     },
 
     // move the camera to view the loaded object
@@ -236,7 +392,7 @@ Object.assign(Viewer.prototype, {
                 orbitCamera.focus(entity);
 
                 // Adjust the camera distance according to the scale parameter
-                const scale = modelInfo.scale;
+                const scale = this.currentScale || 1;
                 orbitCamera.distance = 1 / scale * 5; 
 
                 let distance = orbitCamera.distance;
@@ -252,6 +408,16 @@ Object.assign(Viewer.prototype, {
     // load model at the url
     load: function(url, filename) {
         this.app.assets.loadFromUrlAndFilename(url, filename, "container", this._onLoaded.bind(this));
+    },
+
+    loadModelSource: function(modelSource) {
+        this.currentModelInfo = modelSource.modelInfo || null;
+        this.currentScale = modelSource.scale || 1;
+        this.revokeCurrentObjectUrls();
+        this.currentObjectUrls = modelSource.objectUrls || [];
+        this.clearModelControls();
+        showDropZone('Loading model...');
+        this.load(modelSource.url, modelSource.filename);
     },
 
     // play the animation
@@ -299,165 +465,169 @@ Object.assign(Viewer.prototype, {
         }
     },
     _onLoaded: function(err, asset) {
-        if (!err) {
+        if (err) {
+            console.error(err);
+            if (this.currentObjectUrls.length > 0) {
+                this.revokeCurrentObjectUrls();
+            }
+            showDropZone('Failed to load model: ' + (err.message || err), true);
+            return;
+        }
 
-            this.resetScene();
+        this.resetScene();
 
-            let resource = asset.resource;
-            // create entity and add model
-            let entity = resource.instantiateRenderEntity({
-                castShadows: true
-            });
+        let resource = asset.resource;
+        // create entity and add model
+        let entity = resource.instantiateRenderEntity({
+            castShadows: true
+        });
             
-            // enable all lights from the glb
-            const lightComponents = entity.findComponents("light");
-            lightComponents.forEach((component) => {
-                component.enabled = true;
-            });
+        // enable all lights from the glb
+        const lightComponents = entity.findComponents("light");
+        lightComponents.forEach((component) => {
+            component.enabled = true;
+        });
 
-            // create animations
-            if (resource.animations && resource.animations.length > 0) {
+        // create animations
+        if (resource.animations && resource.animations.length > 0) {
 
-                // create the anim component if there isn't one already
-                if (!entity.anim) {
-                    entity.addComponent('anim', {
-                        activate: true
-                    });
-                }
-
-                let stateGraph = {
-                    layers: [],
-                    parameters: { }
-                };
-
-                // create a layer per animation so we can play them all simultaniously if needed
-                for (let i = 0; i < resource.animations.length; ++i) {
-                    // construct a state graph to include the loaded animations
-                    stateGraph.layers.push( {
-                        name: asset.name + '_layer_' + i,
-                        states: [
-                            { name: 'START' },
-                            { name: 'default', speed: 1 },
-                            { name: 'END' }
-                        ],
-                        transitions: [
-                            {
-                                "from": "START",
-                                "to": "default",
-                                "time": 0,
-                                "priority": 0
-                            }
-                        ]
-                    } );
-                }
-
-                // construct an anim layer for this set of animations
-                entity.anim.loadStateGraph(new pc.AnimStateGraph(stateGraph));
-
-                let animationMap = {};
-
-                // set animations on each layer
-                for (let i = 0; i < resource.animations.length; ++i) {
-                    let animTrack = resource.animations[i].resource;
-                    let layer = entity.anim.findAnimationLayer(asset.name + '_layer_' + i);
-                    layer.assignAnimation('default', animTrack);
-                    layer.pause();
-                    animationMap[animTrack.name] = layer;
-                }
-            
-
-                this.animationMap = animationMap;
-                //onAnimationsLoaded(Object.keys(this.animationMap));
+            // create the anim component if there isn't one already
+            if (!entity.anim) {
+                entity.addComponent('anim', {
+                    activate: true
+                });
             }
 
-            // setup morph targets
-            if (entity.model && entity.model.model && entity.model.model.morphInstances.length > 0) {
-                let morphInstances = entity.model.model.morphInstances;
-                // make a list of all the morph instance target names
-                let morphMap = { };
-                morphInstances.forEach(function (morphInstance) {
-                    morphInstance.morph._targets.forEach(function (target, targetIndex) {
-                        if (!morphMap.hasOwnProperty(target.name)) {
-                            morphMap[target.name] = [{ instance: morphInstance, targetIndex: targetIndex }];
-                        } else {
-                            morphMap[target.name].push({ instance: morphInstance, targetIndex: targetIndex });
+            let stateGraph = {
+                layers: [],
+                parameters: { }
+            };
+
+            // create a layer per animation so we can play them all simultaniously if needed
+            for (let i = 0; i < resource.animations.length; ++i) {
+                // construct a state graph to include the loaded animations
+                stateGraph.layers.push( {
+                    name: asset.name + '_layer_' + i,
+                    states: [
+                        { name: 'START' },
+                        { name: 'default', speed: 1 },
+                        { name: 'END' }
+                    ],
+                    transitions: [
+                        {
+                            "from": "START",
+                            "to": "default",
+                            "time": 0,
+                            "priority": 0
                         }
-                    });
-                });
-
-                this.morphMap = morphMap;
-               // onMorphTargetsLoaded(Object.keys(morphMap));
+                    ]
+                } );
             }
 
-            this.app.root.addChild(entity);
-            this.entities.push(entity);
-            this.entity = entity;
-            this.asset = asset;
+            // construct an anim layer for this set of animations
+            entity.anim.loadStateGraph(new pc.AnimStateGraph(stateGraph));
 
-            // KHR_physics_rigid_bodies: attach rigidbody/collision components if extension is present
-            const gltfJson = resource.data?.gltf;
-            if (gltfJson && (gltfJson.extensions?.KHR_physics_rigid_bodies || gltfJson.extensions?.KHR_implicit_shapes)) {
-                if (typeof Ammo === 'undefined' || !this.app.systems.rigidbody) {
-                    console.warn('KHR physics: Ammo.js / rigidbody system unavailable; physics will not run');
-                } else {
-                    const entityMap = buildEntityMap(resource.data, entity);
-                    const debugEntities = initPhysics(gltfJson, entityMap);
-                    this.physicsDebugEntities = debugEntities;
-                }
+            let animationMap = {};
+
+            // set animations on each layer
+            for (let i = 0; i < resource.animations.length; ++i) {
+                let animTrack = resource.animations[i].resource;
+                let layer = entity.anim.findAnimationLayer(asset.name + '_layer_' + i);
+                layer.assignAnimation('default', animTrack);
+                layer.pause();
+                animationMap[animTrack.name] = layer;
             }
+             
+            this.animationMap = animationMap;
+        }
 
-            let variants;
-
-            // update mesh stats
-            variants = variants || (resource.getMaterialVariants && resource.getMaterialVariants());
-            let variantNames = variants.reduce(function (allNames, name) { 
-                allNames[name] = name;
-                return allNames
-            }, {});
-
-            if (variants.length > 0 ) {
-                variantNames[DEFAULT_NAME] = DEFAULT_NAME;
-                guiVariants = gui.add(obj, 'VARIANT', variantNames).name("Variant");
-                let that = this;
-                guiVariants.onChange(function (variantName) {
-                    if (variantName == DEFAULT_NAME) {
-                        // TODO: reset
+        // setup morph targets
+        if (entity.model && entity.model.model && entity.model.model.morphInstances.length > 0) {
+            let morphInstances = entity.model.model.morphInstances;
+            // make a list of all the morph instance target names
+            let morphMap = { };
+            morphInstances.forEach(function (morphInstance) {
+                morphInstance.morph._targets.forEach(function (target, targetIndex) {
+                    if (!morphMap.hasOwnProperty(target.name)) {
+                        morphMap[target.name] = [{ instance: morphInstance, targetIndex: targetIndex }];
                     } else {
-                        // change variant
-                        that.entities.forEach((entity) => {
-                            that.asset.resource.applyMaterialVariant(entity, variantName);
-                        });
+                        morphMap[target.name].push({ instance: morphInstance, targetIndex: targetIndex });
                     }
-                });
-            }
+                    });
+            });
 
-            this.focusCamera();
-            if (resource.model.name == "Fox.gltf/model/0" || resource.model.name == "Fox.glb/model/0") {
-                this.play("Run");
-            } else if (resource.model.name == "InterpolationTest.gltf/model/0") {
-                // TODO: Investigate how to run multiple animations simultaneously
-                // InterpolationTest.gltf contains the following animations
-                // "Step Scale
-                // "Linear Scale"
-                // "CubicSpline Scale"
-                // "Step Rotation"
-                // "CubicSpline Rotation"
-                // "Linear Rotation"
-                // "Step Translation"
-                // "CubicSpline Translation"
-                // "Linear Translation"
-                this.play("Step Scale");
-                this.play("Linear Scale");
-                this.play("CubicSpline Scale");
-                this.play("Step Rotation");
-                this.play("CubicSpline Rotation");
-                this.play("Linear Rotation");
-                this.play("Step Translation");
-                this.play("CubicSpline Translation");
-                this.play("Linear Translation");
+            this.morphMap = morphMap;
+        }
+
+        this.app.root.addChild(entity);
+        this.entities.push(entity);
+        this.entity = entity;
+        this.asset = asset;
+
+        // KHR_physics_rigid_bodies: attach rigidbody/collision components if extension is present
+        const gltfJson = resource.data?.gltf;
+        if (gltfJson && (gltfJson.extensions?.KHR_physics_rigid_bodies || gltfJson.extensions?.KHR_implicit_shapes)) {
+            if (typeof Ammo === 'undefined' || !this.app.systems.rigidbody) {
+                console.warn('KHR physics: Ammo.js / rigidbody system unavailable; physics will not run');
             } else {
-                this.play();
+                const entityMap = buildEntityMap(resource.data, entity);
+                const debugEntities = initPhysics(gltfJson, entityMap);
+                this.physicsDebugEntities = debugEntities;
             }
+        }
+
+        let variants;
+
+        // update mesh stats
+        variants = variants || (resource.getMaterialVariants && resource.getMaterialVariants()) || [];
+        let variantNames = variants.reduce(function (allNames, name) { 
+            allNames[name] = name;
+            return allNames
+        }, {});
+
+        if (variants.length > 0 ) {
+            variantNames[DEFAULT_NAME] = DEFAULT_NAME;
+            guiVariants = gui.add(obj, 'VARIANT', variantNames).name("Variant");
+            let that = this;
+            guiVariants.onChange(function (variantName) {
+                if (variantName == DEFAULT_NAME) {
+                    // TODO: reset
+                } else {
+                    // change variant
+                    that.entities.forEach((entity) => {
+                        that.asset.resource.applyMaterialVariant(entity, variantName);
+                    });
+                }
+            });
+        }
+
+        this.focusCamera();
+        hideDropZone();
+        if (resource.model.name == "Fox.gltf/model/0" || resource.model.name == "Fox.glb/model/0") {
+            this.play("Run");
+        } else if (resource.model.name == "InterpolationTest.gltf/model/0") {
+            // TODO: Investigate how to run multiple animations simultaneously
+            // InterpolationTest.gltf contains the following animations
+            // "Step Scale
+            // "Linear Scale"
+            // "CubicSpline Scale"
+            // "Step Rotation"
+            // "CubicSpline Rotation"
+            // "Linear Rotation"
+            // "Step Translation"
+            // "CubicSpline Translation"
+            // "Linear Translation"
+            this.play("Step Scale");
+            this.play("Linear Scale");
+            this.play("CubicSpline Scale");
+            this.play("Step Rotation");
+            this.play("CubicSpline Rotation");
+            this.play("Linear Rotation");
+            this.play("Step Translation");
+            this.play("CubicSpline Translation");
+            this.play("Linear Translation");
+        } else {
+            this.play();
         }
     }
 });
@@ -476,6 +646,81 @@ function main(){
     
     pc.WasmModule.getInstance("DracoDecoderModule", startViewer);
 }
+
+function handleDragEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+function setDragActive(isActive) {
+    dropZone.classList.toggle('dragover', isActive);
+    if (isActive) {
+        setDropZoneMessage('Drop glTF/glb files here');
+        dropZone.classList.remove('hidden');
+    } else if (!viewer || !viewer.entity) {
+        showDropZone('Drag & drop a .glb or .gltf model here, or click to choose files.');
+    } else {
+        hideDropZone();
+    }
+}
+
+async function handleModelFiles(fileList) {
+    if (!fileList || fileList.length === 0) {
+        return;
+    }
+    if (!viewer) {
+        showDropZone('Viewer is still starting. Please try again in a moment.', true);
+        return;
+    }
+    try {
+        const modelSource = await createDroppedModelSource(fileList);
+        viewer.loadModelSource(modelSource);
+    } catch (error) {
+        console.error(error);
+        showDropZone('Failed to load model: ' + error.message, true);
+    }
+}
+
+function setupDropZone() {
+    dropZone.addEventListener('click', function() {
+        fileInput.click();
+    });
+    dropZone.addEventListener('dragenter', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    dropZone.addEventListener('dragover', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    dropZone.addEventListener('dragleave', function(event) {
+        handleDragEvent(event);
+        if (event.target === dropZone) {
+            setDragActive(false);
+        }
+    });
+    dropZone.addEventListener('drop', async function(event) {
+        handleDragEvent(event);
+        setDragActive(false);
+        await handleModelFiles(event.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', async function(event) {
+        await handleModelFiles(event.target.files);
+        fileInput.value = '';
+    });
+    document.addEventListener('dragenter', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    document.addEventListener('dragover', handleDragEvent);
+    document.addEventListener('drop', async function(event) {
+        handleDragEvent(event);
+        setDragActive(false);
+        await handleModelFiles(event.dataTransfer.files);
+    });
+}
+
+setupDropZone();
 
 // Configure Ammo.js (PlayCanvas's recommended physics backend) and start the
 // app once the runtime is ready. If Ammo fails to load (e.g. offline), the
