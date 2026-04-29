@@ -1,39 +1,28 @@
-let modelInfo = ModelIndex.getCurrentModel();
-if (!modelInfo) {
-    modelInfo = TutorialModelIndex.getCurrentModel();
+function getInitialModelInfo() {
+    let modelInfo = ModelIndex.getCurrentModel();
+    if (!modelInfo) {
+        modelInfo = TutorialModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
+    }
+    if (!modelInfo) {
+        modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
+    }
+    return modelInfo;
 }
-if (!modelInfo) {
-    modelInfo = TutorialPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFurtherPbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialFeatureTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialComparePbrModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    modelInfo = TutorialWipExtensionTestModelIndex.getCurrentModel();
-}
-if (!modelInfo) {
-    document.getElementById('container').innerHTML = 'Please specify a model to load';
-    throw new Error('Model not specified or not found in list.');
-}
-
-const scale = modelInfo.scale;
-let url = "../../" + modelInfo.category + "/" + modelInfo.path;
-if(modelInfo.url) {
-    url = modelInfo.url;
-}
-
-const urlParams = new URLSearchParams(window.location.search);
-const scaleParam = parseFloat(urlParams.get('scale'));
-const resolvedScale = Number.isFinite(scaleParam) ? scaleParam : scale;
 
 import * as THREE from 'three/webgpu';
 import { RenderPipeline } from 'three/webgpu';
@@ -63,14 +52,21 @@ const dynamicBodies = [];
 
 const clock = new THREE.Clock();
 const DEFAULT_NAME = '[default]';
+const initialModelInfo = getInitialModelInfo();
+const container = document.getElementById('container');
+const dropZone = document.getElementById('dropZone');
+const dropZoneMessage = document.getElementById('dropZoneMessage');
+const fileInput = document.getElementById('fileInput');
 
 let camera, scene, renderer;
 let controls, axis, hemispheric, envTexture, modelRoot, mixer;
 let gui;
 let guiCameras, guiVariants;
 let gltfCameras = [];
+let defaultCamera;
 let renderPipeline, scenePass;
 let bloomMixNode, bloomStrengthNode, bloomThresholdNode, bloomRadiusNode;
+let currentObjectUrls = [];
 
 const params = {
     bloomStrength: 0.15,
@@ -90,25 +86,153 @@ const state = {
     VARIANT: DEFAULT_NAME
 };
 
+function setDropZoneMessage(message, isError) {
+    dropZoneMessage.textContent = message;
+    dropZone.classList.toggle('error', !!isError);
+}
+
+function showDropZone(message, isError) {
+    if (message) {
+        setDropZoneMessage(message, isError);
+    }
+    dropZone.classList.remove('hidden');
+}
+
+function hideDropZone() {
+    dropZone.classList.add('hidden');
+    dropZone.classList.remove('dragover');
+    dropZone.classList.remove('error');
+}
+
+function revokeCurrentObjectUrls() {
+    currentObjectUrls.forEach(function(url) {
+        URL.revokeObjectURL(url);
+    });
+    currentObjectUrls = [];
+}
+
+function getFileExtension(name) {
+    const lastDot = name.lastIndexOf('.');
+    return lastDot >= 0 ? name.slice(lastDot).toLowerCase() : '';
+}
+
+function isExternalUri(uri) {
+    return uri
+        && !uri.startsWith('data:')
+        && !uri.startsWith('blob:')
+        && !/^[a-z]+:/i.test(uri);
+}
+
+function getBasename(path) {
+    return path.split('/').pop();
+}
+
+function createTrackedObjectUrl(fileOrBlob, objectUrls) {
+    const url = URL.createObjectURL(fileOrBlob);
+    objectUrls.push(url);
+    return url;
+}
+
+async function createDroppedModelSource(fileList) {
+    const files = Array.from(fileList);
+    const modelFile = files.find(function(file) {
+        const extension = getFileExtension(file.name);
+        return extension === '.glb' || extension === '.gltf';
+    });
+
+    if (!modelFile) {
+        throw new Error('Please drop a .glb or .gltf file.');
+    }
+
+    const fileMap = new Map();
+    files.forEach(function(file) {
+        fileMap.set(file.name, file);
+        fileMap.set(getBasename(file.name), file);
+        if (file.webkitRelativePath) {
+            fileMap.set(file.webkitRelativePath, file);
+            fileMap.set(getBasename(file.webkitRelativePath), file);
+        }
+    });
+
+    const objectUrls = [];
+    const resourceUrls = new Map();
+
+    if (getFileExtension(modelFile.name) === '.glb') {
+        return {
+            url: createTrackedObjectUrl(modelFile, objectUrls),
+            displayName: modelFile.name,
+            scale: 1,
+            allAnimations: true,
+            objectUrls: objectUrls,
+        };
+    }
+
+    const gltfJson = JSON.parse(await modelFile.text());
+
+    function resolveObjectUrl(uri) {
+        if (!isExternalUri(uri)) {
+            return uri;
+        }
+        const decodedUri = decodeURIComponent(uri);
+        const file = fileMap.get(decodedUri) || fileMap.get(getBasename(decodedUri));
+        if (!file) {
+            return uri;
+        }
+        if (!resourceUrls.has(file)) {
+            resourceUrls.set(file, createTrackedObjectUrl(file, objectUrls));
+        }
+        return resourceUrls.get(file);
+    }
+
+    if (Array.isArray(gltfJson.buffers)) {
+        gltfJson.buffers.forEach(function(buffer) {
+            if (buffer.uri) buffer.uri = resolveObjectUrl(buffer.uri);
+        });
+    }
+    if (Array.isArray(gltfJson.images)) {
+        gltfJson.images.forEach(function(image) {
+            if (image.uri) image.uri = resolveObjectUrl(image.uri);
+        });
+    }
+
+    const gltfBlob = new Blob([JSON.stringify(gltfJson)], { type: 'model/gltf+json' });
+    return {
+        url: createTrackedObjectUrl(gltfBlob, objectUrls),
+        displayName: modelFile.name,
+        scale: 1,
+        allAnimations: true,
+        objectUrls: objectUrls,
+    };
+}
+
+function buildModelSourceFromInfo(modelInfo) {
+    let url = '../../' + modelInfo.category + '/' + modelInfo.path;
+    if (modelInfo.url) {
+        url = modelInfo.url;
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const scaleParam = parseFloat(urlParams.get('scale'));
+    const resolvedScale = Number.isFinite(scaleParam) ? scaleParam : modelInfo.scale;
+    return {
+        modelInfo: modelInfo,
+        url: url,
+        scale: resolvedScale,
+        allAnimations: modelInfo.allAnimations,
+    };
+}
+
 init().catch(function (error) {
     console.error(error);
 });
 
 async function init() {
-
-    const container = document.getElementById('container');
-
-    camera = new THREE.PerspectiveCamera( 75, 1, 0.1, 10000 );
-    camera.position.set( 0, 2, 3 );
-    camera.name = DEFAULT_NAME;
+    defaultCamera = new THREE.PerspectiveCamera( 75, 1, 0.1, 10000 );
+    defaultCamera.position.set( 0, 2, 3 );
+    defaultCamera.name = DEFAULT_NAME;
+    camera = defaultCamera;
 
     scene = new THREE.Scene();
 
-    let manager = new THREE.LoadingManager();
-    manager.onProgress = function ( item, loaded, total ) {
-        console.log( item, loaded, total );
-    };
-    
     renderer = new THREE.WebGPURenderer( { antialias: true/*, compatibilityMode: true*/ } );
     await renderer.init();
     renderer.setPixelRatio( window.devicePixelRatio );
@@ -188,97 +312,9 @@ async function init() {
         }
     });
 
-    const loader = new GLTFLoader(manager);
-    loader.setCrossOrigin( 'anonymous' );
-    loader.register(() => ({ name: 'KHR_implicit_shapes',      afterRoot: () => Promise.resolve() }));
-    loader.register(() => ({ name: 'KHR_physics_rigid_bodies', afterRoot: () => Promise.resolve() }));
-
     // Initialize Rapier
     RAPIER = await import(RAPIER_PATH);
     await RAPIER.init();
-
-    loader.load( url, async function ( gltf ) {
-
-        modelRoot = gltf.scene || gltf.scenes[0];
-        modelRoot.scale.set( resolvedScale, resolvedScale, resolvedScale );
-        if ( modelInfo.name === 'GearboxAssy' ) {
-            modelRoot.position.set( -159.20 * resolvedScale, -17.02 * resolvedScale, -3.21 * resolvedScale );
-        }
-
-        if ( gltf.animations && gltf.animations.length ) {
-            mixer = new THREE.AnimationMixer( modelRoot );
-            if ( modelInfo.name === 'Fox' ) {
-                mixer.clipAction( gltf.animations[2] ).play();
-            } else {
-                for ( let i = 0; i < gltf.animations.length; i ++ ) {
-                    mixer.clipAction( gltf.animations[i] ).play();
-                }
-            }
-        }
-
-        scene.add( modelRoot );
-
-        // KHR_physics_rigid_bodies: initialize physics if extension is present
-        const gltfJson = gltf.parser.json;
-        if (gltfJson.extensions?.KHR_physics_rigid_bodies || gltfJson.extensions?.KHR_implicit_shapes) {
-            const nodeCount = (gltfJson.nodes ?? []).length;
-            scene.updateMatrixWorld(true);
-            const threeNodes = await Promise.all(
-                Array.from({ length: nodeCount }, (_, i) =>
-                    gltf.parser.getDependency('node', i).catch(() => null)
-                )
-            );
-            scene.updateMatrixWorld(true);
-            initPhysics(gltfJson, threeNodes);
-        }
-
-        if ( gltf.cameras && gltf.cameras.length > 0 ) {
-            gltfCameras = [camera].concat(gltf.cameras);
-
-            const container = document.getElementById('container');
-            const width = container.offsetWidth;
-            const height = container.offsetHeight;
-
-            for ( let i = 0; i < gltfCameras.length; i ++ ) {
-                const c = gltfCameras[i];
-                c.name = c.name && c.name !== '' ? c.name : 'camera' + i;
-                c.aspect = width / height;
-                c.updateProjectionMatrix();
-            }
-
-            const cameraNames = gltfCameras.map(function (c) { return c.name; });
-            if ( guiCameras ) gui.remove(guiCameras);
-            guiCameras = gui.add(state, 'CAMERA', cameraNames).name('Camera');
-            guiCameras.onChange(function (value) {
-                const selected = gltfCameras.find(function (c) { return c.name === value; });
-                if ( selected ) {
-                    camera = selected;
-                    controls.object = camera;
-                    scenePass.camera = camera;
-                    updatePostProcessing();
-                    controls.update();
-                }
-            });
-        }
-
-        const parser = gltf.parser;
-        if (gltf.userData.gltfExtensions !== undefined) {
-            const variantsExtension = gltf.userData.gltfExtensions['KHR_materials_variants'];
-            if (variantsExtension !== undefined) {
-                const variants = variantsExtension.variants.map(function (variant) { return variant.name; });
-                variants.push(DEFAULT_NAME);
-                if ( guiVariants ) gui.remove(guiVariants);
-                guiVariants = gui.add(state, 'VARIANT', variants).name('Variant');
-                selectVariant(modelRoot, parser, variantsExtension, state.VARIANT);
-                guiVariants.onChange(function (value) {
-                    selectVariant(modelRoot, parser, variantsExtension, value);
-                });
-            }
-        }
-
-        updateEnvironment();
-
-    } );
 
     new HDRLoader()
         .setPath( '../../textures/hdr/' )
@@ -309,6 +345,14 @@ async function init() {
     onWindowResize();
     animate();
 
+    setupDropZone();
+
+    if (initialModelInfo) {
+        await loadModelSource(buildModelSourceFromInfo(initialModelInfo));
+    } else {
+        showDropZone('Drag & drop a .glb or .gltf model here, or click to choose files.');
+    }
+
 }
 
 function updateEnvironment() {
@@ -330,6 +374,232 @@ function updatePostProcessing() {
 
     renderPipeline.outputNode = vec4( sceneColor.rgb.add( bloomColor ), sceneColor.a );
 
+}
+
+function resetPhysicsState() {
+    dynamicBodies.length = 0;
+    physicsWorld = null;
+    physicsReady = false;
+}
+
+function unloadCurrentModel() {
+    mixer = null;
+    envReady = !!envTexture;
+    resetPhysicsState();
+    revokeCurrentObjectUrls();
+    state.CAMERA = DEFAULT_NAME;
+    state.VARIANT = DEFAULT_NAME;
+    gltfCameras = [];
+    if ( guiCameras ) {
+        gui.remove( guiCameras );
+        guiCameras = null;
+    }
+    if ( guiVariants ) {
+        gui.remove( guiVariants );
+        guiVariants = null;
+    }
+    camera = defaultCamera;
+    controls.object = camera;
+    scenePass.camera = camera;
+    updatePostProcessing();
+    controls.update();
+    if ( modelRoot ) {
+        scene.remove( modelRoot );
+        modelRoot = null;
+    }
+}
+
+function createGltfLoader(manager) {
+    const loader = new GLTFLoader(manager);
+    loader.setCrossOrigin( 'anonymous' );
+    loader.register(() => ({ name: 'KHR_implicit_shapes',      afterRoot: () => Promise.resolve() }));
+    loader.register(() => ({ name: 'KHR_physics_rigid_bodies', afterRoot: () => Promise.resolve() }));
+    return loader;
+}
+
+async function loadModel(modelSource) {
+    unloadCurrentModel();
+    showDropZone('Loading model...');
+
+    let manager = new THREE.LoadingManager();
+    manager.onProgress = function ( item, loaded, total ) {
+        console.log( item, loaded, total );
+    };
+
+    const loader = createGltfLoader(manager);
+    const modelInfo = modelSource.modelInfo;
+    const resolvedScale = modelSource.scale || 1;
+
+    return new Promise(function(resolve, reject) {
+        loader.load( modelSource.url, async function ( gltf ) {
+            try {
+                modelRoot = gltf.scene || gltf.scenes[0];
+                if ( !modelRoot ) {
+                    throw new Error('No scene found in the glTF asset.');
+                }
+                modelRoot.scale.set( resolvedScale, resolvedScale, resolvedScale );
+                if ( modelInfo?.name === 'GearboxAssy' ) {
+                    modelRoot.position.set( -159.20 * resolvedScale, -17.02 * resolvedScale, -3.21 * resolvedScale );
+                }
+
+                if ( gltf.animations && gltf.animations.length ) {
+                    mixer = new THREE.AnimationMixer( modelRoot );
+                    if ( modelInfo?.name === 'Fox' ) {
+                        mixer.clipAction( gltf.animations[2] ).play();
+                    } else {
+                        for ( let i = 0; i < gltf.animations.length; i ++ ) {
+                            mixer.clipAction( gltf.animations[i] ).play();
+                        }
+                    }
+                }
+
+                scene.add( modelRoot );
+
+                const gltfJson = gltf.parser.json;
+                if (gltfJson.extensions?.KHR_physics_rigid_bodies || gltfJson.extensions?.KHR_implicit_shapes) {
+                    const nodeCount = (gltfJson.nodes ?? []).length;
+                    scene.updateMatrixWorld(true);
+                    const threeNodes = await Promise.all(
+                        Array.from({ length: nodeCount }, (_, i) =>
+                            gltf.parser.getDependency('node', i).catch(() => null)
+                        )
+                    );
+                    scene.updateMatrixWorld(true);
+                    initPhysics(gltfJson, threeNodes);
+                }
+
+                if ( gltf.cameras && gltf.cameras.length > 0 ) {
+                    gltfCameras = [ defaultCamera ].concat(gltf.cameras);
+                    const width = container.offsetWidth;
+                    const height = container.offsetHeight;
+
+                    for ( let i = 0; i < gltfCameras.length; i ++ ) {
+                        const c = gltfCameras[i];
+                        c.name = c.name && c.name !== '' ? c.name : 'camera' + i;
+                        c.aspect = width / height;
+                        c.updateProjectionMatrix();
+                    }
+
+                    const cameraNames = gltfCameras.map(function (c) { return c.name; });
+                    guiCameras = gui.add(state, 'CAMERA', cameraNames).name('Camera');
+                    guiCameras.onChange(function (value) {
+                        const selected = gltfCameras.find(function (c) { return c.name === value; });
+                        if ( selected ) {
+                            camera = selected;
+                            controls.object = camera;
+                            scenePass.camera = camera;
+                            updatePostProcessing();
+                            controls.update();
+                        }
+                    });
+                }
+
+                const parser = gltf.parser;
+                if (gltf.userData.gltfExtensions !== undefined) {
+                    const variantsExtension = gltf.userData.gltfExtensions['KHR_materials_variants'];
+                    if (variantsExtension !== undefined) {
+                        const variants = variantsExtension.variants.map(function (variant) { return variant.name; });
+                        variants.push(DEFAULT_NAME);
+                        guiVariants = gui.add(state, 'VARIANT', variants).name('Variant');
+                        selectVariant(modelRoot, parser, variantsExtension, state.VARIANT);
+                        guiVariants.onChange(function (value) {
+                            selectVariant(modelRoot, parser, variantsExtension, value);
+                        });
+                    }
+                }
+
+                updateEnvironment();
+                hideDropZone();
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        }, undefined, reject );
+    });
+}
+
+async function loadModelSource(modelSource) {
+    try {
+        await loadModel(modelSource);
+        currentObjectUrls = modelSource.objectUrls || [];
+    } catch (error) {
+        if (modelSource.objectUrls) {
+            modelSource.objectUrls.forEach(function(url) {
+                URL.revokeObjectURL(url);
+            });
+        }
+        console.error(error);
+        showDropZone('Failed to load model: ' + error.message, true);
+    }
+}
+
+function handleDragEvent(event) {
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+function setDragActive(isActive) {
+    dropZone.classList.toggle('dragover', isActive);
+    if (isActive) {
+        setDropZoneMessage('Drop glTF/glb files here');
+        dropZone.classList.remove('hidden');
+    } else if (!modelRoot) {
+        showDropZone('Drag & drop a .glb or .gltf model here, or click to choose files.');
+    } else {
+        hideDropZone();
+    }
+}
+
+async function handleModelFiles(fileList) {
+    if (!fileList || fileList.length === 0) {
+        return;
+    }
+    try {
+        const modelSource = await createDroppedModelSource(fileList);
+        await loadModelSource(modelSource);
+    } catch (error) {
+        console.error(error);
+        showDropZone('Failed to load model: ' + error.message, true);
+    }
+}
+
+function setupDropZone() {
+    dropZone.addEventListener('click', function() {
+        fileInput.click();
+    });
+    dropZone.addEventListener('dragenter', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    dropZone.addEventListener('dragover', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    dropZone.addEventListener('dragleave', function(event) {
+        handleDragEvent(event);
+        if (event.target === dropZone) {
+            setDragActive(false);
+        }
+    });
+    dropZone.addEventListener('drop', async function(event) {
+        handleDragEvent(event);
+        setDragActive(false);
+        await handleModelFiles(event.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', async function(event) {
+        await handleModelFiles(event.target.files);
+        fileInput.value = '';
+    });
+    document.addEventListener('dragenter', function(event) {
+        handleDragEvent(event);
+        setDragActive(true);
+    });
+    document.addEventListener('dragover', handleDragEvent);
+    document.addEventListener('drop', async function(event) {
+        handleDragEvent(event);
+        setDragActive(false);
+        await handleModelFiles(event.dataTransfer.files);
+    });
 }
 
 function selectVariant(root, parser, extension, variantName) {
