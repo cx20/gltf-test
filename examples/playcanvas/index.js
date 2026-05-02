@@ -644,7 +644,7 @@ Object.assign(Viewer.prototype, {
                 const dynamicsWorld = this.app.systems.rigidbody.dynamicsWorld;
                 const entityMap = buildEntityMap(resource.data, entity);
                 const { debugEntities, dynamicEntities, gravityOverrides, manualDynamicBodies, meshStaticEntities } =
-                    initPhysics(gltfJson, entityMap, dynamicsWorld);
+                    initPhysics(gltfJson, entityMap, dynamicsWorld, resource.data);
                 this.physicsDebugEntities = debugEntities;
                 this.dynamicEntities = dynamicEntities;
                 this.gravityOverrides = gravityOverrides;
@@ -817,31 +817,51 @@ pc.WasmModule.getInstance('Ammo', () => main());
 // by name with a forward cursor so cloned light/camera children inserted by
 // PlayCanvas do not break alignment.
 function buildEntityMap(data, clonedRoot) {
-    const map = new Array(data.gltf.nodes.length).fill(null);
-    const sceneRoots = data.scenes.length === 1 ? [clonedRoot] : clonedRoot.children;
-    for (let s = 0; s < data.scenes.length; s++) {
-        zipChildren(data.scenes[s], sceneRoots[s], data.nodes, map);
+    const gltfJson = data.gltf;
+    const nodes = gltfJson.nodes ?? [];
+    const map = new Array(nodes.length).fill(null);
+
+    function nameMap(children) {
+        const m = new Map();
+        for (const child of children) {
+            const n = child.name ?? '';
+            if (!m.has(n)) m.set(n, []);
+            m.get(n).push(child);
+        }
+        return m;
+    }
+
+    function walk(nodeIndex, entity) {
+        if (!entity || nodeIndex < 0) return;
+        map[nodeIndex] = entity;
+        const childIndices = nodes[nodeIndex].children ?? [];
+        if (!childIndices.length) return;
+        const byName = nameMap(entity.children);
+        for (const ci of childIndices) {
+            const cName = nodes[ci]?.name ?? '';
+            const candidates = byName.get(cName);
+            if (candidates?.length) walk(ci, candidates.shift());
+        }
+    }
+
+    const scenes = gltfJson.scenes ?? [];
+    const sceneRoots = scenes.length === 1 ? [clonedRoot] : clonedRoot.children;
+    for (let s = 0; s < scenes.length; s++) {
+        const sceneRoot = sceneRoots[s];
+        if (!sceneRoot) continue;
+        const rootIndices = scenes[s].nodes ?? [];
+        if (rootIndices.length === 1 && sceneRoot.name === (nodes[rootIndices[0]]?.name ?? '')) {
+            walk(rootIndices[0], sceneRoot);
+            continue;
+        }
+        const byName = nameMap(sceneRoot.children);
+        for (const ri of rootIndices) {
+            const rName = nodes[ri]?.name ?? '';
+            const candidates = byName.get(rName);
+            if (candidates?.length) walk(ri, candidates.shift());
+        }
     }
     return map;
-}
-
-function zipChildren(orig, clone, dataNodes, map) {
-    if (!orig || !clone) return;
-    let cursor = 0;
-    for (const oc of orig.children) {
-        let matched = null;
-        for (let j = cursor; j < clone.children.length; j++) {
-            if (clone.children[j].name === oc.name) {
-                matched = clone.children[j];
-                cursor = j + 1;
-                break;
-            }
-        }
-        if (!matched) continue;
-        const idx = dataNodes.indexOf(oc);
-        if (idx >= 0) map[idx] = matched;
-        zipChildren(oc, matched, dataNodes, map);
-    }
 }
 
 function getCollisionDataFromImplicit(shapeDef, worldScale) {
@@ -976,21 +996,30 @@ function computeBodyBounds(dynamicEntities) {
 }
 
 // Create a static btBvhTriangleMeshShape from a PlayCanvas entity's render meshes.
-// Uses mesh.getPositions() / getIndices() — no binary fetch needed.
-function addAmmoStaticMeshBodyFromEntity(entity, friction, restitution, dynamicsWorld) {
-    if (!entity.render?.meshInstances?.length) return null;
+// pcMeshes (optional): array of pc.Mesh from containerData.meshes[N] — used when the
+// collider references a mesh that isn't on the entity's render component (physics-only nodes).
+// Falls back to entity.render.meshInstances when pcMeshes is not supplied.
+// Pre-scales vertices by world scale because btBvhTriangleMeshShape.setLocalScaling()
+// in Ammo.js does NOT rebuild the internal BVH.
+function addAmmoStaticMeshBodyFromEntity(entity, friction, restitution, dynamicsWorld, pcMeshes) {
+    const meshes = pcMeshes ?? entity.render?.meshInstances?.map(mi => mi.mesh);
+    if (!meshes?.length) {
+        console.warn('[Physics] static mesh: no mesh data for "' + (entity?.name ?? '?') + '"');
+        return null;
+    }
+    const ws = entity.getWorldTransform().getScale();
+    const sx = Math.abs(ws.x), sy = Math.abs(ws.y), sz = Math.abs(ws.z);
     const btTriMesh = new Ammo.btTriangleMesh(true, true);
     let triCount = 0;
-    for (const mi of entity.render.meshInstances) {
-        const mesh = mi.mesh;
+    for (const mesh of meshes) {
         const positions = [], indices = [];
         mesh.getPositions(positions);
         mesh.getIndices(indices);
         for (let t = 0; t < indices.length / 3; t++) {
             const i0 = indices[t*3]   * 3, i1 = indices[t*3+1] * 3, i2 = indices[t*3+2] * 3;
-            const v0 = new Ammo.btVector3(positions[i0], positions[i0+1], positions[i0+2]);
-            const v1 = new Ammo.btVector3(positions[i1], positions[i1+1], positions[i1+2]);
-            const v2 = new Ammo.btVector3(positions[i2], positions[i2+1], positions[i2+2]);
+            const v0 = new Ammo.btVector3(positions[i0]*sx, positions[i0+1]*sy, positions[i0+2]*sz);
+            const v1 = new Ammo.btVector3(positions[i1]*sx, positions[i1+1]*sy, positions[i1+2]*sz);
+            const v2 = new Ammo.btVector3(positions[i2]*sx, positions[i2+1]*sy, positions[i2+2]*sz);
             btTriMesh.addTriangle(v0, v1, v2, false);
             Ammo.destroy(v0); Ammo.destroy(v1); Ammo.destroy(v2);
             triCount++;
@@ -998,9 +1027,6 @@ function addAmmoStaticMeshBodyFromEntity(entity, friction, restitution, dynamics
     }
     if (triCount === 0) { Ammo.destroy(btTriMesh); return null; }
     const shape = new Ammo.btBvhTriangleMeshShape(btTriMesh, true);
-    const ws = entity.getWorldTransform().getScale();
-    const ls = new Ammo.btVector3(Math.abs(ws.x), Math.abs(ws.y), Math.abs(ws.z));
-    shape.setLocalScaling(ls); Ammo.destroy(ls);
     const p = entity.getPosition(), q = entity.getRotation();
     const xform = new Ammo.btTransform();
     xform.setIdentity();
@@ -1014,7 +1040,76 @@ function addAmmoStaticMeshBodyFromEntity(entity, friction, restitution, dynamics
     body.setRestitution(restitution ?? 0);
     dynamicsWorld.addRigidBody(body);
     Ammo.destroy(xform); Ammo.destroy(li); Ammo.destroy(rbi);
+    console.log('[Physics] static mesh body for "' + (entity.name ?? '?') + '", tris=' + triCount +
+        ', pos=(' + p.x.toFixed(2) + ',' + p.y.toFixed(2) + ',' + p.z.toFixed(2) + ')' +
+        ', scale=(' + sx.toFixed(3) + ',' + sy.toFixed(3) + ',' + sz.toFixed(3) + ')');
     return body;
+}
+
+// Create a dynamic btRigidBody for an implicit shape (sphere/box/capsule/cylinder) using
+// raw Ammo.js instead of PlayCanvas's collision+rigidbody system. This bypasses any
+// PlayCanvas compound-shape timing issues and is the preferred path for single-shape
+// dynamic bodies declared via KHR_implicit_shapes.
+function addAmmoDynamicImplicitBody(entity, shapeDef, motionDef, worldScale, dynamicsWorld) {
+    const sx = Math.abs(worldScale.x);
+    const sy = Math.abs(worldScale.y);
+    const sz = Math.abs(worldScale.z);
+    let shape = null;
+    if (shapeDef.sphere) {
+        const r = (shapeDef.sphere.radius ?? 0.5) * Math.max(sx, sy, sz);
+        shape = new Ammo.btSphereShape(r);
+    } else if (shapeDef.box) {
+        const s = shapeDef.box.size ?? [1, 1, 1];
+        const hx = Math.abs(s[0] * sx) / 2;
+        const hy = Math.abs(s[1] * sy) / 2;
+        const hz = Math.abs(s[2] * sz) / 2;
+        const he = new Ammo.btVector3(hx, hy, hz);
+        shape = new Ammo.btBoxShape(he);
+        Ammo.destroy(he);
+    } else if (shapeDef.capsule) {
+        const r = ((shapeDef.capsule.radiusTop    ?? shapeDef.capsule.radius ?? 0.5) +
+                   (shapeDef.capsule.radiusBottom ?? shapeDef.capsule.radius ?? 0.5)) / 2 *
+                  Math.max(sx, sz);
+        const h = (shapeDef.capsule.height ?? 1.0) * sy;
+        shape = new Ammo.btCapsuleShape(r, h);
+    } else if (shapeDef.cylinder) {
+        const r = Math.max(shapeDef.cylinder.radiusTop    ?? shapeDef.cylinder.radius ?? 0.5,
+                           shapeDef.cylinder.radiusBottom ?? shapeDef.cylinder.radius ?? 0.5) *
+                  Math.max(sx, sz);
+        const h = (shapeDef.cylinder.height ?? 1.0) * sy;
+        const he = new Ammo.btVector3(r, h / 2, r);
+        shape = new Ammo.btCylinderShape(he);
+        Ammo.destroy(he);
+    } else {
+        console.warn('[Physics] unsupported implicit shape for dynamic body', shapeDef);
+        return null;
+    }
+    const rawMass = motionDef?.mass ?? 1;
+    const infiniteMass = rawMass === 0 || !Number.isFinite(rawMass);
+    const workingMass = infiniteMass ? 1 : rawMass;
+    const inertiaDiag = motionDef?.inertiaDiagonal;
+    const li = new Ammo.btVector3(0, 0, 0);
+    if (inertiaDiag) {
+        li.setValue(inertiaDiag[0] ?? 0, inertiaDiag[1] ?? 0, inertiaDiag[2] ?? 0);
+    } else {
+        shape.calculateLocalInertia(workingMass, li);
+    }
+    const p = entity.getPosition(), q = entity.getRotation();
+    const xform = new Ammo.btTransform();
+    xform.setIdentity();
+    xform.setOrigin(new Ammo.btVector3(p.x, p.y, p.z));
+    xform.setRotation(new Ammo.btQuaternion(q.x, q.y, q.z, q.w));
+    const ms = new Ammo.btDefaultMotionState(xform);
+    const rbi = new Ammo.btRigidBodyConstructionInfo(workingMass, ms, shape, li);
+    const body = new Ammo.btRigidBody(rbi);
+    if (infiniteMass) {
+        const zero = new Ammo.btVector3(0, 0, 0);
+        body.setLinearFactor(zero);
+        Ammo.destroy(zero);
+    }
+    dynamicsWorld.addRigidBody(body);
+    Ammo.destroy(xform); Ammo.destroy(li); Ammo.destroy(rbi);
+    return { body, motionState: ms };
 }
 
 // Create a dynamic btConvexHullShape from a PlayCanvas entity's render meshes.
@@ -1066,7 +1161,7 @@ function addAmmoDynamicConvexBodyFromEntity(entity, motionDef, dynamicsWorld) {
     return { body, motionState: ms };
 }
 
-function initPhysics(gltfJson, entityMap, dynamicsWorld) {
+function initPhysics(gltfJson, entityMap, dynamicsWorld, containerData) {
     const matDefs   = gltfJson.extensions?.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
     const shapeDefs = gltfJson.extensions?.KHR_implicit_shapes?.shapes ?? [];
     const nodes     = gltfJson.nodes ?? [];
@@ -1156,19 +1251,27 @@ function initPhysics(gltfJson, entityMap, dynamicsWorld) {
     const meshStaticEntities = []; // entities with raw Ammo static mesh bodies (for debug)
     let bodyCount = 0;
 
-    // First, give every body-owner a compound collision component.
-    // Body-owners whose own collider uses geometry.mesh are handled as raw Ammo bodies
-    // (btConvexHullShape) since PlayCanvas mesh collision only works for static bodies.
+    // Categorise every body-owner node:
+    //   manualMeshOwners      – own collider is a mesh → raw Ammo (static BVH or dynamic convex)
+    //   directImplicitOwners  – own collider is an implicit shape → raw Ammo btSphere/Box/etc.
+    //                           (bypasses PlayCanvas collision+rigidbody to avoid compound
+    //                           timing issues and shape double-scaling)
+    //   (everything else)     – compound body via PlayCanvas collision type='compound'
     const bodyOwnerNodes = [];
     const manualMeshOwners = new Set();
+    const directImplicitOwners = new Set();
     for (let i = 0; i < nodes.length; i++) {
         if (!hasMotion(i)) continue;
         const entity = entityMap[i];
         if (!entity) continue;
         const ownGeom = nodes[i].extensions?.KHR_physics_rigid_bodies?.collider?.geometry;
         if (ownGeom?.mesh !== undefined) {
-            manualMeshOwners.add(i); // will use raw Ammo in Pass 2, no compound component
+            manualMeshOwners.add(i); // raw Ammo in Pass 2
+        } else if (ownGeom?.shape !== undefined) {
+            // Simple body: own implicit shape, no compound wrapper needed.
+            directImplicitOwners.add(i);
         } else {
+            // Compound body (children supply the shapes, or no collider at all).
             entity.addComponent('collision', { type: 'compound' });
         }
         bodyOwnerNodes.push(i);
@@ -1184,10 +1287,11 @@ function initPhysics(gltfJson, entityMap, dynamicsWorld) {
 
         if (ownerIdx === i) {
             if (manualMeshOwners.has(i)) continue; // mesh owner → handled as raw Ammo in Pass 2
-            // Non-mesh body-owner: reparent its own collider onto a synthetic child
-            // so the parent stays a `compound`.
+            if (directImplicitOwners.has(i)) continue; // implicit-shape owner → raw Ammo in Pass 2
             const parentEntity = entityMap[i];
             if (!parentEntity) continue;
+            // Compound body that also carries its own collider: reparent the
+            // collider onto a synthetic child so the compound gathers it.
             const child = new pc.Entity('__khrCollider');
             parentEntity.addChild(child);
             const built = buildCollisionData(collider, child);
@@ -1200,16 +1304,18 @@ function initPhysics(gltfJson, entityMap, dynamicsWorld) {
             if (!geomDef) continue;
 
             // Standalone static with mesh collider → raw Ammo btBvhTriangleMeshShape.
-            // PlayCanvas's type:'mesh' collision is unreliable for externally-managed
-            // meshes; using Ammo directly guarantees a correct btBvhTriangleMeshShape.
+            // Look up the pc.Mesh objects from containerData.meshes[N] so the body is
+            // built correctly even when the node has no visual mesh (physics-only nodes).
             if (geomDef.mesh !== undefined && ownerIdx < 0 && dynamicsWorld) {
                 const mat = collider.physicsMaterial !== undefined
                     ? (matDefs[collider.physicsMaterial] ?? {}) : {};
+                const pcMeshes = containerData?.meshes?.[geomDef.mesh];
                 const body = addAmmoStaticMeshBodyFromEntity(
                     entity,
                     mat.dynamicFriction ?? mat.staticFriction ?? 0.5,
                     mat.restitution ?? 0,
-                    dynamicsWorld);
+                    dynamicsWorld,
+                    pcMeshes);
                 if (body) meshStaticEntities.push(entity);
                 bodyCount++;
                 continue;
@@ -1225,44 +1331,89 @@ function initPhysics(gltfJson, entityMap, dynamicsWorld) {
         }
     }
 
+    // Helper used in Pass 2: apply velocity / gravity to a raw Ammo body from motionDef.
+    function applyMotionExtras(body, motionDef) {
+        if (Array.isArray(motionDef?.linearVelocity)) {
+            const v = new Ammo.btVector3(...motionDef.linearVelocity);
+            body.setLinearVelocity(v); Ammo.destroy(v);
+        }
+        if (Array.isArray(motionDef?.angularVelocity)) {
+            const v = new Ammo.btVector3(...motionDef.angularVelocity);
+            body.setAngularVelocity(v); Ammo.destroy(v);
+        }
+        if (motionDef?.gravityFactor !== undefined) {
+            const BT_DISABLE_WORLD_GRAVITY = 1;
+            body.setFlags(body.getFlags() | BT_DISABLE_WORLD_GRAVITY);
+            const g = new Ammo.btVector3(0, -9.81 * motionDef.gravityFactor, 0);
+            body.setGravity(g); body.activate(true); Ammo.destroy(g);
+        }
+    }
+
     // Pass 2: add the rigidbody components.
     for (const i of bodyOwnerNodes) {
         const entity = entityMap[i];
         const motionDef = nodes[i].extensions.KHR_physics_rigid_bodies.motion;
         const isKinematic = !!motionDef?.isKinematic;
 
-        // Mesh-collider body owners: use raw Ammo (btConvexHullShape) instead of
-        // PlayCanvas compound, since PlayCanvas mesh collision is static-only.
+        // Mesh-collider body owners: use raw Ammo instead of PlayCanvas compound.
+        // If mass=0: static btBvhTriangleMeshShape (correct for floors/walls).
+        // If mass>0: dynamic btConvexHullShape (correct for dynamic mesh bodies).
         if (manualMeshOwners.has(i)) {
             if (!isKinematic && dynamicsWorld) {
-                const result = addAmmoDynamicConvexBodyFromEntity(entity, motionDef, dynamicsWorld);
-                if (result) {
-                    const { body, motionState } = result;
-                    if (Array.isArray(motionDef?.linearVelocity)) {
-                        const v = new Ammo.btVector3(...motionDef.linearVelocity);
-                        body.setLinearVelocity(v); Ammo.destroy(v);
+                const ownCollider0 = nodes[i].extensions.KHR_physics_rigid_bodies.collider;
+                const geomDef0 = ownCollider0?.geometry;
+                const rawMass0 = motionDef?.mass ?? 1;
+                const isZeroMass = rawMass0 === 0 || !Number.isFinite(rawMass0);
+                if (isZeroMass) {
+                    // Static mesh body — use btBvhTriangleMeshShape for correct concave collisions.
+                    const mat0 = (ownCollider0?.physicsMaterial !== undefined)
+                        ? (matDefs[ownCollider0.physicsMaterial] ?? {}) : {};
+                    const pcMeshes0 = containerData?.meshes?.[geomDef0?.mesh];
+                    addAmmoStaticMeshBodyFromEntity(
+                        entity,
+                        mat0.dynamicFriction ?? mat0.staticFriction ?? 0.5,
+                        mat0.restitution ?? 0,
+                        dynamicsWorld, pcMeshes0);
+                } else {
+                    const result = addAmmoDynamicConvexBodyFromEntity(entity, motionDef, dynamicsWorld);
+                    if (result) {
+                        const { body, motionState } = result;
+                        applyMotionExtras(body, motionDef);
+                        manualDynamicBodies.push({
+                            entity, body, motionState, motionDef,
+                            initialPosition: entity.getPosition().clone(),
+                            initialRotation: entity.getRotation().clone()
+                        });
                     }
-                    if (Array.isArray(motionDef?.angularVelocity)) {
-                        const v = new Ammo.btVector3(...motionDef.angularVelocity);
-                        body.setAngularVelocity(v); Ammo.destroy(v);
+                }
+            }
+            bodyCount++;
+            continue;
+        }
+
+        // Implicit-shape body owners (sphere/box/capsule/cylinder): bypass PlayCanvas
+        // collision+rigidbody system entirely — use raw Ammo shapes to avoid compound
+        // timing issues and double-scaling of shape dimensions.
+        if (directImplicitOwners.has(i)) {
+            if (!isKinematic && dynamicsWorld) {
+                const ownCollider1 = nodes[i].extensions.KHR_physics_rigid_bodies.collider;
+                const geomDef1 = ownCollider1?.geometry;
+                if (geomDef1?.shape !== undefined) {
+                    const shapeDef1 = shapeDefs[geomDef1.shape];
+                    if (shapeDef1) {
+                        const worldScale1 = entity.getWorldTransform().getScale();
+                        const result = addAmmoDynamicImplicitBody(
+                            entity, shapeDef1, motionDef, worldScale1, dynamicsWorld);
+                        if (result) {
+                            const { body, motionState } = result;
+                            applyMotionExtras(body, motionDef);
+                            manualDynamicBodies.push({
+                                entity, body, motionState, motionDef,
+                                initialPosition: entity.getPosition().clone(),
+                                initialRotation: entity.getRotation().clone()
+                            });
+                        }
                     }
-                    // Gravity override for raw Ammo body can be applied immediately
-                    // (no deferred initialization unlike PlayCanvas rigidbody components).
-                    if (motionDef?.gravityFactor !== undefined) {
-                        const BT_DISABLE_WORLD_GRAVITY = 1;
-                        body.setFlags(body.getFlags() | BT_DISABLE_WORLD_GRAVITY);
-                        const g = new Ammo.btVector3(0, -9.81 * motionDef.gravityFactor, 0);
-                        body.setGravity(g);
-                        body.activate(true);
-                        Ammo.destroy(g);
-                    }
-                    manualDynamicBodies.push({
-                        entity, body, motionState, motionDef,
-                        initialPosition: entity.getPosition().clone(),
-                        initialRotation: entity.getRotation().clone()
-                    });
-                    // Do NOT push to dynamicInfos — manual bodies have no PlayCanvas
-                    // rigidbody component so the material-combine pass would crash.
                 }
             }
             bodyCount++;
