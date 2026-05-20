@@ -94,6 +94,29 @@ function getBasename(path) {
     return path.split("/").pop();
 }
 
+function getFileStem(name) {
+    const basename = getBasename(name || "scene");
+    const lastDot = basename.lastIndexOf(".");
+    return lastDot >= 0 ? basename.slice(0, lastDot) : basename;
+}
+
+function getExportName(modelSource, modelInfo, path) {
+    if (modelSource.displayName) {
+        return getFileStem(modelSource.displayName);
+    }
+    if (modelInfo?.name && modelInfo.name !== "Other") {
+        return modelInfo.name;
+    }
+    return getFileStem(path);
+}
+
+function getCaptureUrl(sceneSource) {
+    if (sceneSource.sceneFilename.startsWith("blob:") || sceneSource.sceneFilename.startsWith("data:")) {
+        return sceneSource.sceneFilename;
+    }
+    return sceneSource.rootUrl + sceneSource.sceneFilename;
+}
+
 async function createDroppedModelSource(fileList) {
     const files = Array.from(fileList);
     const modelFile = files.find(function(file) {
@@ -321,6 +344,7 @@ let createScene = function(engine, modelSource) {
     }
     const pluginExtension = getPluginExtension(modelSource, path, modelInfo);
     const sceneSource = splitScenePath(path);
+    const exportName = getExportName(modelSource, modelInfo, path);
 
     // GUI
     let gui = new dat.GUI();
@@ -335,6 +359,17 @@ let createScene = function(engine, modelSource) {
     let guiTonemap = gui.add(params, 'TONEMAP', tonemaps).name('Tonemap');
     let guiDebug = gui.add(params, 'DEBUG').name('Debug');
     let guiPhysicsDebug = gui.add(params, 'PHYSICS_DEBUG').name('Physics Debug');
+    let guiExport = gui.add({
+        exportGLTFPhysics: function() {
+            if (!BABYLON.GLTFPhysicsExport) {
+                console.warn("[glTF Physics Export] Exporter is not loaded.");
+                return;
+            }
+            BABYLON.GLTFPhysicsExport.GLBAsync(scene, exportName).catch(function(error) {
+                console.error("[glTF Physics Export] Export failed:", error);
+            });
+        }
+    }, "exportGLTFPhysics").name("Export glTF Physics");
     let guiVariants = null;
     let guiCameras = null;
 
@@ -368,9 +403,23 @@ let createScene = function(engine, modelSource) {
         engine,
         undefined,
         pluginExtension
-    ).then(function (newScene) {
+    ).then(async function (newScene) {
 
         scene = newScene;
+
+        if (BABYLON.GLTFPhysicsExport) {
+            const captureUrl = getCaptureUrl(sceneSource);
+            if (pluginExtension === ".glb") {
+                try {
+                    await BABYLON.GLTFPhysicsExport.captureLoadedAsync(scene, captureUrl);
+                } catch (error) {
+                    console.warn("[glTF Physics Export] Failed to capture loaded physics extensions:", error);
+                }
+            }
+            BABYLON.GLTFPhysicsExport.snapshot(scene);
+        } else {
+            console.warn("[glTF Physics Export] Exporter is not loaded.");
+        }
 
         // Physics diagnostics
         console.log('[Physics] Scene loaded');
