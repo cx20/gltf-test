@@ -397,19 +397,45 @@ let createScene = function(engine, modelSource) {
         });
     });
 
-    return BABYLON.SceneLoader.LoadAsync(
-        sceneSource.rootUrl,
-        sceneSource.sceneFilename,
-        engine,
-        undefined,
-        pluginExtension
-    ).then(async function (newScene) {
+    const captureUrl = getCaptureUrl(sceneSource);
+    // Drag-dropped / data-URI models resolve their external buffers and
+    // textures through an in-memory file map that appendTaggedAsync can't
+    // see, so only http(s) sources take the tagged path.
+    const isRemoteSource = !(sceneSource.sceneFilename.startsWith("blob:")
+        || sceneSource.sceneFilename.startsWith("data:"));
+
+    let loadPromise;
+    if (isRemoteSource
+        && BABYLON.GLTFPhysicsExport
+        && typeof BABYLON.GLTFPhysicsExport.appendTaggedAsync === "function") {
+        // Stamp every source node with its index and splice in any missing
+        // top-level physics extension blocks before the loader runs, so
+        // KHR_physics_rigid_bodies round-trips through the exporter even for
+        // nameless / duplicate-named nodes (e.g. the RigidBodies_* tests,
+        // whose nodes are unnamed and whose top-level rigid-bodies block is
+        // omitted). Non-physics models pass through untouched.
+        const taggedScene = new BABYLON.Scene(engine);
+        loadPromise = BABYLON.GLTFPhysicsExport.appendTaggedAsync(taggedScene, captureUrl)
+            .then(function () { return taggedScene; })
+            .catch(function (error) {
+                console.warn("[glTF Physics Export] Tagged load failed, falling back to plain loader:", error);
+                taggedScene.dispose();
+                return BABYLON.SceneLoader.LoadAsync(
+                    sceneSource.rootUrl, sceneSource.sceneFilename, engine, undefined, pluginExtension);
+            });
+    } else {
+        loadPromise = BABYLON.SceneLoader.LoadAsync(
+            sceneSource.rootUrl, sceneSource.sceneFilename, engine, undefined, pluginExtension);
+    }
+
+    return loadPromise.then(async function (newScene) {
 
         scene = newScene;
 
         if (BABYLON.GLTFPhysicsExport) {
-            const captureUrl = getCaptureUrl(sceneSource);
-            if (pluginExtension === ".glb") {
+            // Capture for a self-contained .glb always, and for any remote
+            // model (so .gltf + .bin test models round-trip too).
+            if (pluginExtension === ".glb" || isRemoteSource) {
                 try {
                     await BABYLON.GLTFPhysicsExport.captureLoadedAsync(scene, captureUrl);
                 } catch (error) {
