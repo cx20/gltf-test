@@ -416,6 +416,17 @@ let createScene = function(engine, modelSource) {
         }
 
         const physicsEngine = scene.getPhysicsEngine && scene.getPhysicsEngine();
+        // The loader's onExtensionLoadedObservable can miss the physics
+        // extension when another model was already loaded earlier in the
+        // session (e.g. a model opened via URL args before a drag-and-drop),
+        // so fall back to inspecting the loaded scene directly. This keeps the
+        // pause-on-load and Physics Debug behaviour working in that case.
+        if (!physicsExtensionLoaded) {
+            physicsExtensionLoaded = !!physicsEngine
+                || scene.meshes.concat(scene.transformNodes).some(function(node) {
+                    return node.physicsBody;
+                });
+        }
         if (physicsExtensionLoaded && physicsEngine && typeof physicsEngine.setTimeStep === 'function') {
             const originalTimeStep = typeof physicsEngine.getTimeStep === 'function'
                 ? physicsEngine.getTimeStep()
@@ -573,46 +584,87 @@ let createScene = function(engine, modelSource) {
 
         let physicsViewer = null;
         const shownPhysicsBodies = new Set();
+        // Hand every rigid body in the scene to the PhysicsViewer. Bodies
+        // attach to whichever glTF node carries the extension, which is often a
+        // TransformNode (not present in scene.meshes), so walk both lists.
+        // showBody can throw while the underlying Havok body is still
+        // initializing (notably on the tagged remote-load path used when a
+        // model is opened via URL); those bodies are left out of the shown set
+        // so the per-frame refresh below retries them.
+        function refreshPhysicsDebug() {
+            const nodes = scene.meshes.concat(scene.transformNodes);
+            // Only spin up a PhysicsViewer (and its utility layer) once there
+            // is a body to show, so non-physics models never create one.
+            if (!nodes.some(function(node) { return node.physicsBody; })) {
+                return;
+            }
+            if (!physicsViewer && BABYLON.PhysicsViewer) {
+                physicsViewer = new BABYLON.PhysicsViewer(scene);
+            }
+            if (!physicsViewer) {
+                return;
+            }
+            nodes.forEach(function(node) {
+                const body = node.physicsBody;
+                if (body && !shownPhysicsBodies.has(body)) {
+                    try {
+                        physicsViewer.showBody(body);
+                        shownPhysicsBodies.add(body);
+                    } catch(e) {}
+                }
+            });
+        }
+        function pendingPhysicsBodies() {
+            return scene.meshes.concat(scene.transformNodes).some(function(node) {
+                return node.physicsBody && !shownPhysicsBodies.has(node.physicsBody);
+            });
+        }
         function showPhysicsDebug(value) {
             if (value) {
-                if (!physicsViewer && BABYLON.PhysicsViewer) {
-                    physicsViewer = new BABYLON.PhysicsViewer(scene);
-                }
-                if (physicsViewer) {
-                    // Rigid bodies attach to whichever glTF node carries the
-                    // extension, which is often a TransformNode (not present in
-                    // scene.meshes), so walk both lists and skip bodies that are
-                    // already being shown.
-                    scene.meshes.concat(scene.transformNodes).forEach(function(node) {
-                        const body = node.physicsBody;
-                        if (body && !shownPhysicsBodies.has(body)) {
-                            try {
-                                physicsViewer.showBody(body);
-                                shownPhysicsBodies.add(body);
-                            } catch(e) {}
-                        }
-                    });
-                }
+                refreshPhysicsDebug();
             } else if (physicsViewer) {
                 physicsViewer.dispose();
                 physicsViewer = null;
                 shownPhysicsBodies.clear();
             }
         }
-        // Always show the physics wireframes for glTF physics models. Some
-        // bodies (e.g. on drag-dropped models) only finish initializing after
-        // the first frame, so re-apply once the scene has rendered.
+        // Keep Physics Debug on for glTF physics models and make sure every
+        // shape gets a wireframe. Rigid bodies (and their Havok handles) can
+        // finish initializing several frames after the load resolves - notably
+        // on the tagged remote-load path - so refresh the viewer each frame
+        // until no body is left pending (with a safety cap).
+        //
+        // The viewer is created from the refresh loop (first run on the next
+        // rendered frame), NOT synchronously here: this scene only becomes
+        // current - and the previous scene plus its PhysicsViewer utility
+        // layer get disposed - after createScene returns. Creating a second
+        // utility layer while the previous one is still alive leaves the new
+        // wireframes unrendered (e.g. after first opening a model via URL).
         if (physicsExtensionLoaded && !params.PHYSICS_DEBUG) {
             params.PHYSICS_DEBUG = true;
             guiPhysicsDebug.updateDisplay();
         }
         if (params.PHYSICS_DEBUG) {
-            showPhysicsDebug(true);
-            if (physicsExtensionLoaded) {
-                scene.onAfterRenderObservable.addOnce(function() {
-                    if (params.PHYSICS_DEBUG) showPhysicsDebug(true);
-                });
-            }
+            let frames = 0;
+            let settledFrames = 0;
+            const refreshObserver = scene.onAfterRenderObservable.add(function() {
+                frames++;
+                if (!params.PHYSICS_DEBUG) {
+                    scene.onAfterRenderObservable.remove(refreshObserver);
+                    return;
+                }
+                refreshPhysicsDebug();
+                settledFrames = pendingPhysicsBodies() ? 0 : settledFrames + 1;
+                const done = (shownPhysicsBodies.size > 0 && settledFrames >= 10) // all bodies shown and stable
+                    || (shownPhysicsBodies.size === 0 && frames >= 60)            // no physics in this model
+                    || frames >= 180;                                            // safety cap (~3s at 60fps)
+                if (done) {
+                    if (physicsExtensionLoaded || shownPhysicsBodies.size > 0) {
+                        console.log('[Physics] Physics debug wireframes shown for', shownPhysicsBodies.size, 'bodies');
+                    }
+                    scene.onAfterRenderObservable.remove(refreshObserver);
+                }
+            });
         }
         guiPhysicsDebug.onChange(showPhysicsDebug);
 
