@@ -285,6 +285,7 @@ class Viewer {
                 enableFly: false
             }
         });
+        this.cameraControls = script;
 
         let light = new pc.Entity();
         light.addComponent("light", {
@@ -313,6 +314,11 @@ class Viewer {
         this.morphMap = {};
         this.animationMap = {};
         this.physicsDebugEntities = [];
+        this.dynamicEntities = [];
+        this.gravityOverrides = [];
+        this.gravityApplied = false;
+        this.manualDynamicBodies = [];
+        this.meshStaticEntities = [];
         this.asset = null;
         this.currentObjectUrls = [];
         this.currentModelInfo = initialModelInfo;
@@ -352,11 +358,46 @@ class Viewer {
             app.systems.rigidbody.gravity.set(0, -9.81, 0);
         }
 
-        // Per-frame KHR physics wireframe debug overlay.
+        // Per-frame updates: sync manual Ammo bodies, apply deferred gravity overrides on
+        // first frame (PlayCanvas Ammo bodies are created during the first physics update,
+        // not synchronously during addComponent), then draw the physics debug overlay.
+        let tmpAmmoTransform = null;
         app.on('update', () => {
+            if (this.manualDynamicBodies.length > 0 && typeof Ammo !== 'undefined') {
+                if (!tmpAmmoTransform) tmpAmmoTransform = new Ammo.btTransform();
+                for (const mb of this.manualDynamicBodies) {
+                    mb.motionState.getWorldTransform(tmpAmmoTransform);
+                    const o = tmpAmmoTransform.getOrigin();
+                    const r = tmpAmmoTransform.getRotation();
+                    mb.entity.setPosition(o.x(), o.y(), o.z());
+                    mb.entity.setRotation(r.x(), r.y(), r.z(), r.w());
+                }
+            }
+            if (!this.gravityApplied && this.gravityOverrides.length > 0 && typeof Ammo !== 'undefined') {
+                this.gravityApplied = true;
+                const BT_DISABLE_WORLD_GRAVITY = 1;
+                for (const { entity, factor } of this.gravityOverrides) {
+                    const body = entity.rigidbody?.body;
+                    if (!body) continue;
+                    body.setFlags(body.getFlags() | BT_DISABLE_WORLD_GRAVITY);
+                    const g = new Ammo.btVector3(0, -9.81 * factor, 0);
+                    body.setGravity(g);
+                    body.activate(true);
+                    Ammo.destroy(g);
+                }
+            }
             if (!obj.PHYSICS_DEBUG) return;
-            if (!this.physicsDebugEntities || this.physicsDebugEntities.length === 0) return;
             drawPhysicsDebug(app, this.physicsDebugEntities);
+            // Raw Ammo bodies have no PlayCanvas collision component, so draw their
+            // actual physics shape (oriented box/sphere/etc. for implicit shapes, or
+            // the mesh wireframe for convex/triangle-mesh colliders) rather than the
+            // visual mesh's axis-aligned bounding box.
+            for (const mb of this.manualDynamicBodies) {
+                _drawManualBodyShape(app, mb.entity, mb.debugShape, _DBG_COLOR_DYNAMIC);
+            }
+            for (const e of this.meshStaticEntities) {
+                _drawWireMesh(app, e, e.getWorldTransform(), _DBG_COLOR_STATIC);
+            }
         });
 
         app.start();
@@ -404,23 +445,46 @@ class Viewer {
         this.morphMap = {};
         this.entities = [];
         this.physicsDebugEntities = [];
+        this.dynamicEntities = [];
+        this.gravityOverrides = [];
+        this.gravityApplied = false;
+        this.manualDynamicBodies = [];
+        this.meshStaticEntities = [];
     }
 
     focusCamera() {
-        if (this.entity) {
-            if (this.camera.script && this.camera.script.orbitCamera) {
-                let orbitCamera = this.camera.script.orbitCamera;
-                orbitCamera.focus(this.entity);
+        let entity = this.entity;
+        if (!entity) return;
+        const camera = this.camera;
+        const controls = this.cameraControls;
+        if (!controls) return;
 
-                const scale = this.currentScale || 1;
-                orbitCamera.distance = 1 / scale * 5; 
-
-                let distance = orbitCamera.distance;
-                this.camera.camera.nearClip = distance / 10;
-                this.camera.camera.farClip = distance * 10;
-
-                this.light.light.shadowDistance = distance * 2;
-            }
+        if (this.dynamicEntities && this.dynamicEntities.length > 0) {
+            // For enclosed physics scenes, focus on dynamic bodies only to avoid
+            // the room/ceiling geometry placing the camera inside the structure.
+            const { center, radius } = computeBodyBounds(this.dynamicEntities);
+            const startPos = new pc.Vec3(center.x, center.y + 1.5, center.z + radius);
+            controls.reset(center, startPos);
+            camera.camera.nearClip = radius / 100;
+            camera.camera.farClip = radius * 20;
+            this.light.light.shadowDistance = radius * 2;
+        } else {
+            const scale = this.currentScale || 1;
+            const renderComps = entity.findComponents('render');
+            let aabb = null;
+            renderComps.forEach((rc) => {
+                rc.meshInstances.forEach((mi) => {
+                    if (!aabb) { aabb = mi.aabb.clone(); }
+                    else { aabb.add(mi.aabb); }
+                });
+            });
+            const center = aabb ? aabb.center.clone() : new pc.Vec3(0, 0, 0);
+            const radius = aabb ? aabb.halfExtents.length() * 2.5 : (5 / scale);
+            const startPos = new pc.Vec3(center.x, center.y, center.z + radius);
+            controls.reset(center, startPos);
+            camera.camera.nearClip = radius / 10;
+            camera.camera.farClip = radius * 10;
+            this.light.light.shadowDistance = radius * 2;
         }
     }
 
@@ -588,9 +652,16 @@ class Viewer {
             if (typeof Ammo === 'undefined' || !this.app.systems.rigidbody) {
                 console.warn('KHR physics: Ammo.js / rigidbody system unavailable; physics will not run');
             } else {
+                const dynamicsWorld = this.app.systems.rigidbody.dynamicsWorld;
                 const entityMap = buildEntityMap(resource.data, entity);
-                const debugEntities = initPhysics(gltfJson, entityMap);
+                const { debugEntities, dynamicEntities, gravityOverrides, manualDynamicBodies, meshStaticEntities } =
+                    initPhysics(gltfJson, entityMap, dynamicsWorld, resource.data);
                 this.physicsDebugEntities = debugEntities;
+                this.dynamicEntities = dynamicEntities;
+                this.gravityOverrides = gravityOverrides;
+                this.manualDynamicBodies = manualDynamicBodies;
+                this.meshStaticEntities = meshStaticEntities;
+                this.gravityApplied = false;
             }
         }
              
@@ -721,32 +792,56 @@ setupDropZone();
 
 // ---- KHR_physics_rigid_bodies helpers (PlayCanvas / Ammo) ----
 
+// Map a glTF node index -> cloned PlayCanvas Entity by walking the original
+// glTF hierarchy and the cloned entity tree in parallel. Children are matched
+// by name with a forward cursor so cloned light/camera children inserted by
+// PlayCanvas do not break alignment.
 function buildEntityMap(data, clonedRoot) {
-    const map = new Array(data.gltf.nodes.length).fill(null);
-    const sceneRoots = data.scenes.length === 1 ? [clonedRoot] : clonedRoot.children;
-    for (let s = 0; s < data.scenes.length; s++) {
-        zipChildren(data.scenes[s], sceneRoots[s], data.nodes, map);
+    const gltfJson = data.gltf;
+    const nodes = gltfJson.nodes ?? [];
+    const map = new Array(nodes.length).fill(null);
+
+    function nameMap(children) {
+        const m = new Map();
+        for (const child of children) {
+            const n = child.name ?? '';
+            if (!m.has(n)) m.set(n, []);
+            m.get(n).push(child);
+        }
+        return m;
+    }
+
+    function walk(nodeIndex, entity) {
+        if (!entity || nodeIndex < 0) return;
+        map[nodeIndex] = entity;
+        const childIndices = nodes[nodeIndex].children ?? [];
+        if (!childIndices.length) return;
+        const byName = nameMap(entity.children);
+        for (const ci of childIndices) {
+            const cName = nodes[ci]?.name ?? '';
+            const candidates = byName.get(cName);
+            if (candidates?.length) walk(ci, candidates.shift());
+        }
+    }
+
+    const scenes = gltfJson.scenes ?? [];
+    const sceneRoots = scenes.length === 1 ? [clonedRoot] : clonedRoot.children;
+    for (let s = 0; s < scenes.length; s++) {
+        const sceneRoot = sceneRoots[s];
+        if (!sceneRoot) continue;
+        const rootIndices = scenes[s].nodes ?? [];
+        if (rootIndices.length === 1 && sceneRoot.name === (nodes[rootIndices[0]]?.name ?? '')) {
+            walk(rootIndices[0], sceneRoot);
+            continue;
+        }
+        const byName = nameMap(sceneRoot.children);
+        for (const ri of rootIndices) {
+            const rName = nodes[ri]?.name ?? '';
+            const candidates = byName.get(rName);
+            if (candidates?.length) walk(ri, candidates.shift());
+        }
     }
     return map;
-}
-
-function zipChildren(orig, clone, dataNodes, map) {
-    if (!orig || !clone) return;
-    let cursor = 0;
-    for (const oc of orig.children) {
-        let matched = null;
-        for (let j = cursor; j < clone.children.length; j++) {
-            if (clone.children[j].name === oc.name) {
-                matched = clone.children[j];
-                cursor = j + 1;
-                break;
-            }
-        }
-        if (!matched) continue;
-        const idx = dataNodes.indexOf(oc);
-        if (idx >= 0) map[idx] = matched;
-        zipChildren(oc, matched, dataNodes, map);
-    }
 }
 
 function getCollisionDataFromImplicit(shapeDef, worldScale) {
@@ -791,6 +886,8 @@ function getFriction(matDef) {
     return matDef.dynamicFriction ?? matDef.staticFriction;
 }
 
+// KHR combine rule priority: AVERAGE < MINIMUM < MAXIMUM < MULTIPLY
+// When two materials specify different rules, the higher priority wins.
 const COMBINE_PRIORITY = { average: 1, minimum: 2, maximum: 3, multiply: 4 };
 function pickCombineRule(rule0, rule1) {
     const r0 = rule0 || 'average';
@@ -859,96 +956,514 @@ function buildCollisionFilterTable(gltfJson) {
     return table;
 }
 
-function initPhysics(gltfJson, entityMap) {
+// Compute orbit camera bounds from dynamic bodies only.
+// For enclosed scenes (room with ceiling), this avoids the room geometry
+// dominating the bounds and placing the camera above/inside the ceiling.
+function computeBodyBounds(dynamicEntities) {
+    if (!dynamicEntities.length) return { center: new pc.Vec3(0, 2, 0), radius: 15 };
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for (const e of dynamicEntities) {
+        const p = e.getPosition();
+        minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+        minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z);
+    }
+    const center = new pc.Vec3((minX + maxX) * 0.5, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5);
+    const dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
+    const diagonal = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    return { center, radius: Math.max(diagonal + 8, 15) };
+}
+
+// Create a static btBvhTriangleMeshShape from a PlayCanvas entity's render meshes.
+// pcMeshes (optional): array of pc.Mesh from containerData.meshes[N] — used when the
+// collider references a mesh that isn't on the entity's render component (physics-only nodes).
+// Falls back to entity.render.meshInstances when pcMeshes is not supplied.
+// Pre-scales vertices by world scale because btBvhTriangleMeshShape.setLocalScaling()
+// in Ammo.js does NOT rebuild the internal BVH.
+function addAmmoStaticMeshBodyFromEntity(entity, friction, restitution, dynamicsWorld, pcMeshes) {
+    const meshes = pcMeshes ?? entity.render?.meshInstances?.map(mi => mi.mesh);
+    if (!meshes?.length) {
+        console.warn('[Physics] static mesh: no mesh data for "' + (entity?.name ?? '?') + '"');
+        return null;
+    }
+    const ws = entity.getWorldTransform().getScale();
+    const sx = Math.abs(ws.x), sy = Math.abs(ws.y), sz = Math.abs(ws.z);
+    const btTriMesh = new Ammo.btTriangleMesh(true, true);
+    let triCount = 0;
+    for (const mesh of meshes) {
+        const positions = [], indices = [];
+        mesh.getPositions(positions);
+        mesh.getIndices(indices);
+        for (let t = 0; t < indices.length / 3; t++) {
+            const i0 = indices[t*3]   * 3, i1 = indices[t*3+1] * 3, i2 = indices[t*3+2] * 3;
+            const v0 = new Ammo.btVector3(positions[i0]*sx, positions[i0+1]*sy, positions[i0+2]*sz);
+            const v1 = new Ammo.btVector3(positions[i1]*sx, positions[i1+1]*sy, positions[i1+2]*sz);
+            const v2 = new Ammo.btVector3(positions[i2]*sx, positions[i2+1]*sy, positions[i2+2]*sz);
+            btTriMesh.addTriangle(v0, v1, v2, false);
+            Ammo.destroy(v0); Ammo.destroy(v1); Ammo.destroy(v2);
+            triCount++;
+        }
+    }
+    if (triCount === 0) { Ammo.destroy(btTriMesh); return null; }
+    const shape = new Ammo.btBvhTriangleMeshShape(btTriMesh, true);
+    const p = entity.getPosition(), q = entity.getRotation();
+    const xform = new Ammo.btTransform();
+    xform.setIdentity();
+    xform.setOrigin(new Ammo.btVector3(p.x, p.y, p.z));
+    xform.setRotation(new Ammo.btQuaternion(q.x, q.y, q.z, q.w));
+    const ms = new Ammo.btDefaultMotionState(xform);
+    const li = new Ammo.btVector3(0, 0, 0);
+    const rbi = new Ammo.btRigidBodyConstructionInfo(0, ms, shape, li);
+    const body = new Ammo.btRigidBody(rbi);
+    body.setFriction(friction ?? 0.5);
+    body.setRestitution(restitution ?? 0);
+    dynamicsWorld.addRigidBody(body);
+    Ammo.destroy(xform); Ammo.destroy(li); Ammo.destroy(rbi);
+    console.log('[Physics] static mesh body for "' + (entity.name ?? '?') + '", tris=' + triCount +
+        ', pos=(' + p.x.toFixed(2) + ',' + p.y.toFixed(2) + ',' + p.z.toFixed(2) + ')' +
+        ', scale=(' + sx.toFixed(3) + ',' + sy.toFixed(3) + ',' + sz.toFixed(3) + ')');
+    return body;
+}
+
+// Create a dynamic btRigidBody for an implicit shape (sphere/box/capsule/cylinder) using
+// raw Ammo.js instead of PlayCanvas's collision+rigidbody system. This bypasses any
+// PlayCanvas compound-shape timing issues and is the preferred path for single-shape
+// dynamic bodies declared via KHR_implicit_shapes.
+function addAmmoDynamicImplicitBody(entity, shapeDef, motionDef, worldScale, dynamicsWorld) {
+    const sx = Math.abs(worldScale.x);
+    const sy = Math.abs(worldScale.y);
+    const sz = Math.abs(worldScale.z);
+    let shape = null;
+    if (shapeDef.sphere) {
+        const r = (shapeDef.sphere.radius ?? 0.5) * Math.max(sx, sy, sz);
+        shape = new Ammo.btSphereShape(r);
+    } else if (shapeDef.box) {
+        const s = shapeDef.box.size ?? [1, 1, 1];
+        const hx = Math.abs(s[0] * sx) / 2;
+        const hy = Math.abs(s[1] * sy) / 2;
+        const hz = Math.abs(s[2] * sz) / 2;
+        const he = new Ammo.btVector3(hx, hy, hz);
+        shape = new Ammo.btBoxShape(he);
+        Ammo.destroy(he);
+    } else if (shapeDef.capsule) {
+        const r = ((shapeDef.capsule.radiusTop    ?? shapeDef.capsule.radius ?? 0.5) +
+                   (shapeDef.capsule.radiusBottom ?? shapeDef.capsule.radius ?? 0.5)) / 2 *
+                  Math.max(sx, sz);
+        const h = (shapeDef.capsule.height ?? 1.0) * sy;
+        shape = new Ammo.btCapsuleShape(r, h);
+    } else if (shapeDef.cylinder) {
+        const r = Math.max(shapeDef.cylinder.radiusTop    ?? shapeDef.cylinder.radius ?? 0.5,
+                           shapeDef.cylinder.radiusBottom ?? shapeDef.cylinder.radius ?? 0.5) *
+                  Math.max(sx, sz);
+        const h = (shapeDef.cylinder.height ?? 1.0) * sy;
+        const he = new Ammo.btVector3(r, h / 2, r);
+        shape = new Ammo.btCylinderShape(he);
+        Ammo.destroy(he);
+    } else {
+        console.warn('[Physics] unsupported implicit shape for dynamic body', shapeDef);
+        return null;
+    }
+    const rawMass = motionDef?.mass ?? 1;
+    const infiniteMass = rawMass === 0 || !Number.isFinite(rawMass);
+    const workingMass = infiniteMass ? 1 : rawMass;
+    const inertiaDiag = motionDef?.inertiaDiagonal;
+    const li = new Ammo.btVector3(0, 0, 0);
+    if (inertiaDiag) {
+        li.setValue(inertiaDiag[0] ?? 0, inertiaDiag[1] ?? 0, inertiaDiag[2] ?? 0);
+    } else {
+        shape.calculateLocalInertia(workingMass, li);
+    }
+    const p = entity.getPosition(), q = entity.getRotation();
+    const xform = new Ammo.btTransform();
+    xform.setIdentity();
+    xform.setOrigin(new Ammo.btVector3(p.x, p.y, p.z));
+    xform.setRotation(new Ammo.btQuaternion(q.x, q.y, q.z, q.w));
+    const ms = new Ammo.btDefaultMotionState(xform);
+    const rbi = new Ammo.btRigidBodyConstructionInfo(workingMass, ms, shape, li);
+    const body = new Ammo.btRigidBody(rbi);
+    if (infiniteMass) {
+        const zero = new Ammo.btVector3(0, 0, 0);
+        body.setLinearFactor(zero);
+        Ammo.destroy(zero);
+    }
+    dynamicsWorld.addRigidBody(body);
+    Ammo.destroy(xform); Ammo.destroy(li); Ammo.destroy(rbi);
+    return { body, motionState: ms };
+}
+
+// Create a dynamic btConvexHullShape from a PlayCanvas entity's render meshes.
+function addAmmoDynamicConvexBodyFromEntity(entity, motionDef, dynamicsWorld) {
+    if (!entity.render?.meshInstances?.length) return null;
+    const rawMass = motionDef?.mass ?? 1;
+    const infiniteMass = rawMass === 0 || !Number.isFinite(rawMass);
+    const workingMass = infiniteMass ? 1 : rawMass;
+    const inertiaDiag = motionDef?.inertiaDiagonal;
+    const shape = new Ammo.btConvexHullShape();
+    let ptCount = 0;
+    for (const mi of entity.render.meshInstances) {
+        const mesh = mi.mesh;
+        const positions = [];
+        mesh.getPositions(positions);
+        for (let i = 0; i < positions.length; i += 3) {
+            const v = new Ammo.btVector3(positions[i], positions[i+1], positions[i+2]);
+            shape.addPoint(v, false);
+            Ammo.destroy(v);
+            ptCount++;
+        }
+    }
+    if (ptCount === 0) { Ammo.destroy(shape); return null; }
+    shape.recalcLocalAabb();
+    const ws = entity.getWorldTransform().getScale();
+    const ls = new Ammo.btVector3(Math.abs(ws.x), Math.abs(ws.y), Math.abs(ws.z));
+    shape.setLocalScaling(ls); Ammo.destroy(ls);
+    const p = entity.getPosition(), q = entity.getRotation();
+    const xform = new Ammo.btTransform();
+    xform.setIdentity();
+    xform.setOrigin(new Ammo.btVector3(p.x, p.y, p.z));
+    xform.setRotation(new Ammo.btQuaternion(q.x, q.y, q.z, q.w));
+    const ms = new Ammo.btDefaultMotionState(xform);
+    const li = new Ammo.btVector3(0, 0, 0);
+    if (inertiaDiag) {
+        li.setValue(inertiaDiag[0] ?? 0, inertiaDiag[1] ?? 0, inertiaDiag[2] ?? 0);
+    } else {
+        shape.calculateLocalInertia(workingMass, li);
+    }
+    const rbi = new Ammo.btRigidBodyConstructionInfo(workingMass, ms, shape, li);
+    const body = new Ammo.btRigidBody(rbi);
+    if (infiniteMass) {
+        const zero = new Ammo.btVector3(0, 0, 0);
+        body.setLinearFactor(zero);
+        Ammo.destroy(zero);
+    }
+    dynamicsWorld.addRigidBody(body);
+    Ammo.destroy(xform); Ammo.destroy(li); Ammo.destroy(rbi);
+    return { body, motionState: ms };
+}
+
+function initPhysics(gltfJson, entityMap, dynamicsWorld, containerData) {
     const matDefs   = gltfJson.extensions?.KHR_physics_rigid_bodies?.physicsMaterials ?? [];
     const shapeDefs = gltfJson.extensions?.KHR_implicit_shapes?.shapes ?? [];
     const nodes     = gltfJson.nodes ?? [];
     const filterTable = buildCollisionFilterTable(gltfJson);
 
-    const dynamicInfos = [];
-    const staticInfos  = [];
+    // Resolve {group, mask} for a body. Bullet has one filter pair per body,
+    // so for compound bodies we pick the first collisionFilter found by
+    // walking the body-owner subtree (own collider first, then descendants).
+    function getFilterForBody(rootIdx) {
+        const stack = [rootIdx];
+        let firstChildHit = -1;
+        while (stack.length) {
+            const idx = stack.pop();
+            const physExt = nodes[idx]?.extensions?.KHR_physics_rigid_bodies;
+            const cf = physExt?.collider?.collisionFilter;
+            if (typeof cf === 'number') {
+                if (idx === rootIdx) return filterTable[cf] ?? null;
+                if (firstChildHit < 0) firstChildHit = cf;
+            }
+            const ch = nodes[idx]?.children;
+            if (ch) for (const c of ch) stack.push(c);
+        }
+        return firstChildHit >= 0 ? (filterTable[firstChildHit] ?? null) : null;
+    }
+    function getFilterForCollider(colliderDef) {
+        const cf = colliderDef?.collisionFilter;
+        if (typeof cf !== 'number') return null;
+        return filterTable[cf] ?? null;
+    }
+
+    // Build child -> parent index map so we can resolve the nearest ancestor
+    // node that owns a rigid body (i.e. has KHR_physics_rigid_bodies.motion).
+    // KHR allows compound bodies: a dynamic node provides `motion`, while its
+    // descendants supply the actual `collider` shapes. We must group those
+    // colliders under the dynamic body via PlayCanvas's `compound` collision.
+    const parentOf = new Array(nodes.length).fill(-1);
+    for (let i = 0; i < nodes.length; i++) {
+        const ch = nodes[i].children;
+        if (!ch) continue;
+        for (const c of ch) parentOf[c] = i;
+    }
+    const hasMotion = (i) => !!nodes[i]?.extensions?.KHR_physics_rigid_bodies?.motion;
+    function findBodyOwner(nodeIdx) {
+        // Returns ancestor (including self) index that has a `motion`, or -1.
+        let cur = nodeIdx;
+        while (cur >= 0) {
+            if (hasMotion(cur)) return cur;
+            cur = parentOf[cur];
+        }
+        return -1;
+    }
+
+    // Helper: build a PlayCanvas collision data object from a KHR collider def.
+    function buildCollisionData(collider, entity) {
+        const geomDef = collider.geometry;
+        if (!geomDef) return null;
+        const worldScale = entity.getWorldTransform().getScale();
+        if (geomDef.shape !== undefined) {
+            const shapeDef = shapeDefs[geomDef.shape];
+            if (!shapeDef) {
+                console.warn('KHR physics: shape index not found:', geomDef.shape);
+                return null;
+            }
+            return { cd: getCollisionDataFromImplicit(shapeDef, worldScale), wireRender: false };
+        }
+        if (geomDef.mesh !== undefined) {
+            return { cd: { type: 'mesh', convexHull: !!geomDef.convexHull }, wireRender: true };
+        }
+        console.warn('KHR physics: collider geometry has neither shape nor mesh');
+        return null;
+    }
+
+    // Pass 1: install collision components.
+    //  - Body-owner nodes (have `motion`): collision type='compound'. Their own
+    //    `collider` (if any) is attached to a child entity so it composes with
+    //    descendant colliders into a single compound shape.
+    //  - Collider nodes whose body-owner ancestor exists: plain collision
+    //    component (no rigidbody) → becomes a child shape of the compound body.
+    //  - Collider nodes with no body-owner ancestor: plain collision component
+    //    plus a static rigidbody on the same entity.
+    const dynamicInfos = []; // { entity, mat }   for materials / debug
+    const staticInfos  = []; // { entity, mat }
+    const compoundShapeOwners = []; // entities that hold a compound rigidbody
+    const standaloneStaticEntities = []; // static collider+rigidbody entities
     const gravityOverrides = [];
+    const manualDynamicBodies = []; // raw Ammo bodies for dynamic mesh colliders
+    const meshStaticEntities = []; // entities with raw Ammo static mesh bodies (for debug)
     let bodyCount = 0;
 
+    // Categorise every body-owner node:
+    //   manualMeshOwners      – own collider is a mesh → raw Ammo (static BVH or dynamic convex)
+    //   directImplicitOwners  – own collider is an implicit shape → raw Ammo btSphere/Box/etc.
+    //                           (bypasses PlayCanvas collision+rigidbody to avoid compound
+    //                           timing issues and shape double-scaling)
+    //   (everything else)     – compound body via PlayCanvas collision type='compound'
+    const bodyOwnerNodes = [];
+    const manualMeshOwners = new Set();
+    const directImplicitOwners = new Set();
+    for (let i = 0; i < nodes.length; i++) {
+        if (!hasMotion(i)) continue;
+        const entity = entityMap[i];
+        if (!entity) continue;
+        const ownGeom = nodes[i].extensions?.KHR_physics_rigid_bodies?.collider?.geometry;
+        if (ownGeom?.mesh !== undefined) {
+            manualMeshOwners.add(i); // raw Ammo in Pass 2
+        } else if (ownGeom?.shape !== undefined) {
+            // Simple body: own implicit shape, no compound wrapper needed.
+            directImplicitOwners.add(i);
+        } else {
+            // Compound body (children supply the shapes, or no collider at all).
+            entity.addComponent('collision', { type: 'compound' });
+        }
+        bodyOwnerNodes.push(i);
+    }
+
+    // Then walk every node with a collider and place it appropriately.
     for (let i = 0; i < nodes.length; i++) {
         const physExt = nodes[i].extensions?.KHR_physics_rigid_bodies;
         if (!physExt) continue;
-        const entity = entityMap[i];
-        if (!entity) continue;
-        const motionDef = physExt.motion ?? null;
-        const collider  = physExt.collider ?? null;
+        const collider = physExt.collider;
+        if (!collider) continue;
+        const ownerIdx = findBodyOwner(i);
 
-        let needsRenderWiring = false;
-        if (collider?.geometry) {
-            const geomDef    = collider.geometry;
-            const shapeIndex = geomDef.shape;
-            const worldScale = entity.getWorldTransform().getScale();
-            let cd = null;
-            if (shapeIndex !== undefined) {
-                const shapeDef = shapeDefs[shapeIndex];
-                if (!shapeDef) {
-                    console.warn('KHR physics: shape index not found:', shapeIndex);
-                    continue;
-                }
-                cd = getCollisionDataFromImplicit(shapeDef, worldScale);
-            } else if (geomDef.mesh !== undefined) {
-                cd = { type: 'mesh', convexHull: !!geomDef.convexHull };
-                needsRenderWiring = true;
-            } else {
-                console.warn('KHR physics: collider geometry has neither shape nor mesh');
+        if (ownerIdx === i) {
+            if (manualMeshOwners.has(i)) continue; // mesh owner → handled as raw Ammo in Pass 2
+            if (directImplicitOwners.has(i)) continue; // implicit-shape owner → raw Ammo in Pass 2
+            const parentEntity = entityMap[i];
+            if (!parentEntity) continue;
+            // Compound body that also carries its own collider: reparent the
+            // collider onto a synthetic child so the compound gathers it.
+            const child = new pc.Entity('__khrCollider');
+            parentEntity.addChild(child);
+            const built = buildCollisionData(collider, child);
+            if (!built || !built.cd) continue;
+            child.addComponent('collision', built.cd);
+        } else {
+            const entity = entityMap[i];
+            if (!entity) continue;
+            const geomDef = collider.geometry;
+            if (!geomDef) continue;
+
+            // Standalone static with mesh collider → raw Ammo btBvhTriangleMeshShape.
+            // Look up the pc.Mesh objects from containerData.meshes[N] so the body is
+            // built correctly even when the node has no visual mesh (physics-only nodes).
+            if (geomDef.mesh !== undefined && ownerIdx < 0 && dynamicsWorld) {
+                const mat = collider.physicsMaterial !== undefined
+                    ? (matDefs[collider.physicsMaterial] ?? {}) : {};
+                const pcMeshes = containerData?.meshes?.[geomDef.mesh];
+                const body = addAmmoStaticMeshBodyFromEntity(
+                    entity,
+                    mat.dynamicFriction ?? mat.staticFriction ?? 0.5,
+                    mat.restitution ?? 0,
+                    dynamicsWorld,
+                    pcMeshes);
+                if (body) meshStaticEntities.push(entity);
+                bodyCount++;
                 continue;
             }
-            if (!cd) continue;
-            entity.addComponent('collision', cd);
-            if (needsRenderWiring && entity.render?.meshInstances?.length) {
-                const meshes = entity.render.meshInstances.map(mi => mi.mesh);
-                entity.collision.render = { meshes };
+
+            const built = buildCollisionData(collider, entity);
+            if (!built || !built.cd) continue;
+            entity.addComponent('collision', built.cd);
+            if (ownerIdx < 0) {
+                standaloneStaticEntities.push({ entity, collider });
             }
+            // else: descendant of a body-owner; the compound parent handles it.
+        }
+    }
+
+    // Helper used in Pass 2: apply velocity / gravity to a raw Ammo body from motionDef.
+    function applyMotionExtras(body, motionDef) {
+        if (Array.isArray(motionDef?.linearVelocity)) {
+            const v = new Ammo.btVector3(...motionDef.linearVelocity);
+            body.setLinearVelocity(v); Ammo.destroy(v);
+        }
+        if (Array.isArray(motionDef?.angularVelocity)) {
+            const v = new Ammo.btVector3(...motionDef.angularVelocity);
+            body.setAngularVelocity(v); Ammo.destroy(v);
+        }
+        if (motionDef?.gravityFactor !== undefined) {
+            const BT_DISABLE_WORLD_GRAVITY = 1;
+            body.setFlags(body.getFlags() | BT_DISABLE_WORLD_GRAVITY);
+            const g = new Ammo.btVector3(0, -9.81 * motionDef.gravityFactor, 0);
+            body.setGravity(g); body.activate(true); Ammo.destroy(g);
+        }
+    }
+
+    // Pass 2: add the rigidbody components.
+    for (const i of bodyOwnerNodes) {
+        const entity = entityMap[i];
+        const motionDef = nodes[i].extensions.KHR_physics_rigid_bodies.motion;
+        const isKinematic = !!motionDef?.isKinematic;
+
+        // Mesh-collider body owners: use raw Ammo instead of PlayCanvas compound.
+        // If mass=0: static btBvhTriangleMeshShape (correct for floors/walls).
+        // If mass>0: dynamic btConvexHullShape (correct for dynamic mesh bodies).
+        if (manualMeshOwners.has(i)) {
+            if (!isKinematic && dynamicsWorld) {
+                const ownCollider0 = nodes[i].extensions.KHR_physics_rigid_bodies.collider;
+                const geomDef0 = ownCollider0?.geometry;
+                const rawMass0 = motionDef?.mass ?? 1;
+                const isZeroMass = rawMass0 === 0 || !Number.isFinite(rawMass0);
+                if (isZeroMass) {
+                    // Static mesh body — use btBvhTriangleMeshShape for correct concave collisions.
+                    const mat0 = (ownCollider0?.physicsMaterial !== undefined)
+                        ? (matDefs[ownCollider0.physicsMaterial] ?? {}) : {};
+                    const pcMeshes0 = containerData?.meshes?.[geomDef0?.mesh];
+                    addAmmoStaticMeshBodyFromEntity(
+                        entity,
+                        mat0.dynamicFriction ?? mat0.staticFriction ?? 0.5,
+                        mat0.restitution ?? 0,
+                        dynamicsWorld, pcMeshes0);
+                } else {
+                    const result = addAmmoDynamicConvexBodyFromEntity(entity, motionDef, dynamicsWorld);
+                    if (result) {
+                        const { body, motionState } = result;
+                        applyMotionExtras(body, motionDef);
+                        const matConvex = (ownCollider0?.physicsMaterial !== undefined)
+                            ? (matDefs[ownCollider0.physicsMaterial] ?? {}) : {};
+                        manualDynamicBodies.push({
+                            entity, body, motionState, motionDef, mat: matConvex,
+                            debugShape: { type: 'mesh' },
+                            initialPosition: entity.getPosition().clone(),
+                            initialRotation: entity.getRotation().clone()
+                        });
+                    }
+                }
+            }
+            bodyCount++;
+            continue;
         }
 
-        const isKinematic = !!(motionDef?.isKinematic);
-        const mass        = motionDef?.mass ?? 1;
-        const bodyType    = !motionDef
-            ? pc.BODYTYPE_STATIC
-            : (isKinematic ? pc.BODYTYPE_KINEMATIC : pc.BODYTYPE_DYNAMIC);
+        // Implicit-shape body owners (sphere/box/capsule/cylinder): bypass PlayCanvas
+        // collision+rigidbody system entirely — use raw Ammo shapes to avoid compound
+        // timing issues and double-scaling of shape dimensions.
+        if (directImplicitOwners.has(i)) {
+            if (!isKinematic && dynamicsWorld) {
+                const ownCollider1 = nodes[i].extensions.KHR_physics_rigid_bodies.collider;
+                const geomDef1 = ownCollider1?.geometry;
+                if (geomDef1?.shape !== undefined) {
+                    const shapeDef1 = shapeDefs[geomDef1.shape];
+                    if (shapeDef1) {
+                        const worldScale1 = entity.getWorldTransform().getScale();
+                        const result = addAmmoDynamicImplicitBody(
+                            entity, shapeDef1, motionDef, worldScale1, dynamicsWorld);
+                        if (result) {
+                            const { body, motionState } = result;
+                            applyMotionExtras(body, motionDef);
+                            const mat1 = (ownCollider1?.physicsMaterial !== undefined)
+                                ? (matDefs[ownCollider1.physicsMaterial] ?? {}) : {};
+                            manualDynamicBodies.push({
+                                entity, body, motionState, motionDef, mat: mat1,
+                                debugShape: getCollisionDataFromImplicit(shapeDef1, worldScale1),
+                                initialPosition: entity.getPosition().clone(),
+                                initialRotation: entity.getRotation().clone()
+                            });
+                        }
+                    }
+                }
+            }
+            bodyCount++;
+            continue;
+        }
+
+        const mass = motionDef?.mass ?? 1;
+        const bodyType = isKinematic ? pc.BODYTYPE_KINEMATIC : pc.BODYTYPE_DYNAMIC;
         const rbConfig = { type: bodyType };
         if (bodyType === pc.BODYTYPE_DYNAMIC) rbConfig.mass = mass;
-        // KHR_physics_rigid_bodies.collisionFilters -> Bullet broadphase {group, mask}.
-        // Note: Bullet only supports per-body (not per-shape) filters, so for compound
-        // bodies the per-collider filter cannot be honoured exactly.
-        const cf = collider?.collisionFilter;
-        if (typeof cf === 'number' && filterTable[cf]) {
-            rbConfig.group = filterTable[cf].group;
-            rbConfig.mask  = filterTable[cf].mask;
-        }
+        const filter = getFilterForBody(i);
+        if (filter) { rbConfig.group = filter.group; rbConfig.mask = filter.mask; }
         entity.addComponent('rigidbody', rbConfig);
         {
             const rb = entity.rigidbody;
-            const usedFilter = (typeof cf === 'number' && filterTable[cf]) ? filterTable[cf] : null;
-            console.log('[Physics] body node=' + i + ' name="' + (nodes[i].name ?? '') + '"',
-                'type=' + (bodyType === pc.BODYTYPE_DYNAMIC ? 'DYNAMIC'
-                          : bodyType === pc.BODYTYPE_KINEMATIC ? 'KINEMATIC' : 'STATIC'),
-                'cfgGroup=' + (usedFilter ? '0x' + usedFilter.group.toString(16) : 'default'),
-                'cfgMask='  + (usedFilter ? '0x' + usedFilter.mask.toString(16)  : 'default'),
+            console.log('[Physics] body(compound) node=' + i + ' name="' + (nodes[i].name ?? '') + '"',
+                'type=' + (isKinematic ? 'KINEMATIC' : 'DYNAMIC'),
+                'cfgGroup=' + (filter ? '0x' + filter.group.toString(16) : 'default'),
+                'cfgMask='  + (filter ? '0x' + filter.mask.toString(16)  : 'default'),
                 'rb.group=0x' + (rb?.group ?? 0).toString(16),
                 'rb.mask=0x'  + (rb?.mask  ?? 0).toString(16));
         }
-
-        const mat = (collider?.physicsMaterial !== undefined)
-            ? (matDefs[collider.physicsMaterial] ?? {})
+        // Material from own collider if any (otherwise default).
+        const ownCollider = nodes[i].extensions.KHR_physics_rigid_bodies.collider;
+        const mat = (ownCollider?.physicsMaterial !== undefined)
+            ? (matDefs[ownCollider.physicsMaterial] ?? {})
             : {};
+        compoundShapeOwners.push(entity);
         if (bodyType === pc.BODYTYPE_DYNAMIC) {
             dynamicInfos.push({ entity, mat });
+            if (motionDef?.gravityFactor !== undefined) {
+                gravityOverrides.push({ entity, factor: motionDef.gravityFactor });
+            }
         } else {
             staticInfos.push({ entity, mat });
         }
-
-        if (bodyType === pc.BODYTYPE_DYNAMIC && motionDef?.gravityFactor !== undefined) {
-            gravityOverrides.push({ entity, factor: motionDef.gravityFactor });
+        bodyCount++;
+    }
+    for (const { entity, collider } of standaloneStaticEntities) {
+        const rbConfig = { type: pc.BODYTYPE_STATIC };
+        const filter = getFilterForCollider(collider);
+        if (filter) { rbConfig.group = filter.group; rbConfig.mask = filter.mask; }
+        entity.addComponent('rigidbody', rbConfig);
+        {
+            const rb = entity.rigidbody;
+            console.log('[Physics] body(static) name="' + (entity.name ?? '') + '"',
+                'cfgGroup=' + (filter ? '0x' + filter.group.toString(16) : 'default'),
+                'cfgMask='  + (filter ? '0x' + filter.mask.toString(16)  : 'default'),
+                'rb.group=0x' + (rb?.group ?? 0).toString(16),
+                'rb.mask=0x'  + (rb?.mask  ?? 0).toString(16));
         }
+        const mat = (collider.physicsMaterial !== undefined)
+            ? (matDefs[collider.physicsMaterial] ?? {})
+            : {};
+        staticInfos.push({ entity, mat });
         bodyCount++;
     }
 
+    // Second pass: emulate KHR combine rules on top of Bullet's hard-coded
+    // multiplicative pair combine. Strategy: pick a representative "ground"
+    // material from the static bodies, pre-combine each dynamic body's
+    // friction / restitution against it using the KHR rule, then set every
+    // static body's friction = restitution = 1 (multiplicative identity)
+    // so the dynamic body's pre-combined values pass through unchanged.
     const ground = staticInfos[0]?.mat ?? {};
     for (const info of dynamicInfos) {
         const dynFr = getFriction(info.mat);
@@ -968,35 +1483,60 @@ function initPhysics(gltfJson, entityMap) {
             info.entity.rigidbody.restitution = applyCombine(rule, a, b);
         }
     }
+    // Raw Ammo dynamic bodies (implicit-shape / convex-mesh owners) bypass
+    // PlayCanvas's rigidbody, so their friction/restitution must be set directly
+    // on the Bullet body. Without this they keep Bullet's default friction (0.5)
+    // and ignore the glTF physicsMaterial entirely — e.g. in Materials_Friction
+    // the soap (low friction) and honey (high friction) boxes would slide
+    // identically. Apply the same KHR combine-against-ground treatment used for
+    // the PlayCanvas dynamic bodies above.
+    for (const mb of manualDynamicBodies) {
+        const mat = mb.mat ?? {};
+        const dynFr = getFriction(mat);
+        const grdFr = getFriction(ground);
+        if (dynFr !== undefined || grdFr !== undefined) {
+            const a = dynFr ?? 0.5;
+            const b = grdFr ?? 0.5;
+            const rule = pickCombineRule(mat.frictionCombine, ground.frictionCombine);
+            mb.body.setFriction(applyCombine(rule, a, b));
+        }
+        const dynRe = mat.restitution;
+        const grdRe = ground.restitution;
+        if (dynRe !== undefined || grdRe !== undefined) {
+            const a = dynRe ?? 0;
+            const b = grdRe ?? 0;
+            const rule = pickCombineRule(mat.restitutionCombine, ground.restitutionCombine);
+            mb.body.setRestitution(applyCombine(rule, a, b));
+        }
+    }
     for (const info of staticInfos) {
         info.entity.rigidbody.friction    = 1;
         info.entity.rigidbody.restitution = 1;
     }
 
-    // Apply per-body gravity overrides via Bullet's setGravity.
-    // BT_DISABLE_WORLD_GRAVITY (= 1) must be set so that
-    // dynamicsWorld.setGravity() — called every frame by PlayCanvas's
-    // rigidbody.onUpdate to sync scene gravity — does NOT overwrite
-    // the per-body gravity we set here.
-    if (gravityOverrides.length > 0 && typeof Ammo !== 'undefined') {
-        const BT_DISABLE_WORLD_GRAVITY = 1;
-        for (const { entity, factor } of gravityOverrides) {
-            const body = entity.rigidbody?.body;
-            if (!body) continue;
-            body.setFlags(body.getFlags() | BT_DISABLE_WORLD_GRAVITY);
-            const g = new Ammo.btVector3(0, -9.81 * factor, 0);
-            body.setGravity(g);
-            body.activate(true);
-            Ammo.destroy(g);
-        }
-    }
-
     console.log('KHR physics initialized:', bodyCount, 'bodies (Ammo / PlayCanvas)');
 
+    // Return every entity that ended up with a non-compound collision component
+    // (compound parents themselves don't draw — only their child shapes do).
     const debugEntities = [];
-    for (const info of dynamicInfos) debugEntities.push(info.entity);
-    for (const info of staticInfos)  debugEntities.push(info.entity);
-    return debugEntities;
+    const visit = (e) => {
+        if (e.collision && e.collision.type && e.collision.type !== 'compound') {
+            debugEntities.push(e);
+        }
+        for (const c of e.children) visit(c);
+    };
+    for (const info of dynamicInfos) visit(info.entity);
+    for (const info of staticInfos)  visit(info.entity);
+    return {
+        debugEntities,
+        dynamicEntities: [
+            ...dynamicInfos.map(info => info.entity),
+            ...manualDynamicBodies.map(mb => mb.entity),
+        ],
+        gravityOverrides,
+        manualDynamicBodies,
+        meshStaticEntities,
+    };
 }
 
 // ---- Physics wireframe debug overlay ------------------------------------
@@ -1005,6 +1545,9 @@ const _DBG_COLOR_DYNAMIC = new pc.Color(0, 1, 0, 1);
 const _DBG_COLOR_STATIC  = new pc.Color(1, 1, 0, 1);
 
 function _ringPoints(axis, radius, segments, out, mat) {
+    // Generates lines forming one ring of `segments` points perpendicular to
+    // `axis` (0=X, 1=Y, 2=Z) with given `radius`, and pushes line-pair Vec3s
+    // (already transformed by `mat`) into `out`.
     const tmp = new pc.Vec3();
     const transformed = new pc.Vec3();
     let prev = null;
@@ -1033,6 +1576,7 @@ function _drawWireSphereLocal(app, mat, radius, color) {
 }
 
 function _drawWireBoxLocal(app, mat, hx, hy, hz, color) {
+    // Use the engine helper which accepts a transform.
     app.drawWireAlignedBox(
         new pc.Vec3(-hx, -hy, -hz),
         new pc.Vec3( hx,  hy,  hz),
@@ -1043,6 +1587,7 @@ function _drawWireBoxLocal(app, mat, hx, hy, hz, color) {
 function _drawWireCylinderLocal(app, mat, radius, halfHeight, axis, color) {
     const pts = [];
     const segs = 16;
+    // axis 0=X, 1=Y, 2=Z. Build two end caps offset along that axis.
     const offsetA = new pc.Vec3();
     const offsetB = new pc.Vec3();
     if      (axis === 0) { offsetA.set(-halfHeight, 0, 0); offsetB.set(halfHeight, 0, 0); }
@@ -1067,6 +1612,7 @@ function _drawWireCylinderLocal(app, mat, radius, halfHeight, axis, color) {
         verts.push(ring);
         for (let i = 0; i < segs; i++) { pts.push(ring[i]); pts.push(ring[i + 1]); }
     }
+    // 4 connecting lines between caps.
     const stepIdx = Math.floor(segs / 4);
     for (let k = 0; k < 4; k++) {
         const idx = k * stepIdx;
@@ -1078,7 +1624,9 @@ function _drawWireCylinderLocal(app, mat, radius, halfHeight, axis, color) {
 }
 
 function _drawWireCapsuleLocal(app, mat, radius, cylinderHalfHeight, axis, color) {
+    // Cylinder body + two hemispheres at the ends.
     _drawWireCylinderLocal(app, mat, radius, cylinderHalfHeight, axis, color);
+    // Build a translation matrix to each end and draw a sphere.
     const off = new pc.Vec3();
     for (const sign of [-1, 1]) {
         if      (axis === 0) off.set(sign * cylinderHalfHeight, 0, 0);
@@ -1103,6 +1651,7 @@ function _drawWireMesh(app, entity, mat, color) {
             const indices = [];
             mesh.getPositions(positions);
             mesh.getIndices(indices);
+            // Cap to keep debug overlay fast on big meshes.
             const maxTris = 4096;
             const triCount = Math.min(indices.length / 3, maxTris);
             const linePairs = new Float32Array(triCount * 3 * 2 * 3);
@@ -1124,6 +1673,7 @@ function _drawWireMesh(app, entity, mat, color) {
             cached = linePairs;
             _meshLineCache.set(mesh, cached);
         }
+        // Transform each line endpoint by mat (entity world transform) and draw.
         const pts = [];
         const tmp = new pc.Vec3();
         const transformed = new pc.Vec3();
@@ -1137,15 +1687,53 @@ function _drawWireMesh(app, entity, mat, color) {
     }
 }
 
+// Build a matrix with the entity's world position and rotation but unit scale.
+// Shape dimensions (halfExtents, radius, height) are stored in world-space units
+// (already multiplied by the entity's world scale during initPhysics), so we must
+// NOT apply scale again when drawing — otherwise shapes appear at scale².
 function _getPosRotMat(entity) {
     return new pc.Mat4().setTRS(entity.getPosition(), entity.getRotation(), pc.Vec3.ONE);
+}
+
+// Draw the physics shape of a raw Ammo body (which has no PlayCanvas collision
+// component). `shape` is either { type: 'mesh' } for convex/triangle colliders,
+// or the collision-data object returned by getCollisionDataFromImplicit()
+// (box/sphere/capsule/cylinder, with dimensions already in world-space units).
+function _drawManualBodyShape(app, entity, shape, color) {
+    if (!shape) return;
+    if (shape.type === 'mesh') {
+        _drawWireMesh(app, entity, entity.getWorldTransform(), color);
+        return;
+    }
+    const mat = _getPosRotMat(entity);
+    switch (shape.type) {
+        case 'box':
+            _drawWireBoxLocal(app, mat, shape.halfExtents.x, shape.halfExtents.y, shape.halfExtents.z, color);
+            break;
+        case 'sphere':
+            _drawWireSphereLocal(app, mat, shape.radius, color);
+            break;
+        case 'capsule': {
+            const cylHalf = Math.max(0, (shape.height - 2 * shape.radius) * 0.5);
+            _drawWireCapsuleLocal(app, mat, shape.radius, cylHalf, shape.axis ?? 1, color);
+            break;
+        }
+        case 'cylinder':
+            _drawWireCylinderLocal(app, mat, shape.radius, shape.height * 0.5, shape.axis ?? 1, color);
+            break;
+        default:
+            break;
+    }
 }
 
 function drawPhysicsDebug(app, entities) {
     for (const entity of entities) {
         const col = entity.collision;
         if (!col || !col.type) continue;
-        const isDynamic = entity.rigidbody?.type === pc.BODYTYPE_DYNAMIC;
+        // Walk up to find the rigidbody owner (compound children don't carry one).
+        let rbOwner = entity;
+        while (rbOwner && !rbOwner.rigidbody) rbOwner = rbOwner.parent;
+        const isDynamic = rbOwner?.rigidbody?.type === pc.BODYTYPE_DYNAMIC;
         const color = isDynamic ? _DBG_COLOR_DYNAMIC : _DBG_COLOR_STATIC;
         switch (col.type) {
             case 'box': {
@@ -1172,6 +1760,7 @@ function drawPhysicsDebug(app, entities) {
                 break;
             }
             case 'mesh': {
+                // Mesh vertices are in local space; full world transform (incl. scale) is correct here.
                 _drawWireMesh(app, entity, entity.getWorldTransform(), color);
                 break;
             }
