@@ -592,13 +592,19 @@ let createScene = function(engine, modelSource) {
         // model is opened via URL); those bodies are left out of the shown set
         // so the per-frame refresh below retries them.
         function refreshPhysicsDebug() {
+            const nodes = scene.meshes.concat(scene.transformNodes);
+            // Only spin up a PhysicsViewer (and its utility layer) once there
+            // is a body to show, so non-physics models never create one.
+            if (!nodes.some(function(node) { return node.physicsBody; })) {
+                return;
+            }
             if (!physicsViewer && BABYLON.PhysicsViewer) {
                 physicsViewer = new BABYLON.PhysicsViewer(scene);
             }
             if (!physicsViewer) {
                 return;
             }
-            scene.meshes.concat(scene.transformNodes).forEach(function(node) {
+            nodes.forEach(function(node) {
                 const body = node.physicsBody;
                 if (body && !shownPhysicsBodies.has(body)) {
                     try {
@@ -627,12 +633,18 @@ let createScene = function(engine, modelSource) {
         // finish initializing several frames after the load resolves - notably
         // on the tagged remote-load path - so refresh the viewer each frame
         // until no body is left pending (with a safety cap).
+        //
+        // The viewer is created from the refresh loop (first run on the next
+        // rendered frame), NOT synchronously here: this scene only becomes
+        // current - and the previous scene plus its PhysicsViewer utility
+        // layer get disposed - after createScene returns. Creating a second
+        // utility layer while the previous one is still alive leaves the new
+        // wireframes unrendered (e.g. after first opening a model via URL).
         if (physicsExtensionLoaded && !params.PHYSICS_DEBUG) {
             params.PHYSICS_DEBUG = true;
             guiPhysicsDebug.updateDisplay();
         }
         if (params.PHYSICS_DEBUG) {
-            showPhysicsDebug(true);
             let frames = 0;
             let settledFrames = 0;
             const refreshObserver = scene.onAfterRenderObservable.add(function() {
