@@ -416,6 +416,17 @@ let createScene = function(engine, modelSource) {
         }
 
         const physicsEngine = scene.getPhysicsEngine && scene.getPhysicsEngine();
+        // The loader's onExtensionLoadedObservable can miss the physics
+        // extension when another model was already loaded earlier in the
+        // session (e.g. a model opened via URL args before a drag-and-drop),
+        // so fall back to inspecting the loaded scene directly. This keeps the
+        // pause-on-load and Physics Debug behaviour working in that case.
+        if (!physicsExtensionLoaded) {
+            physicsExtensionLoaded = !!physicsEngine
+                || scene.meshes.concat(scene.transformNodes).some(function(node) {
+                    return node.physicsBody;
+                });
+        }
         if (physicsExtensionLoaded && physicsEngine && typeof physicsEngine.setTimeStep === 'function') {
             const originalTimeStep = typeof physicsEngine.getTimeStep === 'function'
                 ? physicsEngine.getTimeStep()
