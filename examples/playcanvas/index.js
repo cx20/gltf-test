@@ -357,23 +357,15 @@ let Viewer = function (canvas) {
         }
         if (!obj.PHYSICS_DEBUG) return;
         drawPhysicsDebug(app, self.physicsDebugEntities);
+        // Raw Ammo bodies have no PlayCanvas collision component, so draw their
+        // actual physics shape (oriented box/sphere/etc. for implicit shapes, or
+        // the mesh wireframe for convex/triangle-mesh colliders) rather than the
+        // visual mesh's axis-aligned bounding box.
         for (const mb of self.manualDynamicBodies) {
-            if (mb.entity.render) {
-                for (const mi of mb.entity.render.meshInstances) {
-                    const c = mi.aabb.center, h = mi.aabb.halfExtents;
-                    const mat = new pc.Mat4().setTranslate(c.x, c.y, c.z);
-                    _drawWireBoxLocal(app, mat, h.x, h.y, h.z, _DBG_COLOR_DYNAMIC);
-                }
-            }
+            _drawManualBodyShape(app, mb.entity, mb.debugShape, _DBG_COLOR_DYNAMIC);
         }
         for (const e of self.meshStaticEntities) {
-            if (e.render) {
-                for (const mi of e.render.meshInstances) {
-                    const c = mi.aabb.center, h = mi.aabb.halfExtents;
-                    const mat = new pc.Mat4().setTranslate(c.x, c.y, c.z);
-                    _drawWireBoxLocal(app, mat, h.x, h.y, h.z, _DBG_COLOR_STATIC);
-                }
-            }
+            _drawWireMesh(app, e, e.getWorldTransform(), _DBG_COLOR_STATIC);
         }
     });
 
@@ -1379,8 +1371,11 @@ function initPhysics(gltfJson, entityMap, dynamicsWorld, containerData) {
                     if (result) {
                         const { body, motionState } = result;
                         applyMotionExtras(body, motionDef);
+                        const matConvex = (ownCollider0?.physicsMaterial !== undefined)
+                            ? (matDefs[ownCollider0.physicsMaterial] ?? {}) : {};
                         manualDynamicBodies.push({
-                            entity, body, motionState, motionDef,
+                            entity, body, motionState, motionDef, mat: matConvex,
+                            debugShape: { type: 'mesh' },
                             initialPosition: entity.getPosition().clone(),
                             initialRotation: entity.getRotation().clone()
                         });
@@ -1407,8 +1402,11 @@ function initPhysics(gltfJson, entityMap, dynamicsWorld, containerData) {
                         if (result) {
                             const { body, motionState } = result;
                             applyMotionExtras(body, motionDef);
+                            const mat1 = (ownCollider1?.physicsMaterial !== undefined)
+                                ? (matDefs[ownCollider1.physicsMaterial] ?? {}) : {};
                             manualDynamicBodies.push({
-                                entity, body, motionState, motionDef,
+                                entity, body, motionState, motionDef, mat: mat1,
+                                debugShape: getCollisionDataFromImplicit(shapeDef1, worldScale1),
                                 initialPosition: entity.getPosition().clone(),
                                 initialRotation: entity.getRotation().clone()
                             });
@@ -1495,6 +1493,32 @@ function initPhysics(gltfJson, entityMap, dynamicsWorld, containerData) {
             const b = grdRe ?? 0;
             const rule = pickCombineRule(info.mat.restitutionCombine, ground.restitutionCombine);
             info.entity.rigidbody.restitution = applyCombine(rule, a, b);
+        }
+    }
+    // Raw Ammo dynamic bodies (implicit-shape / convex-mesh owners) bypass
+    // PlayCanvas's rigidbody, so their friction/restitution must be set directly
+    // on the Bullet body. Without this they keep Bullet's default friction (0.5)
+    // and ignore the glTF physicsMaterial entirely — e.g. in Materials_Friction
+    // the soap (low friction) and honey (high friction) boxes would slide
+    // identically. Apply the same KHR combine-against-ground treatment used for
+    // the PlayCanvas dynamic bodies above.
+    for (const mb of manualDynamicBodies) {
+        const mat = mb.mat ?? {};
+        const dynFr = getFriction(mat);
+        const grdFr = getFriction(ground);
+        if (dynFr !== undefined || grdFr !== undefined) {
+            const a = dynFr ?? 0.5;
+            const b = grdFr ?? 0.5;
+            const rule = pickCombineRule(mat.frictionCombine, ground.frictionCombine);
+            mb.body.setFriction(applyCombine(rule, a, b));
+        }
+        const dynRe = mat.restitution;
+        const grdRe = ground.restitution;
+        if (dynRe !== undefined || grdRe !== undefined) {
+            const a = dynRe ?? 0;
+            const b = grdRe ?? 0;
+            const rule = pickCombineRule(mat.restitutionCombine, ground.restitutionCombine);
+            mb.body.setRestitution(applyCombine(rule, a, b));
         }
     }
     for (const info of staticInfos) {
@@ -1681,6 +1705,37 @@ function _drawWireMesh(app, entity, mat, color) {
 // NOT apply scale again when drawing — otherwise shapes appear at scale².
 function _getPosRotMat(entity) {
     return new pc.Mat4().setTRS(entity.getPosition(), entity.getRotation(), pc.Vec3.ONE);
+}
+
+// Draw the physics shape of a raw Ammo body (which has no PlayCanvas collision
+// component). `shape` is either { type: 'mesh' } for convex/triangle colliders,
+// or the collision-data object returned by getCollisionDataFromImplicit()
+// (box/sphere/capsule/cylinder, with dimensions already in world-space units).
+function _drawManualBodyShape(app, entity, shape, color) {
+    if (!shape) return;
+    if (shape.type === 'mesh') {
+        _drawWireMesh(app, entity, entity.getWorldTransform(), color);
+        return;
+    }
+    const mat = _getPosRotMat(entity);
+    switch (shape.type) {
+        case 'box':
+            _drawWireBoxLocal(app, mat, shape.halfExtents.x, shape.halfExtents.y, shape.halfExtents.z, color);
+            break;
+        case 'sphere':
+            _drawWireSphereLocal(app, mat, shape.radius, color);
+            break;
+        case 'capsule': {
+            const cylHalf = Math.max(0, (shape.height - 2 * shape.radius) * 0.5);
+            _drawWireCapsuleLocal(app, mat, shape.radius, cylHalf, shape.axis ?? 1, color);
+            break;
+        }
+        case 'cylinder':
+            _drawWireCylinderLocal(app, mat, shape.radius, shape.height * 0.5, shape.axis ?? 1, color);
+            break;
+        default:
+            break;
+    }
 }
 
 function drawPhysicsDebug(app, entities) {
