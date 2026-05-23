@@ -677,24 +677,48 @@ let createScene = function(engine, modelSource) {
         });
 
         let physicsViewer = null;
+        const shownPhysicsBodies = new Set();
         function showPhysicsDebug(value) {
             if (value) {
                 if (!physicsViewer && BABYLON.PhysicsViewer) {
                     physicsViewer = new BABYLON.PhysicsViewer(scene);
                 }
                 if (physicsViewer) {
-                    scene.meshes.forEach(function(m) {
-                        if (m.physicsBody) {
-                            try { physicsViewer.showBody(m.physicsBody); } catch(e) {}
+                    // Rigid bodies attach to whichever glTF node carries the
+                    // extension, which is often a TransformNode (not present in
+                    // scene.meshes), so walk both lists and skip bodies that are
+                    // already being shown.
+                    scene.meshes.concat(scene.transformNodes).forEach(function(node) {
+                        const body = node.physicsBody;
+                        if (body && !shownPhysicsBodies.has(body)) {
+                            try {
+                                physicsViewer.showBody(body);
+                                shownPhysicsBodies.add(body);
+                            } catch(e) {}
                         }
                     });
                 }
             } else if (physicsViewer) {
                 physicsViewer.dispose();
                 physicsViewer = null;
+                shownPhysicsBodies.clear();
             }
         }
-        if (params.PHYSICS_DEBUG) showPhysicsDebug(true);
+        // Always show the physics wireframes for glTF physics models. Some
+        // bodies (e.g. on drag-dropped models) only finish initializing after
+        // the first frame, so re-apply once the scene has rendered.
+        if (physicsExtensionLoaded && !params.PHYSICS_DEBUG) {
+            params.PHYSICS_DEBUG = true;
+            guiPhysicsDebug.updateDisplay();
+        }
+        if (params.PHYSICS_DEBUG) {
+            showPhysicsDebug(true);
+            if (physicsExtensionLoaded) {
+                scene.onAfterRenderObservable.addOnce(function() {
+                    if (params.PHYSICS_DEBUG) showPhysicsDebug(true);
+                });
+            }
+        }
         guiPhysicsDebug.onChange(showPhysicsDebug);
 
         scene._viewerGui = gui;
