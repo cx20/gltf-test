@@ -54,6 +54,7 @@ let params = {
     CUBEMAP: true,
     IBL: true,
     VARIANT: DEFAULT_NAME,
+    CAMERA: DEFAULT_NAME,
 };
 
 const canvas = document.querySelector("#renderCanvas");
@@ -227,6 +228,98 @@ async function createDroppedModelSource(fileList) {
     };
 }
 
+// ── glTF camera helpers ──────────────────────────────────────────────────────
+
+function _qMul(a, b) {
+    return {
+        x: a.w*b.x + a.x*b.w + a.y*b.z - a.z*b.y,
+        y: a.w*b.y - a.x*b.z + a.y*b.w + a.z*b.x,
+        z: a.w*b.z + a.x*b.y - a.y*b.x + a.z*b.w,
+        w: a.w*b.w - a.x*b.x - a.y*b.y - a.z*b.z,
+    };
+}
+
+// Rotate vector v by unit quaternion q using Rodrigues' formula
+function _rotateByQ(q, v) {
+    const tx = 2 * (q.y*v.z - q.z*v.y);
+    const ty = 2 * (q.z*v.x - q.x*v.z);
+    const tz = 2 * (q.x*v.y - q.y*v.x);
+    return {
+        x: v.x + q.w*tx + q.y*tz - q.z*ty,
+        y: v.y + q.w*ty + q.z*tx - q.x*tz,
+        z: v.z + q.w*tz + q.x*ty - q.y*tx,
+    };
+}
+
+// Fetch a .gltf URL, parse its cameras, and return their world positions
+// (in glTF right-handed coordinates) together with per-camera perspective params.
+// Returns [] for non-.gltf URLs, on fetch/parse failure, or when no cameras are
+// defined in the file.
+async function extractGltfCameras(url) {
+    if (!url.toLowerCase().endsWith('.gltf')) return [];
+    let json;
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) return [];
+        json = await resp.json();
+    } catch (e) {
+        return [];
+    }
+
+    const nodes = json.nodes || [];
+    const cameras = json.cameras || [];
+    if (cameras.length === 0) return [];
+
+    // Map child index → parent index
+    const parentOf = new Map();
+    for (let i = 0; i < nodes.length; i++) {
+        for (const childIdx of (nodes[i].children || [])) {
+            parentOf.set(childIdx, i);
+        }
+    }
+
+    // Compute the world position of a node by walking up to the root and
+    // accumulating TRS transforms (scale ignored for position accuracy).
+    function computeWorldPos(startIdx) {
+        const chain = [startIdx];
+        let cur = startIdx;
+        while (parentOf.has(cur)) { cur = parentOf.get(cur); chain.push(cur); }
+        chain.reverse();
+
+        let pos = { x: 0, y: 0, z: 0 };
+        let rot = { x: 0, y: 0, z: 0, w: 1 }; // identity
+        for (const idx of chain) {
+            const n = nodes[idx];
+            const lt = n.translation || [0, 0, 0];
+            const lr = n.rotation   || [0, 0, 0, 1]; // [x,y,z,w]
+            const localPos = { x: lt[0], y: lt[1], z: lt[2] };
+            const localRot = { x: lr[0], y: lr[1], z: lr[2], w: lr[3] };
+            const rotated = _rotateByQ(rot, localPos);
+            pos.x += rotated.x; pos.y += rotated.y; pos.z += rotated.z;
+            rot = _qMul(rot, localRot);
+        }
+        return pos;
+    }
+
+    const result = [];
+    for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        if (node.camera === undefined) continue;
+        const camDef = cameras[node.camera];
+        if (!camDef) continue;
+        result.push({
+            name: node.name || camDef.name || `Camera ${node.camera}`,
+            worldPos: computeWorldPos(i),
+            fov:       camDef.perspective?.yfov  ?? 0.8,
+            nearPlane: camDef.perspective?.znear  ?? 0.1,
+            farPlane:  camDef.perspective?.zfar   ?? 1000,
+        });
+    }
+    return result;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 async function createScene(engine, modelSource) {
     const scene = createSceneContext(engine);
     scene.clearColor = { r: 1, g: 1, b: 1, a: 1 };
@@ -242,13 +335,15 @@ async function createScene(engine, modelSource) {
 
     const absolutePath = new URL(path, window.location.href).href;
 
-    const [loadedAsset, envTextures] = await Promise.all([
+    const [loadedAsset, envTextures, gltfCameras] = await Promise.all([
         loadGltf(engine, absolutePath),
         loadEnvironment(scene, ENV_URL, {
             brdfUrl: BRDF_URL,
             skyboxUrl: ENV_URL,
             skyboxSize: 10000,
         }),
+        // Fetch camera nodes in parallel with model loading; returns [] for GLB/blob URLs.
+        extractGltfCameras(absolutePath),
     ]);
 
     addToScene(scene, loadedAsset);
@@ -257,7 +352,19 @@ async function createScene(engine, modelSource) {
     // Lite default is alpha=-π/2 (camera at -Z); match babylonjs_webgpu which
     // uses setPosition(0,3,5), equivalent to alpha=+π/2 (camera at +Z, front view).
     cam.alpha = Math.PI / 2;
+    // createDefaultCamera auto-sizes farPlane to radius*1000. For small models
+    // (e.g. Triangle, radius≈2) this gives farPlane≈2000, clipping the 10000-unit
+    // skybox. Ensure a minimum that always covers it.
+    cam.farPlane = Math.max(cam.farPlane, 20000);
     attachControl(cam, canvas, scene);
+
+    // Snapshot default camera pose so the GUI can reset to it.
+    const defaultCamParams = {
+        alpha:  cam.alpha,
+        beta:   cam.beta,
+        radius: cam.radius,
+        target: { x: cam.target.x, y: cam.target.y, z: cam.target.z },
+    };
 
     onBeforeRender(scene, function() {
         if (params.ROTATE) {
@@ -271,13 +378,15 @@ async function createScene(engine, modelSource) {
         asset: loadedAsset,
         envTextures,
         variantNames: getVariantNames(loadedAsset),
+        gltfCameras,
+        defaultCamParams,
     };
 
     return scene;
 }
 
 function setupSceneGui(scene) {
-    const { asset, envTextures, variantNames } = scene._sceneData;
+    const { asset, envTextures, variantNames, cam, gltfCameras, defaultCamParams } = scene._sceneData;
 
     const gui = new dat.GUI();
     gui.add(params, 'ROTATE').name('Rotate');
@@ -318,6 +427,51 @@ function setupSceneGui(scene) {
                 resetVariant(asset);
             } else {
                 selectVariant(asset, value);
+            }
+        });
+    }
+
+    // Camera selection — shown only when the glTF file contains embedded cameras.
+    // Lite's API only exposes a single camera from the loaded asset, so we parse
+    // the glTF JSON ourselves (extractGltfCameras) to enumerate all camera nodes.
+    // Each camera is represented as an ArcRotateCamera positioned at the glTF
+    // camera's world location, orbiting around the scene centre.
+    if (gltfCameras.length > 0) {
+        const cameraOptions = {};
+        cameraOptions[DEFAULT_NAME] = DEFAULT_NAME;
+        gltfCameras.forEach(function(entry) {
+            cameraOptions[entry.name] = entry.name;
+        });
+        params.CAMERA = DEFAULT_NAME;
+        gui.add(params, 'CAMERA', cameraOptions).name('Camera').onChange(function(value) {
+            if (value === DEFAULT_NAME) {
+                // Restore the auto-framed pose
+                cam.alpha  = defaultCamParams.alpha;
+                cam.beta   = defaultCamParams.beta;
+                cam.radius = defaultCamParams.radius;
+                cam.target.x = defaultCamParams.target.x;
+                cam.target.y = defaultCamParams.target.y;
+                cam.target.z = defaultCamParams.target.z;
+            } else {
+                const entry = gltfCameras.find(function(c) { return c.name === value; });
+                if (!entry) return;
+                // glTF is right-handed (+Z toward viewer); Babylon.js is left-handed (negate Z).
+                const px = entry.worldPos.x;
+                const py = entry.worldPos.y;
+                const pz = -entry.worldPos.z;
+                // Reset orbit target to scene centre so the camera looks inward.
+                const cx = defaultCamParams.target.x;
+                const cy = defaultCamParams.target.y;
+                const cz = defaultCamParams.target.z;
+                cam.target.x = cx;
+                cam.target.y = cy;
+                cam.target.z = cz;
+                // Derive ArcRotateCamera params from the glTF camera's world position.
+                const dx = px - cx, dy = py - cy, dz = pz - cz;
+                const radius = Math.sqrt(dx*dx + dy*dy + dz*dz) || defaultCamParams.radius;
+                cam.radius = radius;
+                cam.alpha  = Math.atan2(dx, dz);
+                cam.beta   = Math.acos(Math.max(-1, Math.min(1, dy / radius)));
             }
         });
     }
