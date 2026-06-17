@@ -26,6 +26,24 @@
 <!-- dat.gui.js -->
 <script src="../../libs/common/dat.gui.js"></script>
 
+<!-- Draco decoder for KHR_draco_mesh_compression support.
+     Lite checks globalThis.DracoDecoderModule first; if present, uses it directly
+     instead of fetching from the (nonexistent) site root. The wrapper overrides
+     locateFile so the WASM is resolved from the same libs directory. -->
+<script src="../../libs/babylonjs/9.4.1/draco_decoder.js"></script>
+<script>
+(function() {
+    var orig = window.DracoDecoderModule;
+    if (typeof orig !== 'function') return;
+    var base = new URL("../../libs/babylonjs/9.4.1/", document.baseURI).href;
+    window.DracoDecoderModule = function(cfg) {
+        return orig(Object.assign({}, cfg, {
+            locateFile: function(f) { return base + f; }
+        }));
+    };
+})();
+</script>
+
 <canvas id="renderCanvas"></canvas>
 <div id="dropZone" class="drop-zone hidden">
   <div class="drop-zone__panel">
