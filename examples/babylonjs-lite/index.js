@@ -109,6 +109,40 @@ function getBasename(path) {
     return path.split("/").pop();
 }
 
+// Convert a dropped GLB file into a gltf+blob-URL pair that loadGltf can load.
+// loadGltf detects GLB via url.endsWith(".glb"), which blob: URLs lack, so we
+// parse the binary ourselves and hand back a .gltf JSON blob URL instead.
+async function convertGlbToBlobGltf(file, objectUrls) {
+    const buffer = await file.arrayBuffer();
+    const dv = new DataView(buffer);
+
+    if (dv.getUint32(0, true) !== 0x46546C67) {
+        throw new Error("Not a valid GLB file (bad magic)");
+    }
+
+    // JSON chunk starts at offset 20
+    const jsonLength = dv.getUint32(12, true);
+    const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 20, jsonLength)));
+
+    // BIN chunk (optional) immediately follows JSON chunk
+    const binOffset = 20 + jsonLength;
+    if (binOffset + 8 <= buffer.byteLength && dv.getUint32(binOffset + 4, true) === 0x004E4942) {
+        const binLength = dv.getUint32(binOffset, true);
+        const binBlob = new Blob([buffer.slice(binOffset + 8, binOffset + 8 + binLength)], { type: "application/octet-stream" });
+        const binUrl = URL.createObjectURL(binBlob);
+        objectUrls.push(binUrl);
+        // The embedded BIN has no URI in the JSON; add our blob URL so the loader can fetch it
+        if (json.buffers && json.buffers.length > 0) {
+            json.buffers[0].uri = binUrl;
+        }
+    }
+
+    const gltfBlob = new Blob([JSON.stringify(json)], { type: "model/gltf+json" });
+    const gltfUrl = URL.createObjectURL(gltfBlob);
+    objectUrls.push(gltfUrl);
+    return gltfUrl;
+}
+
 async function createDroppedModelSource(fileList) {
     const files = Array.from(fileList);
     const modelFile = files.find(function(file) {
@@ -139,8 +173,10 @@ async function createDroppedModelSource(fileList) {
     }
 
     if (getFileExtension(modelFile.name) === ".glb") {
+        // Convert GLB → gltf blob URL so loadGltf (which detects format by extension) works
+        const gltfUrl = await convertGlbToBlobGltf(modelFile, objectUrls);
         return {
-            url: createTrackedObjectUrl(modelFile),
+            url: gltfUrl,
             displayName: modelFile.name,
             objectUrls: objectUrls,
         };
@@ -314,6 +350,14 @@ async function loadSceneFromSource(engine, modelSource) {
         const previousScene = currentScene;
         const previousGui = currentGui;
 
+        // Unregister the previous scene BEFORE registering the next one.
+        // If any scene is already registered when registerScene() runs, Lite
+        // marks the new scene as a swapchain overlay (loadOp:"load"), which
+        // skips the per-frame clear and causes ghosting with animated models.
+        if (previousScene) {
+            unregisterScene(previousScene);
+        }
+
         await registerScene(nextScene);
         // Setup GUI after registerScene so skybox renderable (built by deferred
         // builder) is available in scene._renderables for the CubeMap toggle.
@@ -322,10 +366,6 @@ async function loadSceneFromSource(engine, modelSource) {
         if (!engineStarted) {
             engineStarted = true;
             startEngine(engine).catch(console.error);
-        }
-
-        if (previousScene) {
-            unregisterScene(previousScene);
         }
 
         currentScene = nextScene;
