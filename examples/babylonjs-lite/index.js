@@ -254,6 +254,9 @@ async function createScene(engine, modelSource) {
     addToScene(scene, loadedAsset);
 
     const cam = createDefaultCamera(scene);
+    // Lite default is alpha=-π/2 (camera at -Z); match babylonjs_webgpu which
+    // uses setPosition(0,3,5), equivalent to alpha=+π/2 (camera at +Z, front view).
+    cam.alpha = Math.PI / 2;
     attachControl(cam, canvas, scene);
 
     onBeforeRender(scene, function() {
