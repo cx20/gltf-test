@@ -15,6 +15,7 @@ import {
     getVariantNames,
     selectVariant,
     resetVariant,
+    createDirectionalLight,
 } from "babylon-lite";
 
 const ENV_URL = "../../textures/env/papermillSpecularHDR.env";
@@ -53,6 +54,7 @@ let params = {
     ROTATE: false,
     CUBEMAP: true,
     IBL: true,
+    LIGHTS: false,
     VARIANT: DEFAULT_NAME,
     CAMERA: DEFAULT_NAME,
 };
@@ -349,6 +351,11 @@ async function createScene(engine, modelSource) {
 
     addToScene(scene, loadedAsset);
 
+    const light1 = createDirectionalLight([0.0, -1.0, 0.5], 0);
+    const light2 = createDirectionalLight([-0.5, -0.5, -0.5], 0);
+    addToScene(scene, light1);
+    addToScene(scene, light2);
+
     const cam = createDefaultCamera(scene);
     // Lite default is alpha=-π/2 (camera at -Z); match babylonjs_webgpu which
     // uses setPosition(0,3,5), equivalent to alpha=+π/2 (camera at +Z, front view).
@@ -381,13 +388,15 @@ async function createScene(engine, modelSource) {
         variantNames: getVariantNames(loadedAsset),
         gltfCameras,
         defaultCamParams,
+        light1,
+        light2,
     };
 
     return scene;
 }
 
 function setupSceneGui(scene) {
-    const { asset, envTextures, variantNames, cam, gltfCameras, defaultCamParams } = scene._sceneData;
+    const { asset, envTextures, variantNames, cam, gltfCameras, defaultCamParams, light1, light2 } = scene._sceneData;
 
     const gui = new dat.GUI();
     gui.add(params, 'ROTATE').name('Rotate');
@@ -407,13 +416,21 @@ function setupSceneGui(scene) {
         } else if (!value && idx >= 0) {
             scene._renderables.splice(idx, 1);
         }
+        // Increment _renderableVersion so the render task detects the change and
+        // re-records its GPU render bundle on the next frame.
+        scene._renderableVersion++;
     });
 
     params.IBL = true;
     gui.add(params, 'IBL').name('IBL').onChange(function(value) {
         scene._envTextures = value ? envTextures : null;
         scene.imageProcessing.exposure = value ? 0.8 : 1.0;
-        scene.imageProcessing.toneMappingEnabled = value;
+    });
+
+    params.LIGHTS = false;
+    gui.add(params, 'LIGHTS').name('Lights').onChange(function(value) {
+        light1.intensity = value ? 1.0 : 0;
+        light2.intensity = value ? 1.0 : 0;
     });
 
     if (variantNames.length > 0) {
