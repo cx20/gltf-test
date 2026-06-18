@@ -240,6 +240,15 @@ function applyTonemap(scene, value) {
         scene.imageProcessing.toneMappingEnabled = true;
         scene.imageProcessing.toneMappingType = value.toLowerCase();
     }
+    // writePassSceneUBO caches against exposure/contrast/camera but not
+    // toneMappingEnabled, so the scene UBO silently skips the update when
+    // only toneMappingEnabled changes. Clearing _su forces a cache miss on the
+    // next frame so the new value reaches the PBR shader immediately.
+    if (scene._frameGraph) {
+        scene._frameGraph._tasks.forEach(function(t) {
+            if (t._su) t._su.length = 0;
+        });
+    }
 }
 
 // ── glTF camera helpers ──────────────────────────────────────────────────────
@@ -428,6 +437,9 @@ function setupSceneGui(scene) {
         } else if (!value && idx >= 0) {
             scene._renderables.splice(idx, 1);
         }
+        // Increment _renderableVersion so the render task detects the change and
+        // re-records its GPU render bundle on the next frame.
+        scene._renderableVersion++;
     });
 
     params.IBL = true;
