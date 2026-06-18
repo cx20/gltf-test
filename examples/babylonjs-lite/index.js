@@ -341,6 +341,7 @@ async function createScene(engine, modelSource) {
             brdfUrl: BRDF_URL,
             skyboxUrl: ENV_URL,
             skyboxSize: 10000,
+            skipGround: true,
         }),
         // Fetch camera nodes in parallel with model loading; returns [] for GLB/blob URLs.
         extractGltfCameras(absolutePath),
