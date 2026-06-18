@@ -55,7 +55,6 @@ let params = {
     CUBEMAP: true,
     IBL: true,
     LIGHTS: false,
-    TONEMAP: 'Standard',
     VARIANT: DEFAULT_NAME,
     CAMERA: DEFAULT_NAME,
 };
@@ -229,26 +228,6 @@ async function createDroppedModelSource(fileList) {
         displayName: modelFile.name,
         objectUrls: objectUrls,
     };
-}
-
-// ── Tonemap helper ───────────────────────────────────────────────────────────
-
-function applyTonemap(scene, value) {
-    if (value === 'None') {
-        scene.imageProcessing.toneMappingEnabled = false;
-    } else {
-        scene.imageProcessing.toneMappingEnabled = true;
-        scene.imageProcessing.toneMappingType = value.toLowerCase();
-    }
-    // writePassSceneUBO caches against exposure/contrast/camera but not
-    // toneMappingEnabled, so the scene UBO silently skips the update when
-    // only toneMappingEnabled changes. Clearing _su forces a cache miss on the
-    // next frame so the new value reaches the PBR shader immediately.
-    if (scene._frameGraph) {
-        scene._frameGraph._tasks.forEach(function(t) {
-            if (t._su) t._su.length = 0;
-        });
-    }
 }
 
 // ── glTF camera helpers ──────────────────────────────────────────────────────
@@ -453,13 +432,6 @@ function setupSceneGui(scene) {
         light1.intensity = value ? 1.0 : 0;
         light2.intensity = value ? 1.0 : 0;
     });
-
-    const tonemaps = ['None', 'Standard', 'ACES'];
-    params.TONEMAP = 'Standard';
-    gui.add(params, 'TONEMAP', tonemaps).name('Tonemap').onChange(function(value) {
-        applyTonemap(scene, value);
-    });
-    applyTonemap(scene, params.TONEMAP);
 
     if (variantNames.length > 0) {
         const variantOptions = {};
