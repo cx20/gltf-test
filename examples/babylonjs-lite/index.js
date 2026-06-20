@@ -835,13 +835,18 @@ function buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByN
 
 // Skinned meshes deform from Lite's animation system, not from live node transforms, so a skin bound
 // to physics-driven bones (a ragdoll, e.g. Robot_skinned) stays at its bind pose while the bones move.
-// Recompute each skin's bone matrices from the live bone world transforms every frame and re-upload
-// its bone texture so the skin follows the physics bodies. Mirrors Lite's own bone-matrix formula
-// (invMeshWorld * boneWorld * inverseBindMatrix), so at bind pose the result is identical (no jump).
+// Each frame, nudge every bone matrix by the bone's world-space motion since the bind pose and
+// re-upload the bone texture so the skin follows the physics bodies.
+//
+// A convention-agnostic delta keeps us independent of how Lite stores its inverse bind matrices:
+//   boneMatrix_live = invMeshWorld . liveBoneWorld . invBindBoneWorld . meshWorld . boneMatrix_bind
+// Bind matrices (meshWorld/boneWorld) are taken from the glTF, left-hand-flipped exactly like the
+// physics bodies (F = diag(-1,1,1) = Lite's RH_TO_LH); boneMatrix_bind is Lite's own value captured
+// on the first frame. At the bind pose this reduces to boneMatrix_bind, so there is no pop.
 // Best-effort: any missing internal field disables it for that mesh (skin stays at bind pose).
-function setupSkinnedMeshFollow(scene, engine, json, buffers, nodeToTN) {
+function setupSkinnedMeshFollow(scene, engine, json, parentMap, nodeToTN) {
     const device = engine?._device;
-    if (!device || !buffers || !json.skins) return;
+    if (!device || !json.skins) return;
     for (let nodeIndex = 0; nodeIndex < json.nodes.length; nodeIndex++) {
         const node = json.nodes[nodeIndex];
         if (node.mesh === undefined || node.skin === undefined) continue;
@@ -853,20 +858,29 @@ function setupSkinnedMeshFollow(scene, engine, json, buffers, nodeToTN) {
         if (!joints || !joints.length) continue;
         const boneNodes = joints.map((j) => nodeToTN.get(j));
         if (boneNodes.some((b) => !b || !b.worldMatrix)) continue;
-        let ibm = null;
-        try {
-            if (skin.inverseBindMatrices !== undefined) ibm = readAccessorMat4(json, buffers, skin.inverseBindMatrices);
-        } catch (e) { continue; }
+
+        const meshWorldBind = applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, nodeIndex));
+        const invMeshWorldBind = mat4Invert(meshWorldBind);
+        if (!invMeshWorldBind) continue;
+        // invBindBoneWorld[bi] . meshWorldBind, finished with boneMatrix_bind on the first frame.
+        const partial = joints.map((j) => {
+            const inv = mat4Invert(applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, j)));
+            return inv ? mat4Multiply(inv, meshWorldBind) : null;
+        });
+        if (partial.some((p) => !p)) continue;
+
         const boneData = skel.boneMatrices;
         const boneCount = joints.length;
         const texWidth = boneCount * 4;
+        let rhs = null; // invBindBoneWorld . meshWorld . boneMatrix_bind, per bone (captured once)
         onBeforeRender(scene, function() {
             try {
-                const invMesh = mat4Invert(meshObj.worldMatrix);
-                if (!invMesh) return;
+                if (!rhs) {
+                    rhs = partial.map((p, bi) => mat4Multiply(p, boneData.slice(bi * 16, bi * 16 + 16)));
+                }
                 for (let bi = 0; bi < boneCount; bi++) {
-                    const toMesh = mat4Multiply(invMesh, boneNodes[bi].worldMatrix);
-                    const bm = ibm ? mat4Multiply(toMesh, ibm.subarray(bi * 16, bi * 16 + 16)) : toMesh;
+                    const toMesh = mat4Multiply(boneNodes[bi].worldMatrix, rhs[bi]);
+                    const bm = mat4Multiply(invMeshWorldBind, toMesh);
                     for (let k = 0; k < 16; k++) boneData[bi * 16 + k] = bm[k];
                 }
                 device.queue.writeTexture({ texture: skel.boneTexture }, boneData.buffer, { bytesPerRow: texWidth * 16 }, { width: texWidth, height: 1 });
@@ -887,12 +901,10 @@ async function setupGltfPhysics(scene, engine, json, loadedAsset, glbBin, baseUr
     const parentMap = buildParentMap(json);
 
     // Collider meshes the visual loader never instantiates (collision-only, or a mesh index
-    // differing from the node's own) must be decoded straight from the glTF buffers; skinned meshes
-    // bound to physics bones also need the buffers (for their inverse bind matrices).
+    // differing from the node's own) must be decoded straight from the glTF buffers.
     const needsBuffers = json.nodes.some(function(n) {
         const g = n.extensions?.KHR_physics_rigid_bodies?.collider?.geometry;
-        if (g && g.shape === undefined && g.mesh !== undefined && n.mesh !== g.mesh) return true;
-        return n.mesh !== undefined && n.skin !== undefined;
+        return g && g.shape === undefined && g.mesh !== undefined && n.mesh !== g.mesh;
     });
     let buffers = null;
     if (needsBuffers) {
@@ -1108,7 +1120,7 @@ async function setupGltfPhysics(scene, engine, json, loadedAsset, glbBin, baseUr
     }
 
     // Make skinned meshes (ragdolls) follow their physics-driven bones.
-    setupSkinnedMeshFollow(scene, engine, json, buffers, nodeToTN);
+    setupSkinnedMeshFollow(scene, engine, json, parentMap, nodeToTN);
 
     if (params.PHYSICS_DEBUG) {
         for (const body of bodies) showPhysicsBody(viewer, body);
