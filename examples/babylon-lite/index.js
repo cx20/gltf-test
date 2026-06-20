@@ -179,7 +179,7 @@ async function createDroppedModelSource(fileList) {
     });
 
     if (!modelFile) {
-        throw new Error("`.glb` または `.gltf` ファイルを含めてドロップしてください。");
+        throw new Error("Please drop a `.glb` or `.gltf` file.");
     }
 
     const fileMap = new Map();
@@ -1427,7 +1427,7 @@ async function loadSceneFromSource(engine, modelSource) {
                 URL.revokeObjectURL(url);
             });
         }
-        showDropZone("読み込みに失敗しました: " + error.message, true);
+        showDropZone("Failed to load: " + error.message, true);
     }
 }
 
@@ -1458,7 +1458,7 @@ async function handleModelFiles(engine, fileList) {
         await loadSceneFromSource(engine, modelSource);
     } catch (error) {
         console.error(error);
-        showDropZone("読み込みに失敗しました: " + error.message, true);
+        showDropZone("Failed to load: " + error.message, true);
     }
 }
 
