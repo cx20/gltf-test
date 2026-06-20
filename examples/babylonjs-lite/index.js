@@ -16,10 +16,31 @@ import {
     selectVariant,
     resetVariant,
     createDirectionalLight,
+    createHavokWorld,
+    createPhysicsViewer,
+    createPhysicsBody,
+    createPhysicsShape,
+    createTransformNode,
+    addPhysicsShapeChildFromParent,
+    createPhysicsConstraint,
+    onPhysicsAfterStep,
+    setPhysicsBodyShape,
+    setPhysicsBodyMassProperties,
+    setPhysicsBodyLinearVelocity,
+    setPhysicsBodyAngularVelocity,
+    showPhysicsBody,
+    hidePhysicsBody,
+    PhysicsMotionType,
+    PhysicsShapeType,
+    PhysicsConstraintType,
 } from "babylon-lite";
+import HavokPhysics from "@babylonjs/havok";
 
 const ENV_URL = "../../textures/env/papermillSpecularHDR.env";
 const BRDF_URL = "https://cdn.jsdelivr.net/gh/BabylonJS/Babylon-Lite@master/packages/babylon-lite/assets/brdf-lut.png";
+
+// Physics simulation step rate for KHR_physics_rigid_bodies models.
+const PHYSICS_FPS = 60;
 
 function getInitialModelInfo() {
     let modelInfo = ModelIndex.getCurrentModel();
@@ -55,6 +76,7 @@ let params = {
     CUBEMAP: true,
     IBL: true,
     LIGHTS: false,
+    PHYSICS_DEBUG: true,
     VARIANT: DEFAULT_NAME,
     CAMERA: DEFAULT_NAME,
 };
@@ -253,21 +275,39 @@ function _rotateByQ(q, v) {
     };
 }
 
-// Fetch a .gltf URL, parse its cameras, and return their world positions
-// (in glTF right-handed coordinates) together with per-camera perspective params.
-// Returns [] for non-.gltf URLs, on fetch/parse failure, or when no cameras are
-// defined in the file.
-async function extractGltfCameras(url) {
-    if (!url.toLowerCase().endsWith('.gltf')) return [];
-    let json;
+// Fetch a glTF asset URL and return its parsed JSON, handling .gltf, .glb (binary,
+// from which the JSON chunk is extracted), and blob: URLs (drag-dropped models are
+// normalised to a .gltf JSON blob upstream). Returns null on fetch/parse failure.
+async function fetchGltfJsonAny(url) {
     try {
         const resp = await fetch(url);
-        if (!resp.ok) return [];
-        json = await resp.json();
+        if (!resp.ok) return null;
+        const buffer = await resp.arrayBuffer();
+        const dv = new DataView(buffer);
+        // GLB magic "glTF" → walk the binary chunks for the JSON chunk.
+        if (buffer.byteLength >= 12 && dv.getUint32(0, true) === 0x46546C67) {
+            let offset = 12;
+            while (offset + 8 <= dv.byteLength) {
+                const chunkLength = dv.getUint32(offset, true);
+                const chunkType = dv.getUint32(offset + 4, true);
+                const dataStart = offset + 8;
+                if (chunkType === 0x4E4F534A) { // "JSON"
+                    return JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, dataStart, chunkLength)));
+                }
+                offset = dataStart + chunkLength;
+            }
+            return null;
+        }
+        return JSON.parse(new TextDecoder().decode(new Uint8Array(buffer)));
     } catch (e) {
-        return [];
+        return null;
     }
+}
 
+// Parse the cameras from a glTF JSON object and return their world positions
+// (in glTF right-handed coordinates) together with per-camera perspective params.
+// Returns [] when no cameras are defined in the file.
+function parseGltfCameras(json) {
     const nodes = json.nodes || [];
     const cameras = json.cameras || [];
     if (cameras.length === 0) return [];
@@ -320,6 +360,407 @@ async function extractGltfCameras(url) {
     return result;
 }
 
+// ── glTF Physics (KHR_physics_rigid_bodies + KHR_implicit_shapes) ─────────────
+//
+// Babylon.js Lite has no built-in glTF-physics loader, so we parse the asset's
+// physics extensions ourselves and drive each body with the Lite Havok wrapper.
+// Bodies are reconstructed at the Babylon left-handed world pose
+// decompose(F * node-world), F = diag(-1, 1, 1), to match Babylon's glTF importer.
+// Adapted from cx20/webgl-physics-examples (babylonjs-lite/havok/gltf_physics_*).
+
+// HavokPhysics() loads a multi-MB WASM module; load it lazily and only once, the
+// first time a physics-enabled model is opened.
+let havokInstancePromise = null;
+function loadHavok() {
+    if (!havokInstancePromise) {
+        havokInstancePromise = HavokPhysics();
+    }
+    return havokInstancePromise;
+}
+
+function composeTRS(t, q, s) {
+    const [x, y, z, w] = q;
+    const [sx, sy, sz] = s;
+    const m00 = 1 - 2 * (y * y + z * z), m01 = 2 * (x * y - z * w), m02 = 2 * (x * z + y * w);
+    const m10 = 2 * (x * y + z * w), m11 = 1 - 2 * (x * x + z * z), m12 = 2 * (y * z - x * w);
+    const m20 = 2 * (x * z - y * w), m21 = 2 * (y * z + x * w), m22 = 1 - 2 * (x * x + y * y);
+    return [m00 * sx, m10 * sx, m20 * sx, 0, m01 * sy, m11 * sy, m21 * sy, 0, m02 * sz, m12 * sz, m22 * sz, 0, t[0], t[1], t[2], 1];
+}
+
+function mat4Multiply(a, b) {
+    const o = new Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+        let v = 0;
+        for (let k = 0; k < 4; k++) v += a[k * 4 + r] * b[c * 4 + k];
+        o[c * 4 + r] = v;
+    }
+    return o;
+}
+
+function nodeLocalMatrix(node) {
+    if (node.matrix) return node.matrix.slice();
+    return composeTRS(node.translation || [0, 0, 0], node.rotation || [0, 0, 0, 1], node.scale || [1, 1, 1]);
+}
+
+function nodeWorldMatrix(json, parentMap, index) {
+    let m = nodeLocalMatrix(json.nodes[index]);
+    for (let p = parentMap[index]; p !== undefined; p = parentMap[p]) m = mat4Multiply(nodeLocalMatrix(json.nodes[p]), m);
+    return m;
+}
+
+function applyLeftHandedFlip(m) {
+    const o = m.slice();
+    o[0] = -o[0]; o[4] = -o[4]; o[8] = -o[8]; o[12] = -o[12];
+    return o;
+}
+
+function matrixToQuaternion(r) {
+    const m00 = r[0], m10 = r[1], m20 = r[2], m01 = r[4], m11 = r[5], m21 = r[6], m02 = r[8], m12 = r[9], m22 = r[10];
+    const trace = m00 + m11 + m22;
+    let x, y, z, w, s;
+    if (trace > 0) {
+        s = Math.sqrt(trace + 1) * 2; w = 0.25 * s; x = (m21 - m12) / s; y = (m02 - m20) / s; z = (m10 - m01) / s;
+    } else if (m00 > m11 && m00 > m22) {
+        s = Math.sqrt(1 + m00 - m11 - m22) * 2; w = (m21 - m12) / s; x = 0.25 * s; y = (m01 + m10) / s; z = (m02 + m20) / s;
+    } else if (m11 > m22) {
+        s = Math.sqrt(1 + m11 - m00 - m22) * 2; w = (m02 - m20) / s; x = (m01 + m10) / s; y = 0.25 * s; z = (m12 + m21) / s;
+    } else {
+        s = Math.sqrt(1 + m22 - m00 - m11) * 2; w = (m10 - m01) / s; x = (m02 + m20) / s; y = (m12 + m21) / s; z = 0.25 * s;
+    }
+    return [x, y, z, w];
+}
+
+function decomposeMatrix(m) {
+    const position = [m[12], m[13], m[14]];
+    let sx = Math.hypot(m[0], m[1], m[2]);
+    const sy = Math.hypot(m[4], m[5], m[6]);
+    const sz = Math.hypot(m[8], m[9], m[10]);
+    const det = m[0] * (m[5] * m[10] - m[6] * m[9]) - m[4] * (m[1] * m[10] - m[2] * m[9]) + m[8] * (m[1] * m[6] - m[2] * m[5]);
+    if (det < 0) sx = -sx;
+    const r = [m[0] / sx, m[1] / sx, m[2] / sx, 0, m[4] / sy, m[5] / sy, m[6] / sy, 0, m[8] / sz, m[9] / sz, m[10] / sz, 0];
+    return { position, quaternion: matrixToQuaternion(r), scale: [sx, sy, sz] };
+}
+
+function quatRotate(q, v) {
+    const [x, y, z, w] = q;
+    const [vx, vy, vz] = v;
+    const ix = w * vx + y * vz - z * vy;
+    const iy = w * vy + z * vx - x * vz;
+    const iz = w * vz + x * vy - y * vx;
+    const iw = -x * vx - y * vy - z * vz;
+    return [
+        ix * w + iw * -x + iy * -z - iz * -y,
+        iy * w + iw * -y + iz * -x - ix * -z,
+        iz * w + iw * -z + ix * -y - iy * -x,
+    ];
+}
+
+function normalizeVec(v) {
+    const l = Math.hypot(v[0], v[1], v[2]) || 1;
+    return { x: v[0] / l, y: v[1] / l, z: v[2] / l };
+}
+
+function multiplyQuat(a, b) {
+    const [ax, ay, az, aw] = a;
+    const [bx, by, bz, bw] = b;
+    return [
+        aw * bx + ax * bw + ay * bz - az * by,
+        aw * by - ax * bz + ay * bw + az * bx,
+        aw * bz + ax * by - ay * bx + az * bw,
+        aw * bw - ax * bx - ay * by - az * bz,
+    ];
+}
+
+function buildParentMap(json) {
+    const parent = {};
+    json.nodes.forEach((node, i) => (node.children || []).forEach((c) => (parent[c] = i)));
+    return parent;
+}
+
+function reparentNode(child, newParent) {
+    const old = child.parent;
+    if (old && Array.isArray(old.children)) {
+        const i = old.children.indexOf(child);
+        if (i >= 0) old.children.splice(i, 1);
+    }
+    child.parent = newParent;
+    newParent.children.push(child);
+}
+
+// Map every glTF node index to the Lite TransformNode created by loadGltf. The Lite
+// loader mirrors the glTF node hierarchy, so root.children[i] matches scene root i.
+function buildNodeToTransformNode(json, root) {
+    const map = new Map();
+    const walk = (nodeIndex, tn) => {
+        map.set(nodeIndex, tn);
+        const childIndices = json.nodes[nodeIndex].children || [];
+        for (let i = 0; i < childIndices.length; i++) walk(childIndices[i], tn.children[i]);
+    };
+    const sceneRoots = json.scenes?.[json.scene ?? 0]?.nodes ?? [];
+    for (let i = 0; i < sceneRoots.length; i++) walk(sceneRoots[i], root.children[i]);
+    return map;
+}
+
+function primitiveShapeOptions(shapeDef, absScale) {
+    const maxXZ = Math.max(absScale[0], absScale[2]);
+    const maxAll = Math.max(absScale[0], absScale[1], absScale[2]);
+    if (shapeDef.type === 'box') {
+        const s = shapeDef.box?.size || [1, 1, 1];
+        return { type: PhysicsShapeType.BOX, parameters: { center: { x: 0, y: 0, z: 0 }, extents: { x: s[0] * absScale[0], y: s[1] * absScale[1], z: s[2] * absScale[2] } } };
+    }
+    if (shapeDef.type === 'sphere') {
+        return { type: PhysicsShapeType.SPHERE, parameters: { center: { x: 0, y: 0, z: 0 }, radius: (shapeDef.sphere?.radius ?? 0.5) * maxAll } };
+    }
+    if (shapeDef.type === 'capsule') {
+        const c = shapeDef.capsule || {};
+        const radius = ((c.radiusTop ?? 0.5) + (c.radiusBottom ?? 0.5)) * 0.5 * maxXZ;
+        const half = (c.height ?? 1) * 0.5 * absScale[1];
+        return { type: PhysicsShapeType.CAPSULE, parameters: { pointA: { x: 0, y: -half, z: 0 }, pointB: { x: 0, y: half, z: 0 }, radius } };
+    }
+    if (shapeDef.type === 'cylinder') {
+        const c = shapeDef.cylinder || {};
+        const radius = Math.max(c.radiusTop ?? 0.5, c.radiusBottom ?? 0.5) * maxXZ;
+        const half = (c.height ?? 1) * 0.5 * absScale[1];
+        return { type: PhysicsShapeType.CYLINDER, parameters: { pointA: { x: 0, y: -half, z: 0 }, pointB: { x: 0, y: half, z: 0 }, radius } };
+    }
+    return null;
+}
+
+// Apply a KHR_physics_rigid_bodies "motion" block to a dynamic body: mass, centre of
+// mass, inertia, gravity factor (negative = floating balloons), and initial velocities.
+function applyMotionProperties(world, hknp, body, motion) {
+    const massProps = { mass: motion.mass ?? 1 };
+    if (Array.isArray(motion.centerOfMass)) massProps.centerOfMass = { x: motion.centerOfMass[0], y: motion.centerOfMass[1], z: motion.centerOfMass[2] };
+    if (Array.isArray(motion.inertiaDiagonal)) massProps.inertia = { x: motion.inertiaDiagonal[0], y: motion.inertiaDiagonal[1], z: motion.inertiaDiagonal[2] };
+    if (Array.isArray(motion.inertiaOrientation)) massProps.inertiaOrientation = { x: motion.inertiaOrientation[0], y: motion.inertiaOrientation[1], z: motion.inertiaOrientation[2], w: motion.inertiaOrientation[3] };
+    setPhysicsBodyMassProperties(world, body, massProps);
+
+    // gravityFactor has no Lite wrapper setter -> use the raw Havok call.
+    if (motion.gravityFactor !== undefined && typeof hknp.HP_Body_SetGravityFactor === 'function') {
+        hknp.HP_Body_SetGravityFactor(body._hkBody, motion.gravityFactor);
+    }
+    if (Array.isArray(motion.linearVelocity)) setPhysicsBodyLinearVelocity(world, body, { x: motion.linearVelocity[0], y: motion.linearVelocity[1], z: motion.linearVelocity[2] });
+    if (Array.isArray(motion.angularVelocity)) setPhysicsBodyAngularVelocity(world, body, { x: motion.angularVelocity[0], y: motion.angularVelocity[1], z: motion.angularVelocity[2] });
+}
+
+// Returns true when the asset declares any KHR_physics_rigid_bodies node bodies.
+function hasGltfPhysics(json) {
+    if (!json || !json.nodes) return false;
+    return json.nodes.some(function(n) { return n.extensions && n.extensions.KHR_physics_rigid_bodies; });
+}
+
+// Build the SIX_DOF constraints declared by KHR_physics_rigid_bodies joints. glTF joints are
+// generic 6-DoF definitions (per-axis min/max limits); each jointSpace node owns one joint and
+// references the connected node's frame. Adapted from the gltf_physics_JointTypes reference.
+function buildGltfJoints(world, json, parentMap, jointDefs, bodyByNode) {
+    if (!jointDefs.length) return;
+
+    // Resolve a jointSpace node to its owning body plus the anchor frame in that body's local space.
+    const resolveBodyFrame = (jointSpaceIndex) => {
+        let m = nodeLocalMatrix(json.nodes[jointSpaceIndex]);
+        for (let cur = parentMap[jointSpaceIndex]; cur !== undefined; cur = parentMap[cur]) {
+            if (json.nodes[cur].extensions?.KHR_physics_rigid_bodies?.collider) {
+                const entry = bodyByNode.get(cur);
+                if (!entry) return null;
+                const d = decomposeMatrix(m);
+                const sc = entry.scale; // body's decomposed scale (carries the -X flip)
+                const pivot = { x: d.position[0] * sc[0], y: d.position[1] * sc[1], z: d.position[2] * sc[2] };
+                const ax = quatRotate(d.quaternion, [1, 0, 0]);
+                const pe = quatRotate(d.quaternion, [0, 1, 0]);
+                const axis = normalizeVec([ax[0] * sc[0], ax[1] * sc[1], ax[2] * sc[2]]);
+                const perp = normalizeVec([pe[0] * sc[0], pe[1] * sc[1], pe[2] * sc[2]]);
+                return { body: entry.body, pivot, axis, perp };
+            }
+            m = mat4Multiply(nodeLocalMatrix(json.nodes[cur]), m);
+        }
+        return null;
+    };
+
+    // Convert a glTF joint's per-axis limits to Lite SIX_DOF limits (LINEAR_X/Y/Z = 0..2,
+    // ANGULAR_X/Y/Z = 3..5). Listed axes are locked (min==max) or limited; unlisted axes stay free.
+    const buildLimits = (jointDef) => {
+        const out = [];
+        for (const lim of (jointDef.limits || [])) {
+            for (const a of (lim.linearAxes || [])) out.push({ axis: a, minLimit: lim.min ?? 0, maxLimit: lim.max ?? 0 });
+            for (const a of (lim.angularAxes || [])) out.push({ axis: 3 + a, minLimit: lim.min ?? 0, maxLimit: lim.max ?? 0 });
+        }
+        return out;
+    };
+
+    for (let nodeIndex = 0; nodeIndex < json.nodes.length; nodeIndex++) {
+        const joint = json.nodes[nodeIndex].extensions?.KHR_physics_rigid_bodies?.joint;
+        if (!joint) continue;
+        const frameA = resolveBodyFrame(nodeIndex);
+        const frameB = resolveBodyFrame(joint.connectedNode);
+        if (!frameA || !frameB) continue;
+        createPhysicsConstraint(
+            world,
+            frameA.body,
+            frameB.body,
+            PhysicsConstraintType.SIX_DOF,
+            {
+                pivotA: frameA.pivot, axisA: frameA.axis, perpAxisA: frameA.perp,
+                pivotB: frameB.pivot, axisB: frameB.axis, perpAxisB: frameB.perp,
+                collision: !!joint.enableCollision,
+            },
+            buildLimits(jointDefs[joint.joint] || {}),
+        );
+    }
+}
+
+// Build Havok rigid bodies from a model's glTF physics extensions and reparent the
+// matching visual subtrees under physics anchors so they follow the simulation.
+// Returns { world, viewer, bodies } or null when the asset has no physics.
+async function setupGltfPhysics(scene, json, loadedAsset) {
+    const shapeDefs = json.extensions?.KHR_implicit_shapes?.shapes || [];
+    const scenePhysics = json.extensions?.KHR_physics_rigid_bodies || {};
+    const materialDefs = scenePhysics.physicsMaterials || [];
+    const jointDefs = scenePhysics.physicsJoints || [];
+    const parentMap = buildParentMap(json);
+
+    const hknp = await loadHavok();
+    const world = createHavokWorld(scene, hknp, { x: 0, y: -9.8, z: 0 });
+    const viewer = createPhysicsViewer(scene, world, { color: [0, 1, 0, 1] });
+    const combine = hknp.MaterialCombine;
+    const bodies = [];
+    // nodeIndex -> { body, scale } for joint frame resolution; kinematic spinners driven each step.
+    const bodyByNode = new Map();
+    const spinners = [];
+
+    const root = loadedAsset.entities[0];
+    const nodeToTN = buildNodeToTransformNode(json, root);
+
+    const setMaterial = (shape, matIndex) => {
+        const matDef = matIndex !== undefined ? materialDefs[matIndex] : null;
+        const friction = matDef?.dynamicFriction ?? 0.5;
+        const restitution = matDef?.restitution ?? 0;
+        hknp.HP_Shape_SetMaterial(shape._hkShape, [friction, friction, restitution, combine.MAXIMUM, combine.MAXIMUM]);
+    };
+
+    // A compound body has motion but no collider of its own. Collect its descendant
+    // collider nodes and mark every descendant carrying physics as consumed so the
+    // main loop skips them — descendant triggers just ride along visually.
+    const consumed = new Set();
+    const compounds = [];
+    const collectCompoundChildren = (nodeIndex, out) => {
+        for (const childIndex of (json.nodes[nodeIndex].children || [])) {
+            const cp = json.nodes[childIndex].extensions?.KHR_physics_rigid_bodies;
+            if (cp?.collider?.geometry) { out.push(childIndex); consumed.add(childIndex); }
+            else if (cp?.trigger) consumed.add(childIndex);
+            collectCompoundChildren(childIndex, out);
+        }
+    };
+    for (let i = 0; i < json.nodes.length; i++) {
+        const physics = json.nodes[i].extensions?.KHR_physics_rigid_bodies;
+        if (physics?.motion && !physics.collider && !physics.trigger && (json.nodes[i].children || []).length) {
+            const childColliders = [];
+            collectCompoundChildren(i, childColliders);
+            if (childColliders.length) compounds.push({ index: i, childColliders });
+        }
+    }
+    const compoundByIndex = new Map(compounds.map((c) => [c.index, c]));
+
+    const placeAnchor = (nodeIndex) => {
+        const lh = decomposeMatrix(applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, nodeIndex)));
+        const anchor = createTransformNode('body_' + nodeIndex);
+        anchor.position.set(lh.position[0], lh.position[1], lh.position[2]);
+        anchor.rotationQuaternion.set(lh.quaternion[0], lh.quaternion[1], lh.quaternion[2], lh.quaternion[3]);
+        addToScene(scene, anchor);
+        const subtree = nodeToTN.get(nodeIndex);
+        if (subtree) {
+            subtree.position.set(0, 0, 0);
+            if (subtree.rotationQuaternion) subtree.rotationQuaternion.set(0, 0, 0, 1);
+            subtree.scaling.set(lh.scale[0], lh.scale[1], lh.scale[2]);
+            reparentNode(subtree, anchor);
+        }
+        return { anchor, lh };
+    };
+
+    const buildShapeFor = (geometry, anchorForMesh, absScale) => {
+        if (geometry.shape !== undefined) {
+            return createPhysicsShape(world, primitiveShapeOptions(shapeDefs[geometry.shape], absScale));
+        }
+        const type = geometry.convexHull ? PhysicsShapeType.CONVEX_HULL : PhysicsShapeType.MESH;
+        return createPhysicsShape(world, { type, mesh: anchorForMesh, includeChildMeshes: true });
+    };
+
+    for (let nodeIndex = 0; nodeIndex < json.nodes.length; nodeIndex++) {
+        if (consumed.has(nodeIndex)) continue;
+        const physics = json.nodes[nodeIndex].extensions?.KHR_physics_rigid_bodies;
+        if (!physics) continue;
+        const motion = physics.motion || null;
+
+        // Compound body: a container of its descendant collider shapes.
+        const compound = compoundByIndex.get(nodeIndex);
+        if (compound) {
+            const { anchor, lh } = placeAnchor(nodeIndex);
+            const container = createPhysicsShape(world, { type: PhysicsShapeType.CONTAINER });
+            for (const childIndex of compound.childColliders) {
+                const childGeom = json.nodes[childIndex].extensions.KHR_physics_rigid_bodies.collider.geometry;
+                // Primitive child: base size; the parent-relative transform carries the world scale.
+                const childShape = buildShapeFor(childGeom, nodeToTN.get(childIndex), [1, 1, 1]);
+                setMaterial(childShape, json.nodes[childIndex].extensions.KHR_physics_rigid_bodies.collider.physicsMaterial);
+                addPhysicsShapeChildFromParent(world, container, anchor, childShape, nodeToTN.get(childIndex));
+            }
+            const body = createPhysicsBody(world, anchor, PhysicsMotionType.DYNAMIC);
+            setPhysicsBodyShape(world, body, container);
+            applyMotionProperties(world, hknp, body, motion);
+            bodies.push(body);
+            bodyByNode.set(nodeIndex, { body, scale: lh.scale });
+            continue;
+        }
+
+        const geometry = physics.collider?.geometry;
+        if (!geometry) continue; // standalone triggers are skipped
+
+        const { anchor, lh } = placeAnchor(nodeIndex);
+        const absScale = lh.scale.map(Math.abs);
+        const shape = buildShapeFor(geometry, anchor, absScale);
+        setMaterial(shape, physics.collider.physicsMaterial);
+        // A kinematic body is ANIMATED: Lite snaps it to its node each pre-step, so it is driven
+        // by rotating its anchor (see spinners below) rather than by a set velocity.
+        const isKinematic = !!(motion && motion.isKinematic);
+        const motionType = motion
+            ? (isKinematic ? PhysicsMotionType.ANIMATED : PhysicsMotionType.DYNAMIC)
+            : PhysicsMotionType.STATIC;
+        const body = createPhysicsBody(world, anchor, motionType);
+        setPhysicsBodyShape(world, body, shape);
+        if (motion && !isKinematic) {
+            applyMotionProperties(world, hknp, body, motion);
+        } else if (isKinematic && Array.isArray(motion.angularVelocity)) {
+            // Angular velocity is a pseudovector: under F = diag(-1,1,1) it maps (wx,wy,wz)->(wx,-wy,-wz).
+            spinners.push({ anchor, omega: [motion.angularVelocity[0], -motion.angularVelocity[1], -motion.angularVelocity[2]] });
+        }
+        bodies.push(body);
+        bodyByNode.set(nodeIndex, { body, scale: lh.scale });
+    }
+
+    buildGltfJoints(world, json, parentMap, jointDefs, bodyByNode);
+
+    // Drive kinematic spinners: rotate each anchor by its angular velocity every physics step
+    // (world-frame increment); Lite's pre-step teleport carries the body, driving its joint.
+    if (spinners.length) {
+        onPhysicsAfterStep(world, (dt) => {
+            for (const sp of spinners) {
+                const mag = Math.hypot(sp.omega[0], sp.omega[1], sp.omega[2]);
+                if (mag < 1e-6) continue;
+                const half = (mag * dt) / 2;
+                const s = Math.sin(half) / mag;
+                const dq = [sp.omega[0] * s, sp.omega[1] * s, sp.omega[2] * s, Math.cos(half)];
+                const q = sp.anchor.rotationQuaternion;
+                const nq = multiplyQuat(dq, [q.x, q.y, q.z, q.w]);
+                q.set(nq[0], nq[1], nq[2], nq[3]);
+            }
+        });
+    }
+
+    if (params.PHYSICS_DEBUG) {
+        for (const body of bodies) showPhysicsBody(viewer, body);
+    }
+
+    return { world, viewer, bodies };
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 
 async function createScene(engine, modelSource) {
@@ -337,7 +778,7 @@ async function createScene(engine, modelSource) {
 
     const absolutePath = new URL(path, window.location.href).href;
 
-    const [loadedAsset, envTextures, gltfCameras] = await Promise.all([
+    const [loadedAsset, envTextures, gltfJson] = await Promise.all([
         loadGltf(engine, absolutePath),
         loadEnvironment(scene, ENV_URL, {
             brdfUrl: BRDF_URL,
@@ -345,11 +786,26 @@ async function createScene(engine, modelSource) {
             skyboxSize: 10000,
             skipGround: true,
         }),
-        // Fetch camera nodes in parallel with model loading; returns [] for GLB/blob URLs.
-        extractGltfCameras(absolutePath),
+        // Fetch the glTF JSON in parallel with model loading (used for cameras and physics).
+        fetchGltfJsonAny(absolutePath),
     ]);
 
+    const gltfCameras = gltfJson ? parseGltfCameras(gltfJson) : [];
+
     addToScene(scene, loadedAsset);
+
+    // Build Havok rigid bodies when the asset declares glTF physics extensions.
+    // This reparents the matching visual subtrees, so it must run before the
+    // camera is auto-framed below.
+    let physicsData = null;
+    if (hasGltfPhysics(gltfJson)) {
+        scene.fixedDeltaMs = 1000 / PHYSICS_FPS;
+        try {
+            physicsData = await setupGltfPhysics(scene, gltfJson, loadedAsset);
+        } catch (error) {
+            console.error("[glTF Physics] Failed to set up physics:", error);
+        }
+    }
 
     const light1 = createDirectionalLight([0.0, -1.0, 0.5], 0);
     const light2 = createDirectionalLight([-0.5, -0.5, -0.5], 0);
@@ -390,13 +846,14 @@ async function createScene(engine, modelSource) {
         defaultCamParams,
         light1,
         light2,
+        physicsData,
     };
 
     return scene;
 }
 
 function setupSceneGui(scene) {
-    const { asset, envTextures, variantNames, cam, gltfCameras, defaultCamParams, light1, light2 } = scene._sceneData;
+    const { asset, envTextures, variantNames, cam, gltfCameras, defaultCamParams, light1, light2, physicsData } = scene._sceneData;
 
     const gui = new dat.GUI();
     gui.add(params, 'ROTATE').name('Rotate');
@@ -433,6 +890,20 @@ function setupSceneGui(scene) {
         light2.intensity = value ? 1.0 : 0;
     });
 
+    // Physics Debug — toggle Havok collider wireframes. Shown only for models that
+    // declare glTF physics extensions (KHR_physics_rigid_bodies).
+    if (physicsData) {
+        gui.add(params, 'PHYSICS_DEBUG').name('Physics Debug').onChange(function(value) {
+            for (const body of physicsData.bodies) {
+                if (value) {
+                    showPhysicsBody(physicsData.viewer, body);
+                } else {
+                    hidePhysicsBody(physicsData.viewer, body);
+                }
+            }
+        });
+    }
+
     if (variantNames.length > 0) {
         const variantOptions = {};
         variantOptions[DEFAULT_NAME] = DEFAULT_NAME;
@@ -451,7 +922,7 @@ function setupSceneGui(scene) {
 
     // Camera selection — shown only when the glTF file contains embedded cameras.
     // Lite's API only exposes a single camera from the loaded asset, so we parse
-    // the glTF JSON ourselves (extractGltfCameras) to enumerate all camera nodes.
+    // the glTF JSON ourselves (parseGltfCameras) to enumerate all camera nodes.
     // Each camera is represented as an ArcRotateCamera positioned at the glTF
     // camera's world location, orbiting around the scene centre.
     if (gltfCameras.length > 0) {
