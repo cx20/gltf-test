@@ -28,6 +28,8 @@ import {
     setPhysicsBodyMassProperties,
     setPhysicsBodyLinearVelocity,
     setPhysicsBodyAngularVelocity,
+    setPhysicsShapeFilterMembershipMask,
+    setPhysicsShapeFilterCollideMask,
     showPhysicsBody,
     hidePhysicsBody,
     PhysicsMotionType,
@@ -768,6 +770,7 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
     const scenePhysics = json.extensions?.KHR_physics_rigid_bodies || {};
     const materialDefs = scenePhysics.physicsMaterials || [];
     const jointDefs = scenePhysics.physicsJoints || [];
+    const collisionFilters = scenePhysics.collisionFilters || [];
     const parentMap = buildParentMap(json);
 
     // Collider meshes the visual loader never instantiates (collision-only, or a mesh index
@@ -802,6 +805,34 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
         const friction = matDef?.dynamicFriction ?? 0.5;
         const restitution = matDef?.restitution ?? 0;
         hknp.HP_Shape_SetMaterial(shape._hkShape, [friction, friction, restitution, combine.MAXIMUM, combine.MAXIMUM]);
+    };
+
+    // Collision filtering (KHR_physics_rigid_bodies collisionFilters), per collider shape. Each named
+    // collision system maps to a bit, assigned in first-seen order across the asset (matching the
+    // official Babylon loader). A shape collides with another only when each side's membership mask
+    // intersects the other's collide mask. Mirrors the loader's _layerNamesToMask / filter setup.
+    const layerNames = [];
+    const layerNamesToMask = (names) => {
+        let mask = 0;
+        for (const name of names) {
+            let idx = layerNames.indexOf(name);
+            if (idx === -1) { idx = layerNames.length; layerNames.push(name); }
+            mask |= 1 << idx;
+        }
+        return mask;
+    };
+    const applyShapeFilter = (shape, filterIndex) => {
+        if (filterIndex === undefined) return; // no filter -> Havok default (collides with everything)
+        const filter = collisionFilters[filterIndex];
+        if (!filter) return;
+        if (filter.collisionSystems) {
+            setPhysicsShapeFilterMembershipMask(world, shape, layerNamesToMask(filter.collisionSystems) >>> 0);
+        }
+        if (filter.collideWithSystems) {
+            setPhysicsShapeFilterCollideMask(world, shape, layerNamesToMask(filter.collideWithSystems) >>> 0);
+        } else if (filter.notCollideWithSystems) {
+            setPhysicsShapeFilterCollideMask(world, shape, (~layerNamesToMask(filter.notCollideWithSystems)) >>> 0);
+        }
     };
 
     // A compound body has motion but no collider of its own. Collect its descendant
@@ -872,7 +903,9 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
                 const childGeom = json.nodes[childIndex].extensions.KHR_physics_rigid_bodies.collider.geometry;
                 // Primitive child: base size; the parent-relative transform carries the world scale.
                 const childShape = buildShapeFor(childIndex, childGeom, nodeToTN.get(childIndex), [1, 1, 1], [1, 1, 1]);
-                setMaterial(childShape, json.nodes[childIndex].extensions.KHR_physics_rigid_bodies.collider.physicsMaterial);
+                const childCollider = json.nodes[childIndex].extensions.KHR_physics_rigid_bodies.collider;
+                setMaterial(childShape, childCollider.physicsMaterial);
+                applyShapeFilter(childShape, childCollider.collisionFilter);
                 addPhysicsShapeChildFromParent(world, container, anchor, childShape, nodeToTN.get(childIndex));
             }
             const body = createPhysicsBody(world, anchor, PhysicsMotionType.DYNAMIC);
@@ -906,6 +939,7 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
         const absScale = lh.scale.map(Math.abs);
         const shape = buildShapeFor(nodeIndex, geometry, anchor, absScale, lh.scale);
         setMaterial(shape, physics.collider.physicsMaterial);
+        applyShapeFilter(shape, physics.collider.collisionFilter);
         // A kinematic body is ANIMATED: Lite snaps it to its node each pre-step, so it is driven
         // by rotating its anchor (see spinners below) rather than by a set velocity.
         const isKinematic = !!(motion && motion.isKinematic);
