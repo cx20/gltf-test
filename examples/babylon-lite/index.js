@@ -497,11 +497,11 @@ function parseGltfCameras(json) {
 
 // ── glTF Physics (KHR_physics_rigid_bodies + KHR_implicit_shapes) ─────────────
 //
-// Babylon.js Lite has no built-in glTF-physics loader, so we parse the asset's
+// Babylon Lite has no built-in glTF-physics loader, so we parse the asset's
 // physics extensions ourselves and drive each body with the Lite Havok wrapper.
 // Bodies are reconstructed at the Babylon left-handed world pose
 // decompose(F * node-world), F = diag(-1, 1, 1), to match Babylon's glTF importer.
-// Adapted from cx20/webgl-physics-examples (babylonjs-lite/havok/gltf_physics_*).
+// Adapted from cx20/webgl-physics-examples (babylon-lite/havok/gltf_physics_*).
 
 // HavokPhysics() loads a multi-MB WASM module; load it lazily and only once, the
 // first time a physics-enabled model is opened.
