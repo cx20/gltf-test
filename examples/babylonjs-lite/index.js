@@ -662,11 +662,14 @@ function primitiveShapeOptions(shapeDef, absScale) {
 
 // Apply a KHR_physics_rigid_bodies "motion" block to a dynamic body: mass, centre of
 // mass, inertia, gravity factor (negative = floating balloons), and initial velocities.
+// absScale is the body's world scale (magnitude); the centre of mass is given in unscaled
+// node-local units, so it must be scaled to match (the official loader does the same).
 // defaultInertia supplies a fallback inertia for shapeless bodies (empty collider) whose
 // inertia Havok cannot derive from a shape.
-function applyMotionProperties(world, hknp, body, motion, defaultInertia) {
+function applyMotionProperties(world, hknp, body, motion, absScale, defaultInertia) {
+    const s = absScale || [1, 1, 1];
     const massProps = { mass: motion.mass ?? 1 };
-    if (Array.isArray(motion.centerOfMass)) massProps.centerOfMass = { x: motion.centerOfMass[0], y: motion.centerOfMass[1], z: motion.centerOfMass[2] };
+    if (Array.isArray(motion.centerOfMass)) massProps.centerOfMass = { x: motion.centerOfMass[0] * s[0], y: motion.centerOfMass[1] * s[1], z: motion.centerOfMass[2] * s[2] };
     if (Array.isArray(motion.inertiaDiagonal)) massProps.inertia = { x: motion.inertiaDiagonal[0], y: motion.inertiaDiagonal[1], z: motion.inertiaDiagonal[2] };
     else if (defaultInertia) massProps.inertia = { x: 1, y: 1, z: 1 };
     if (Array.isArray(motion.inertiaOrientation)) massProps.inertiaOrientation = { x: motion.inertiaOrientation[0], y: motion.inertiaOrientation[1], z: motion.inertiaOrientation[2], w: motion.inertiaOrientation[3] };
@@ -1059,7 +1062,7 @@ async function setupGltfPhysics(scene, engine, json, loadedAsset, glbBin, baseUr
             }
             const body = createPhysicsBody(world, anchor, PhysicsMotionType.DYNAMIC);
             setPhysicsBodyShape(world, body, container);
-            applyMotionProperties(world, hknp, body, motion);
+            applyMotionProperties(world, hknp, body, motion, lh.scale.map(Math.abs));
             bodies.push(body);
             bodyByNode.set(nodeIndex, { body, scale: lh.scale });
             continue;
@@ -1075,7 +1078,7 @@ async function setupGltfPhysics(scene, engine, json, loadedAsset, glbBin, baseUr
                 const body = createPhysicsBody(world, anchor, isKinematic ? PhysicsMotionType.ANIMATED : PhysicsMotionType.DYNAMIC);
                 setPhysicsBodyShape(world, body, createPhysicsShape(world, { type: PhysicsShapeType.CONTAINER }));
                 if (!isKinematic) {
-                    applyMotionProperties(world, hknp, body, motion, true);
+                    applyMotionProperties(world, hknp, body, motion, lh.scale.map(Math.abs), true);
                 } else if (Array.isArray(motion.angularVelocity)) {
                     spinners.push({ anchor, omega: [motion.angularVelocity[0], -motion.angularVelocity[1], -motion.angularVelocity[2]] });
                 }
@@ -1098,7 +1101,7 @@ async function setupGltfPhysics(scene, engine, json, loadedAsset, glbBin, baseUr
         const body = createPhysicsBody(world, anchor, motionType);
         setPhysicsBodyShape(world, body, shape);
         if (motion && !isKinematic) {
-            applyMotionProperties(world, hknp, body, motion);
+            applyMotionProperties(world, hknp, body, motion, absScale);
         } else if (isKinematic && Array.isArray(motion.angularVelocity)) {
             // Angular velocity is a pseudovector: under F = diag(-1,1,1) it maps (wx,wy,wz)->(wx,-wy,-wz).
             spinners.push({ anchor, omega: [motion.angularVelocity[0], -motion.angularVelocity[1], -motion.angularVelocity[2]] });
