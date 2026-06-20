@@ -654,10 +654,21 @@ function isPhysicsBodyRoot(json, nodeIndex) {
     return !!(p && (p.motion || p.collider));
 }
 
+// The joint frames are built with axisA = F·gltfX, perpAxisA = F·gltfY (F = diag(-1,1,1), the
+// left-handed flip baked into the body scale). Havok derives the frame's Z as axisA × perpAxisA, so
+// the improper flip (det F = -1) lands on the Z basis and on the rotation sense. Mapping a glTF
+// limit/target onto this frame therefore needs a per-axis sign: linear flips Z only; angular flips
+// X and Y (not Z). Locked (0) and symmetric ranges are unaffected.
+function jointAxisSign(isLinear, axisIndex) {
+    return isLinear ? (axisIndex === 2 ? -1 : 1) : (axisIndex === 2 ? 1 : -1);
+}
+
 // Apply a glTF joint's drives (motors) to a constraint, best-effort. The Lite wrapper exposes only
-// limits, so the motor functions are called on the raw Havok constraint handle. A drive with a
-// non-zero stiffness is a position motor; otherwise a velocity motor. Failures are swallowed so a
-// missing/renamed enum never aborts the rest of the physics setup.
+// limits, so the motor functions are called on the raw Havok constraint handle. glTF drives are
+// spring motors (PD controllers): stiffness pulls toward positionTarget, damping toward
+// velocityTarget; mode "force" vs "acceleration" selects the spring type. maxForce defaults to a
+// large value (matching the official loader) so the motor actually drives. Failures are swallowed so
+// a missing/renamed enum never aborts the rest of the physics setup.
 function applyJointDrives(hknp, constraint, jointDef) {
     const drives = jointDef.drives;
     if (!drives || !drives.length) return;
@@ -669,15 +680,18 @@ function applyJointDrives(hknp, constraint, jointDef) {
     const angAxes = [CA.ANGULAR_X, CA.ANGULAR_Y, CA.ANGULAR_Z];
     for (const d of drives) {
         try {
-            const nativeAxis = (d.type === "angular" ? angAxes : linAxes)[d.axis ?? 0];
+            const isLinear = d.type === "linear";
+            const axisIndex = d.axis ?? 0;
+            const nativeAxis = (isLinear ? linAxes : angAxes)[axisIndex];
             if (nativeAxis === undefined) continue;
-            const usePosition = (d.stiffness ?? 0) > 0;
-            hknp.HP_Constraint_SetAxisMotorType(joint, nativeAxis, usePosition ? MT.POSITION : MT.VELOCITY);
-            if (usePosition && d.positionTarget !== undefined) hknp.HP_Constraint_SetAxisMotorPositionTarget(joint, nativeAxis, d.positionTarget);
-            if (d.velocityTarget !== undefined) hknp.HP_Constraint_SetAxisMotorVelocityTarget(joint, nativeAxis, d.velocityTarget);
-            if (d.stiffness !== undefined && typeof hknp.HP_Constraint_SetAxisMotorStiffness === "function") hknp.HP_Constraint_SetAxisMotorStiffness(joint, nativeAxis, d.stiffness);
-            if (d.damping !== undefined && typeof hknp.HP_Constraint_SetAxisMotorDamping === "function") hknp.HP_Constraint_SetAxisMotorDamping(joint, nativeAxis, d.damping);
-            if (d.maxForce !== undefined && typeof hknp.HP_Constraint_SetAxisMotorMaxForce === "function") hknp.HP_Constraint_SetAxisMotorMaxForce(joint, nativeAxis, d.maxForce);
+            const motorType = d.mode === "force" ? MT.SPRING_FORCE : MT.SPRING_ACCELERATION;
+            hknp.HP_Constraint_SetAxisMotorType(joint, nativeAxis, motorType);
+            const sign = jointAxisSign(isLinear, axisIndex);
+            if (d.velocityTarget !== undefined) hknp.HP_Constraint_SetAxisMotorVelocityTarget(joint, nativeAxis, d.velocityTarget * sign);
+            if (d.positionTarget !== undefined) hknp.HP_Constraint_SetAxisMotorPositionTarget(joint, nativeAxis, d.positionTarget * sign);
+            hknp.HP_Constraint_SetAxisMotorStiffness(joint, nativeAxis, d.stiffness ?? 0);
+            hknp.HP_Constraint_SetAxisMotorDamping(joint, nativeAxis, d.damping ?? 0);
+            hknp.HP_Constraint_SetAxisMotorMaxForce(joint, nativeAxis, d.maxForce ?? 34e37);
         } catch (error) {
             console.warn("[glTF Physics] Failed to apply joint drive:", error);
         }
@@ -726,12 +740,27 @@ function buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByN
     };
 
     // Convert a glTF joint's per-axis limits to Lite SIX_DOF limits (LINEAR_X/Y/Z = 0..2,
-    // ANGULAR_X/Y/Z = 3..5). Listed axes are locked (min==max) or limited; unlisted axes stay free.
+    // ANGULAR_X/Y/Z = 3..5, LINEAR_DISTANCE = 6). Listed axes are locked (min==max==0) or limited;
+    // unlisted axes stay free. Each axis takes the same left-handed sign as its drive
+    // (see jointAxisSign); a negated range [min,max] becomes [-max,-min] to keep min<=max.
+    const limitRange = (sign, min, max) => sign < 0
+        ? { minLimit: max != null ? -max : undefined, maxLimit: min != null ? -min : undefined }
+        : { minLimit: min, maxLimit: max };
     const buildLimits = (jointDef) => {
         const out = [];
         for (const lim of (jointDef.limits || [])) {
-            for (const a of (lim.linearAxes || [])) out.push({ axis: a, minLimit: lim.min ?? 0, maxLimit: lim.max ?? 0, stiffness: lim.stiffness, damping: lim.damping });
-            for (const a of (lim.angularAxes || [])) out.push({ axis: 3 + a, minLimit: lim.min ?? 0, maxLimit: lim.max ?? 0, stiffness: lim.stiffness, damping: lim.damping });
+            if (lim.linearAxes && lim.linearAxes.length === 3) {
+                out.push({ axis: 6, minLimit: lim.min, maxLimit: lim.max, stiffness: lim.stiffness, damping: lim.damping });
+                continue;
+            }
+            for (const a of (lim.linearAxes || [])) {
+                const r = limitRange(jointAxisSign(true, a), lim.min, lim.max);
+                out.push({ axis: a, minLimit: r.minLimit, maxLimit: r.maxLimit, stiffness: lim.stiffness, damping: lim.damping });
+            }
+            for (const a of (lim.angularAxes || [])) {
+                const r = limitRange(jointAxisSign(false, a), lim.min, lim.max);
+                out.push({ axis: 3 + a, minLimit: r.minLimit, maxLimit: r.maxLimit, stiffness: lim.stiffness, damping: lim.damping });
+            }
         }
         return out;
     };
