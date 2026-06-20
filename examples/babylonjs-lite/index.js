@@ -654,13 +654,21 @@ function isPhysicsBodyRoot(json, nodeIndex) {
     return !!(p && (p.motion || p.collider));
 }
 
+// The joint frames are built with axisA = F·gltfX, perpAxisA = F·gltfY (F = diag(-1,1,1), the
+// left-handed flip baked into the body scale). Havok derives the frame's Z as axisA × perpAxisA, so
+// the improper flip (det F = -1) lands on the Z basis and on the rotation sense. Mapping a glTF
+// limit/target onto this frame therefore needs a per-axis sign: linear flips Z only; angular flips
+// X and Y (not Z). Locked (0) and symmetric ranges are unaffected.
+function jointAxisSign(isLinear, axisIndex) {
+    return isLinear ? (axisIndex === 2 ? -1 : 1) : (axisIndex === 2 ? 1 : -1);
+}
+
 // Apply a glTF joint's drives (motors) to a constraint, best-effort. The Lite wrapper exposes only
 // limits, so the motor functions are called on the raw Havok constraint handle. glTF drives are
 // spring motors (PD controllers): stiffness pulls toward positionTarget, damping toward
 // velocityTarget; mode "force" vs "acceleration" selects the spring type. maxForce defaults to a
-// large value (matching the official loader) so the motor actually drives. Linear targets are
-// negated for the left-handed scene. Failures are swallowed so a missing/renamed enum never aborts
-// the rest of the physics setup.
+// large value (matching the official loader) so the motor actually drives. Failures are swallowed so
+// a missing/renamed enum never aborts the rest of the physics setup.
 function applyJointDrives(hknp, constraint, jointDef) {
     const drives = jointDef.drives;
     if (!drives || !drives.length) return;
@@ -673,12 +681,12 @@ function applyJointDrives(hknp, constraint, jointDef) {
     for (const d of drives) {
         try {
             const isLinear = d.type === "linear";
-            const nativeAxis = (isLinear ? linAxes : angAxes)[d.axis ?? 0];
+            const axisIndex = d.axis ?? 0;
+            const nativeAxis = (isLinear ? linAxes : angAxes)[axisIndex];
             if (nativeAxis === undefined) continue;
             const motorType = d.mode === "force" ? MT.SPRING_FORCE : MT.SPRING_ACCELERATION;
             hknp.HP_Constraint_SetAxisMotorType(joint, nativeAxis, motorType);
-            // The scene is left-handed (F = diag(-1,1,1)); linear drive targets flip sign to match.
-            const sign = isLinear ? -1 : 1;
+            const sign = jointAxisSign(isLinear, axisIndex);
             if (d.velocityTarget !== undefined) hknp.HP_Constraint_SetAxisMotorVelocityTarget(joint, nativeAxis, d.velocityTarget * sign);
             if (d.positionTarget !== undefined) hknp.HP_Constraint_SetAxisMotorPositionTarget(joint, nativeAxis, d.positionTarget * sign);
             hknp.HP_Constraint_SetAxisMotorStiffness(joint, nativeAxis, d.stiffness ?? 0);
@@ -733,8 +741,11 @@ function buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByN
 
     // Convert a glTF joint's per-axis limits to Lite SIX_DOF limits (LINEAR_X/Y/Z = 0..2,
     // ANGULAR_X/Y/Z = 3..5, LINEAR_DISTANCE = 6). Listed axes are locked (min==max==0) or limited;
-    // unlisted axes stay free. The scene is left-handed (F = diag(-1,1,1)), so linear limits flip:
-    // [min,max] -> [-max,-min] (matching the official loader); angular limits are unchanged.
+    // unlisted axes stay free. Each axis takes the same left-handed sign as its drive
+    // (see jointAxisSign); a negated range [min,max] becomes [-max,-min] to keep min<=max.
+    const limitRange = (sign, min, max) => sign < 0
+        ? { minLimit: max != null ? -max : undefined, maxLimit: min != null ? -min : undefined }
+        : { minLimit: min, maxLimit: max };
     const buildLimits = (jointDef) => {
         const out = [];
         for (const lim of (jointDef.limits || [])) {
@@ -743,12 +754,12 @@ function buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByN
                 continue;
             }
             for (const a of (lim.linearAxes || [])) {
-                const minLimit = lim.max != null ? -lim.max : undefined;
-                const maxLimit = lim.min != null ? -lim.min : undefined;
-                out.push({ axis: a, minLimit, maxLimit, stiffness: lim.stiffness, damping: lim.damping });
+                const r = limitRange(jointAxisSign(true, a), lim.min, lim.max);
+                out.push({ axis: a, minLimit: r.minLimit, maxLimit: r.maxLimit, stiffness: lim.stiffness, damping: lim.damping });
             }
             for (const a of (lim.angularAxes || [])) {
-                out.push({ axis: 3 + a, minLimit: lim.min, maxLimit: lim.max, stiffness: lim.stiffness, damping: lim.damping });
+                const r = limitRange(jointAxisSign(false, a), lim.min, lim.max);
+                out.push({ axis: 3 + a, minLimit: r.minLimit, maxLimit: r.maxLimit, stiffness: lim.stiffness, damping: lim.damping });
             }
         }
         return out;
