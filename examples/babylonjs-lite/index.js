@@ -829,11 +829,26 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
     const root = loadedAsset.entities[0];
     const nodeToTN = buildNodeToTransformNode(json, root);
 
+    // Map a glTF physicsMaterial combine string to a native Havok combine mode.
+    const combineMode = (name, fallback) => {
+        switch (name) {
+            case "average": return combine.ARITHMETIC_MEAN;
+            case "minimum": return combine.MINIMUM;
+            case "maximum": return combine.MAXIMUM;
+            case "multiply": return combine.MULTIPLY;
+            default: return fallback;
+        }
+    };
+    // The Havok material array is [staticFriction, dynamicFriction, restitution, frictionCombine,
+    // restitutionCombine]. Defaults follow the official loader: friction MAXIMUM, restitution MINIMUM.
     const setMaterial = (shape, matIndex) => {
         const matDef = matIndex !== undefined ? materialDefs[matIndex] : null;
-        const friction = matDef?.dynamicFriction ?? 0.5;
+        const staticFriction = matDef?.staticFriction ?? 0.5;
+        const dynamicFriction = matDef?.dynamicFriction ?? 0.5;
         const restitution = matDef?.restitution ?? 0;
-        hknp.HP_Shape_SetMaterial(shape._hkShape, [friction, friction, restitution, combine.MAXIMUM, combine.MAXIMUM]);
+        const frictionCombine = combineMode(matDef?.frictionCombine, combine.MAXIMUM);
+        const restitutionCombine = combineMode(matDef?.restitutionCombine, combine.MINIMUM);
+        hknp.HP_Shape_SetMaterial(shape._hkShape, [staticFriction, dynamicFriction, restitution, frictionCombine, restitutionCombine]);
     };
 
     // Collision filtering (KHR_physics_rigid_bodies collisionFilters), per collider shape. Each named
