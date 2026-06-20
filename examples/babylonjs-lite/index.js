@@ -845,84 +845,53 @@ function buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByN
 // on the first frame. At the bind pose this reduces to boneMatrix_bind, so there is no pop.
 // Best-effort: any missing internal field disables it for that mesh (skin stays at bind pose).
 function setupSkinnedMeshFollow(scene, engine, json, parentMap, nodeToTN) {
-    const T = (m) => m ? "[" + (+m[12]).toFixed(2) + "," + (+m[13]).toFixed(2) + "," + (+m[14]).toFixed(2) + "]" : "<none>";
     const device = engine?._device;
-    console.log("[skin-debug] setup: device=" + !!device + " skins=" + (json.skins ? json.skins.length : 0));
     if (!device || !json.skins) return;
     for (let nodeIndex = 0; nodeIndex < json.nodes.length; nodeIndex++) {
         const node = json.nodes[nodeIndex];
         if (node.mesh === undefined || node.skin === undefined) continue;
-        const meshObj = nodeToTN.get(nodeIndex);
-        // The mesh renderable (with the skeleton) may be the TN itself or a descendant; search for it.
+        // The skeleton lives on the renderable mesh, which may be the node's transform node or a
+        // descendant of it; search the subtree for the object that carries it.
         let skel = null;
-        let skelHost = null;
         (function walk(n, depth) {
-            if (!n || depth > 4) return;
-            console.log("[skin-debug]   walk d=" + depth + " keys=" + Object.keys(n).join(",")
-                + " _gpu=" + ("_gpu" in n) + " skeleton=" + (n.skeleton !== undefined ? (n.skeleton ? "obj" : "null") : "absent"));
-            if (n.skeleton && !skel) { skel = n.skeleton; skelHost = n; }
+            if (!n || skel || depth > 4) return;
+            if (n.skeleton) { skel = n.skeleton; return; }
             if (Array.isArray(n.children)) for (const c of n.children) walk(c, depth + 1);
-        })(meshObj, 0);
-        console.log("[skin-debug] node " + nodeIndex + " name=" + JSON.stringify(node.name || "") + " mesh=" + node.mesh + " skin=" + node.skin
-            + " meshObj=" + !!meshObj + " foundSkeleton=" + !!skel
-            + " skelKeys=" + (skel ? Object.keys(skel).join(",") : "-"));
-        if (!skel || !skel.boneMatrices || !skel.boneTexture) {
-            console.log("[skin-debug]   SKIP node " + nodeIndex + " (no skeleton/boneMatrices/boneTexture)");
-            continue;
-        }
+        })(nodeToTN.get(nodeIndex), 0);
+        if (!skel || !skel.boneMatrices || !skel.boneTexture) continue;
+
         const skin = json.skins[node.skin];
         const joints = skin && skin.joints;
-        if (!joints || !joints.length) { console.log("[skin-debug]   SKIP node " + nodeIndex + " (no joints)"); continue; }
+        if (!joints || !joints.length) continue;
         const boneNodes = joints.map((j) => nodeToTN.get(j));
-        console.log("[skin-debug]   joints=" + JSON.stringify(joints)
-            + " boneNodesResolved=" + boneNodes.map((b) => !!b).join(",")
-            + " boneNodeHasWorld=" + boneNodes.map((b) => !!(b && b.worldMatrix)).join(",")
-            + " boneMatricesLen=" + skel.boneMatrices.length + " boneCount?=" + skel.boneCount);
-        if (boneNodes.some((b) => !b || !b.worldMatrix)) { console.log("[skin-debug]   SKIP node " + nodeIndex + " (bone node/worldMatrix missing)"); continue; }
+        if (boneNodes.some((b) => !b || !b.worldMatrix)) continue;
 
         const meshWorldBind = applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, nodeIndex));
         const invMeshWorldBind = mat4Invert(meshWorldBind);
-        if (!invMeshWorldBind) { console.log("[skin-debug]   SKIP node " + nodeIndex + " (singular mesh world)"); continue; }
+        if (!invMeshWorldBind) continue;
         // invBindBoneWorld[bi] . meshWorldBind, finished with boneMatrix_bind on the first frame.
-        const bindBoneWorld = joints.map((j) => applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, j)));
-        const partial = bindBoneWorld.map((bw) => {
-            const inv = mat4Invert(bw);
+        const partial = joints.map((j) => {
+            const inv = mat4Invert(applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, j)));
             return inv ? mat4Multiply(inv, meshWorldBind) : null;
         });
-        if (partial.some((p) => !p)) { console.log("[skin-debug]   SKIP node " + nodeIndex + " (singular bind bone world)"); continue; }
-
-        console.log("[skin-debug]   meshWorldBind T=" + T(meshWorldBind) + " bindBoneWorld T=" + bindBoneWorld.map(T).join(" "));
-        console.log("[skin-debug]   REGISTERED skin-follow for node " + nodeIndex);
+        if (partial.some((p) => !p)) continue;
 
         const boneData = skel.boneMatrices;
         const boneCount = joints.length;
         const texWidth = boneCount * 4;
         let rhs = null; // invBindBoneWorld . meshWorld . boneMatrix_bind, per bone (captured once)
-        let frame = 0;
-        const logFrames = new Set([1, 30, 90, 180, 360, 600]);
         onBeforeRender(scene, function() {
             try {
                 if (!rhs) {
                     rhs = partial.map((p, bi) => mat4Multiply(p, boneData.slice(bi * 16, bi * 16 + 16)));
-                    console.log("[skin-debug] node " + nodeIndex + " bind boneMatrix T="
-                        + Array.from({ length: boneCount }, (_, bi) => T(boneData.slice(bi * 16, bi * 16 + 16))).join(" "));
                 }
                 for (let bi = 0; bi < boneCount; bi++) {
                     const toMesh = mat4Multiply(boneNodes[bi].worldMatrix, rhs[bi]);
                     const bm = mat4Multiply(invMeshWorldBind, toMesh);
                     for (let k = 0; k < 16; k++) boneData[bi * 16 + k] = bm[k];
                 }
-                frame++;
-                if (logFrames.has(frame)) {
-                    console.log("[skin-debug] node " + nodeIndex + " frame " + frame
-                        + " meshWorld T=" + T(meshObj.worldMatrix)
-                        + " liveBoneWorld T=" + boneNodes.map((b) => T(b.worldMatrix)).join(" ")
-                        + " boneMatrix_live T=" + Array.from({ length: boneCount }, (_, bi) => T(boneData.slice(bi * 16, bi * 16 + 16))).join(" "));
-                }
                 device.queue.writeTexture({ texture: skel.boneTexture }, boneData.buffer, { bytesPerRow: texWidth * 16 }, { width: texWidth, height: 1 });
-            } catch (e) {
-                console.warn("[skin-debug] node " + nodeIndex + " update error:", e);
-            }
+            } catch (e) { /* keep the last computed pose */ }
         });
     }
 }
