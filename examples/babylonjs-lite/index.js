@@ -853,11 +853,18 @@ function setupSkinnedMeshFollow(scene, engine, json, parentMap, nodeToTN) {
         const node = json.nodes[nodeIndex];
         if (node.mesh === undefined || node.skin === undefined) continue;
         const meshObj = nodeToTN.get(nodeIndex);
-        const skel = meshObj && meshObj.skeleton;
+        // The mesh renderable (with the skeleton) may be the TN itself or a descendant; search for it.
+        let skel = null;
+        let skelHost = null;
+        (function walk(n, depth) {
+            if (!n || depth > 4) return;
+            console.log("[skin-debug]   walk d=" + depth + " keys=" + Object.keys(n).join(",")
+                + " _gpu=" + ("_gpu" in n) + " skeleton=" + (n.skeleton !== undefined ? (n.skeleton ? "obj" : "null") : "absent"));
+            if (n.skeleton && !skel) { skel = n.skeleton; skelHost = n; }
+            if (Array.isArray(n.children)) for (const c of n.children) walk(c, depth + 1);
+        })(meshObj, 0);
         console.log("[skin-debug] node " + nodeIndex + " name=" + JSON.stringify(node.name || "") + " mesh=" + node.mesh + " skin=" + node.skin
-            + " meshObj=" + !!meshObj
-            + " meshObjKeys=" + (meshObj ? Object.keys(meshObj).join(",") : "-")
-            + " skeleton=" + !!skel
+            + " meshObj=" + !!meshObj + " foundSkeleton=" + !!skel
             + " skelKeys=" + (skel ? Object.keys(skel).join(",") : "-"));
         if (!skel || !skel.boneMatrices || !skel.boneTexture) {
             console.log("[skin-debug]   SKIP node " + nodeIndex + " (no skeleton/boneMatrices/boneTexture)");
