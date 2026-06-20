@@ -399,6 +399,45 @@ function buildColliderMeshFromGltf(json, buffers, meshIndex, scale) {
     };
 }
 
+// Read a MAT4 FLOAT accessor (e.g. inverseBindMatrices) as a flat Float32Array (16 per element).
+function readAccessorMat4(json, buffers, accessorIndex) {
+    const acc = json.accessors[accessorIndex];
+    const bv = json.bufferViews[acc.bufferView];
+    const dv = new DataView(buffers[bv.buffer]);
+    const base = (bv.byteOffset || 0) + (acc.byteOffset || 0);
+    const out = new Float32Array(acc.count * 16);
+    for (let i = 0; i < acc.count * 16; i++) {
+        out[i] = dv.getFloat32(base + i * 4, true);
+    }
+    return out;
+}
+
+// Invert a column-major 4x4 matrix (16-element array). Returns null when singular.
+function mat4Invert(m) {
+    const inv = new Array(16);
+    inv[0] = m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15] + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
+    inv[4] = -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15] - m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
+    inv[8] = m[4]*m[9]*m[15] - m[4]*m[11]*m[13] - m[8]*m[5]*m[15] + m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
+    inv[12] = -m[4]*m[9]*m[14] + m[4]*m[10]*m[13] + m[8]*m[5]*m[14] - m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
+    inv[1] = -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15] - m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
+    inv[5] = m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15] + m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
+    inv[9] = -m[0]*m[9]*m[15] + m[0]*m[11]*m[13] + m[8]*m[1]*m[15] - m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
+    inv[13] = m[0]*m[9]*m[14] - m[0]*m[10]*m[13] - m[8]*m[1]*m[14] + m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
+    inv[2] = m[1]*m[6]*m[15] - m[1]*m[7]*m[14] - m[5]*m[2]*m[15] + m[5]*m[3]*m[14] + m[13]*m[2]*m[7] - m[13]*m[3]*m[6];
+    inv[6] = -m[0]*m[6]*m[15] + m[0]*m[7]*m[14] + m[4]*m[2]*m[15] - m[4]*m[3]*m[14] - m[12]*m[2]*m[7] + m[12]*m[3]*m[6];
+    inv[10] = m[0]*m[5]*m[15] - m[0]*m[7]*m[13] - m[4]*m[1]*m[15] + m[4]*m[3]*m[13] + m[12]*m[1]*m[7] - m[12]*m[3]*m[5];
+    inv[14] = -m[0]*m[5]*m[14] + m[0]*m[6]*m[13] + m[4]*m[1]*m[14] - m[4]*m[2]*m[13] - m[12]*m[1]*m[6] + m[12]*m[2]*m[5];
+    inv[3] = -m[1]*m[6]*m[11] + m[1]*m[7]*m[10] + m[5]*m[2]*m[11] - m[5]*m[3]*m[10] - m[9]*m[2]*m[7] + m[9]*m[3]*m[6];
+    inv[7] = m[0]*m[6]*m[11] - m[0]*m[7]*m[10] - m[4]*m[2]*m[11] + m[4]*m[3]*m[10] + m[8]*m[2]*m[7] - m[8]*m[3]*m[6];
+    inv[11] = -m[0]*m[5]*m[11] + m[0]*m[7]*m[9] + m[4]*m[1]*m[11] - m[4]*m[3]*m[9] - m[8]*m[1]*m[7] + m[8]*m[3]*m[5];
+    inv[15] = m[0]*m[5]*m[10] - m[0]*m[6]*m[9] - m[4]*m[1]*m[10] + m[4]*m[2]*m[9] + m[8]*m[1]*m[6] - m[8]*m[2]*m[5];
+    let det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
+    if (det === 0) return null;
+    det = 1 / det;
+    for (let i = 0; i < 16; i++) inv[i] *= det;
+    return inv;
+}
+
 // Parse the cameras from a glTF JSON object and return their world positions
 // (in glTF right-handed coordinates) together with per-camera perspective params.
 // Returns [] when no cameras are defined in the file.
@@ -794,10 +833,52 @@ function buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByN
     }
 }
 
+// Skinned meshes deform from Lite's animation system, not from live node transforms, so a skin bound
+// to physics-driven bones (a ragdoll, e.g. Robot_skinned) stays at its bind pose while the bones move.
+// Recompute each skin's bone matrices from the live bone world transforms every frame and re-upload
+// its bone texture so the skin follows the physics bodies. Mirrors Lite's own bone-matrix formula
+// (invMeshWorld * boneWorld * inverseBindMatrix), so at bind pose the result is identical (no jump).
+// Best-effort: any missing internal field disables it for that mesh (skin stays at bind pose).
+function setupSkinnedMeshFollow(scene, engine, json, buffers, nodeToTN) {
+    const device = engine?._device;
+    if (!device || !buffers || !json.skins) return;
+    for (let nodeIndex = 0; nodeIndex < json.nodes.length; nodeIndex++) {
+        const node = json.nodes[nodeIndex];
+        if (node.mesh === undefined || node.skin === undefined) continue;
+        const meshObj = nodeToTN.get(nodeIndex);
+        const skel = meshObj && meshObj.skeleton;
+        if (!skel || !skel.boneMatrices || !skel.boneTexture) continue;
+        const skin = json.skins[node.skin];
+        const joints = skin && skin.joints;
+        if (!joints || !joints.length) continue;
+        const boneNodes = joints.map((j) => nodeToTN.get(j));
+        if (boneNodes.some((b) => !b || !b.worldMatrix)) continue;
+        let ibm = null;
+        try {
+            if (skin.inverseBindMatrices !== undefined) ibm = readAccessorMat4(json, buffers, skin.inverseBindMatrices);
+        } catch (e) { continue; }
+        const boneData = skel.boneMatrices;
+        const boneCount = joints.length;
+        const texWidth = boneCount * 4;
+        onBeforeRender(scene, function() {
+            try {
+                const invMesh = mat4Invert(meshObj.worldMatrix);
+                if (!invMesh) return;
+                for (let bi = 0; bi < boneCount; bi++) {
+                    const toMesh = mat4Multiply(invMesh, boneNodes[bi].worldMatrix);
+                    const bm = ibm ? mat4Multiply(toMesh, ibm.subarray(bi * 16, bi * 16 + 16)) : toMesh;
+                    for (let k = 0; k < 16; k++) boneData[bi * 16 + k] = bm[k];
+                }
+                device.queue.writeTexture({ texture: skel.boneTexture }, boneData.buffer, { bytesPerRow: texWidth * 16 }, { width: texWidth, height: 1 });
+            } catch (e) { /* keep the last computed pose */ }
+        });
+    }
+}
+
 // Build Havok rigid bodies from a model's glTF physics extensions and reparent the
 // matching visual subtrees under physics anchors so they follow the simulation.
 // Returns { world, viewer, bodies } or null when the asset has no physics.
-async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
+async function setupGltfPhysics(scene, engine, json, loadedAsset, glbBin, baseUrl) {
     const shapeDefs = json.extensions?.KHR_implicit_shapes?.shapes || [];
     const scenePhysics = json.extensions?.KHR_physics_rigid_bodies || {};
     const materialDefs = scenePhysics.physicsMaterials || [];
@@ -806,10 +887,12 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
     const parentMap = buildParentMap(json);
 
     // Collider meshes the visual loader never instantiates (collision-only, or a mesh index
-    // differing from the node's own) must be decoded straight from the glTF buffers.
+    // differing from the node's own) must be decoded straight from the glTF buffers; skinned meshes
+    // bound to physics bones also need the buffers (for their inverse bind matrices).
     const needsBuffers = json.nodes.some(function(n) {
         const g = n.extensions?.KHR_physics_rigid_bodies?.collider?.geometry;
-        return g && g.shape === undefined && g.mesh !== undefined && n.mesh !== g.mesh;
+        if (g && g.shape === undefined && g.mesh !== undefined && n.mesh !== g.mesh) return true;
+        return n.mesh !== undefined && n.skin !== undefined;
     });
     let buffers = null;
     if (needsBuffers) {
@@ -1024,6 +1107,9 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
         });
     }
 
+    // Make skinned meshes (ragdolls) follow their physics-driven bones.
+    setupSkinnedMeshFollow(scene, engine, json, buffers, nodeToTN);
+
     if (params.PHYSICS_DEBUG) {
         for (const body of bodies) showPhysicsBody(viewer, body);
     }
@@ -1072,7 +1158,7 @@ async function createScene(engine, modelSource) {
     if (hasGltfPhysics(gltfJson)) {
         scene.fixedDeltaMs = 1000 / PHYSICS_FPS;
         try {
-            physicsData = await setupGltfPhysics(scene, gltfJson, loadedAsset, gltfAsset.glbBin, absolutePath);
+            physicsData = await setupGltfPhysics(scene, engine, gltfJson, loadedAsset, gltfAsset.glbBin, absolutePath);
         } catch (error) {
             console.error("[glTF Physics] Failed to set up physics:", error);
         }
