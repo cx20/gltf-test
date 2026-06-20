@@ -898,12 +898,13 @@ function setupSkinnedMeshFollow(scene, engine, json, parentMap, nodeToTN) {
         const boneCount = joints.length;
         const texWidth = boneCount * 4;
         let rhs = null; // invBindBoneWorld . meshWorld . boneMatrix_bind, per bone (captured once)
-        let logged = 0;
+        let frame = 0;
+        const logFrames = new Set([1, 30, 90, 180, 360, 600]);
         onBeforeRender(scene, function() {
             try {
                 if (!rhs) {
                     rhs = partial.map((p, bi) => mat4Multiply(p, boneData.slice(bi * 16, bi * 16 + 16)));
-                    console.log("[skin-debug] node " + nodeIndex + " first frame: boneMatrix_bind T="
+                    console.log("[skin-debug] node " + nodeIndex + " bind boneMatrix T="
                         + Array.from({ length: boneCount }, (_, bi) => T(boneData.slice(bi * 16, bi * 16 + 16))).join(" "));
                 }
                 for (let bi = 0; bi < boneCount; bi++) {
@@ -911,10 +912,10 @@ function setupSkinnedMeshFollow(scene, engine, json, parentMap, nodeToTN) {
                     const bm = mat4Multiply(invMeshWorldBind, toMesh);
                     for (let k = 0; k < 16; k++) boneData[bi * 16 + k] = bm[k];
                 }
-                if (logged < 3) {
-                    logged++;
-                    console.log("[skin-debug] node " + nodeIndex + " frame " + logged
-                        + " meshWorldLive T=" + T(meshObj.worldMatrix)
+                frame++;
+                if (logFrames.has(frame)) {
+                    console.log("[skin-debug] node " + nodeIndex + " frame " + frame
+                        + " meshWorld T=" + T(meshObj.worldMatrix)
                         + " liveBoneWorld T=" + boneNodes.map((b) => T(b.worldMatrix)).join(" ")
                         + " boneMatrix_live T=" + Array.from({ length: boneCount }, (_, bi) => T(boneData.slice(bi * 16, bi * 16 + 16))).join(" "));
                 }
