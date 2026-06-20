@@ -637,8 +637,11 @@ function applyMotionProperties(world, hknp, body, motion, defaultInertia) {
     if (motion.gravityFactor !== undefined && typeof hknp.HP_Body_SetGravityFactor === 'function') {
         hknp.HP_Body_SetGravityFactor(body._hkBody, motion.gravityFactor);
     }
-    if (Array.isArray(motion.linearVelocity)) setPhysicsBodyLinearVelocity(world, body, { x: motion.linearVelocity[0], y: motion.linearVelocity[1], z: motion.linearVelocity[2] });
-    if (Array.isArray(motion.angularVelocity)) setPhysicsBodyAngularVelocity(world, body, { x: motion.angularVelocity[0], y: motion.angularVelocity[1], z: motion.angularVelocity[2] });
+    // Velocities are in the glTF (right-handed) world frame; convert to the left-handed scene
+    // (F = diag(-1,1,1)). A linear velocity is a true vector (negate X); an angular velocity is a
+    // pseudovector (preserve X, negate Y and Z).
+    if (Array.isArray(motion.linearVelocity)) setPhysicsBodyLinearVelocity(world, body, { x: -motion.linearVelocity[0], y: motion.linearVelocity[1], z: motion.linearVelocity[2] });
+    if (Array.isArray(motion.angularVelocity)) setPhysicsBodyAngularVelocity(world, body, { x: motion.angularVelocity[0], y: -motion.angularVelocity[1], z: -motion.angularVelocity[2] });
 }
 
 // Returns true when the asset declares any KHR_physics_rigid_bodies node bodies.
