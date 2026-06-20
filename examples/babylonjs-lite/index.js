@@ -621,10 +621,13 @@ function primitiveShapeOptions(shapeDef, absScale) {
 
 // Apply a KHR_physics_rigid_bodies "motion" block to a dynamic body: mass, centre of
 // mass, inertia, gravity factor (negative = floating balloons), and initial velocities.
-function applyMotionProperties(world, hknp, body, motion) {
+// defaultInertia supplies a fallback inertia for shapeless bodies (empty collider) whose
+// inertia Havok cannot derive from a shape.
+function applyMotionProperties(world, hknp, body, motion, defaultInertia) {
     const massProps = { mass: motion.mass ?? 1 };
     if (Array.isArray(motion.centerOfMass)) massProps.centerOfMass = { x: motion.centerOfMass[0], y: motion.centerOfMass[1], z: motion.centerOfMass[2] };
     if (Array.isArray(motion.inertiaDiagonal)) massProps.inertia = { x: motion.inertiaDiagonal[0], y: motion.inertiaDiagonal[1], z: motion.inertiaDiagonal[2] };
+    else if (defaultInertia) massProps.inertia = { x: 1, y: 1, z: 1 };
     if (Array.isArray(motion.inertiaOrientation)) massProps.inertiaOrientation = { x: motion.inertiaOrientation[0], y: motion.inertiaOrientation[1], z: motion.inertiaOrientation[2], w: motion.inertiaOrientation[3] };
     setPhysicsBodyMassProperties(world, body, massProps);
 
@@ -642,17 +645,55 @@ function hasGltfPhysics(json) {
     return json.nodes.some(function(n) { return n.extensions && n.extensions.KHR_physics_rigid_bodies; });
 }
 
+// A node owns a rigid body when it declares motion and/or a collider (compound parents and shapeless
+// "driver" bodies carry motion but no collider; static colliders carry no motion).
+function isPhysicsBodyRoot(json, nodeIndex) {
+    const p = json.nodes[nodeIndex].extensions?.KHR_physics_rigid_bodies;
+    return !!(p && (p.motion || p.collider));
+}
+
+// Apply a glTF joint's drives (motors) to a constraint, best-effort. The Lite wrapper exposes only
+// limits, so the motor functions are called on the raw Havok constraint handle. A drive with a
+// non-zero stiffness is a position motor; otherwise a velocity motor. Failures are swallowed so a
+// missing/renamed enum never aborts the rest of the physics setup.
+function applyJointDrives(hknp, constraint, jointDef) {
+    const drives = jointDef.drives;
+    if (!drives || !drives.length) return;
+    const CA = hknp.ConstraintAxis;
+    const MT = hknp.ConstraintMotorType;
+    const joint = constraint._hkConstraint;
+    if (!CA || !MT || !joint) return;
+    const linAxes = [CA.LINEAR_X, CA.LINEAR_Y, CA.LINEAR_Z];
+    const angAxes = [CA.ANGULAR_X, CA.ANGULAR_Y, CA.ANGULAR_Z];
+    for (const d of drives) {
+        try {
+            const nativeAxis = (d.type === "angular" ? angAxes : linAxes)[d.axis ?? 0];
+            if (nativeAxis === undefined) continue;
+            const usePosition = (d.stiffness ?? 0) > 0;
+            hknp.HP_Constraint_SetAxisMotorType(joint, nativeAxis, usePosition ? MT.POSITION : MT.VELOCITY);
+            if (usePosition && d.positionTarget !== undefined) hknp.HP_Constraint_SetAxisMotorPositionTarget(joint, nativeAxis, d.positionTarget);
+            if (d.velocityTarget !== undefined) hknp.HP_Constraint_SetAxisMotorVelocityTarget(joint, nativeAxis, d.velocityTarget);
+            if (d.stiffness !== undefined && typeof hknp.HP_Constraint_SetAxisMotorStiffness === "function") hknp.HP_Constraint_SetAxisMotorStiffness(joint, nativeAxis, d.stiffness);
+            if (d.damping !== undefined && typeof hknp.HP_Constraint_SetAxisMotorDamping === "function") hknp.HP_Constraint_SetAxisMotorDamping(joint, nativeAxis, d.damping);
+            if (d.maxForce !== undefined && typeof hknp.HP_Constraint_SetAxisMotorMaxForce === "function") hknp.HP_Constraint_SetAxisMotorMaxForce(joint, nativeAxis, d.maxForce);
+        } catch (error) {
+            console.warn("[glTF Physics] Failed to apply joint drive:", error);
+        }
+    }
+}
+
 // Build the SIX_DOF constraints declared by KHR_physics_rigid_bodies joints. glTF joints are
 // generic 6-DoF definitions (per-axis min/max limits); each jointSpace node owns one joint and
 // references the connected node's frame. Adapted from the gltf_physics_JointTypes reference.
-function buildGltfJoints(world, json, parentMap, jointDefs, bodyByNode) {
+function buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByNode) {
     if (!jointDefs.length) return;
 
-    // Resolve a jointSpace node to its owning body plus the anchor frame in that body's local space.
+    // Resolve a jointSpace node to its owning body plus the anchor frame in that body's local space,
+    // or null when the node has no body-root ancestor (= a world-fixed connection, handled below).
     const resolveBodyFrame = (jointSpaceIndex) => {
         let m = nodeLocalMatrix(json.nodes[jointSpaceIndex]);
         for (let cur = parentMap[jointSpaceIndex]; cur !== undefined; cur = parentMap[cur]) {
-            if (json.nodes[cur].extensions?.KHR_physics_rigid_bodies?.collider) {
+            if (isPhysicsBodyRoot(json, cur)) {
                 const entry = bodyByNode.get(cur);
                 if (!entry) return null;
                 const d = decomposeMatrix(m);
@@ -669,13 +710,26 @@ function buildGltfJoints(world, json, parentMap, jointDefs, bodyByNode) {
         return null;
     };
 
+    // Create a static, shapeless world-anchor body at a node's left-handed world pose, for joints
+    // whose connected node has no rigid body (a fixed-to-world connection). The frame is identity.
+    const worldAnchorFrame = (jointSpaceIndex) => {
+        const lh = decomposeMatrix(applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, jointSpaceIndex)));
+        const anchor = createTransformNode("worldAnchor_" + jointSpaceIndex);
+        anchor.position.set(lh.position[0], lh.position[1], lh.position[2]);
+        anchor.rotationQuaternion.set(lh.quaternion[0], lh.quaternion[1], lh.quaternion[2], lh.quaternion[3]);
+        addToScene(scene, anchor);
+        const body = createPhysicsBody(world, anchor, PhysicsMotionType.STATIC);
+        setPhysicsBodyShape(world, body, createPhysicsShape(world, { type: PhysicsShapeType.CONTAINER }));
+        return { body, pivot: { x: 0, y: 0, z: 0 }, axis: { x: 1, y: 0, z: 0 }, perp: { x: 0, y: 1, z: 0 } };
+    };
+
     // Convert a glTF joint's per-axis limits to Lite SIX_DOF limits (LINEAR_X/Y/Z = 0..2,
     // ANGULAR_X/Y/Z = 3..5). Listed axes are locked (min==max) or limited; unlisted axes stay free.
     const buildLimits = (jointDef) => {
         const out = [];
         for (const lim of (jointDef.limits || [])) {
-            for (const a of (lim.linearAxes || [])) out.push({ axis: a, minLimit: lim.min ?? 0, maxLimit: lim.max ?? 0 });
-            for (const a of (lim.angularAxes || [])) out.push({ axis: 3 + a, minLimit: lim.min ?? 0, maxLimit: lim.max ?? 0 });
+            for (const a of (lim.linearAxes || [])) out.push({ axis: a, minLimit: lim.min ?? 0, maxLimit: lim.max ?? 0, stiffness: lim.stiffness, damping: lim.damping });
+            for (const a of (lim.angularAxes || [])) out.push({ axis: 3 + a, minLimit: lim.min ?? 0, maxLimit: lim.max ?? 0, stiffness: lim.stiffness, damping: lim.damping });
         }
         return out;
     };
@@ -683,21 +737,26 @@ function buildGltfJoints(world, json, parentMap, jointDefs, bodyByNode) {
     for (let nodeIndex = 0; nodeIndex < json.nodes.length; nodeIndex++) {
         const joint = json.nodes[nodeIndex].extensions?.KHR_physics_rigid_bodies?.joint;
         if (!joint) continue;
-        const frameA = resolveBodyFrame(nodeIndex);
-        const frameB = resolveBodyFrame(joint.connectedNode);
-        if (!frameA || !frameB) continue;
-        createPhysicsConstraint(
-            world,
-            frameA.body,
-            frameB.body,
-            PhysicsConstraintType.SIX_DOF,
-            {
-                pivotA: frameA.pivot, axisA: frameA.axis, perpAxisA: frameA.perp,
-                pivotB: frameB.pivot, axisB: frameB.axis, perpAxisB: frameB.perp,
-                collision: !!joint.enableCollision,
-            },
-            buildLimits(jointDefs[joint.joint] || {}),
-        );
+        try {
+            const frameA = resolveBodyFrame(nodeIndex) || worldAnchorFrame(nodeIndex);
+            const frameB = resolveBodyFrame(joint.connectedNode) || worldAnchorFrame(joint.connectedNode);
+            const jointDef = jointDefs[joint.joint] || {};
+            const constraint = createPhysicsConstraint(
+                world,
+                frameA.body,
+                frameB.body,
+                PhysicsConstraintType.SIX_DOF,
+                {
+                    pivotA: frameA.pivot, axisA: frameA.axis, perpAxisA: frameA.perp,
+                    pivotB: frameB.pivot, axisB: frameB.axis, perpAxisB: frameB.perp,
+                    collision: !!joint.enableCollision,
+                },
+                buildLimits(jointDef),
+            );
+            applyJointDrives(hknp, constraint, jointDef);
+        } catch (error) {
+            console.warn("[glTF Physics] Failed to build joint at node " + nodeIndex + ":", error);
+        }
     }
 }
 
@@ -825,7 +884,23 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
         }
 
         const geometry = physics.collider?.geometry;
-        if (!geometry) continue; // standalone triggers are skipped
+        if (!geometry) {
+            // Shapeless body: a motion-only "driver"/anchor (no collider) used by joints. Give it an
+            // empty container shape so Havok has a valid body; supply a default inertia.
+            if (motion) {
+                const { anchor, lh } = placeAnchor(nodeIndex);
+                const isKinematic = !!motion.isKinematic;
+                const body = createPhysicsBody(world, anchor, isKinematic ? PhysicsMotionType.ANIMATED : PhysicsMotionType.DYNAMIC);
+                setPhysicsBodyShape(world, body, createPhysicsShape(world, { type: PhysicsShapeType.CONTAINER }));
+                if (!isKinematic) {
+                    applyMotionProperties(world, hknp, body, motion, true);
+                } else if (Array.isArray(motion.angularVelocity)) {
+                    spinners.push({ anchor, omega: [motion.angularVelocity[0], -motion.angularVelocity[1], -motion.angularVelocity[2]] });
+                }
+                bodyByNode.set(nodeIndex, { body, scale: lh.scale });
+            }
+            continue; // standalone triggers (no motion) are skipped
+        }
 
         const { anchor, lh } = placeAnchor(nodeIndex);
         const absScale = lh.scale.map(Math.abs);
@@ -849,7 +924,7 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
         bodyByNode.set(nodeIndex, { body, scale: lh.scale });
     }
 
-    buildGltfJoints(world, json, parentMap, jointDefs, bodyByNode);
+    buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByNode);
 
     // Drive kinematic spinners: rotate each anchor by its angular velocity every physics step
     // (world-frame increment); Lite's pre-step teleport carries the body, driving its joint.
