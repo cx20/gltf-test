@@ -5,6 +5,7 @@ import {
     loadGltf,
     addToScene,
     createDefaultCamera,
+    createArcRotateCamera,
     attachControl,
     loadEnvironment,
     startEngine,
@@ -1191,14 +1192,27 @@ async function createScene(engine, modelSource) {
     addToScene(scene, light1);
     addToScene(scene, light2);
 
-    const cam = createDefaultCamera(scene);
-    // Lite default is alpha=-π/2 (camera at -Z); match babylonjs_webgpu which
-    // uses setPosition(0,3,5), equivalent to alpha=+π/2 (camera at +Z, front view).
-    cam.alpha = Math.PI / 2;
-    // createDefaultCamera auto-sizes farPlane to radius*1000. For small models
-    // (e.g. Triangle, radius≈2) this gives farPlane≈2000, clipping the 10000-unit
-    // skybox. Ensure a minimum that always covers it.
-    cam.farPlane = Math.max(cam.farPlane, 20000);
+    let cam;
+    if (modelInfo) {
+        // Indexed / URL models: match the babylonjs (full) viewer's framing instead of auto-fitting
+        // the bounding box — an ArcRotateCamera looking at the origin from (0, 3/scale, 5/scale),
+        // where `scale` is the per-model camera-distance hint from the model index (default 1).
+        // Lite's eye = target + radius·(cosα·sinβ, cosβ, sinα·sinβ); solving for that position gives
+        // α = +π/2 (camera on +Z, front view), β = atan2(5,3), radius = √34 / scale.
+        const scale = modelInfo.scale || 1;
+        const camRadius = Math.sqrt(34) / scale;
+        cam = createArcRotateCamera(Math.PI / 2, Math.atan2(5, 3), camRadius, { x: 0, y: 0, z: 0 });
+        scene.camera = cam;
+        // Near relative to distance (matches the full viewer's reduced near plane); far always
+        // covers the 10000-unit skybox.
+        cam.nearPlane = camRadius * 0.01;
+        cam.farPlane = Math.max(camRadius * 1000, 20000);
+    } else {
+        // Drag-dropped models have no scale hint, so auto-fit to the bounding box and view from +Z.
+        cam = createDefaultCamera(scene);
+        cam.alpha = Math.PI / 2;
+        cam.farPlane = Math.max(cam.farPlane, 20000);
+    }
     attachControl(cam, canvas, scene);
 
     // Snapshot default camera pose so the GUI can reset to it.
