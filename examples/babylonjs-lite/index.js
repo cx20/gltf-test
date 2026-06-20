@@ -399,6 +399,45 @@ function buildColliderMeshFromGltf(json, buffers, meshIndex, scale) {
     };
 }
 
+// Read a MAT4 FLOAT accessor (e.g. inverseBindMatrices) as a flat Float32Array (16 per element).
+function readAccessorMat4(json, buffers, accessorIndex) {
+    const acc = json.accessors[accessorIndex];
+    const bv = json.bufferViews[acc.bufferView];
+    const dv = new DataView(buffers[bv.buffer]);
+    const base = (bv.byteOffset || 0) + (acc.byteOffset || 0);
+    const out = new Float32Array(acc.count * 16);
+    for (let i = 0; i < acc.count * 16; i++) {
+        out[i] = dv.getFloat32(base + i * 4, true);
+    }
+    return out;
+}
+
+// Invert a column-major 4x4 matrix (16-element array). Returns null when singular.
+function mat4Invert(m) {
+    const inv = new Array(16);
+    inv[0] = m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15] + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
+    inv[4] = -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15] - m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
+    inv[8] = m[4]*m[9]*m[15] - m[4]*m[11]*m[13] - m[8]*m[5]*m[15] + m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
+    inv[12] = -m[4]*m[9]*m[14] + m[4]*m[10]*m[13] + m[8]*m[5]*m[14] - m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
+    inv[1] = -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15] - m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
+    inv[5] = m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15] + m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
+    inv[9] = -m[0]*m[9]*m[15] + m[0]*m[11]*m[13] + m[8]*m[1]*m[15] - m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
+    inv[13] = m[0]*m[9]*m[14] - m[0]*m[10]*m[13] - m[8]*m[1]*m[14] + m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
+    inv[2] = m[1]*m[6]*m[15] - m[1]*m[7]*m[14] - m[5]*m[2]*m[15] + m[5]*m[3]*m[14] + m[13]*m[2]*m[7] - m[13]*m[3]*m[6];
+    inv[6] = -m[0]*m[6]*m[15] + m[0]*m[7]*m[14] + m[4]*m[2]*m[15] - m[4]*m[3]*m[14] - m[12]*m[2]*m[7] + m[12]*m[3]*m[6];
+    inv[10] = m[0]*m[5]*m[15] - m[0]*m[7]*m[13] - m[4]*m[1]*m[15] + m[4]*m[3]*m[13] + m[12]*m[1]*m[7] - m[12]*m[3]*m[5];
+    inv[14] = -m[0]*m[5]*m[14] + m[0]*m[6]*m[13] + m[4]*m[1]*m[14] - m[4]*m[2]*m[13] - m[12]*m[1]*m[6] + m[12]*m[2]*m[5];
+    inv[3] = -m[1]*m[6]*m[11] + m[1]*m[7]*m[10] + m[5]*m[2]*m[11] - m[5]*m[3]*m[10] - m[9]*m[2]*m[7] + m[9]*m[3]*m[6];
+    inv[7] = m[0]*m[6]*m[11] - m[0]*m[7]*m[10] - m[4]*m[2]*m[11] + m[4]*m[3]*m[10] + m[8]*m[2]*m[7] - m[8]*m[3]*m[6];
+    inv[11] = -m[0]*m[5]*m[11] + m[0]*m[7]*m[9] + m[4]*m[1]*m[11] - m[4]*m[3]*m[9] - m[8]*m[1]*m[7] + m[8]*m[3]*m[5];
+    inv[15] = m[0]*m[5]*m[10] - m[0]*m[6]*m[9] - m[4]*m[1]*m[10] + m[4]*m[2]*m[9] + m[8]*m[1]*m[6] - m[8]*m[2]*m[5];
+    let det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
+    if (det === 0) return null;
+    det = 1 / det;
+    for (let i = 0; i < 16; i++) inv[i] *= det;
+    return inv;
+}
+
 // Parse the cameras from a glTF JSON object and return their world positions
 // (in glTF right-handed coordinates) together with per-camera perspective params.
 // Returns [] when no cameras are defined in the file.
@@ -623,11 +662,14 @@ function primitiveShapeOptions(shapeDef, absScale) {
 
 // Apply a KHR_physics_rigid_bodies "motion" block to a dynamic body: mass, centre of
 // mass, inertia, gravity factor (negative = floating balloons), and initial velocities.
+// absScale is the body's world scale (magnitude); the centre of mass is given in unscaled
+// node-local units, so it must be scaled to match (the official loader does the same).
 // defaultInertia supplies a fallback inertia for shapeless bodies (empty collider) whose
 // inertia Havok cannot derive from a shape.
-function applyMotionProperties(world, hknp, body, motion, defaultInertia) {
+function applyMotionProperties(world, hknp, body, motion, absScale, defaultInertia) {
+    const s = absScale || [1, 1, 1];
     const massProps = { mass: motion.mass ?? 1 };
-    if (Array.isArray(motion.centerOfMass)) massProps.centerOfMass = { x: motion.centerOfMass[0], y: motion.centerOfMass[1], z: motion.centerOfMass[2] };
+    if (Array.isArray(motion.centerOfMass)) massProps.centerOfMass = { x: motion.centerOfMass[0] * s[0], y: motion.centerOfMass[1] * s[1], z: motion.centerOfMass[2] * s[2] };
     if (Array.isArray(motion.inertiaDiagonal)) massProps.inertia = { x: motion.inertiaDiagonal[0], y: motion.inertiaDiagonal[1], z: motion.inertiaDiagonal[2] };
     else if (defaultInertia) massProps.inertia = { x: 1, y: 1, z: 1 };
     if (Array.isArray(motion.inertiaOrientation)) massProps.inertiaOrientation = { x: motion.inertiaOrientation[0], y: motion.inertiaOrientation[1], z: motion.inertiaOrientation[2], w: motion.inertiaOrientation[3] };
@@ -794,10 +836,73 @@ function buildGltfJoints(world, hknp, scene, json, parentMap, jointDefs, bodyByN
     }
 }
 
+// Skinned meshes deform from Lite's animation system, not from live node transforms, so a skin bound
+// to physics-driven bones (a ragdoll, e.g. Robot_skinned) stays at its bind pose while the bones move.
+// Each frame, nudge every bone matrix by the bone's world-space motion since the bind pose and
+// re-upload the bone texture so the skin follows the physics bodies.
+//
+// A convention-agnostic delta keeps us independent of how Lite stores its inverse bind matrices:
+//   boneMatrix_live = invMeshWorld . liveBoneWorld . invBindBoneWorld . meshWorld . boneMatrix_bind
+// Bind matrices (meshWorld/boneWorld) are taken from the glTF, left-hand-flipped exactly like the
+// physics bodies (F = diag(-1,1,1) = Lite's RH_TO_LH); boneMatrix_bind is Lite's own value captured
+// on the first frame. At the bind pose this reduces to boneMatrix_bind, so there is no pop.
+// Best-effort: any missing internal field disables it for that mesh (skin stays at bind pose).
+function setupSkinnedMeshFollow(scene, engine, json, parentMap, nodeToTN) {
+    const device = engine?._device;
+    if (!device || !json.skins) return;
+    for (let nodeIndex = 0; nodeIndex < json.nodes.length; nodeIndex++) {
+        const node = json.nodes[nodeIndex];
+        if (node.mesh === undefined || node.skin === undefined) continue;
+        // The skeleton lives on the renderable mesh, which may be the node's transform node or a
+        // descendant of it; search the subtree for the object that carries it.
+        let skel = null;
+        (function walk(n, depth) {
+            if (!n || skel || depth > 4) return;
+            if (n.skeleton) { skel = n.skeleton; return; }
+            if (Array.isArray(n.children)) for (const c of n.children) walk(c, depth + 1);
+        })(nodeToTN.get(nodeIndex), 0);
+        if (!skel || !skel.boneMatrices || !skel.boneTexture) continue;
+
+        const skin = json.skins[node.skin];
+        const joints = skin && skin.joints;
+        if (!joints || !joints.length) continue;
+        const boneNodes = joints.map((j) => nodeToTN.get(j));
+        if (boneNodes.some((b) => !b || !b.worldMatrix)) continue;
+
+        const meshWorldBind = applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, nodeIndex));
+        const invMeshWorldBind = mat4Invert(meshWorldBind);
+        if (!invMeshWorldBind) continue;
+        // invBindBoneWorld[bi] . meshWorldBind, finished with boneMatrix_bind on the first frame.
+        const partial = joints.map((j) => {
+            const inv = mat4Invert(applyLeftHandedFlip(nodeWorldMatrix(json, parentMap, j)));
+            return inv ? mat4Multiply(inv, meshWorldBind) : null;
+        });
+        if (partial.some((p) => !p)) continue;
+
+        const boneData = skel.boneMatrices;
+        const boneCount = joints.length;
+        const texWidth = boneCount * 4;
+        let rhs = null; // invBindBoneWorld . meshWorld . boneMatrix_bind, per bone (captured once)
+        onBeforeRender(scene, function() {
+            try {
+                if (!rhs) {
+                    rhs = partial.map((p, bi) => mat4Multiply(p, boneData.slice(bi * 16, bi * 16 + 16)));
+                }
+                for (let bi = 0; bi < boneCount; bi++) {
+                    const toMesh = mat4Multiply(boneNodes[bi].worldMatrix, rhs[bi]);
+                    const bm = mat4Multiply(invMeshWorldBind, toMesh);
+                    for (let k = 0; k < 16; k++) boneData[bi * 16 + k] = bm[k];
+                }
+                device.queue.writeTexture({ texture: skel.boneTexture }, boneData.buffer, { bytesPerRow: texWidth * 16 }, { width: texWidth, height: 1 });
+            } catch (e) { /* keep the last computed pose */ }
+        });
+    }
+}
+
 // Build Havok rigid bodies from a model's glTF physics extensions and reparent the
 // matching visual subtrees under physics anchors so they follow the simulation.
 // Returns { world, viewer, bodies } or null when the asset has no physics.
-async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
+async function setupGltfPhysics(scene, engine, json, loadedAsset, glbBin, baseUrl) {
     const shapeDefs = json.extensions?.KHR_implicit_shapes?.shapes || [];
     const scenePhysics = json.extensions?.KHR_physics_rigid_bodies || {};
     const materialDefs = scenePhysics.physicsMaterials || [];
@@ -957,7 +1062,7 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
             }
             const body = createPhysicsBody(world, anchor, PhysicsMotionType.DYNAMIC);
             setPhysicsBodyShape(world, body, container);
-            applyMotionProperties(world, hknp, body, motion);
+            applyMotionProperties(world, hknp, body, motion, lh.scale.map(Math.abs));
             bodies.push(body);
             bodyByNode.set(nodeIndex, { body, scale: lh.scale });
             continue;
@@ -973,7 +1078,7 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
                 const body = createPhysicsBody(world, anchor, isKinematic ? PhysicsMotionType.ANIMATED : PhysicsMotionType.DYNAMIC);
                 setPhysicsBodyShape(world, body, createPhysicsShape(world, { type: PhysicsShapeType.CONTAINER }));
                 if (!isKinematic) {
-                    applyMotionProperties(world, hknp, body, motion, true);
+                    applyMotionProperties(world, hknp, body, motion, lh.scale.map(Math.abs), true);
                 } else if (Array.isArray(motion.angularVelocity)) {
                     spinners.push({ anchor, omega: [motion.angularVelocity[0], -motion.angularVelocity[1], -motion.angularVelocity[2]] });
                 }
@@ -996,7 +1101,7 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
         const body = createPhysicsBody(world, anchor, motionType);
         setPhysicsBodyShape(world, body, shape);
         if (motion && !isKinematic) {
-            applyMotionProperties(world, hknp, body, motion);
+            applyMotionProperties(world, hknp, body, motion, absScale);
         } else if (isKinematic && Array.isArray(motion.angularVelocity)) {
             // Angular velocity is a pseudovector: under F = diag(-1,1,1) it maps (wx,wy,wz)->(wx,-wy,-wz).
             spinners.push({ anchor, omega: [motion.angularVelocity[0], -motion.angularVelocity[1], -motion.angularVelocity[2]] });
@@ -1023,6 +1128,9 @@ async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
             }
         });
     }
+
+    // Make skinned meshes (ragdolls) follow their physics-driven bones.
+    setupSkinnedMeshFollow(scene, engine, json, parentMap, nodeToTN);
 
     if (params.PHYSICS_DEBUG) {
         for (const body of bodies) showPhysicsBody(viewer, body);
@@ -1072,7 +1180,7 @@ async function createScene(engine, modelSource) {
     if (hasGltfPhysics(gltfJson)) {
         scene.fixedDeltaMs = 1000 / PHYSICS_FPS;
         try {
-            physicsData = await setupGltfPhysics(scene, gltfJson, loadedAsset, gltfAsset.glbBin, absolutePath);
+            physicsData = await setupGltfPhysics(scene, engine, gltfJson, loadedAsset, gltfAsset.glbBin, absolutePath);
         } catch (error) {
             console.error("[glTF Physics] Failed to set up physics:", error);
         }
