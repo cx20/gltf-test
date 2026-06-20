@@ -275,33 +275,126 @@ function _rotateByQ(q, v) {
     };
 }
 
-// Fetch a glTF asset URL and return its parsed JSON, handling .gltf, .glb (binary,
-// from which the JSON chunk is extracted), and blob: URLs (drag-dropped models are
-// normalised to a .gltf JSON blob upstream). Returns null on fetch/parse failure.
-async function fetchGltfJsonAny(url) {
+// Fetch a glTF asset URL and return { json, glbBin } where glbBin is the GLB binary
+// chunk (ArrayBuffer) or null. Handles .gltf, .glb (binary), and blob: URLs
+// (drag-dropped models are normalised to a .gltf JSON blob upstream). Returns
+// { json: null, glbBin: null } on fetch/parse failure.
+async function fetchGltfAsset(url) {
     try {
         const resp = await fetch(url);
-        if (!resp.ok) return null;
+        if (!resp.ok) return { json: null, glbBin: null };
         const buffer = await resp.arrayBuffer();
         const dv = new DataView(buffer);
-        // GLB magic "glTF" → walk the binary chunks for the JSON chunk.
+        // GLB magic "glTF" → walk the binary chunks for the JSON and BIN chunks.
         if (buffer.byteLength >= 12 && dv.getUint32(0, true) === 0x46546C67) {
+            let json = null;
+            let glbBin = null;
             let offset = 12;
             while (offset + 8 <= dv.byteLength) {
                 const chunkLength = dv.getUint32(offset, true);
                 const chunkType = dv.getUint32(offset + 4, true);
                 const dataStart = offset + 8;
                 if (chunkType === 0x4E4F534A) { // "JSON"
-                    return JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, dataStart, chunkLength)));
+                    json = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, dataStart, chunkLength)));
+                } else if (chunkType === 0x004E4942) { // "BIN\0"
+                    glbBin = buffer.slice(dataStart, dataStart + chunkLength);
                 }
                 offset = dataStart + chunkLength;
             }
-            return null;
+            return { json, glbBin };
         }
-        return JSON.parse(new TextDecoder().decode(new Uint8Array(buffer)));
+        return { json: JSON.parse(new TextDecoder().decode(new Uint8Array(buffer))), glbBin: null };
     } catch (e) {
-        return null;
+        return { json: null, glbBin: null };
     }
+}
+
+// Resolve every glTF buffer to an ArrayBuffer: the embedded GLB binary chunk for the
+// uri-less buffer, data: URIs decoded inline, and external URIs fetched relative to
+// the model. Used to decode collision-only mesh geometry the visual loader skips.
+async function resolveGltfBuffers(json, baseUrl, glbBin) {
+    const buffers = [];
+    for (const buffer of (json.buffers || [])) {
+        if (!buffer.uri) {
+            buffers.push(glbBin);
+        } else if (buffer.uri.startsWith("data:")) {
+            const base64 = buffer.uri.slice(buffer.uri.indexOf(",") + 1);
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            buffers.push(bytes.buffer);
+        } else {
+            const resp = await fetch(new URL(buffer.uri, baseUrl).href);
+            buffers.push(await resp.arrayBuffer());
+        }
+    }
+    return buffers;
+}
+
+// Read a VEC3 FLOAT accessor (e.g. POSITION) as a flat Float32Array, honouring bufferView stride.
+function readAccessorVec3(json, buffers, accessorIndex) {
+    const acc = json.accessors[accessorIndex];
+    const bv = json.bufferViews[acc.bufferView];
+    const dv = new DataView(buffers[bv.buffer]);
+    const base = (bv.byteOffset || 0) + (acc.byteOffset || 0);
+    const stride = bv.byteStride || 12;
+    const out = new Float32Array(acc.count * 3);
+    for (let i = 0; i < acc.count; i++) {
+        const o = base + i * stride;
+        out[i * 3] = dv.getFloat32(o, true);
+        out[i * 3 + 1] = dv.getFloat32(o + 4, true);
+        out[i * 3 + 2] = dv.getFloat32(o + 8, true);
+    }
+    return out;
+}
+
+// Read a SCALAR index accessor (ubyte/ushort/uint) as a Uint32Array.
+function readAccessorIndices(json, buffers, accessorIndex) {
+    const acc = json.accessors[accessorIndex];
+    const bv = json.bufferViews[acc.bufferView];
+    const dv = new DataView(buffers[bv.buffer]);
+    const base = (bv.byteOffset || 0) + (acc.byteOffset || 0);
+    const size = acc.componentType === 5125 ? 4 : acc.componentType === 5123 ? 2 : 1;
+    const stride = bv.byteStride || size;
+    const out = new Uint32Array(acc.count);
+    for (let i = 0; i < acc.count; i++) {
+        const o = base + i * stride;
+        out[i] = acc.componentType === 5125 ? dv.getUint32(o, true)
+            : acc.componentType === 5123 ? dv.getUint16(o, true)
+            : dv.getUint8(o);
+    }
+    return out;
+}
+
+// Build a minimal mesh-like object (positions + indices + a pure-scale world matrix) from a glTF
+// mesh's accessors, for collider meshes the visual loader never instantiates (collision-only or a
+// mesh index differing from the node's own). It exposes exactly what Lite's MeshAccumulator reads.
+function buildColliderMeshFromGltf(json, buffers, meshIndex, scale) {
+    const positions = [];
+    const indices = [];
+    let vertexOffset = 0;
+    for (const prim of (json.meshes[meshIndex].primitives || [])) {
+        if (prim.attributes?.POSITION === undefined) continue;
+        const pos = readAccessorVec3(json, buffers, prim.attributes.POSITION);
+        for (let i = 0; i < pos.length; i++) positions.push(pos[i]);
+        if (prim.indices !== undefined) {
+            const idx = readAccessorIndices(json, buffers, prim.indices);
+            for (let i = 0; i < idx.length; i++) indices.push(idx[i] + vertexOffset);
+        } else {
+            const count = pos.length / 3;
+            for (let i = 0; i < count; i++) indices.push(i + vertexOffset);
+        }
+        vertexOffset += pos.length / 3;
+    }
+    const [sx, sy, sz] = scale;
+    return {
+        _gpu: {},
+        _cpuPositions: Float32Array.from(positions),
+        _cpuIndices: Uint32Array.from(indices),
+        scaling: { x: sx, y: sy, z: sz },
+        worldMatrix: [sx, 0, 0, 0, 0, sy, 0, 0, 0, 0, sz, 0, 0, 0, 0, 1],
+        children: [],
+    };
 }
 
 // Parse the cameras from a glTF JSON object and return their world positions
@@ -611,12 +704,27 @@ function buildGltfJoints(world, json, parentMap, jointDefs, bodyByNode) {
 // Build Havok rigid bodies from a model's glTF physics extensions and reparent the
 // matching visual subtrees under physics anchors so they follow the simulation.
 // Returns { world, viewer, bodies } or null when the asset has no physics.
-async function setupGltfPhysics(scene, json, loadedAsset) {
+async function setupGltfPhysics(scene, json, loadedAsset, glbBin, baseUrl) {
     const shapeDefs = json.extensions?.KHR_implicit_shapes?.shapes || [];
     const scenePhysics = json.extensions?.KHR_physics_rigid_bodies || {};
     const materialDefs = scenePhysics.physicsMaterials || [];
     const jointDefs = scenePhysics.physicsJoints || [];
     const parentMap = buildParentMap(json);
+
+    // Collider meshes the visual loader never instantiates (collision-only, or a mesh index
+    // differing from the node's own) must be decoded straight from the glTF buffers.
+    const needsBuffers = json.nodes.some(function(n) {
+        const g = n.extensions?.KHR_physics_rigid_bodies?.collider?.geometry;
+        return g && g.shape === undefined && g.mesh !== undefined && n.mesh !== g.mesh;
+    });
+    let buffers = null;
+    if (needsBuffers) {
+        try {
+            buffers = await resolveGltfBuffers(json, baseUrl, glbBin);
+        } catch (error) {
+            console.warn("[glTF Physics] Failed to resolve buffers for collision-only meshes:", error);
+        }
+    }
 
     const hknp = await loadHavok();
     const world = createHavokWorld(scene, hknp, { x: 0, y: -9.8, z: 0 });
@@ -676,11 +784,17 @@ async function setupGltfPhysics(scene, json, loadedAsset) {
         return { anchor, lh };
     };
 
-    const buildShapeFor = (geometry, anchorForMesh, absScale) => {
+    const buildShapeFor = (nodeIndex, geometry, anchorForMesh, absScale, meshScale) => {
         if (geometry.shape !== undefined) {
             return createPhysicsShape(world, primitiveShapeOptions(shapeDefs[geometry.shape], absScale));
         }
         const type = geometry.convexHull ? PhysicsShapeType.CONVEX_HULL : PhysicsShapeType.MESH;
+        // Collision-only / mismatched collider mesh: decode geometry.mesh straight from the buffers.
+        // Otherwise the node renders exactly the collider mesh, so accumulate its loaded subtree.
+        if (geometry.mesh !== undefined && json.nodes[nodeIndex]?.mesh !== geometry.mesh && buffers) {
+            const meshLike = buildColliderMeshFromGltf(json, buffers, geometry.mesh, meshScale || absScale);
+            return createPhysicsShape(world, { type, mesh: meshLike, includeChildMeshes: false });
+        }
         return createPhysicsShape(world, { type, mesh: anchorForMesh, includeChildMeshes: true });
     };
 
@@ -698,7 +812,7 @@ async function setupGltfPhysics(scene, json, loadedAsset) {
             for (const childIndex of compound.childColliders) {
                 const childGeom = json.nodes[childIndex].extensions.KHR_physics_rigid_bodies.collider.geometry;
                 // Primitive child: base size; the parent-relative transform carries the world scale.
-                const childShape = buildShapeFor(childGeom, nodeToTN.get(childIndex), [1, 1, 1]);
+                const childShape = buildShapeFor(childIndex, childGeom, nodeToTN.get(childIndex), [1, 1, 1], [1, 1, 1]);
                 setMaterial(childShape, json.nodes[childIndex].extensions.KHR_physics_rigid_bodies.collider.physicsMaterial);
                 addPhysicsShapeChildFromParent(world, container, anchor, childShape, nodeToTN.get(childIndex));
             }
@@ -715,7 +829,7 @@ async function setupGltfPhysics(scene, json, loadedAsset) {
 
         const { anchor, lh } = placeAnchor(nodeIndex);
         const absScale = lh.scale.map(Math.abs);
-        const shape = buildShapeFor(geometry, anchor, absScale);
+        const shape = buildShapeFor(nodeIndex, geometry, anchor, absScale, lh.scale);
         setMaterial(shape, physics.collider.physicsMaterial);
         // A kinematic body is ANIMATED: Lite snaps it to its node each pre-step, so it is driven
         // by rotating its anchor (see spinners below) rather than by a set velocity.
@@ -778,7 +892,7 @@ async function createScene(engine, modelSource) {
 
     const absolutePath = new URL(path, window.location.href).href;
 
-    const [loadedAsset, envTextures, gltfJson] = await Promise.all([
+    const [loadedAsset, envTextures, gltfAsset] = await Promise.all([
         loadGltf(engine, absolutePath),
         loadEnvironment(scene, ENV_URL, {
             brdfUrl: BRDF_URL,
@@ -786,10 +900,11 @@ async function createScene(engine, modelSource) {
             skyboxSize: 10000,
             skipGround: true,
         }),
-        // Fetch the glTF JSON in parallel with model loading (used for cameras and physics).
-        fetchGltfJsonAny(absolutePath),
+        // Fetch the glTF JSON (+ GLB binary) in parallel with model loading, for cameras and physics.
+        fetchGltfAsset(absolutePath),
     ]);
 
+    const gltfJson = gltfAsset.json;
     const gltfCameras = gltfJson ? parseGltfCameras(gltfJson) : [];
 
     addToScene(scene, loadedAsset);
@@ -801,7 +916,7 @@ async function createScene(engine, modelSource) {
     if (hasGltfPhysics(gltfJson)) {
         scene.fixedDeltaMs = 1000 / PHYSICS_FPS;
         try {
-            physicsData = await setupGltfPhysics(scene, gltfJson, loadedAsset);
+            physicsData = await setupGltfPhysics(scene, gltfJson, loadedAsset, gltfAsset.glbBin, absolutePath);
         } catch (error) {
             console.error("[glTF Physics] Failed to set up physics:", error);
         }
