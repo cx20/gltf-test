@@ -45,6 +45,12 @@
 })();
 </script>
 
+<!-- meshopt decoder for EXT_meshopt_compression support.
+     Lite checks globalThis.MeshoptDecoder first; if present, uses it directly
+     instead of fetching from the (nonexistent) site root. The WASM is inlined
+     in this file, so no locateFile override is needed. -->
+<script src="../../libs/babylonjs/9.4.1/meshopt_decoder.js"></script>
+
 <canvas id="renderCanvas"></canvas>
 <div id="dropZone" class="drop-zone hidden">
   <div class="drop-zone__panel">
