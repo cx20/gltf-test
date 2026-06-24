@@ -40,7 +40,7 @@ import {
 import HavokPhysics from "@babylonjs/havok";
 
 const ENV_URL = "../../textures/env/papermillSpecularHDR.env";
-const BRDF_URL = "https://cdn.jsdelivr.net/gh/BabylonJS/Babylon-Lite@master/packages/babylon-lite/assets/brdf-lut.png";
+const BRDF_URL = "https://esm.sh/gh/BabylonJS/Babylon-Lite@master/packages/babylon-lite/assets/brdf-lut.png";
 
 // Physics simulation step rate for KHR_physics_rigid_bodies models.
 const PHYSICS_FPS = 60;
