@@ -18,6 +18,8 @@ import {
     resetVariant,
     playAnimation,
     stopAnimation,
+    setDracoBaseUrl,
+    setMeshoptBaseUrl,
     createDirectionalLight,
     createHavokWorld,
     createPhysicsViewer,
@@ -46,6 +48,13 @@ const BRDF_URL = "https://esm.sh/gh/BabylonJS/Babylon-Lite@master/packages/babyl
 
 // Physics simulation step rate for KHR_physics_rigid_bodies models.
 const PHYSICS_FPS = 60;
+
+// Lite injects draco_decoder.js / meshopt_decoder.js itself, lazily, the first time an
+// asset actually uses KHR_draco_mesh_compression or EXT_meshopt_compression, and resolves
+// draco_decoder.wasm against the same base. Point both at our local copies.
+const DECODER_BASE_URL = new URL("../../libs/babylonjs/9.4.1/", import.meta.url).href;
+setDracoBaseUrl(DECODER_BASE_URL);
+setMeshoptBaseUrl(DECODER_BASE_URL);
 
 function getInitialModelInfo() {
     let modelInfo = ModelIndex.getCurrentModel();
@@ -93,7 +102,6 @@ const fileInput = document.getElementById("fileInput");
 
 let currentScene = null;
 let currentGui = null;
-let currentObjectUrls = [];
 let activeLoadToken = 0;
 let engineStarted = false;
 let emptyScene = null;
@@ -116,61 +124,158 @@ function hideDropZone() {
     dropZone.classList.remove("error");
 }
 
-function revokeCurrentObjectUrls() {
-    currentObjectUrls.forEach(function(url) {
-        URL.revokeObjectURL(url);
-    });
-    currentObjectUrls = [];
-}
-
 function getFileExtension(name) {
     const lastDot = name.lastIndexOf(".");
     return lastDot >= 0 ? name.slice(lastDot).toLowerCase() : "";
-}
-
-function isExternalUri(uri) {
-    return uri
-        && !uri.startsWith("data:")
-        && !uri.startsWith("blob:")
-        && !/^[a-z]+:/i.test(uri);
 }
 
 function getBasename(path) {
     return path.split("/").pop();
 }
 
-// Convert a dropped GLB file into a gltf+blob-URL pair that loadGltf can load.
-// loadGltf detects GLB via url.endsWith(".glb"), which blob: URLs lack, so we
-// parse the binary ourselves and hand back a .gltf JSON blob URL instead.
-async function convertGlbToBlobGltf(file, objectUrls) {
-    const buffer = await file.arrayBuffer();
-    const dv = new DataView(buffer);
+// ── Drag & drop: pack the dropped files into one self-contained GLB ──────────
+//
+// loadGltf() accepts a URL string, an ArrayBuffer or a Blob, but neither form can
+// carry a dropped .gltf's side files:
+//   - A blob: URL throws, because Lite derives a base URL with `new URL(".", url)`
+//     and blob: is not a hierarchical scheme.
+//   - Raw data (Blob/ArrayBuffer) gets an empty base URL, and Lite resolves every
+//     buffer/image `uri` with `new URL(uri, "")` — which throws even for absolute
+//     data: or blob: URIs.
+// So the only shape Lite can load from memory is a GLB with no `uri` anywhere:
+// buffers merged into the BIN chunk and images moved into bufferViews. A dropped
+// .glb is already exactly that, and is handed over untouched.
 
-    if (dv.getUint32(0, true) !== 0x46546C67) {
-        throw new Error("Not a valid GLB file (bad magic)");
+const GLB_MAGIC = 0x46546C67; // "glTF"
+const GLB_CHUNK_JSON = 0x4E4F534A;
+const GLB_CHUNK_BIN = 0x004E4942;
+
+function alignTo4(n) {
+    return (n + 3) & ~3;
+}
+
+function guessImageMimeType(uri) {
+    switch (getFileExtension(getBasename(decodeURIComponent(uri)))) {
+        case ".jpg":
+        case ".jpeg": return "image/jpeg";
+        case ".webp": return "image/webp";
+        case ".ktx2": return "image/ktx2";
+        case ".avif": return "image/avif";
+        default: return "image/png";
+    }
+}
+
+function decodeDataUri(uri) {
+    const comma = uri.indexOf(",");
+    const header = uri.slice("data:".length, comma);
+    const body = uri.slice(comma + 1);
+    const mimeType = header.split(";")[0] || "application/octet-stream";
+    if (!header.endsWith(";base64")) {
+        return { bytes: new TextEncoder().encode(decodeURIComponent(body)), mimeType };
+    }
+    const binary = atob(body);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return { bytes, mimeType };
+}
+
+// Resolve a glTF `uri` to its bytes: inline data: URIs are decoded, everything else is
+// looked up among the dropped files (by full path first, then by bare filename).
+async function readGltfUri(uri, fileMap) {
+    if (uri.startsWith("data:")) {
+        return decodeDataUri(uri);
+    }
+    const name = decodeURIComponent(uri);
+    const file = fileMap.get(name) || fileMap.get(getBasename(name));
+    if (!file) {
+        throw new Error("Missing file referenced by the glTF: " + getBasename(name));
+    }
+    return { bytes: new Uint8Array(await file.arrayBuffer()), mimeType: guessImageMimeType(uri) };
+}
+
+async function packGltfToGlb(modelFile, fileMap) {
+    const json = JSON.parse(await modelFile.text());
+
+    const binParts = [];
+    let binLength = 0;
+    // Append to the BIN chunk and return the start offset. Every entry is padded out to a
+    // 4-byte boundary, so each offset handed back is aligned as glTF requires.
+    function appendToBin(bytes) {
+        const offset = binLength;
+        binParts.push(bytes);
+        binLength += bytes.byteLength;
+        const padding = alignTo4(binLength) - binLength;
+        if (padding > 0) {
+            binParts.push(new Uint8Array(padding));
+            binLength += padding;
+        }
+        return offset;
     }
 
-    // JSON chunk starts at offset 20
-    const jsonLength = dv.getUint32(12, true);
-    const json = JSON.parse(new TextDecoder().decode(new Uint8Array(buffer, 20, jsonLength)));
+    // Concatenate every buffer into the single BIN chunk, remembering where each landed.
+    const bufferOffsets = [];
+    for (const buffer of (json.buffers || [])) {
+        const { bytes } = await readGltfUri(buffer.uri, fileMap);
+        bufferOffsets.push(appendToBin(bytes));
+    }
 
-    // BIN chunk (optional) immediately follows JSON chunk
-    const binOffset = 20 + jsonLength;
-    if (binOffset + 8 <= buffer.byteLength && dv.getUint32(binOffset + 4, true) === 0x004E4942) {
-        const binLength = dv.getUint32(binOffset, true);
-        const binBlob = new Blob([buffer.slice(binOffset + 8, binOffset + 8 + binLength)], { type: "application/octet-stream" });
-        const binUrl = URL.createObjectURL(binBlob);
-        objectUrls.push(binUrl);
-        // The embedded BIN has no URI in the JSON; add our blob URL so the loader can fetch it
-        if (json.buffers && json.buffers.length > 0) {
-            json.buffers[0].uri = binUrl;
+    // Rebase each bufferView onto the merged buffer. EXT_meshopt_compression keeps its own
+    // buffer/byteOffset pair on the bufferView, so shift that too.
+    for (const view of (json.bufferViews || [])) {
+        const meshopt = view.extensions?.EXT_meshopt_compression;
+        if (meshopt) {
+            meshopt.byteOffset = bufferOffsets[meshopt.buffer || 0] + (meshopt.byteOffset || 0);
+            meshopt.buffer = 0;
+        }
+        view.byteOffset = bufferOffsets[view.buffer || 0] + (view.byteOffset || 0);
+        view.buffer = 0;
+    }
+
+    // Move every uri-backed image into the BIN chunk as a bufferView, so no uri survives.
+    json.bufferViews = json.bufferViews || [];
+    for (const image of (json.images || [])) {
+        if (image.uri === undefined) {
+            continue; // already stored in a bufferView
+        }
+        const { bytes, mimeType } = await readGltfUri(image.uri, fileMap);
+        const byteOffset = appendToBin(bytes);
+        delete image.uri;
+        image.mimeType = image.mimeType || mimeType;
+        image.bufferView = json.bufferViews.length;
+        json.bufferViews.push({ buffer: 0, byteOffset: byteOffset, byteLength: bytes.byteLength });
+    }
+
+    json.buffers = binLength > 0 ? [{ byteLength: binLength }] : [];
+
+    // Assemble the GLB container: 12-byte header, JSON chunk (space-padded), BIN chunk.
+    const jsonBytes = new TextEncoder().encode(JSON.stringify(json));
+    const jsonChunkLength = alignTo4(jsonBytes.byteLength);
+    const totalLength = 12 + 8 + jsonChunkLength + (binLength > 0 ? 8 + binLength : 0);
+
+    const glb = new Uint8Array(totalLength);
+    const dv = new DataView(glb.buffer);
+    dv.setUint32(0, GLB_MAGIC, true);
+    dv.setUint32(4, 2, true); // glTF version
+    dv.setUint32(8, totalLength, true);
+    dv.setUint32(12, jsonChunkLength, true);
+    dv.setUint32(16, GLB_CHUNK_JSON, true);
+    glb.set(jsonBytes, 20);
+    glb.fill(0x20, 20 + jsonBytes.byteLength, 20 + jsonChunkLength); // JSON pads with spaces
+
+    if (binLength > 0) {
+        let offset = 20 + jsonChunkLength;
+        dv.setUint32(offset, binLength, true);
+        dv.setUint32(offset + 4, GLB_CHUNK_BIN, true);
+        offset += 8;
+        for (const part of binParts) {
+            glb.set(part, offset);
+            offset += part.byteLength;
         }
     }
 
-    const gltfBlob = new Blob([JSON.stringify(json)], { type: "model/gltf+json" });
-    const gltfUrl = URL.createObjectURL(gltfBlob);
-    objectUrls.push(gltfUrl);
-    return gltfUrl;
+    return new Blob([glb], { type: "model/gltf-binary" });
 }
 
 async function createDroppedModelSource(fileList) {
@@ -194,66 +299,12 @@ async function createDroppedModelSource(fileList) {
         }
     });
 
-    const objectUrls = [];
-
-    function createTrackedObjectUrl(fileOrBlob) {
-        const url = URL.createObjectURL(fileOrBlob);
-        objectUrls.push(url);
-        return url;
-    }
-
-    if (getFileExtension(modelFile.name) === ".glb") {
-        // Convert GLB → gltf blob URL so loadGltf (which detects format by extension) works
-        const gltfUrl = await convertGlbToBlobGltf(modelFile, objectUrls);
-        return {
-            url: gltfUrl,
-            displayName: modelFile.name,
-            objectUrls: objectUrls,
-        };
-    }
-
-    const gltf = JSON.parse(await modelFile.text());
-    const resourceUrls = new Map();
-
-    function resolveObjectUrl(uri) {
-        if (!isExternalUri(uri)) {
-            return uri;
-        }
-
-        const decodedUri = decodeURIComponent(uri);
-        const file = fileMap.get(decodedUri) || fileMap.get(getBasename(decodedUri));
-        if (!file) {
-            return uri;
-        }
-
-        if (!resourceUrls.has(file)) {
-            resourceUrls.set(file, createTrackedObjectUrl(file));
-        }
-        return resourceUrls.get(file);
-    }
-
-    if (Array.isArray(gltf.buffers)) {
-        gltf.buffers.forEach(function(buffer) {
-            if (buffer.uri) {
-                buffer.uri = resolveObjectUrl(buffer.uri);
-            }
-        });
-    }
-
-    if (Array.isArray(gltf.images)) {
-        gltf.images.forEach(function(image) {
-            if (image.uri) {
-                image.uri = resolveObjectUrl(image.uri);
-            }
-        });
-    }
-
-    const gltfBlob = new Blob([JSON.stringify(gltf)], { type: "model/gltf+json" });
-
     return {
-        url: createTrackedObjectUrl(gltfBlob),
+        // A .glb is already self-contained, so it goes straight to loadGltf as a Blob.
+        data: getFileExtension(modelFile.name) === ".glb"
+            ? modelFile
+            : await packGltfToGlb(modelFile, fileMap),
         displayName: modelFile.name,
-        objectUrls: objectUrls,
     };
 }
 
@@ -280,15 +331,20 @@ function _rotateByQ(q, v) {
     };
 }
 
-// Fetch a glTF asset URL and return { json, glbBin } where glbBin is the GLB binary
-// chunk (ArrayBuffer) or null. Handles .gltf, .glb (binary), and blob: URLs
-// (drag-dropped models are normalised to a .gltf JSON blob upstream). Returns
-// { json: null, glbBin: null } on fetch/parse failure.
-async function fetchGltfAsset(url) {
+// Read a glTF asset and return { json, glbBin } where glbBin is the GLB binary chunk
+// (ArrayBuffer) or null. Takes the same source as loadGltf: a URL for indexed models,
+// or the Blob of a drag-dropped model. Returns { json: null, glbBin: null } on
+// fetch/parse failure.
+async function fetchGltfAsset(source) {
     try {
-        const resp = await fetch(url);
-        if (!resp.ok) return { json: null, glbBin: null };
-        const buffer = await resp.arrayBuffer();
+        let buffer;
+        if (source instanceof Blob) {
+            buffer = await source.arrayBuffer();
+        } else {
+            const resp = await fetch(source);
+            if (!resp.ok) return { json: null, glbBin: null };
+            buffer = await resp.arrayBuffer();
+        }
         const dv = new DataView(buffer);
         // GLB magic "glTF" → walk the binary chunks for the JSON and BIN chunks.
         if (buffer.byteLength >= 12 && dv.getUint32(0, true) === 0x46546C67) {
@@ -1149,26 +1205,29 @@ async function createScene(engine, modelSource) {
     scene.clearColor = { r: 1, g: 1, b: 1, a: 1 };
 
     const modelInfo = modelSource.modelInfo;
-    let path = modelSource.url;
-    if (!path && modelInfo) {
-        path = "../../" + modelInfo.category + "/" + modelInfo.path;
+    // Indexed models load from a URL; drag-dropped ones arrive as a self-contained GLB Blob.
+    // baseUrl only matters for resolving a .gltf's external buffers, which a GLB never has.
+    let source = modelSource.data;
+    let baseUrl = window.location.href;
+    if (!source) {
+        let path = "../../" + modelInfo.category + "/" + modelInfo.path;
         if (modelInfo.url) {
             path = modelInfo.url;
         }
+        baseUrl = new URL(path, window.location.href).href;
+        source = baseUrl;
     }
 
-    const absolutePath = new URL(path, window.location.href).href;
-
     const [loadedAsset, envTextures, gltfAsset] = await Promise.all([
-        loadGltf(engine, absolutePath),
+        loadGltf(engine, source),
         loadEnvironment(scene, ENV_URL, {
             brdfUrl: BRDF_URL,
             skyboxUrl: ENV_URL,
             skyboxSize: 10000,
             skipGround: true,
         }),
-        // Fetch the glTF JSON (+ GLB binary) in parallel with model loading, for cameras and physics.
-        fetchGltfAsset(absolutePath),
+        // Read the glTF JSON (+ GLB binary) in parallel with model loading, for cameras and physics.
+        fetchGltfAsset(source),
     ]);
 
     const gltfJson = gltfAsset.json;
@@ -1205,7 +1264,7 @@ async function createScene(engine, modelSource) {
     if (hasGltfPhysics(gltfJson)) {
         scene.fixedDeltaMs = 1000 / PHYSICS_FPS;
         try {
-            physicsData = await setupGltfPhysics(scene, engine, gltfJson, loadedAsset, gltfAsset.glbBin, absolutePath);
+            physicsData = await setupGltfPhysics(scene, engine, gltfJson, loadedAsset, gltfAsset.glbBin, baseUrl);
         } catch (error) {
             console.error("[glTF Physics] Failed to set up physics:", error);
         }
@@ -1402,11 +1461,6 @@ async function loadSceneFromSource(engine, modelSource) {
 
         if (loadToken !== activeLoadToken) {
             disposeScene(nextScene);
-            if (modelSource.objectUrls) {
-                modelSource.objectUrls.forEach(function(url) {
-                    URL.revokeObjectURL(url);
-                });
-            }
             return;
         }
 
@@ -1441,16 +1495,9 @@ async function loadSceneFromSource(engine, modelSource) {
             disposeScene(previousScene);
         }
 
-        revokeCurrentObjectUrls();
-        currentObjectUrls = modelSource.objectUrls || [];
         hideDropZone();
     } catch (error) {
         console.error(error);
-        if (modelSource.objectUrls) {
-            modelSource.objectUrls.forEach(function(url) {
-                URL.revokeObjectURL(url);
-            });
-        }
         showDropZone("Failed to load: " + error.message, true);
     }
 }
