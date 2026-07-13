@@ -16,6 +16,8 @@ import {
     getVariantNames,
     selectVariant,
     resetVariant,
+    playAnimation,
+    stopAnimation,
     createDirectionalLight,
     createHavokWorld,
     createPhysicsViewer,
@@ -1173,6 +1175,28 @@ async function createScene(engine, modelSource) {
     const gltfCameras = gltfJson ? parseGltfCameras(gltfJson) : [];
 
     addToScene(scene, loadedAsset);
+
+    // Per-model fixups, mirroring the babylonjs viewer.
+    // Lite auto-plays only the first glTF clip (createAnimationGroups marks index 0
+    // isPlaying), so selecting another clip means stopping that one first.
+    const animationGroups = loadedAsset.animationGroups || [];
+    function playOnlyAnimation(index) {
+        if (!animationGroups[index]) return;
+        animationGroups.forEach(stopAnimation);
+        playAnimation(animationGroups[index]);
+    }
+
+    const rootNode = loadedAsset.entities[0];
+    if (modelInfo?.name === "GearboxAssy" && rootNode) {
+        // TODO: Position adjustment required
+        rootNode.position.x += 159.20;
+        rootNode.position.y -= 17.02;
+        rootNode.position.z += 3.21;
+    } else if (modelInfo?.name === "Fox") {
+        playOnlyAnimation(2); // 0:Survey, 1:Walk, 2:Run
+    } else if (modelInfo?.name === "MorphStressTest") {
+        playOnlyAnimation(1); // 0:Individuals, 1:TheWave, 2:Pulse
+    }
 
     // Build Havok rigid bodies when the asset declares glTF physics extensions.
     // This reparents the matching visual subtrees, so it must run before the
