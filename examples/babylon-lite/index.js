@@ -45,6 +45,8 @@ import HavokPhysics from "@babylonjs/havok";
 
 const ENV_URL = "../../textures/env/papermillSpecularHDR.env";
 const BRDF_URL = "https://esm.sh/gh/BabylonJS/Babylon-Lite@master/packages/babylon-lite/assets/brdf-lut.png";
+const CLEAR_COLOR_CUBEMAP_ON = { r: 1, g: 1, b: 1, a: 1 };
+const CLEAR_COLOR_CUBEMAP_OFF = { r: 0.23, g: 0.23, b: 0.35, a: 1 };
 
 // Physics simulation step rate for KHR_physics_rigid_bodies models.
 const PHYSICS_FPS = 60;
@@ -1202,7 +1204,7 @@ async function setupGltfPhysics(scene, engine, json, loadedAsset, glbBin, baseUr
 
 async function createScene(engine, modelSource) {
     const scene = createSceneContext(engine);
-    scene.clearColor = { r: 1, g: 1, b: 1, a: 1 };
+    scene.clearColor = { ...CLEAR_COLOR_CUBEMAP_ON };
 
     const modelInfo = modelSource.modelInfo;
     // Indexed models load from a URL; drag-dropped ones arrive as a self-contained GLB Blob.
@@ -1342,6 +1344,9 @@ function setupSceneGui(scene) {
 
     params.CUBEMAP = true;
     gui.add(params, 'CUBEMAP').name('CubeMap').onChange(function(value) {
+        scene.clearColor = value
+            ? { ...CLEAR_COLOR_CUBEMAP_ON }
+            : { ...CLEAR_COLOR_CUBEMAP_OFF };
         if (!skyboxRenderable) return;
         const idx = scene._renderables.indexOf(skyboxRenderable);
         if (value && idx === -1) {
@@ -1446,7 +1451,7 @@ function setupSceneGui(scene) {
 
 async function createEmptyScene(engine) {
     const scene = createSceneContext(engine);
-    scene.clearColor = { r: 1, g: 1, b: 1, a: 1 };
+    scene.clearColor = { ...CLEAR_COLOR_CUBEMAP_ON };
     const cam = createDefaultCamera(scene);
     attachControl(cam, canvas, scene);
     return scene;
