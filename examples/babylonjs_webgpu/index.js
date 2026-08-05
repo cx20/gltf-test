@@ -578,9 +578,27 @@ let createScene = function(engine, modelSource) {
             }
         });
 
-        guiDebug.onChange(function (value) {
-            scene.debugLayer.show({embedMode: value});
-        });
+        let inspectorOwnsPhysicsDebug = false;
+        function handleInspectorDebugToggle(value) {
+            scene.debugLayer.show({ embedMode: value });
+
+            // Avoid creating two PhysicsViewer utility layers at once:
+            // while Inspector Debug is open, let Inspector own physics helper drawing.
+            if (value && params.PHYSICS_DEBUG) {
+                showPhysicsDebug(false);
+                params.PHYSICS_DEBUG = false;
+                guiPhysicsDebug.updateDisplay();
+                inspectorOwnsPhysicsDebug = true;
+                console.log('[Physics] Disabled app Physics Debug while Inspector Debug is open');
+            } else if (!value && inspectorOwnsPhysicsDebug) {
+                params.PHYSICS_DEBUG = true;
+                guiPhysicsDebug.updateDisplay();
+                showPhysicsDebug(true);
+                inspectorOwnsPhysicsDebug = false;
+                console.log('[Physics] Re-enabled app Physics Debug after Inspector Debug closed');
+            }
+        }
+        guiDebug.onChange(handleInspectorDebugToggle);
 
         let physicsViewer = null;
         const shownPhysicsBodies = new Set();
