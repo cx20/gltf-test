@@ -192,7 +192,7 @@ async function initEngine() {
         isUboEnabled: false
     });
     engine = await Rn.Engine.init({
-        approach: Rn.ProcessApproach.DataTexture,
+        approach: Rn.ProcessApproach.WebGL2,
         canvas,
         config,
     });
